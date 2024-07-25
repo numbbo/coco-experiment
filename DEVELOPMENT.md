@@ -109,7 +109,15 @@ Install the package from source
 pip uninstall -y cocoex
 pip install .
 ```
-Under macOS with an ARM processor it may be necessary to run `arch -arm64 pip install .` instead.
+
+#### Compilation and installation hints
+
+- Under macOS with an ARM processor it may be necessary to run `arch -arm64 pip install .` instead.
+
+- When installing from source on older machines, it might be necessary to explicitly enable C99 mode for the C compiler.
+  You can do this running `CFLAGS="-std=c99" pip install .`. 
+
+#### Testing the `cocoex` Python package
 
 Install and run `pytest`
 ```sh
