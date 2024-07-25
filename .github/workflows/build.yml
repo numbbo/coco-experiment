@@ -10,7 +10,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          core: &core
+            - .github/workflows/**
+            - scripts/**
+            - src/**
+            - test/**
+          python:
+            - *core
+            - build/python/**
+
   source-build:
+    needs: changes
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -25,12 +48,14 @@ jobs:
     - name: Fabricate COCO
       run: python scripts/fabricate
     - name: Run core unit tests
+      if: ${{ needs.changes.outputs.core == 'true' }}
       working-directory: ${{github.workspace}}/test/unit-test/
       run: |
         cmake -B build .
         cmake --build build
         ctest --test-dir build
     - name: Run core integration tests
+      if: ${{ needs.changes.outputs.core == 'true' }}
       working-directory: ${{github.workspace}}/test/integration-test/
       run: |
         cmake -B build .
@@ -128,6 +153,7 @@ jobs:
   
   python-wheels-test:
     needs: python-wheels-build    
+    if: ${{ needs.changes.outputs.python == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -169,7 +195,8 @@ jobs:
         pytest --cov=cocoex test/
   
   python-wheels-example:
-    needs: [python-wheels-build, python-wheels-build]    
+    needs: python-wheels-build
+    if: ${{ needs.changes.outputs.python == 'true' }}
     strategy:
       fail-fast: false
       matrix:
