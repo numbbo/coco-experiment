@@ -84,6 +84,7 @@ jobs:
           - [ubuntu-20.04, manylinux_x86_64]
           - [ubuntu-20.04, musllinux_x86_64]
           - [macos-12, macosx_x86_64]
+          - [macos-14, macosx_arm64]
           - [windows-2019, win_amd64]
           - [windows-2019, win32]
         python: ["cp39", "cp310", "cp311", "cp312", "pp39"]
@@ -126,23 +127,20 @@ jobs:
         path: dist/coco_experiment*.whl
   
   python-wheels-test:
-    needs: python-wheels-build
+    needs: python-wheels-build    
     strategy:
+      fail-fast: false
       matrix:
-        buildplat:
-          - [ubuntu-20.04, manylinux_x86_64]
-          - [ubuntu-20.04, musllinux_x86_64]
-          - [macos-12, macosx_x86_64]
-          - [windows-2019, win_amd64]
-          - [windows-2019, win32]
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
+          - macos-12
+          - macos-13
+          - macos-14
+          - windows-2019
+          - windows-2022
         python: ["3.9", "3.10", "3.11", "3.12"]
-        exclude:
-          # Don't build PyPy 32-bit windows
-          - buildplat: [windows-2019, win32]
-            python: "3.9"
-          - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
-            python: "3.9"
-    runs-on: ${{ matrix.buildplat[0] }}
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: ${{github.workspace}}
@@ -158,7 +156,7 @@ jobs:
         path: wheels
     - uses: actions/setup-python@v5
       with:
-        python-version: ${{matrix.python}}
+        python-version: ${{ matrix.python }}
     - name: Setup Python
       run: python -m pip install --upgrade pip wheel
     - name: Install cocoex 
@@ -171,23 +169,20 @@ jobs:
         pytest --cov=cocoex test/
   
   python-wheels-example:
-    needs: [python-wheels-build, python-wheels-build]
+    needs: [python-wheels-build, python-wheels-build]    
     strategy:
+      fail-fast: false
       matrix:
-        buildplat:
-          - [ubuntu-20.04, manylinux_x86_64]
-          - [ubuntu-20.04, musllinux_x86_64]
-          - [macos-12, macosx_x86_64]
-          - [windows-2019, win_amd64]
-          - [windows-2019, win32]
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
+          - macos-12
+          - macos-13
+          - macos-14
+          - windows-2019
+          - windows-2022     
         python: ["3.9", "3.10", "3.11", "3.12"]
-        exclude:
-          # Don't build PyPy 32-bit windows
-          - buildplat: [windows-2019, win32]
-            python: "3.9"
-          - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
-            python: "3.9"
-    runs-on: ${{ matrix.buildplat[0] }}
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: ${{github.workspace}}
@@ -212,6 +207,7 @@ jobs:
 
   python-lint:
     needs: source-build
+    if: ${{ needs.changes.outputs.python == 'true'}}
     runs-on: "ubuntu-latest"
     steps:
     - uses: actions/download-artifact@v4
