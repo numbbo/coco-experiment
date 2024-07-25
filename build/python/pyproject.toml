@@ -49,6 +49,6 @@ log_cli = true
 addopts = "--doctest-modules"
 
 [project.urls]
-Homepage = "https://github.com/numbbo/coco"
+Homepage = "https://github.com/numbbo/coco-experiment"
 Documentation = "https://numbbo.github.io/coco-doc/apidocs/cocoex/"
-Issues = "https://github.com/numbbo/coco/issues"
+Issues = "https://github.com/numbbo/coco-experiment/issues"
