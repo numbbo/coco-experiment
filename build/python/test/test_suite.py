@@ -40,4 +40,4 @@ def test_bbob2009():
                 previous_problem_index = problem_index
             test_vector = test_vectors[int(test_vector_id)]
             y = problem(test_vector[:problem.number_of_variables])
-            assert y == pytest.approx(float(expected_y))
+            assert y == pytest.approx(float(expected_y)), f"{problem.id}({test_vector[:problem.number_of_variables]})"
