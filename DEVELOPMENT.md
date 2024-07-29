@@ -79,7 +79,7 @@ cd test/regression-test
 
 The regression tests require the `cocoex` Python package. Install it first
 ```sh
-python -m pip uninstall -y cocoex
+python -m pip uninstall -y coco-experiment
 python -m pip install ../../build/python/  
 ```
 
@@ -106,7 +106,7 @@ cd build/python
 
 Install the package from source
 ```sh
-pip uninstall -y cocoex
+pip uninstall -y coco-experiment
 pip install .
 ```
 
