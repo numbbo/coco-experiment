@@ -18,6 +18,7 @@ def test_bbob():
                 fn = BenchmarkFunction("bbob", fid, dimension, instance)
                 assert str(fn) == f"bbob_f{fid:03d}_i{instance:02d}_d{dimension:02d}"
                 assert fn(x0) >= fn.best_value()
+                assert np.isclose(fn.best_value(), fn(fn.best_solution()))
 
 
 def test_list():
