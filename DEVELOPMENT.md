@@ -1,5 +1,5 @@
-Working with the `coco` code base
-=================================
+Working with the `cocoex` code base
+===================================
 
 ## Before you start
 
@@ -7,25 +7,25 @@ To work with the `coco-experiment` source code, you need quite a few tools in ve
 We provide a Conda environment file `env.yaml` and recommend you use it to setup your development environment.
 It is regularly tested on Linux, Windows and macOS and is what is used in CI.
 
-Following these steps should setup a fresh `coco` environment:
+Following these steps should setup a fresh `cocoex` environment:
 
 1. Create or update a new conda environment with all the requirements by running
  
    ```sh
    conda env create -f env.yaml
    ``` 
-   or if you've already setup a `coco` environment
+   or if you've already setup a `cocoex` environment
    ```sh
    conda env update -f env.yaml --prune
    ``` 
 
 1. Activate environment
    ```sh
-   conda activate coco
+   conda activate cocoex
    ```
 
 You now have all required dependencies to work on the code base.
-If you notice that something is missing, please let us know by opening an [issue](https://github.com/numbbo/coco/issues/new/choose).
+If you notice that something is missing, please let us know by opening an [issue](https://github.com/numbbo/coco-experiment/issues/new/choose).
 
 ### Reusing a conda environment
 
