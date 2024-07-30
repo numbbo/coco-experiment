@@ -5,6 +5,12 @@ from cocoex.function import BenchmarkFunction
 from cocoex.exceptions import NoSuchSuiteException
 
 
+def best_parameter(fn):
+    fn._best_parameter('print')
+    with open('._bbob_problem_best_parameter.txt', 'rt') as f:
+        return [float(s) for s in f.read().split()]
+
+
 def test_bad_suite():
     with pytest.raises(NoSuchSuiteException):
         BenchmarkFunction("bad_suite", 1, 1, 1)
@@ -18,7 +24,7 @@ def test_bbob():
                 fn = BenchmarkFunction("bbob", fid, dimension, instance)
                 assert str(fn) == f"bbob_f{fid:03d}_i{instance:02d}_d{dimension:02d}"
                 assert fn(x0) >= fn.best_value()
-                assert np.isclose(fn.best_value(), fn(fn.best_solution()))
+                assert np.isclose(fn.best_value(), fn(best_parameter(fn)))
 
 
 def test_list():

@@ -110,11 +110,9 @@ cdef class BenchmarkFunction:
         """Return the best (lowest) possible function value"""
         return coco_problem_get_best_value(self._problem)
 
-    def best_solution(self):
-        """Return the optimal solution"""
-        bbob_problem_best_parameter_print(self._problem)
-        xopt = np.loadtxt('._bbob_problem_best_parameter.txt')
-        return xopt
+    def _best_parameter(self, what=None):
+        if what == 'print':
+            bbob_problem_best_parameter_print(self._problem)
 
     def __str__(self):
         return self.id
