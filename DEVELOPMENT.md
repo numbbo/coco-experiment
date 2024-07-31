@@ -124,3 +124,38 @@ Install and run `pytest`
 pip install pytest
 python -m pytest test
 ```
+
+## Release a new version
+
+Once you've decided a commit is stable and ready to be released, tag it with the appropriate version and push the tag to Github:
+
+```sh
+git tag -a -m 'Version X.Y.Z' vX.Y.Z
+git push --tags
+```
+
+Note: You can use suffixes for pre-releases such as version 2.6.99rc4 (release candidate 4) or 2.6.99b1 (beta 1).
+
+Once you push a new tag to Github, it will trigger a CI build with the new version number. 
+Once that finishes successfully, you can find the properly built artifacts on the [Actions](https://github.com/numbbo/coco-experiment/actions) tab on Github.
+
+
+### Python
+
+The Python artifacts are contained in the build arifacts `dist-python-sdist` and `dist-pythobn-wheels`.
+Download and unpack them to an empty directory (assumed to be `dist/` here).
+Now we are ready to upload the built source package and wheels to PyPI using [twine][twine]:
+
+```sh
+twine upload dist/*
+```
+
+Thats it!
+Check [PyPI](https://pypi.org/project/coco-experiment/), it should list the new release.
+
+[twine]: https://twine.readthedocs.io/en/stable/
+
+
+### Other languages
+
+TBD - probably as downloads on the new website.
