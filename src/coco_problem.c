@@ -146,12 +146,13 @@ static void bbob_evaluate_gradient(coco_problem_t *problem, const double *x, dou
 void coco_recommend_solution(coco_problem_t *problem, const double *x) {
   assert(problem != NULL);
   if (problem->recommend_solution == NULL) {
-    coco_error("coco_recommend_solutions(): No recommend solution function implemented for problem %s",
+    coco_warning("coco_recommend_solution(): No recommend solution function implemented for problem %s",
         problem->problem_id);
   }
-  problem->recommend_solution(problem, x);
+  else {
+    problem->recommend_solution(problem, x);
+  }
 }
-
 /***********************************************************************************************************/
 
 /**
