@@ -16,6 +16,7 @@ cdef extern from 'coco.h':
     char *coco_problem_get_id(coco_problem_t *p)
     void coco_evaluate_function(coco_problem_t *p, double *x, double *y)
     void coco_problem_free(coco_problem_t *p)
+    void bbob_problem_best_parameter_print(coco_problem_t *p)
 
 # IMPORTANT: These functions are *not* declared public in coco.h so we have to
 # explicitly declare it as an external function. Otherwise Cython will *not*
@@ -108,6 +109,10 @@ cdef class BenchmarkFunction:
     def best_value(self):
         """Return the best (lowest) possible function value"""
         return coco_problem_get_best_value(self._problem)
+
+    def _best_parameter(self, what=None):
+        if what == 'print':
+            bbob_problem_best_parameter_print(self._problem)
 
     def __str__(self):
         return self.id
