@@ -16,12 +16,13 @@ known_suite_names = ["bbob",
                      "bbob-mixint", "bbob-biobj-mixint",
                      "bbob-noisy"
                      ]
+known_suites = known_suite_names  # provide the expected name too
 _known_suite_names = ["bbob", "bbob-biobj", "bbob-biobj-ext",
                       "bbob-constrained",
                       "bbob-constrained-active-only", "bbob-constrained-no-disguise",
                       "bbob-largescale", "bbob-mixint", "bbob-biobj-mixint", "bbob-noisy"]
 
-__all__ = ['Observer', 'Problem', 'Suite', 'known_suite_names']
+__all__ = ['Observer', 'Problem', 'Suite', 'known_suite_names', 'known_suites']
 
 
 cdef extern from "coco.h":
