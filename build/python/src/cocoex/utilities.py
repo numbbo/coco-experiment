@@ -806,8 +806,10 @@ class ExperimentRepeater:
         return sum(self.successes(problem)) >= self.params['min_successes']
     def message_sweep(self):
         """return status message and '' when nothing was tracked yet"""
-        if not len(self._data) and self._sweeps <= 1:
-            return ''
+        if not len(self._data):
+            if self._sweeps <= 1:
+                return ''
+            return '\nSweep {} done but no data were recorded'.format(self._sweeps)
         successes = [sum(v) for v in self.all(self.successes).values()]
         succeeded = self.all(self.succeeded).values()
         return ('\nSweep {} done ({} success{} on {} problem{} where {} had >= 1'
@@ -857,9 +859,10 @@ class ExperimentRepeater:
             return True
         if message:  # prints nothing when no data are found
             print(self.message_sweep(), end='')  # indicates "sequence of problems" case
-        self._sweeps += 1  # for the above sweeps number check
+        self._sweeps += 1  # the sweep number to come
         done = self._sweeps >= self.max_sweeps or (
-            self.n_problem_instances() > 0 and not self.remaining_problems())
+                self._sweeps > 1 and len(self._data) == 0) or (
+                self.n_problem_instances() > 0 and not self.remaining_problems())
         self._sweeps -= done  # don't increment when done
         return done
     def remaining_problems(self, suite=None):
