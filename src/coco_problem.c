@@ -195,6 +195,8 @@ static coco_problem_t *coco_problem_allocate(const size_t number_of_variables,
     problem->best_value = coco_allocate_vector(1);
     problem->nadir_value = NULL;
   }
+  problem->is_tainted = 0;
+
   problem->problem_name = NULL;
   problem->problem_id = NULL;
   problem->problem_type = NULL;
@@ -238,6 +240,8 @@ static coco_problem_t *coco_problem_duplicate(const coco_problem_t *other) {
     if (other->best_parameter)
       problem->best_parameter[i] = other->best_parameter[i];
   }
+  problem->is_tainted = other->is_tainted;
+
   problem->number_of_integer_variables = other->number_of_integer_variables;
 
   if (other->initial_solution)
@@ -627,6 +631,30 @@ static size_t coco_problem_get_suite_dep_instance(const coco_problem_t *problem)
 }
 /**@}*/
 
+/**
+ * Copies problem->best_parameter into best_parameter if not null, 
+ * otherwise the center of the problem's region of interest is the 
+ * initial solution. Takes care of rounding the solution in case of integer variables.
+ * 
+ * @param problem The given COCO problem.
+ * @param best_parameter The pointer to a vector into which the best parameter is copied.
+ * 
+ * @returns true if successful, otherwise false.
+ */
+int coco_problem_get_best_parameter(const coco_problem_t *problem, double *best_parameter) {
+  size_t i;
+  assert(problem != NULL);
+  if (NULL == problem->best_parameter || problem->number_of_objectives != 1) {
+    return 0;
+  }
+  
+  for (i = 0; i < problem->number_of_variables; ++i) {
+    best_parameter[i] = problem->best_parameter[i];
+  }
+
+  return 1;
+}
+
 void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
   size_t i;
   FILE *file;
@@ -642,7 +670,6 @@ void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
 
 /* We need a forward declaration of this for `bbob_biobj_problem_best_parameter_print` */
 static void logger_biobj_evaluate(coco_problem_t *problem, const double *x, double *y);
-
 
 void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
   size_t i;

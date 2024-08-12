@@ -511,6 +511,14 @@ size_t coco_problem_get_suite_dep_index(const coco_problem_t *problem);
 void coco_problem_get_initial_solution(const coco_problem_t *problem, double *initial_solution);
 /**@}*/
 
+/**
+ * @brief Returns the best parameter settings.
+ * 
+ * Once called, a problem is tainted, that is, it cannot be used in benchmark experiments anymore.
+ */
+int coco_problem_get_best_parameter(const coco_problem_t *problem, double *best_parameter);
+
+
 /***********************************************************************************************************/
 
 /**

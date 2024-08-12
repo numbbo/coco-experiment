@@ -161,7 +161,8 @@ struct coco_problem_s {
                                        valued defined in the problem construction. */
   double *nadir_value;                 /**< @brief The nadir point (defined when number_of_objectives > 1) */
   double *best_parameter;              /**< @brief Optimal decision vector (defined only when unique) */
-
+  int is_tainted;                      /**< @brief Is the problem tainted, i.e. has the optimal parameter setting been retrieved? */
+  
   char *problem_name;                  /**< @brief Problem name. */
   char *problem_id;                    /**< @brief Problem ID (unique in the containing suite) */
   char *problem_type;                  /**< @brief Problem type */

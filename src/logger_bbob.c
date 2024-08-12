@@ -377,6 +377,10 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
   const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, NULL);
 
+  if (problem->is_tainted || inner_problem->is_tainted) {
+    coco_error("Though shalt not cheat! Trying to evaluate a tainted observed problem. Do _not_ call coco_problem_best_parameter() on a problem you want to benchmark.");
+  }
+
   coco_debug("Started logger_bbob_evaluate()");
 
   if (!logger->is_initialized) {
