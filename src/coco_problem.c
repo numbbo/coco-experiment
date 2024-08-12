@@ -654,7 +654,7 @@ void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
    *
    */
   if (problem->evaluate_function == &logger_biobj_evaluate) {
-    coco_warning("I'm sorry, Dave. I’m afraid I can’t do that.");
+    coco_warning("I'm sorry, Dave. I'm afraid I can't do that.");
     /* In case this function was called previously, overwrite any results. */
     file = fopen("._bbob_biobj_problem_best_parameter.txt", "w");
     if (file != NULL) {

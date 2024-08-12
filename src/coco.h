@@ -21,7 +21,7 @@
  *   Function is not used. Useful to suppress false warnings.
  *
  * The next two macros are useful to give hints to the optimizer. This can
- * lead to much bette code generation and ultimately faster runtimes.
+ * lead to much better code generation and ultimately faster runtimes.
  *
  * COCO_LIKELY(e):
  *   Mark expression `e` as likely true. Usually used in if() or while() 
