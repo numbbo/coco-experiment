@@ -17,6 +17,9 @@ cdef extern from 'coco.h':
     void coco_evaluate_function(coco_problem_t *p, double *x, double *y)
     void coco_problem_free(coco_problem_t *p)
     void bbob_problem_best_parameter_print(coco_problem_t *p)
+    
+    int coco_problem_get_best_parameter(const coco_problem_t *problem, double *best_parameter)
+    int coco_problem_is_tainted(const coco_problem_t *problem)
 
     int coco_problem_get_best_parameter(const coco_problem_t *problem, double *best_parameter)
 
@@ -120,7 +123,12 @@ cdef class BenchmarkFunction:
         if res == 0: # Failure
             return None # FIXME: Raise an exception?
         else:
-            return x
+            return np.asarray(x)
+
+    @property
+    def is_tainted(self):
+        is_tainted = coco_problem_is_tainted(self._problem)
+        return is_tainted != 0
     
     def __str__(self):
         return self.id
