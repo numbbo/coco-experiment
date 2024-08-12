@@ -632,27 +632,41 @@ static size_t coco_problem_get_suite_dep_instance(const coco_problem_t *problem)
 /**@}*/
 
 /**
- * Copies problem->best_parameter into best_parameter if not null, 
- * otherwise the center of the problem's region of interest is the 
- * initial solution. Takes care of rounding the solution in case of integer variables.
+ * Copies problem->best_parameter into best_parameter and returns 1 if not null,
+ * otherwise returns 0. Only works for single objective problems.
  * 
  * @param problem The given COCO problem.
  * @param best_parameter The pointer to a vector into which the best parameter is copied.
  * 
  * @returns true if successful, otherwise false.
  */
-int coco_problem_get_best_parameter(const coco_problem_t *problem, double *best_parameter) {
+int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parameter) {
   size_t i;
   assert(problem != NULL);
+  
   if (NULL == problem->best_parameter || problem->number_of_objectives != 1) {
     return 0;
   }
+  
+  // No more benchmarking on this problem!
+  problem->is_tainted = 1;
   
   for (i = 0; i < problem->number_of_variables; ++i) {
     best_parameter[i] = problem->best_parameter[i];
   }
 
   return 1;
+}
+
+/**
+ * Returns whether a problem is tainted, i. e. if it's best parameter has been retrieved.
+ * 
+ * @param problem The given COCO problem.
+ * 
+ * @returns true if problem is tainted, otherwise returns false.re
+ */
+int coco_problem_is_tainted(const coco_problem_t *problem) {
+  return problem->is_tainted;
 }
 
 void bbob_problem_best_parameter_print(const coco_problem_t *problem) {

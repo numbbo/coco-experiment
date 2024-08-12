@@ -516,8 +516,15 @@ void coco_problem_get_initial_solution(const coco_problem_t *problem, double *in
  * 
  * Once called, a problem is tainted, that is, it cannot be used in benchmark experiments anymore.
  */
-int coco_problem_get_best_parameter(const coco_problem_t *problem, double *best_parameter);
+int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parameter);
 
+/**
+ *  @brief Returns whether a problem si tainted or not.
+ * 
+ * Once `coco_problem_get_best_parameter` is called on a problem it is "tainted" and cannot be used
+ * in benchmark experiments.
+ */
+int coco_problem_is_tainted(const coco_problem_t *problem);
 
 /***********************************************************************************************************/
 
