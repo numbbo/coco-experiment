@@ -12,7 +12,7 @@ int test_instance_extraction(char *suite_name) {
 
   coco_suite_t *suite;
   coco_problem_t *problem = NULL;
-  size_t index;
+  size_t index = -1;
   size_t max_index;
 
   suite = coco_suite(suite_name, NULL, NULL);

@@ -98,14 +98,13 @@ void multiple_observers(void) {
   observer_outer = coco_observer("toy", "");
 
   while ((problem_inner = coco_suite_get_next_problem(suite, observer_inner)) != NULL) {
-
     problem_middle = coco_problem_add_observer(problem_inner, observer_middle);
     problem_outer = coco_problem_add_observer(problem_middle, observer_outer);
 
     my_optimizer(problem_outer);
 
     problem_middle = coco_problem_remove_observer(problem_outer, observer_outer);
-    problem_inner = coco_problem_remove_observer(problem_middle, observer_middle);
+    coco_problem_remove_observer(problem_middle, observer_middle);
   }
 
   coco_observer_free(observer_inner);
