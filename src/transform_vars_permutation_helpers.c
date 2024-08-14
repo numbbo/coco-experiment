@@ -8,6 +8,7 @@
 #include "coco.h"
 
 #include "coco_random.c"
+#include "coco_utilities.c"
 #include "suite_bbob_legacy_code.c" /*tmp*/
 
 #include <time.h> /*tmp*/
