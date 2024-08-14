@@ -1,3 +1,5 @@
 BasedOnStyle: llvm
 IndentWidth: 2
-ColumnLimit: 80
+ColumnLimit: 120
+ReflowComments: true
+SortIncludes: false
