@@ -6,8 +6,8 @@
  * a bug. See the function definitions for their detailed descriptions.
  */
  
-#ifndef __COCO_H__
-#define __COCO_H__
+#ifndef COCOEX_COCO_H
+#define COCOEX_COCO_H
 
 #include <stddef.h>
 

@@ -10,8 +10,8 @@
  * that need these definitions should include this file before any system headers.
  */
 
-#ifndef __COCO_PLATFORM__ 
-#define __COCO_PLATFORM__
+#ifndef COCOEX_COCO_PLATFORM_H
+#define COCOEX_COCO_PLATFORM_H
 
 #include <stddef.h>
 

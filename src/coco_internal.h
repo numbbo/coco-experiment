@@ -5,8 +5,8 @@
  * These are used throughout the COCO code base but should not be used by any external code.
  */
 
-#ifndef __COCO_INTERNAL__
-#define __COCO_INTERNAL__
+#ifndef COCOEX_COCO_INTERNAL_H
+#define COCOEX_COCO_INTERNAL_H
 
 #ifdef __cplusplus
 extern "C" {
