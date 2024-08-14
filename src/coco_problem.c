@@ -227,6 +227,10 @@ static coco_problem_t *coco_problem_duplicate(const coco_problem_t *other) {
   problem->problem_free_function = other->problem_free_function;
   
   problem->versatile_data = other->versatile_data; /* Wassim: make the pointers the same*/
+  
+  if (other->best_parameter) {
+    problem->best_parameter = coco_allocate_vector(problem->number_of_variables);
+  }
 
   for (i = 0; i < problem->number_of_variables; ++i) {
     problem->smallest_values_of_interest[i] = other->smallest_values_of_interest[i];
@@ -245,10 +249,12 @@ static coco_problem_t *coco_problem_duplicate(const coco_problem_t *other) {
       problem->best_value[i] = other->best_value[i];
     }
 
-  if (other->nadir_value)
+  if (other->nadir_value) {
+    problem->nadir_value = coco_allocate_vector(problem->number_of_objectives);
     for (i = 0; i < problem->number_of_objectives; ++i) {
       problem->nadir_value[i] = other->nadir_value[i];
     }
+  }
 
   problem->problem_name = coco_strdup(other->problem_name);
   problem->problem_id = coco_strdup(other->problem_id);

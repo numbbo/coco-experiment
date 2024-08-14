@@ -525,7 +525,8 @@ static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
  * @brief Takes care of some final output and frees the logger data
  */
 static void logger_bbob_free(void *stuff) {
-
+  assert(stuff != NULL);
+  
   logger_bbob_data_t *logger = (logger_bbob_data_t *) stuff;
   coco_observer_t *observer; /* The observer might not exist at this point */
 
