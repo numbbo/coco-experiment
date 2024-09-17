@@ -29,6 +29,12 @@ static const char *coco_path_separator = "\\";
 static const char *coco_path_separator = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
+#elif defined(__EMSCRIPTEN__)
+#include <sys/stat.h>
+#include <sys/types.h>
+static const char *coco_path_separator = "/";
+#define HAVE_STAT 1
+#define COCO_PATH_MAX PATH_MAX  
 #elif defined(__APPLE__)
 #include <sys/stat.h>
 #include <sys/types.h>
