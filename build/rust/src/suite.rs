@@ -38,6 +38,8 @@ pub enum Name {
     BbobMixint,
     /// The bi-objective mixed-integer test suite.
     BbobBiobjMixint,
+    /// The SBOX-COST test suite.
+    SboxCost,
     /// The toy test suite.
     Toy,
 }
@@ -52,6 +54,7 @@ impl Name {
             Name::BbobConstrained => "bbob-constrained",
             Name::BbobMixint => "bbob-mixint",
             Name::BbobBiobjMixint => "bbob-biobj-mixint",
+            Name::SboxCost => "sbox-cost",
             Name::Toy => "toy",
         }
     }

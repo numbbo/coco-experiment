@@ -14,13 +14,19 @@ known_suite_names = ["bbob",
                      "bbob-constrained",
                      "bbob-largescale",
                      "bbob-mixint", "bbob-biobj-mixint",
-                     "bbob-noisy"
+                     "bbob-noisy",
+                     "sbox-cost"
                      ]
 known_suites = known_suite_names  # provide the expected name too
-_known_suite_names = ["bbob", "bbob-biobj", "bbob-biobj-ext",
+_known_suite_names = ["bbob",
+                      "bbob-biobj", "bbob-biobj-ext",
                       "bbob-constrained",
                       "bbob-constrained-active-only", "bbob-constrained-no-disguise",
-                      "bbob-largescale", "bbob-mixint", "bbob-biobj-mixint", "bbob-noisy"]
+                      "bbob-largescale",
+                      "bbob-mixint", "bbob-biobj-mixint",
+                      "bbob-noisy",
+                      "sbox-cost"
+                      ]
 
 __all__ = ['Observer', 'Problem', 'Suite', 'known_suite_names', 'known_suites']
 
@@ -118,7 +124,7 @@ cdef class Suite:
         self.initialized = False
         self._initialize()
         assert self.initialized
-        
+
     cdef _initialize(self):
         """sweeps through `suite` to collect indices and id's to operate by
         direct access in the remainder"""
@@ -134,7 +140,7 @@ cdef class Suite:
         self._names = []
         self._dimensions = []
         self._number_of_objectives = []
-        
+
         try:
             suite = coco_suite(self._name, self._instance, self._options)
         except:
@@ -443,6 +449,7 @@ cdef class Suite:
         finally:  # makes this ctrl-c safe, at least it should
             s is self or s.free()
 
+
 cdef class Observer:
     """see __init__.py"""
     cdef coco_observer_t* _observer
@@ -503,6 +510,7 @@ cdef class Observer:
         if self._observer !=  NULL:
             coco_observer_free(self._observer)
 
+
 cdef Problem_init(coco_problem_t* problem, free=True, suite_name=None):
     """`Problem` class instance initialization wrapper passing
     a `problem_t*` C-variable to `__init__`.
@@ -512,6 +520,8 @@ cdef Problem_init(coco_problem_t* problem, free=True, suite_name=None):
     res = Problem()
     res._suite_name = suite_name
     return res._initialize(problem, free)
+
+
 cdef class Problem:
     """see __init__.py"""
     cdef coco_problem_t* problem
@@ -702,7 +712,7 @@ cdef class Problem:
             rv_triangular[self._number_of_integer_variables:] += -1 + self.initial_solution[self._number_of_integer_variables:]
         else:
             # returns lb + rv * (ub - lb) / 2
-            rv_triangular[self._number_of_integer_variables:] *= (self.upper_bounds[self._number_of_integer_variables:] - 
+            rv_triangular[self._number_of_integer_variables:] *= (self.upper_bounds[self._number_of_integer_variables:] -
                                                                   self.lower_bounds[self._number_of_integer_variables:]) / 2
             rv_triangular[self._number_of_integer_variables:] += self.lower_bounds[self._number_of_integer_variables:]
         return rv_triangular
@@ -931,6 +941,7 @@ cdef class Problem:
             self.free()
         except:
             pass
+
 
 def log_level(level=None):
     """`log_level(level=None)` return current log level and

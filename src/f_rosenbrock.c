@@ -8,18 +8,20 @@
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
-#include "transform_vars_shift.c"
-#include "transform_vars_scale.c"
-#include "transform_vars_affine.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_blockrotation.c"
 #include "transform_obj_norm_by_dim.c"
+#include "transform_obj_shift.c"
+#include "transform_vars_affine.c"
+#include "transform_vars_blockrotation.c"
+#include "transform_vars_permutation.c"
+#include "transform_vars_scale.c"
+#include "transform_vars_shift.c"
 
 /**
- * @brief Implements the Rosenbrock function without connections to any COCO structures.
+ * @brief Implements the Rosenbrock function without connections to any COCO
+ * structures.
  */
-static double f_rosenbrock_raw(const double *x, const size_t number_of_variables) {
+static double f_rosenbrock_raw(const double *x,
+                               const size_t number_of_variables) {
 
   size_t i = 0;
   double result;
@@ -44,7 +46,8 @@ static double f_rosenbrock_raw(const double *x, const size_t number_of_variables
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x,
+                                  double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_rosenbrock_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -78,7 +81,11 @@ static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function,
 
   minus_one = coco_allocate_vector(dimension);
   xopt = coco_allocate_vector(dimension);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
   for (i = 0; i < dimension; ++i) {
     minus_one[i] = -1.0;
     xopt[i] *= 0.75;
@@ -103,8 +110,10 @@ static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function,
 
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "2-moderate");
 
   coco_free_memory(minus_one);
@@ -151,7 +160,9 @@ static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t f
   }
   problem = transform_vars_affine(problem, M, b, dimension);
   problem = transform_obj_shift(problem, fopt);
-  for (column = 0; column < dimension; ++column) { /* Wassim: manually set xopt = rot1^T ones(dimension)/(2*factor) */
+  for (column = 0; column < dimension;
+       ++column) { /* Wassim: manually set xopt = rot1^T
+                      ones(dimension)/(2*factor) */
     tmp = 0;
     for (row = 0; row < dimension; ++row) {
       tmp += rot1[row][column];
@@ -160,8 +171,10 @@ static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t f
   }
 
   bbob2009_free_matrix(rot1, dimension);
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "2-moderate");
 
   coco_free_memory(M);
@@ -191,7 +204,8 @@ static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
   size_t nb_blocks;
   size_t swap_range;
   size_t nb_swaps;
-  double *best_parameter = coco_allocate_vector(dimension); /* Manh: will serve to set the optimal solution "manually"*/
+  double *best_parameter = coco_allocate_vector(
+      dimension); /* Manh: will serve to set the optimal solution "manually"*/
 
   block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
   block_size = coco_rotation_matrix_block_size(dimension);
@@ -203,7 +217,11 @@ static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
   factor = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
   minus_one = coco_allocate_vector(dimension);
   xopt = coco_allocate_vector(dimension);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
   for (i = 0; i < dimension; ++i) {
     minus_one[i] = -1.0;
     xopt[i] *= 0.75;
@@ -213,14 +231,17 @@ static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
   B_copy = (const double *const *)B;
 
   coco_compute_blockrotation(B, rseed, dimension, block_sizes, nb_blocks);
-  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(
+      P1, rseed + 2000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(
+      P2, rseed + 3000000, dimension, nb_swaps, swap_range);
 
   problem = f_rosenbrock_allocate(dimension);
   problem = transform_vars_shift(problem, minus_one, 0);
   problem = transform_vars_scale(problem, factor);
   problem = transform_vars_permutation(problem, P2, dimension);
-  problem = transform_vars_blockrotation(problem, B_copy, dimension, block_sizes, nb_blocks);
+  problem = transform_vars_blockrotation(problem, B_copy, dimension,
+                                         block_sizes, nb_blocks);
   problem = transform_vars_permutation(problem, P1, dimension);
 
   problem = transform_vars_shift(problem, xopt, 0);

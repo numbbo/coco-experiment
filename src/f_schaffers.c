@@ -1,22 +1,21 @@
 /**
  * @file f_schaffers.c
- * @brief Implementation of the Schaffer's F7 function and problem, transformations not implemented for the
- * moment.
+ * @brief Implementation of the Schaffer's F7 function and problem,
+ * transformations not implemented for the moment.
  */
 
-#include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_asymmetric.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_shift.c"
+#include "transform_obj_norm_by_dim.c"
 #include "transform_obj_penalize.c"
-#include "transform_vars_permutation.c"
+#include "transform_obj_shift.c"
+#include "transform_vars_affine.c"
+#include "transform_vars_asymmetric.c"
 #include "transform_vars_blockrotation.c"
 #include "transform_obj_norm_by_dim.c"
 
@@ -29,9 +28,11 @@ typedef struct {
 } f_schaffers_data_t;
 
 /**
- * @brief Implements the Schaffer's F7 function without connections to any COCO structures.
+ * @brief Implements the Schaffer's F7 function without connections to any COCO
+ * structures.
  */
-static double f_schaffers_raw(const double *x, const size_t number_of_variables) {
+static double f_schaffers_raw(const double *x,
+                              const size_t number_of_variables) {
 
   size_t i = 0;
   double result;
@@ -58,7 +59,8 @@ static double f_schaffers_raw(const double *x, const size_t number_of_variables)
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_schaffers_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_schaffers_evaluate(coco_problem_t *problem, const double *x,
+                                 double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_schaffers_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -102,7 +104,11 @@ static coco_problem_t *f_schaffers_bbob_problem_allocate(const size_t function, 
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   rot2 = bbob2009_allocate_matrix(dimension, dimension);
@@ -129,8 +135,10 @@ static coco_problem_t *f_schaffers_bbob_problem_allocate(const size_t function, 
   bbob2009_free_matrix(rot1, dimension);
   bbob2009_free_matrix(rot2, dimension);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "4-multi-modal");
 
   coco_free_memory(M);
@@ -173,7 +181,11 @@ static coco_problem_t *f_schaffers_permblockdiag_bbob_problem_allocate(const siz
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
   B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);
@@ -200,7 +212,6 @@ static coco_problem_t *f_schaffers_permblockdiag_bbob_problem_allocate(const siz
   problem = transform_vars_permutation(problem, P12, dimension);
 
   problem = transform_vars_shift(problem, xopt, 0);
-  /*problem = transform_obj_norm_by_dim(problem);*/ /* Wassim: there is already a normalization by dimension*/
   problem = transform_obj_penalize(problem, penalty_factor);
   problem = transform_obj_shift(problem, fopt);
 

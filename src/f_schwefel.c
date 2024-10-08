@@ -3,25 +3,27 @@
  * @brief Implementation of the Schwefel function and problem.
  */
 
-#include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
-#include "transform_vars_conditioning.c"
 #include "transform_obj_shift.c"
-#include "transform_vars_scale.c"
 #include "transform_vars_affine.c"
+#include "transform_vars_conditioning.c"
+#include "transform_vars_scale.c"
 #include "transform_vars_shift.c"
-#include "transform_vars_z_hat.c"
 #include "transform_vars_x_hat.c"
+#include "transform_vars_z_hat.c"
 
 /**
- * @brief Implements the Schwefel function without connections to any COCO structures.
+ * @brief Implements the Schwefel function without connections to any COCO
+ * structures.
  */
-static double f_schwefel_raw(const double *x, const size_t number_of_variables) {
+static double f_schwefel_raw(const double *x,
+                             const size_t number_of_variables) {
 
   size_t i = 0;
   double result;
@@ -51,7 +53,8 @@ static double f_schwefel_raw(const double *x, const size_t number_of_variables) 
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_schwefel_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_schwefel_evaluate(coco_problem_t *problem, const double *x,
+                                double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_schwefel_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -105,7 +108,9 @@ static coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, c
   /* problem = transform_vars_affine(problem, M, b, dimension); */
   problem = transform_vars_conditioning(problem, condition);
   problem = transform_vars_shift(problem, tmp2, 0);
-  problem = transform_vars_z_hat(problem, xopt); /* only for the correct xopt the best_parameter is not changed */
+  problem = transform_vars_z_hat(
+      problem,
+      xopt); /* only for the correct xopt the best_parameter is not changed */
   problem = transform_vars_scale(problem, 2);
   problem = transform_vars_x_hat(problem, rseed);
   problem = transform_obj_shift(problem, fopt);

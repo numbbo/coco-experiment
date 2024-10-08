@@ -14,12 +14,15 @@
 #include "transform_vars_shift.c"
 
 /**
- * @brief Implements the sharp ridge function without connections to any COCO structures.
+ * @brief Implements the sharp ridge function without connections to any COCO
+ * structures.
  */
-static double f_sharp_ridge_raw(const double *x, const size_t number_of_variables) {
+static double f_sharp_ridge_raw(const double *x,
+                                const size_t number_of_variables) {
 
   static const double alpha = 100.0;
-  const double d_vars_40 = 1.0; /* generalized: number_of_variables <= 40 ? 1 : number_of_variables / 40.0; */
+  const double d_vars_40 = 1.0; /* generalized: number_of_variables <= 40 ? 1 :
+                                   number_of_variables / 40.0; */
   const size_t vars_40 = coco_double_to_size_t(ceil(d_vars_40));
   size_t i = 0;
   double result;
@@ -43,7 +46,8 @@ static double f_sharp_ridge_raw(const double *x, const size_t number_of_variable
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_sharp_ridge_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_sharp_ridge_evaluate(coco_problem_t *problem, const double *x,
+                                   double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_sharp_ridge_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -52,7 +56,8 @@ static void f_sharp_ridge_evaluate(coco_problem_t *problem, const double *x, dou
 /**
  * @brief Allocates the basic sharp ridge problem.
  */
-static coco_problem_t *f_sharp_ridge_allocate(const size_t number_of_variables) {
+static coco_problem_t *
+f_sharp_ridge_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars("sharp ridge function", f_sharp_ridge_evaluate, NULL,
                                                                number_of_variables, -5.0, 5.0, 0.0);
@@ -79,7 +84,11 @@ static coco_problem_t *f_sharp_ridge_bbob_problem_allocate(const size_t function
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   rot2 = bbob2009_allocate_matrix(dimension, dimension);
@@ -103,8 +112,10 @@ static coco_problem_t *f_sharp_ridge_bbob_problem_allocate(const size_t function
   problem = transform_vars_affine(problem, M, b, dimension);
   problem = transform_vars_shift(problem, xopt, 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
 
   coco_free_memory(M);
