@@ -9,17 +9,19 @@
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
+#include "transform_obj_norm_by_dim.c"
 #include "transform_obj_shift.c"
 #include "transform_vars_affine.c"
-#include "transform_vars_shift.c"
-#include "transform_vars_permutation.c"
 #include "transform_vars_blockrotation.c"
-#include "transform_obj_norm_by_dim.c"
+#include "transform_vars_permutation.c"
+#include "transform_vars_shift.c"
 
 /**
- * @brief Implements the different powers function without connections to any COCO structures.
+ * @brief Implements the different powers function without connections to any
+ * COCO structures.
  */
-static double f_different_powers_raw(const double *x, const size_t number_of_variables) {
+static double f_different_powers_raw(const double *x,
+                                     const size_t number_of_variables) {
 
   size_t i;
   double sum = 0.0;
@@ -40,7 +42,8 @@ static double f_different_powers_raw(const double *x, const size_t number_of_var
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_different_powers_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_different_powers_evaluate(coco_problem_t *problem,
+                                        const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_different_powers_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -61,7 +64,8 @@ double sign(double x) {
 /**
  * @brief Evaluates the gradient of the function "different powers".
  */
-static void f_different_powers_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void f_different_powers_evaluate_gradient(coco_problem_t *problem,
+                                                 const double *x, double *y) {
 
   size_t i;
   double sum = 0.0;
@@ -83,15 +87,18 @@ static void f_different_powers_evaluate_gradient(coco_problem_t *problem, const 
 /**
  * @brief Allocates the basic different powers problem.
  */
-static coco_problem_t *f_different_powers_allocate(const size_t number_of_variables) {
+static coco_problem_t *
+f_different_powers_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars("different powers function", f_different_powers_evaluate,
                                                                NULL, number_of_variables, -5.0, 5.0, 0.0);
   problem->evaluate_gradient = f_different_powers_evaluate_gradient;
-  coco_problem_set_id(problem, "%s_d%02lu", "different_powers", number_of_variables);
+  coco_problem_set_id(problem, "%s_d%02lu", "different_powers",
+                      number_of_variables);
 
   /* Compute best solution */
-  f_different_powers_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_different_powers_evaluate(problem, problem->best_parameter,
+                              problem->best_value);
   return problem;
 }
 
@@ -112,7 +119,11 @@ static coco_problem_t *f_different_powers_bbob_problem_allocate(const size_t fun
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   bbob2009_compute_rotation(rot1, rseed + 1000000, dimension);
@@ -124,8 +135,10 @@ static coco_problem_t *f_different_powers_bbob_problem_allocate(const size_t fun
   problem = transform_vars_affine(problem, M, b, dimension);
   problem = transform_vars_shift(problem, xopt, 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
 
   coco_free_memory(M);
@@ -159,7 +172,11 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   /* Compute Euclidean norm of xopt */
   /* CAVEAT: this implementation is not ideal for large dimensions */
@@ -184,8 +201,10 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
   problem = transform_vars_affine(problem, M, b, dimension);
   problem = transform_vars_shift(problem, xopt, 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
 
   coco_free_memory(M);
@@ -195,7 +214,8 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
 }
 
 /**
- * @brief Creates the BBOB generalized permuted block-rotated sum of different powers problem.
+ * @brief Creates the BBOB generalized permuted block-rotated sum of different
+ * powers problem.
  */
 static coco_problem_t *f_different_powers_permblockdiag_bbob_problem_allocate(const size_t function,
                                                                               const size_t dimension,
@@ -222,26 +242,36 @@ static coco_problem_t *f_different_powers_permblockdiag_bbob_problem_allocate(co
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   B = coco_allocate_blockmatrix(dimension, block_sizes, nb_blocks);
   B_copy = (const double *const *)B;
-  coco_compute_blockrotation(B, rseed + 1000000, dimension, block_sizes, nb_blocks);
+  coco_compute_blockrotation(B, rseed + 1000000, dimension, block_sizes,
+                             nb_blocks);
 
-  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(
+      P1, rseed + 2000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(
+      P2, rseed + 3000000, dimension, nb_swaps, swap_range);
 
   problem = f_different_powers_allocate(dimension);
   problem = transform_vars_permutation(problem, P2, dimension);
-  problem = transform_vars_blockrotation(problem, B_copy, dimension, block_sizes, nb_blocks);
+  problem = transform_vars_blockrotation(problem, B_copy, dimension,
+                                         block_sizes, nb_blocks);
   problem = transform_vars_permutation(problem, P1, dimension);
   problem = transform_vars_shift(problem, xopt, 0);
 
   problem = transform_obj_norm_by_dim(problem);
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
 
   coco_free_block_matrix(B, dimension);

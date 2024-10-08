@@ -3,8 +3,8 @@
  * @brief Implementation of the bent cigar function and problem.
  */
 
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
@@ -15,9 +15,11 @@
 #include "transform_vars_shift.c"
 
 /**
- * @brief Implements the bent cigar function without connections to any COCO structures.
+ * @brief Implements the bent cigar function without connections to any COCO
+ * structures.
  */
-static double f_bent_cigar_raw(const double *x, const size_t number_of_variables) {
+static double f_bent_cigar_raw(const double *x,
+                               const size_t number_of_variables) {
 
   static const double condition = 1.0e6;
   size_t i;
@@ -36,7 +38,8 @@ static double f_bent_cigar_raw(const double *x, const size_t number_of_variables
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_bent_cigar_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_bent_cigar_evaluate(coco_problem_t *problem, const double *x,
+                                  double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_bent_cigar_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -45,7 +48,8 @@ static void f_bent_cigar_evaluate(coco_problem_t *problem, const double *x, doub
 /**
  * @brief Evaluates the gradient of the bent cigar function.
  */
-static void f_bent_cigar_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void f_bent_cigar_evaluate_gradient(coco_problem_t *problem,
+                                           const double *x, double *y) {
 
   static const double condition = 1.0e6;
   size_t i;
@@ -87,7 +91,11 @@ static coco_problem_t *f_bent_cigar_bbob_problem_allocate(const size_t function,
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed + 1000000, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+  }
 
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   bbob2009_compute_rotation(rot1, rseed + 1000000, dimension);
@@ -101,8 +109,10 @@ static coco_problem_t *f_bent_cigar_bbob_problem_allocate(const size_t function,
   problem = transform_vars_affine(problem, M, b, dimension);
   problem = transform_vars_shift(problem, xopt, 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
 
   coco_free_memory(M);
@@ -128,7 +138,11 @@ static coco_problem_t *f_bent_cigar_cons_bbob_problem_allocate(const size_t func
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed + 1000000, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+  }
 
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   bbob2009_compute_rotation(rot1, rseed + 1000000, dimension);

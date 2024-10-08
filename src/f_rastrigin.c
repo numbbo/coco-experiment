@@ -3,28 +3,30 @@
  * @brief Implementation of the Rastrigin function and problem.
  */
 
-#include <stdio.h>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
 #include "coco_utilities.c"
-#include "transform_vars_conditioning.c"
-#include "transform_vars_asymmetric.c"
-#include "transform_vars_oscillate.c"
-#include "transform_vars_shift.c"
+#include "suite_bbob_legacy_code.c"
+#include "transform_obj_norm_by_dim.c"
 #include "transform_obj_shift.c"
 #include "transform_vars_affine.c"
-#include "transform_vars_permutation.c"
+#include "transform_vars_asymmetric.c"
 #include "transform_vars_blockrotation.c"
-#include "transform_obj_norm_by_dim.c"
+#include "transform_vars_conditioning.c"
+#include "transform_vars_oscillate.c"
+#include "transform_vars_permutation.c"
+#include "transform_vars_shift.c"
 
 /**
- * @brief Implements the Rastrigin function without connections to any COCO structures.
+ * @brief Implements the Rastrigin function without connections to any COCO
+ * structures.
  */
-static double f_rastrigin_raw(const double *x, const size_t number_of_variables) {
+static double f_rastrigin_raw(const double *x,
+                              const size_t number_of_variables) {
 
   size_t i = 0;
   double result;
@@ -47,7 +49,8 @@ static double f_rastrigin_raw(const double *x, const size_t number_of_variables)
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_rastrigin_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_rastrigin_evaluate(coco_problem_t *problem, const double *x,
+                                 double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_rastrigin_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -56,7 +59,8 @@ static void f_rastrigin_evaluate(coco_problem_t *problem, const double *x, doubl
 /**
  * @brief Evaluates the gradient of the raw Rastrigin function.
  */
-static void f_rastrigin_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void f_rastrigin_evaluate_gradient(coco_problem_t *problem,
+                                          const double *x, double *y) {
 
   size_t i;
 
@@ -94,7 +98,11 @@ static coco_problem_t *f_rastrigin_bbob_problem_allocate(const size_t function, 
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   problem = f_rastrigin_allocate(dimension);
   problem = transform_vars_conditioning(problem, 10.0);
@@ -108,8 +116,10 @@ static coco_problem_t *f_rastrigin_bbob_problem_allocate(const size_t function, 
   }
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "1-separable");
 
   coco_free_memory(xopt);
@@ -132,7 +142,11 @@ static coco_problem_t *f_rastrigin_rotated_bbob_problem_allocate(const size_t fu
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   rot2 = bbob2009_allocate_matrix(dimension, dimension);
@@ -194,8 +208,10 @@ static coco_problem_t *f_rastrigin_permblockdiag_bbob_problem_allocate(const siz
   size_t swap_range1, swap_range2;
   size_t nb_swaps1, nb_swaps2;
 
-  block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
-  block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
+  block_sizes1 =
+      coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
+  block_sizes2 =
+      coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
   swap_range1 = coco_get_swap_range(dimension, "bbob-largescale");
   swap_range2 = coco_get_swap_range(dimension, "bbob-largescale");
   nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
@@ -203,14 +219,19 @@ static coco_problem_t *f_rastrigin_permblockdiag_bbob_problem_allocate(const siz
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
   B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);
   B1_copy = (const double *const *)B1;
   B2_copy = (const double *const *)B2;
 
-  coco_compute_blockrotation(B1, rseed + 1000000, dimension, block_sizes1, nb_blocks1);
+  coco_compute_blockrotation(B1, rseed + 1000000, dimension, block_sizes1,
+                             nb_blocks1);
   coco_compute_blockrotation(B2, rseed, dimension, block_sizes2, nb_blocks2);
 
   coco_compute_truncated_uniform_swap_permutation(P11, rseed + 3000000, dimension, nb_swaps1, swap_range1);
@@ -220,24 +241,29 @@ static coco_problem_t *f_rastrigin_permblockdiag_bbob_problem_allocate(const siz
 
   problem = f_rastrigin_allocate(dimension);
   problem = transform_vars_permutation(problem, P12, dimension);
-  problem = transform_vars_blockrotation(problem, B1_copy, dimension, block_sizes1, nb_blocks1);
+  problem = transform_vars_blockrotation(problem, B1_copy, dimension,
+                                         block_sizes1, nb_blocks1);
   problem = transform_vars_permutation(problem, P11, dimension);
   problem = transform_vars_conditioning(problem, 10.0);
   problem = transform_vars_permutation(problem, P22, dimension);
-  problem = transform_vars_blockrotation(problem, B2_copy, dimension, block_sizes2, nb_blocks2);
+  problem = transform_vars_blockrotation(problem, B2_copy, dimension,
+                                         block_sizes2, nb_blocks2);
   problem = transform_vars_permutation(problem, P21, dimension);
   problem = transform_vars_asymmetric(problem, 0.2);
   problem = transform_vars_oscillate(problem);
   problem = transform_vars_permutation(problem, P12, dimension);
-  problem = transform_vars_blockrotation(problem, B1_copy, dimension, block_sizes1, nb_blocks1);
+  problem = transform_vars_blockrotation(problem, B1_copy, dimension,
+                                         block_sizes1, nb_blocks1);
   problem = transform_vars_permutation(problem, P11, dimension);
   problem = transform_vars_shift(problem, xopt, 0);
 
   problem = transform_obj_norm_by_dim(problem);
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "4-multi-modal");
 
   coco_free_block_matrix(B1, dimension);
@@ -253,10 +279,11 @@ static coco_problem_t *f_rastrigin_permblockdiag_bbob_problem_allocate(const siz
 }
 
 /**
- * @brief Computes xopt for constrained Rastrigin (alternative to bbob2009_compute_xopt())
- * xopt is a vector of dim uniform random integers
+ * @brief Computes xopt for constrained Rastrigin (alternative to
+ * bbob2009_compute_xopt()) xopt is a vector of dim uniform random integers
  */
-static void f_rastrigin_cons_compute_xopt(double *xopt, const long rseed, const size_t dim) {
+static void f_rastrigin_cons_compute_xopt(double *xopt, const long rseed,
+                                          const size_t dim) {
 
   size_t i;
 
@@ -293,8 +320,10 @@ static coco_problem_t *f_rastrigin_cons_bbob_problem_allocate(const size_t funct
   problem = transform_vars_shift(problem, xopt, 0);
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "1-separable");
 
   coco_free_memory(xopt);
@@ -330,8 +359,10 @@ static coco_problem_t *f_rastrigin_rotated_cons_bbob_problem_allocate(const size
   problem = transform_vars_affine(problem, M, b, dimension); /* Rotate after shifting so R dot xopt is also rotated */
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "1-separable");
 
   coco_free_memory(M);

@@ -3,18 +3,19 @@
  * @brief Implementation of the linear slope function and problem.
  */
 
-#include <stdio.h>
-#include <math.h>
 #include <assert.h>
+#include <math.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
-#include "transform_obj_shift.c"
 #include "transform_obj_norm_by_dim.c"
+#include "transform_obj_shift.c"
 
 /**
- * @brief Implements the linear slope function without connections to any COCO structures.
+ * @brief Implements the linear slope function without connections to any COCO
+ * structures.
  */
 static double f_linear_slope_raw(const double *x, const size_t number_of_variables, const double *best_parameter) {
 
@@ -49,9 +50,11 @@ static double f_linear_slope_raw(const double *x, const size_t number_of_variabl
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_linear_slope_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_linear_slope_evaluate(coco_problem_t *problem, const double *x,
+                                    double *y) {
   assert(problem->number_of_objectives == 1);
-  y[0] = f_linear_slope_raw(x, problem->number_of_variables, problem->best_parameter);
+  y[0] = f_linear_slope_raw(x, problem->number_of_variables,
+                            problem->best_parameter);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
@@ -80,14 +83,16 @@ static void f_linear_slope_evaluate_gradient(coco_problem_t *problem, const doub
 /**
  * @brief Allocates the basic linear slope problem.
  */
-static coco_problem_t *f_linear_slope_allocate(const size_t number_of_variables, const double *best_parameter) {
+static coco_problem_t *f_linear_slope_allocate(const size_t number_of_variables,
+                                               const double *best_parameter) {
 
   size_t i;
   /* best_parameter will be overwritten below */
   coco_problem_t *problem = coco_problem_allocate_from_scalars("linear slope function", f_linear_slope_evaluate, NULL,
                                                                number_of_variables, -5.0, 5.0, 0.0);
   problem->evaluate_gradient = f_linear_slope_evaluate_gradient;
-  coco_problem_set_id(problem, "%s_d%02lu", "linear_slope", number_of_variables);
+  coco_problem_set_id(problem, "%s_d%02lu", "linear_slope",
+                      number_of_variables);
 
   /* Compute best solution */
   for (i = 0; i < number_of_variables; ++i) {
@@ -113,7 +118,11 @@ static coco_problem_t *f_linear_slope_bbob_problem_allocate(const size_t functio
   coco_problem_t *problem = NULL;
 
   xopt = coco_allocate_vector(dimension);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_linear_slope_allocate(dimension, xopt);
@@ -124,8 +133,10 @@ static coco_problem_t *f_linear_slope_bbob_problem_allocate(const size_t functio
   }
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "1-separable");
 
   coco_free_memory(xopt);

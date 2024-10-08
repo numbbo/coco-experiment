@@ -3,19 +3,19 @@
  * @brief Implementation of the generalized bent cigar function and problem.
  */
 
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
+#include "transform_obj_norm_by_dim.c"
 #include "transform_obj_shift.c"
 #include "transform_vars_affine.c"
 #include "transform_vars_asymmetric.c"
-#include "transform_vars_shift.c"
-#include "transform_vars_permutation.c"
 #include "transform_vars_blockrotation.c"
-#include "transform_obj_norm_by_dim.c"
+#include "transform_vars_permutation.c"
+#include "transform_vars_shift.c"
 
 /**
  * @brief Data type for the versatile_data_t
@@ -27,7 +27,8 @@ typedef struct {
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
-static void f_bent_cigar_generalized_versatile_data_free(coco_problem_t *problem) {
+static void
+f_bent_cigar_generalized_versatile_data_free(coco_problem_t *problem) {
 
   f_bent_cigar_generalized_versatile_data_t *versatile_data =
       (f_bent_cigar_generalized_versatile_data_t *)problem->versatile_data;
@@ -38,7 +39,8 @@ static void f_bent_cigar_generalized_versatile_data_free(coco_problem_t *problem
 }
 
 /**
- * @brief Implements the generalized bent cigar function without connections to any COCO structures.
+ * @brief Implements the generalized bent cigar function without connections to
+ * any COCO structures.
  */
 static double
 f_bent_cigar_generalized_raw(const double *x, const size_t number_of_variables,
@@ -48,8 +50,12 @@ f_bent_cigar_generalized_raw(const double *x, const size_t number_of_variables,
   size_t i, nb_long_axes;
   double result;
   result = 0;
-  nb_long_axes = number_of_variables / f_bent_cigar_generalized_versatile_data->proportion_long_axes_denom;
-  if (number_of_variables % f_bent_cigar_generalized_versatile_data->proportion_long_axes_denom != 0) {
+  nb_long_axes =
+      number_of_variables /
+      f_bent_cigar_generalized_versatile_data->proportion_long_axes_denom;
+  if (number_of_variables %
+          f_bent_cigar_generalized_versatile_data->proportion_long_axes_denom !=
+      0) {
     nb_long_axes += 1;
   }
   for (i = 0; i < nb_long_axes; ++i) {
@@ -64,7 +70,8 @@ f_bent_cigar_generalized_raw(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the generalized raw function to evaluate the COCO problem.
  */
-static void f_bent_cigar_generalized_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_bent_cigar_generalized_evaluate(coco_problem_t *problem,
+                                              const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_bent_cigar_generalized_raw(x, problem->number_of_variables,
                                       (f_bent_cigar_generalized_versatile_data_t *)problem->versatile_data);
@@ -87,12 +94,14 @@ static coco_problem_t *f_bent_cigar_generalized_allocate(const size_t number_of_
       proportion_long_axes_denom;
 
   /* Compute best solution */
-  f_bent_cigar_generalized_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_bent_cigar_generalized_evaluate(problem, problem->best_parameter,
+                                    problem->best_value);
   return problem;
 }
 
 /**
- * @brief Creates the BBOB generalized permuted block-rotated bent cigar problem.
+ * @brief Creates the BBOB generalized permuted block-rotated bent cigar
+ * problem.
  */
 static coco_problem_t *f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
@@ -114,31 +123,43 @@ static coco_problem_t *f_bent_cigar_generalized_permblockdiag_bbob_problem_alloc
   nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   xopt = coco_allocate_vector(dimension);
-  bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed + 1000000, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+  }
   fopt = bbob2009_compute_fopt(function, instance);
 
   B = coco_allocate_blockmatrix(dimension, block_sizes, nb_blocks);
   B_copy = (const double *const *)B;
 
-  coco_compute_blockrotation(B, rseed + 1000000, dimension, block_sizes, nb_blocks);
-  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, dimension, nb_swaps, swap_range);
+  coco_compute_blockrotation(B, rseed + 1000000, dimension, block_sizes,
+                             nb_blocks);
+  coco_compute_truncated_uniform_swap_permutation(
+      P1, rseed + 2000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(
+      P2, rseed + 3000000, dimension, nb_swaps, swap_range);
 
-  problem = f_bent_cigar_generalized_allocate(dimension, proportion_long_axes_denom);
+  problem =
+      f_bent_cigar_generalized_allocate(dimension, proportion_long_axes_denom);
   problem = transform_vars_permutation(problem, P2, dimension);
-  problem = transform_vars_blockrotation(problem, B_copy, dimension, block_sizes, nb_blocks);
+  problem = transform_vars_blockrotation(problem, B_copy, dimension,
+                                         block_sizes, nb_blocks);
   problem = transform_vars_permutation(problem, P1, dimension);
   problem = transform_vars_asymmetric(problem, 0.5);
   problem = transform_vars_permutation(problem, P2, dimension);
-  problem = transform_vars_blockrotation(problem, B_copy, dimension, block_sizes, nb_blocks);
+  problem = transform_vars_blockrotation(problem, B_copy, dimension,
+                                         block_sizes, nb_blocks);
   problem = transform_vars_permutation(problem, P1, dimension);
   problem = transform_vars_shift(problem, xopt, 0);
 
   problem = transform_obj_norm_by_dim(problem);
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
   coco_free_block_matrix(B, dimension);
   coco_free_memory(P1);

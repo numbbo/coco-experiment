@@ -3,21 +3,21 @@
  * @brief Implementation of the Weierstrass function and problem.
  */
 
-#include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
+#include "transform_obj_norm_by_dim.c"
 #include "transform_obj_penalize.c"
 #include "transform_obj_shift.c"
 #include "transform_vars_affine.c"
-#include "transform_vars_oscillate.c"
-#include "transform_vars_shift.c"
-#include "transform_vars_permutation.c"
 #include "transform_vars_blockrotation.c"
-#include "transform_obj_norm_by_dim.c"
+#include "transform_vars_oscillate.c"
+#include "transform_vars_permutation.c"
+#include "transform_vars_shift.c"
 
 /** @brief Number of summands in the Weierstrass problem. */
 #define F_WEIERSTRASS_SUMMANDS 12
@@ -32,9 +32,12 @@ typedef struct {
 } f_weierstrass_data_t;
 
 /**
- * @brief Implements the Weierstrass function without connections to any COCO structures.
+ * @brief Implements the Weierstrass function without connections to any COCO
+ * structures.
  */
-static double f_weierstrass_raw(const double *x, const size_t number_of_variables, f_weierstrass_data_t *data) {
+static double f_weierstrass_raw(const double *x,
+                                const size_t number_of_variables,
+                                f_weierstrass_data_t *data) {
 
   size_t i, j;
   double result;
@@ -65,7 +68,8 @@ static void f_weierstrass_evaluate(coco_problem_t *problem, const double *x, dou
 /**
  * @brief Allocates the basic Weierstrass problem.
  */
-static coco_problem_t *f_weierstrass_allocate(const size_t number_of_variables) {
+static coco_problem_t *
+f_weierstrass_allocate(const size_t number_of_variables) {
 
   f_weierstrass_data_t *data;
   size_t i;
@@ -111,7 +115,11 @@ static coco_problem_t *f_weierstrass_bbob_problem_allocate(const size_t function
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   rot2 = bbob2009_allocate_matrix(dimension, dimension);
@@ -142,8 +150,10 @@ static coco_problem_t *f_weierstrass_bbob_problem_allocate(const size_t function
   bbob2009_free_matrix(rot1, dimension);
   bbob2009_free_matrix(rot2, dimension);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "4-multi-modal");
 
   coco_free_memory(M);
@@ -184,7 +194,11 @@ static coco_problem_t *f_weierstrass_permblockdiag_bbob_problem_allocate(const s
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
   B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);

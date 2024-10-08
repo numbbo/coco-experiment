@@ -3,18 +3,19 @@
  * @brief Implementation of the sphere function and problem.
  */
 
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
+#include "transform_obj_norm_by_dim.c"
 #include "transform_obj_shift.c"
 #include "transform_vars_shift.c"
-#include "transform_obj_norm_by_dim.c"
 
 /**
- * @brief Implements the sphere function without connections to any COCO structures.
+ * @brief Implements the sphere function without connections to any COCO
+ * structures.
  */
 static double f_sphere_raw(const double *x, const size_t number_of_variables) {
 
@@ -35,7 +36,8 @@ static double f_sphere_raw(const double *x, const size_t number_of_variables) {
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_sphere_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_sphere_evaluate(coco_problem_t *problem, const double *x,
+                              double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_sphere_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -44,7 +46,8 @@ static void f_sphere_evaluate(coco_problem_t *problem, const double *x, double *
 /**
  * @brief Evaluates the gradient of the sphere function.
  */
-static void f_sphere_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void f_sphere_evaluate_gradient(coco_problem_t *problem, const double *x,
+                                       double *y) {
 
   size_t i;
 
@@ -80,7 +83,15 @@ static coco_problem_t *f_sphere_bbob_problem_allocate(const size_t function, con
   coco_problem_t *problem = NULL;
 
   xopt = coco_allocate_vector(dimension);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+      sbox_cost_compute_xopt(xopt, rseed, dimension);
+    } else {
+      bbob2009_compute_xopt(xopt, rseed, dimension);
+    }
+  }
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_sphere_allocate(dimension);
@@ -92,8 +103,10 @@ static coco_problem_t *f_sphere_bbob_problem_allocate(const size_t function, con
   }
   problem = transform_obj_shift(problem, fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "1-separable");
 
   coco_free_memory(xopt);

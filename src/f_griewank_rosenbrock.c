@@ -3,20 +3,20 @@
  * @brief Implementation of the Griewank-Rosenbrock function and problem.
  */
 
-#include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_shift.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_scale.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_blockrotation.c"
 #include "transform_obj_norm_by_dim.c"
+#include "transform_obj_shift.c"
+#include "transform_vars_affine.c"
+#include "transform_vars_blockrotation.c"
+#include "transform_vars_permutation.c"
+#include "transform_vars_scale.c"
+#include "transform_vars_shift.c"
 
 /**
  * @brief Data type for the griewank rosenbrock problem
@@ -26,7 +26,8 @@ typedef struct {
 } f_griewank_rosenbrock_data_t;
 
 /**
- * @brief Implements the Griewank-Rosenbrock function without connections to any COCO structures.
+ * @brief Implements the Griewank-Rosenbrock function without connections to any
+ * COCO structures.
  */
 static double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_variables,
                                         f_griewank_rosenbrock_data_t *data) {
@@ -54,7 +55,8 @@ static double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_griewank_rosenbrock_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_griewank_rosenbrock_evaluate(coco_problem_t *problem,
+                                           const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_griewank_rosenbrock_raw(x, problem->number_of_variables, (f_griewank_rosenbrock_data_t *)problem->data);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -74,7 +76,8 @@ static coco_problem_t *f_griewank_rosenbrock_allocate(const size_t number_of_var
   data->facftrue = facftrue;
   problem->data = data;
   /* Compute best solution */
-  f_griewank_rosenbrock_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_griewank_rosenbrock_evaluate(problem, problem->best_parameter,
+                                 problem->best_value);
   return problem;
 }
 
@@ -122,7 +125,8 @@ static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t 
               'best_parameter' not updated, set to NAN")*/
   }
   problem = transform_vars_affine(problem, M, b, dimension);
-  for (j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T ones(dimension)/(2*factor) */
+  for (j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T
+                                       ones(dimension)/(2*factor) */
     tmp = 0;
     for (i = 0; i < dimension; ++i) {
       tmp += rot1[i][j];
@@ -131,8 +135,10 @@ static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t 
   }
   bbob2009_free_matrix(rot1, dimension);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "4-multi-modal");
 
   coco_free_memory(M);
@@ -190,9 +196,10 @@ static coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_all
   problem = transform_vars_shift(problem, shift, 0);
   problem = transform_vars_scale(problem, scales);
   problem = transform_vars_permutation(problem, P2, dimension);
-  problem = transform_vars_blockrotation(problem, B_copy, dimension, block_sizes, nb_blocks);
+  problem = transform_vars_blockrotation(problem, B_copy, dimension,
+                                         block_sizes, nb_blocks);
   problem = transform_vars_permutation(problem, P1, dimension);
-
+  
   /*problem = transform_obj_norm_by_dim(problem);*/ /* Wassim: there is already a normalization by dimension*/
   problem = transform_obj_shift(problem, fopt);
 
@@ -209,12 +216,15 @@ static coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_all
     next_bs_change += block_sizes[k];
   }
 
-  for (j = 0; j < dimension; ++j) { /* Manh: secondly, set xopt = (P_1^T)* xopt_1 */
+  for (j = 0; j < dimension;
+       ++j) { /* Manh: secondly, set xopt = (P_1^T)* xopt_1 */
     problem->best_parameter[P1[j]] = best_parameter[j];
   }
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
+  coco_problem_set_id(problem, problem_id_template, function, instance,
+                      dimension);
+  coco_problem_set_name(problem, problem_name_template, function, instance,
+                        dimension);
   coco_problem_set_type(problem, "4-multi-modal");
 
   coco_free_memory(best_parameter);

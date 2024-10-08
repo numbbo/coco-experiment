@@ -9,13 +9,13 @@
 #include "coco.h"
 #include "coco_problem.c"
 #include "suite_bbob_legacy_code.c"
+#include "transform_obj_norm_by_dim.c"
 #include "transform_obj_shift.c"
 #include "transform_vars_affine.c"
-#include "transform_vars_shift.c"
+#include "transform_vars_blockrotation.c"
 #include "transform_vars_conditioning.c"
 #include "transform_vars_permutation.c"
-#include "transform_vars_blockrotation.c"
-#include "transform_obj_norm_by_dim.c"
+#include "transform_vars_shift.c"
 
 /**
  * @brief Data type for the versatile_data_t
@@ -38,7 +38,8 @@ static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *proble
 }
 
 /**
- * @brief Implements the generalized sharp ridge function without connections to any COCO structures.
+ * @brief Implements the generalized sharp ridge function without connections to
+ * any COCO structures.
  */
 static double
 f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
@@ -54,8 +55,12 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
     return NAN;
 
   result = 0.0;
-  number_linear_dimensions = number_of_variables / f_sharp_ridge_generalized_versatile_data->proportion_of_linear_dims;
-  if (number_of_variables % f_sharp_ridge_generalized_versatile_data->proportion_of_linear_dims != 0) {
+  number_linear_dimensions =
+      number_of_variables /
+      f_sharp_ridge_generalized_versatile_data->proportion_of_linear_dims;
+  if (number_of_variables %
+          f_sharp_ridge_generalized_versatile_data->proportion_of_linear_dims !=
+      0) {
     number_linear_dimensions += 1;
   }
   for (i = number_linear_dimensions; i < number_of_variables; ++i) {
@@ -72,7 +77,8 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem,
+                                               const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_sharp_ridge_generalized_raw(x, problem->number_of_variables,
                                        (f_sharp_ridge_generalized_versatile_data_t *)problem->versatile_data);
@@ -96,12 +102,15 @@ static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of
       proportion_of_linear_dims;
 
   /* Compute best solution */
-  f_sharp_ridge_generalized_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_sharp_ridge_generalized_evaluate(problem, problem->best_parameter,
+                                     problem->best_value);
   return problem;
 }
 
+
 /**
- * @brief Creates the BBOB permuted block-rotated generalized sharp ridge problem
+ * @brief Creates the BBOB permuted block-rotated generalized sharp ridge
+ * problem
  */
 static coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
@@ -125,14 +134,20 @@ static coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allo
 
   const size_t proportion_of_linear_dims = 40;
 
-  block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
-  block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
+  block_sizes1 =
+      coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
+  block_sizes2 =
+      coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
   swap_range = coco_get_swap_range(dimension, "bbob-largescale");
   nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_compute_xopt(xopt, rseed, dimension);
+  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+    sbox_cost_compute_xopt(xopt, rseed, dimension);
+  } else {
+    bbob2009_compute_xopt(xopt, rseed, dimension);
+  }
 
   B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
   B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);
