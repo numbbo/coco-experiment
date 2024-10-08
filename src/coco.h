@@ -5,7 +5,7 @@
  * It is the authoritative reference, if any function deviates from the documented behavior it is considered
  * a bug. See the function definitions for their detailed descriptions.
  */
- 
+
 #ifndef COCOEX_COCO_H
 #define COCOEX_COCO_H
 
@@ -14,7 +14,7 @@
 /* Macro to tag function declarations:
  *
  * COCO_NORETURN:
- *   Function never returns. Mainly useful for linters and static analysis 
+ *   Function never returns. Mainly useful for linters and static analysis
  *   tools.
  *
  * COCO_UNUSED:
@@ -24,7 +24,7 @@
  * lead to much better code generation and ultimately faster runtimes.
  *
  * COCO_LIKELY(e):
- *   Mark expression `e` as likely true. Usually used in if() or while() 
+ *   Mark expression `e` as likely true. Usually used in if() or while()
  *   statements to give the compiler a hint.
  *
  * COCO_UNLIKELY(e):
@@ -34,20 +34,20 @@
 #ifdef __GNUC__
 #define COCO_NORETURN __attribute__((noreturn))
 #define COCO_UNUSED __attribute__((unused))
-#define COCO_LIKELY(x) __builtin_expect((x),1)
-#define COCO_UNLIKELY(x) __builtin_expect((x),0)
+#define COCO_LIKELY(x) __builtin_expect((x), 1)
+#define COCO_UNLIKELY(x) __builtin_expect((x), 0)
 #elif __clang__
 #define COCO_NORETURN __attribute__((noreturn))
 #define COCO_UNUSED __attribute__((unused))
-#define COCO_LIKELY(x) __builtin_expect((x),1)
-#define COCO_UNLIKELY(x) __builtin_expect((x),0)
+#define COCO_LIKELY(x) __builtin_expect((x), 1)
+#define COCO_UNLIKELY(x) __builtin_expect((x), 0)
 #elif _MSC_VER
 #define COCO_NORETURN __declspec(noreturn)
 #define COCO_UNUSED
 #define COCO_LIKELY(x) (x)
 #define COCO_UNLIKELY(x) (x)
 #else
-#define COCO_NORETURN 
+#define COCO_NORETURN
 #define COCO_UNUSED
 #define COCO_LIKELY(x) (x)
 #define COCO_UNLIKELY(x) (x)
@@ -93,11 +93,11 @@ extern "C" {
 #endif
 
 /**
-* @brief COCO's version.
-*
-* The version number is dervied from the latest tag in the
-* repository plus the number of commits after the tag.
-*/
+ * @brief COCO's version.
+ *
+ * The version number is dervied from the latest tag in the
+ * repository plus the number of commits after the tag.
+ */
 /**@{*/
 extern const char *coco_version;
 /**@}*/
@@ -115,10 +115,10 @@ static const double coco_two_pi = 2.0 * 3.14159265358979323846;
 
 /** @brief Logging level type. */
 typedef enum {
-  COCO_ERROR,     /**< @brief only error messages are output */
-  COCO_WARNING,   /**< @brief error and warning messages are output */
-  COCO_INFO,      /**< @brief error, warning and info messages are output */
-  COCO_DEBUG      /**< @brief error, warning, info and debug messages are output */
+  COCO_ERROR,   /**< @brief only error messages are output */
+  COCO_WARNING, /**< @brief error and warning messages are output */
+  COCO_INFO,    /**< @brief error, warning and info messages are output */
+  COCO_DEBUG    /**< @brief error, warning, info and debug messages are output */
 } coco_log_level_type_e;
 
 /***********************************************************************************************************/
@@ -129,50 +129,50 @@ typedef enum {
 
 /**
  * @brief The extra argument to be passed to the step ellipsoid function
- * only penalty scale, because in the legacy code is different 
- * between the noisy and the noise free implementations 
+ * only penalty scale, because in the legacy code is different
+ * between the noisy and the noise free implementations
  */
-typedef struct{
+typedef struct {
   double penalty_scale;
 } f_step_ellipsoid_args_t;
 
 /**
  * @brief The extra argument to be passed to the step ellipsoid function
- * only conditioning, because in the legacy code is different 
- * between the noisy and the noise free implementations 
+ * only conditioning, because in the legacy code is different
+ * between the noisy and the noise free implementations
  */
-typedef struct{
+typedef struct {
   double conditioning;
 } f_ellipsoid_args_t;
 
 /**
  * @brief The extra argument to be passed to the step ellipsoid function
- * conditioning and penalty scale, because in the legacy code were different 
- * between the noisy and the noise free implementations 
+ * conditioning and penalty scale, because in the legacy code were different
+ * between the noisy and the noise free implementations
  */
-typedef struct{
+typedef struct {
   double conditioning;
   double penalty_scale;
 } f_schaffers_args_t;
 
 /**
  * @brief The extra argument to be passed to the step ellipsoid function
- * facftrue, because in the legacy code is different 
- * between the noisy and the noise free implementations 
+ * facftrue, because in the legacy code is different
+ * between the noisy and the noise free implementations
  */
-typedef struct{
+typedef struct {
   double facftrue;
-}f_griewank_rosenbrock_args_t;
+} f_griewank_rosenbrock_args_t;
 
 /**
  * @brief The extra argument to be passed to the step ellipsoid function
- * facftrue, because in the legacy code is different 
- * between the noisy and the noise free implementations 
+ * facftrue, because in the legacy code is different
+ * between the noisy and the noise free implementations
  */
-typedef struct{
+typedef struct {
   size_t number_of_peaks;
   double penalty_scale;
-}f_gallagher_args_t;
+} f_gallagher_args_t;
 /**@}*/
 
 /***********************************************************************************************************/
@@ -219,7 +219,7 @@ struct coco_random_state_s;
 /**
  * @brief The COCO random state type.
  *
- * See coco_random_state_s for more information on its fields. 
+ * See coco_random_state_s for more information on its fields.
  */
 typedef struct coco_random_state_s coco_random_state_t;
 
@@ -252,10 +252,8 @@ coco_problem_t *coco_suite_get_problem(coco_suite_t *suite, const size_t problem
 /**
  * @brief Returns the first problem of the suite defined by function, dimension and instance numbers.
  */
-coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite_t *suite,
-                                                                      const size_t function,
-                                                                      const size_t dimension,
-                                                                      const size_t instance);
+coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite_t *suite, const size_t function,
+                                                                      const size_t dimension, const size_t instance);
 
 /**
  * @brief Returns the number of problems in the given suite.
@@ -341,20 +339,15 @@ size_t coco_suite_get_instance_from_instance_index(const coco_suite_t *suite, co
  * @brief Computes the index of the problem in the suite that corresponds to the given function, dimension
  * and instance indices.
  */
-size_t coco_suite_encode_problem_index(const coco_suite_t *suite,
-                                       const size_t function_idx,
-                                       const size_t dimension_idx,
+size_t coco_suite_encode_problem_index(const coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
                                        const size_t instance_idx);
 
 /**
  * @brief Computes the function, dimension and instance indexes of the problem with problem_index in the
  * given suite.
  */
-void coco_suite_decode_problem_index(const coco_suite_t *suite,
-                                     const size_t problem_index,
-                                     size_t *function_idx,
-                                     size_t *dimension_idx,
-                                     size_t *instance_idx);
+void coco_suite_decode_problem_index(const coco_suite_t *suite, const size_t problem_index, size_t *function_idx,
+                                     size_t *dimension_idx, size_t *instance_idx);
 /**@}*/
 
 /***********************************************************************************************************/
@@ -384,7 +377,7 @@ coco_problem_t *coco_problem_add_observer(coco_problem_t *problem, coco_observer
 coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_observer_t *observer);
 
 /**
- * @brief Returns result folder name, where logger output is written. 
+ * @brief Returns result folder name, where logger output is written.
  */
 const char *coco_observer_get_result_folder(const coco_observer_t *observer);
 
@@ -513,14 +506,14 @@ void coco_problem_get_initial_solution(const coco_problem_t *problem, double *in
 
 /**
  * @brief Returns the best parameter settings.
- * 
+ *
  * Once called, a problem is tainted, that is, it cannot be used in benchmark experiments anymore.
  */
 int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parameter);
 
 /**
  *  @brief Returns whether a problem si tainted or not.
- * 
+ *
  * Once `coco_problem_get_best_parameter` is called on a problem it is "tainted" and cannot be used
  * in benchmark experiments.
  */
@@ -643,9 +636,7 @@ const char *coco_set_log_level(const char *level);
 /**
  * @brief Constructs a COCO archive.
  */
-coco_archive_t *coco_archive(const char *suite_name,
-                             const size_t function,
-                             const size_t dimension,
+coco_archive_t *coco_archive(const char *suite_name, const size_t function, const size_t dimension,
                              const size_t instance);
 /**
  * @brief Adds a solution with objectives (y1, y2) to the archive if none of the existing solutions in the
@@ -702,7 +693,6 @@ char *coco_strdupf(const char *str, ...);
 
 void bbob_problem_best_parameter_print(const coco_problem_t *problem);
 void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem);
-
 
 #ifdef __cplusplus
 }

@@ -89,6 +89,4 @@ void *coco_allocate_memory(const size_t size) {
   return data;
 }
 
-void coco_free_memory(void *data) {
-  free(data);
-}
+void coco_free_memory(void *data) { free(data); }

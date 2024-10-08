@@ -34,7 +34,7 @@ static const char *coco_path_separator = "/";
 #include <sys/types.h>
 static const char *coco_path_separator = "/";
 #define HAVE_STAT 1
-#define COCO_PATH_MAX PATH_MAX  
+#define COCO_PATH_MAX PATH_MAX
 #elif defined(__APPLE__)
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -92,7 +92,7 @@ int mkdir(const char *pathname, mode_t mode);
 
 /* To silence the Visual Studio compiler (C4996 warnings in the python build). */
 #ifdef _MSC_VER
-#pragma warning(disable:4996)
+#pragma warning(disable : 4996)
 #endif
 
 #ifdef __cplusplus

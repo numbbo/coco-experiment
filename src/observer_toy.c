@@ -13,7 +13,7 @@ static void logger_toy_free(void *logger);
  * @brief The toy observer data type.
  */
 typedef struct {
-  FILE *log_file;            /**< @brief File used for logging. */
+  FILE *log_file; /**< @brief File used for logging. */
 } observer_toy_data_t;
 
 /**
@@ -24,13 +24,12 @@ static void observer_toy_free(void *stuff) {
   observer_toy_data_t *data;
 
   assert(stuff != NULL);
-  data = (observer_toy_data_t *) stuff;
+  data = (observer_toy_data_t *)stuff;
 
   if (data->log_file != NULL) {
     fclose(data->log_file);
     data->log_file = NULL;
   }
-
 }
 
 /**
@@ -47,10 +46,10 @@ static void observer_toy(coco_observer_t *observer, const char *options, coco_op
 
   /* Sets the valid keys for toy observer options
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
-  const char *known_keys[] = { "file_name" };
+  const char *known_keys[] = {"file_name"};
   *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
 
-  observer_data = (observer_toy_data_t *) coco_allocate_memory(sizeof(*observer_data));
+  observer_data = (observer_toy_data_t *)coco_allocate_memory(sizeof(*observer_data));
 
   /* Read file_name and number_of_targets from the options and use them to initialize the observer */
   string_value = coco_allocate_string(COCO_PATH_MAX + 1);

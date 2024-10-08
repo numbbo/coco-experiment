@@ -33,5 +33,5 @@ static void observer_bbob_old(coco_observer_t *observer, const char *options, co
 
   *option_keys = NULL;
 
-  (void) options; /* To silence the compiler */
+  (void)options; /* To silence the compiler */
 }

@@ -21,20 +21,17 @@
 #include "f_step_ellipsoid.c"
 #include "f_weierstrass.c"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name,
-                                         const size_t number_of_functions,
-                                         const size_t number_of_dimensions,
-                                         const size_t *dimensions,
-                                         const char *default_instances,
-                                         const int known_optima);
+static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t *dimensions,
+                                         const char *default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob large-scale suite.
  */
 static coco_suite_t *suite_largescale_initialize(void) {
-  
+
   coco_suite_t *suite;
-  const size_t dimensions[] = { 20, 40, 80, 160, 320, 640};
+  const size_t dimensions[] = {20, 40, 80, 160, 320, 640};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
   suite = coco_suite_allocate("bbob-largescale", 24, num_dimensions, dimensions, "instances: 1-15", 1);
@@ -49,45 +46,41 @@ static const char *suite_largescale_get_instances_by_year(const int year) {
     return "1-15";
   } else if (year >= 2009) {
     return "1-15";
-  }
-  else {
+  } else {
     coco_error("suite_largescale_get_instances_by_year(): year %d not defined for suite_largescale", year);
     return NULL;
   }
 }
 
-
-
 /**
  * @brief Creates and returns a large-scale problem without needing the actual large-scale suite.
  */
-static coco_problem_t *coco_get_largescale_problem(const size_t function,
-                                                   const size_t dimension,
+static coco_problem_t *coco_get_largescale_problem(const size_t function, const size_t dimension,
                                                    const size_t instance) {
   coco_problem_t *problem = NULL;
 
   const char *problem_id_template = "bbob_f%03lu_i%02lu_d%04lu";
   const char *problem_name_template = "BBOB large-scale suite problem f%lu instance %lu in %luD";
 
-  const long rseed = (long) (function + 10000 * instance);
-  const long rseed_3 = (long) (3 + 10000 * instance);
-  const long rseed_17 = (long) (17 + 10000 * instance);
+  const long rseed = (long)(function + 10000 * instance);
+  const long rseed_3 = (long)(3 + 10000 * instance);
+  const long rseed_17 = (long)(17 + 10000 * instance);
 
   if (function == 1) {
-    problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed,
-                                             problem_id_template, problem_name_template);
+    problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                             problem_name_template);
   } else if (function == 2) {
-    problem = f_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                problem_id_template, problem_name_template);
+    problem = f_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                problem_name_template);
   } else if (function == 3) {
-    problem = f_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                problem_id_template, problem_name_template);
+    problem = f_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                problem_name_template);
   } else if (function == 4) {
-    problem = f_bueche_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed_3,
-                                                       problem_id_template, problem_name_template);
+    problem = f_bueche_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed_3, problem_id_template,
+                                                       problem_name_template);
   } else if (function == 5) {
-    problem = f_linear_slope_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                   problem_id_template, problem_name_template);
+    problem = f_linear_slope_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                   problem_name_template);
   } else if (function == 6) {
     problem = f_attractive_sector_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                       problem_id_template, problem_name_template);
@@ -95,14 +88,14 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function,
     problem = f_step_ellipsoid_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                    problem_id_template, problem_name_template);
   } else if (function == 8) {
-    problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                 problem_id_template, problem_name_template);
+    problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                 problem_name_template);
   } else if (function == 9) {
     problem = f_rosenbrock_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                problem_id_template, problem_name_template);
   } else if (function == 10) {
-    problem = f_ellipsoid_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                              problem_id_template, problem_name_template);
+    problem = f_ellipsoid_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                              problem_name_template);
   } else if (function == 11) {
     problem = f_discus_generalized_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                        problem_id_template, problem_name_template);
@@ -116,8 +109,8 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function,
     problem = f_different_powers_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                      problem_id_template, problem_name_template);
   } else if (function == 15) {
-    problem = f_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                              problem_id_template, problem_name_template);
+    problem = f_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                              problem_name_template);
   } else if (function == 16) {
     problem = f_weierstrass_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                 problem_id_template, problem_name_template);
@@ -130,11 +123,11 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function,
   } else if (function == 19) {
     f_griewank_rosenbrock_args_t args;
     args.facftrue = 10.0;
-    problem = f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(function, dimension, instance, rseed, &args,
-                                                                             problem_id_template, problem_name_template);
+    problem = f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
+        function, dimension, instance, rseed, &args, problem_id_template, problem_name_template);
   } else if (function == 20) {
-    problem = f_schwefel_generalized_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                           problem_id_template, problem_name_template);
+    problem = f_schwefel_generalized_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                           problem_name_template);
   } else if (function == 21) {
     problem = f_gallagher_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, 101,
                                                               problem_id_template, problem_name_template);
@@ -142,17 +135,17 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function,
     problem = f_gallagher_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, 21,
                                                               problem_id_template, problem_name_template);
   } else if (function == 23) {
-    problem = f_katsuura_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                             problem_id_template, problem_name_template);
+    problem = f_katsuura_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+                                                             problem_name_template);
   } else if (function == 24) {
     problem = f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                          problem_id_template, problem_name_template);
   } else {
     coco_error("coco_get_largescale_problem(): cannot retrieve problem f%lu instance %lu in %luD",
-    		(unsigned long) function, (unsigned long) instance, (unsigned long) dimension);
+               (unsigned long)function, (unsigned long)instance, (unsigned long)dimension);
     return NULL; /* Never reached */
   }
-  
+
   if (problem == NULL) {
     coco_error("coco_get_largescale_problem(): function f%lu not yet implemented  ", function);
   }
@@ -168,22 +161,20 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function,
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite,
-                                                    const size_t function_idx,
-                                                    const size_t dimension_idx,
-                                                    const size_t instance_idx) {
-  
+static coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                    const size_t dimension_idx, const size_t instance_idx) {
+
   coco_problem_t *problem = NULL;
-  
+
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
   const size_t instance = suite->instances[instance_idx];
-  
+
   problem = coco_get_largescale_problem(function, dimension, instance);
-  
+
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;
   problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
-  
+
   return problem;
 }

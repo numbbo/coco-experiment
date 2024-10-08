@@ -24,7 +24,7 @@ static char *coco_strdup(const char *string) {
   if (string == NULL)
     return NULL;
   len = strlen(string);
-  duplicate = (char *) coco_allocate_memory(len + 1);
+  duplicate = (char *)coco_allocate_memory(len + 1);
   memcpy(duplicate, string, len + 1);
   return duplicate;
 }
@@ -88,7 +88,7 @@ char *coco_strdupf(const char *str, ...) {
 static char *coco_strconcat(const char *s1, const char *s2) {
   size_t len1 = strlen(s1);
   size_t len2 = strlen(s2);
-  char *s = (char *) coco_allocate_memory(len1 + len2 + 1);
+  char *s = (char *)coco_allocate_memory(len1 + len2 + 1);
 
   memcpy(s, s1, len1);
   memcpy(&s[len1], s2, len2 + 1);
@@ -116,9 +116,9 @@ static long coco_strfind(const char *base, const char *seq) {
       }
       if (j == strlen_seq) {
         if (i > 1000000000UL)
-          coco_error("coco_strfind(): strange values observed i=%lu, j=%lu, strlen(base)=%lu",
-          		(unsigned long) i, (unsigned long) j, (unsigned long) strlen(base));
-        return (long) i;
+          coco_error("coco_strfind(): strange values observed i=%lu, j=%lu, strlen(base)=%lu", (unsigned long)i,
+                     (unsigned long)j, (unsigned long)strlen(base));
+        return (long)i;
       }
     }
   }
@@ -158,7 +158,7 @@ static char **coco_string_split(const char *string, const char delimiter) {
   /* Makes room for an empty string that will be appended at the end */
   count++;
 
-  result = (char **) coco_allocate_memory(count * sizeof(char *));
+  result = (char **)coco_allocate_memory(count * sizeof(char *));
 
   /* Iterates through tokens
    * NOTE: strtok() ignores multiple delimiters, therefore the final number of detected substrings might be
@@ -168,11 +168,10 @@ static char **coco_string_split(const char *string, const char delimiter) {
   str_delimiter[0] = delimiter;
   str_delimiter[1] = '\0';
   token = strtok(str_copy, str_delimiter);
-  while (token)
-  {
-      assert(i < count);
-      *(result + i++) = coco_strdup(token);
-      token = strtok(NULL, str_delimiter);
+  while (token) {
+    assert(i < count);
+    *(result + i++) = coco_strdup(token);
+    token = strtok(NULL, str_delimiter);
   }
   *(result + i) = NULL;
 
@@ -208,8 +207,8 @@ static char *coco_remove_from_string(const char *string, const char *from, const
     stop = strstr(result, to);
 
   if ((start == NULL) || (stop == NULL) || (stop < start)) {
-    coco_error("coco_remove_from_string(): failed to remove characters between %s and %s from string %s",
-        from, to, string);
+    coco_error("coco_remove_from_string(): failed to remove characters between %s and %s from string %s", from, to,
+               string);
     return NULL; /* Never reached */
   }
 
@@ -217,7 +216,6 @@ static char *coco_remove_from_string(const char *string, const char *from, const
 
   return result;
 }
-
 
 /**
  * @brief Returns the numbers defined by the ranges.
@@ -228,10 +226,7 @@ static char *coco_remove_from_string(const char *string, const char *from, const
  * A maximum of max_count values is returned. If there is a problem with one of the ranges, the parsing stops
  * and the current result is returned. The memory of the returned object needs to be freed by the caller.
  */
-static size_t *coco_string_parse_ranges(const char *string,
-                                        const size_t min,
-                                        const size_t max,
-                                        const char *name,
+static size_t *coco_string_parse_ranges(const char *string, const size_t min, const size_t max, const char *name,
                                         const size_t max_count) {
 
   char *ptr, *dash = NULL;
@@ -254,9 +249,8 @@ static size_t *coco_string_parse_ranges(const char *string,
   ptr = str;
   /* Check for disallowed characters */
   while (*ptr != '\0') {
-    if ((*ptr != '-') && (*ptr != ',') && !isdigit((unsigned char )*ptr)) {
-      coco_warning("coco_string_parse_ranges(): problem parsing '%s' - cannot parse ranges with '%c'", str,
-          *ptr);
+    if ((*ptr != '-') && (*ptr != ',') && !isdigit((unsigned char)*ptr)) {
+      coco_warning("coco_string_parse_ranges(): problem parsing '%s' - cannot parse ranges with '%c'", str, *ptr);
       coco_free_memory(str);
       return NULL;
     } else
@@ -310,7 +304,7 @@ static size_t *coco_string_parse_ranges(const char *string,
         return result;
       } else if (count == 0) {
         /* Range is in the format: n (no range) */
-        num[0] = (size_t) strtol(ptr, NULL, 10);
+        num[0] = (size_t)strtol(ptr, NULL, 10);
         num[1] = num[0];
       } else {
         /* Range is in one of the following formats: n-m / -n / n- / - */
@@ -322,7 +316,7 @@ static size_t *coco_string_parse_ranges(const char *string,
           /* Read the numbers */
           for (j = 0; *(numbers + j); j++) {
             assert(j < 2);
-            num[j] = (size_t) strtol(*(numbers + j), NULL, 10);
+            num[j] = (size_t)strtol(*(numbers + j), NULL, 10);
             coco_free_memory(*(numbers + j));
           }
         }
@@ -349,7 +343,8 @@ static size_t *coco_string_parse_ranges(const char *string,
           if (dash - *(ranges + i) == 0) {
             /* Range is in the format -n */
             if (min == 0) {
-              coco_warning("coco_string_parse_ranges(): '%s' ranges cannot have an open beginning; some ranges ignored", name);
+              coco_warning("coco_string_parse_ranges(): '%s' ranges cannot have an open beginning; some ranges ignored",
+                           name);
               /* Cleanup */
               for (j = i; *(ranges + j); j++)
                 coco_free_memory(*(ranges + j));
@@ -366,7 +361,8 @@ static size_t *coco_string_parse_ranges(const char *string,
           } else {
             /* Range is in the format n- */
             if (max == 0) {
-              coco_warning("coco_string_parse_ranges(): '%s' ranges cannot have an open end; some ranges ignored", name);
+              coco_warning("coco_string_parse_ranges(): '%s' ranges cannot have an open end; some ranges ignored",
+                           name);
               /* Cleanup */
               for (j = i; *(ranges + j); j++)
                 coco_free_memory(*(ranges + j));
@@ -387,13 +383,11 @@ static size_t *coco_string_parse_ranges(const char *string,
       /* Make sure the boundaries are taken into account */
       if ((min > 0) && (num[0] < min)) {
         num[0] = min;
-        coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be >= %lu", name,
-        		(unsigned long) min);
+        coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be >= %lu", name, (unsigned long)min);
       }
       if ((max > 0) && (num[1] > max)) {
         num[1] = max;
-        coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be <= %lu", name,
-        		(unsigned long) max);
+        coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be <= %lu", name, (unsigned long)max);
       }
       if (num[0] > num[1]) {
         coco_warning("coco_string_parse_ranges(): '%s' ranges not within boundaries; some ranges ignored", name);
@@ -439,51 +433,50 @@ static size_t *coco_string_parse_ranges(const char *string,
  * allocated, it can be still freed on the returned pointer.
  */
 static char *coco_string_trim(char *string) {
-	size_t i, len = 0;
-	int all_whitespaces = 1;
-	char *frontp = string;
-	char *endp = NULL;
+  size_t i, len = 0;
+  int all_whitespaces = 1;
+  char *frontp = string;
+  char *endp = NULL;
 
-	if (string == NULL) {
-		return NULL;
-	}
-	if (string[0] == '\0') {
-		return string;
-	}
+  if (string == NULL) {
+    return NULL;
+  }
+  if (string[0] == '\0') {
+    return string;
+  }
 
-	len = strlen(string);
-	endp = string + len;
+  len = strlen(string);
+  endp = string + len;
 
-	for (i = 0; ((i < len) && all_whitespaces); i++)
-		all_whitespaces = all_whitespaces && isspace(string[i]);
-	if (all_whitespaces) {
-	  string[0] = '\0';
-		return string;
-	}
+  for (i = 0; ((i < len) && all_whitespaces); i++)
+    all_whitespaces = all_whitespaces && isspace(string[i]);
+  if (all_whitespaces) {
+    string[0] = '\0';
+    return string;
+  }
 
-	/* Move the front and back pointers to address the first non-whitespace characters from each end. */
-	while (isspace((unsigned char) *frontp)) {
-		++frontp;
-	}
-	if (endp != frontp) {
-		while (isspace((unsigned char) *(--endp)) && endp != frontp) {
-		}
-	}
+  /* Move the front and back pointers to address the first non-whitespace characters from each end. */
+  while (isspace((unsigned char)*frontp)) {
+    ++frontp;
+  }
+  if (endp != frontp) {
+    while (isspace((unsigned char)*(--endp)) && endp != frontp) {
+    }
+  }
 
-	if (string + len - 1 != endp)
-		*(endp + 1) = '\0';
-	else if (frontp != string && endp == frontp)
-		*string = '\0';
+  if (string + len - 1 != endp)
+    *(endp + 1) = '\0';
+  else if (frontp != string && endp == frontp)
+    *string = '\0';
 
-	/* Shift the string. Note the reuse of endp to mean the front of the string buffer now. */
-	endp = string;
-	if (frontp != string) {
-		while (*frontp) {
-			*endp++ = *frontp++;
-		}
-		*endp = '\0';
-	}
+  /* Shift the string. Note the reuse of endp to mean the front of the string buffer now. */
+  endp = string;
+  if (frontp != string) {
+    while (*frontp) {
+      *endp++ = *frontp++;
+    }
+    *endp = '\0';
+  }
 
-	return string;
+  return string;
 }
-

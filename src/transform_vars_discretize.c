@@ -46,7 +46,7 @@ static void transform_vars_discretize_evaluate_function(coco_problem_t *problem,
     return;
   }
 
-  data = (transform_vars_discretize_data_t *) coco_problem_transformed_get_data(problem);
+  data = (transform_vars_discretize_data_t *)coco_problem_transformed_get_data(problem);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   /* Transform x to fit in the discretized space */
@@ -66,7 +66,8 @@ static void transform_vars_discretize_evaluate_function(coco_problem_t *problem,
       discretized_x[i] = outer_l;
     if (discretized_x[i] > outer_u)
       discretized_x[i] = outer_u;
-    discretized_x[i] = inner_l + (inner_u - inner_l) * (discretized_x[i] - outer_l) / (outer_u - outer_l) - data->offset[i];
+    discretized_x[i] =
+        inner_l + (inner_u - inner_l) * (discretized_x[i] - outer_l) / (outer_u - outer_l) - data->offset[i];
   }
 
   coco_evaluate_function(inner_problem, discretized_x, y);
@@ -77,7 +78,7 @@ static void transform_vars_discretize_evaluate_function(coco_problem_t *problem,
  * @brief Frees the data object.
  */
 static void transform_vars_discretize_free(void *thing) {
-  transform_vars_discretize_data_t *data = (transform_vars_discretize_data_t *) thing;
+  transform_vars_discretize_data_t *data = (transform_vars_discretize_data_t *)thing;
   coco_free_memory(data->offset);
 }
 
@@ -96,10 +97,11 @@ static coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem,
   int n;
   size_t i;
 
-  data = (transform_vars_discretize_data_t *) coco_allocate_memory(sizeof(*data));
+  data = (transform_vars_discretize_data_t *)coco_allocate_memory(sizeof(*data));
   data->offset = coco_allocate_vector(inner_problem->number_of_variables);
 
-  problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_discretize_free, "transform_vars_discretize");
+  problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_discretize_free,
+                                              "transform_vars_discretize");
   assert(number_of_integer_variables > 0);
   problem->number_of_integer_variables = number_of_integer_variables;
 
@@ -134,7 +136,7 @@ static coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem,
       data->offset[i] = inner_approx_xopt - inner_xopt;
     }
   }
-    
+
   if (inner_problem->number_of_objectives > 0)
     problem->evaluate_function = transform_vars_discretize_evaluate_function;
 
@@ -143,6 +145,6 @@ static coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem,
 
   problem->evaluate_constraint = NULL; /* TODO? */
   problem->evaluate_gradient = NULL;   /* TODO? */
-      
+
   return problem;
 }
