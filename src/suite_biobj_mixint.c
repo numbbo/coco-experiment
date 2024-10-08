@@ -13,12 +13,9 @@
 #include "transform_obj_scale.c"
 #include "suite_bbob_mixint.c"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name,
-                                         const size_t number_of_functions,
-                                         const size_t number_of_dimensions,
-                                         const size_t *dimensions,
-                                         const char *default_instances,
-                                         const int known_optima);
+static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t *dimensions,
+                                         const char *default_instances, const int known_optima);
 static void suite_biobj_new_inst_free(void *stuff);
 
 /**
@@ -27,7 +24,7 @@ static void suite_biobj_new_inst_free(void *stuff);
 static coco_suite_t *suite_biobj_mixint_initialize(void) {
 
   coco_suite_t *suite;
-  const size_t dimensions[] = { 5, 10, 20, 40, 80, 160 };
+  const size_t dimensions[] = {5, 10, 20, 40, 80, 160};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
   suite = coco_suite_allocate("bbob-biobj-mixint", 92, num_dimensions, dimensions, "instances: 1-15", 0);
@@ -43,7 +40,7 @@ static coco_suite_t *suite_biobj_mixint_initialize(void) {
  */
 static const char *suite_biobj_mixint_get_instances_by_year(const int year) {
 
-  (void) year; /* To get rid of compiler warnings */
+  (void)year; /* To get rid of compiler warnings */
   return "1-15";
 }
 
@@ -65,13 +62,11 @@ static const char *suite_biobj_mixint_get_instances_by_year(const int year) {
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function,
-                                                     const size_t dimension,
+static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, const size_t dimension,
                                                      const size_t instance,
                                                      const coco_get_problem_function_t coco_get_problem_function,
                                                      suite_biobj_new_inst_t **new_inst_data,
-                                                     const size_t num_new_instances,
-                                                     const size_t *dimensions,
+                                                     const size_t num_new_instances, const size_t *dimensions,
                                                      const size_t num_dimensions) {
 
   coco_problem_t *problem_cont = NULL, *problem = NULL;
@@ -85,7 +80,7 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function,
   size_t i, j;
   size_t num_integer = dimension;
   /* The cardinality of variables (0 = continuous variables should always come last) */
-  const size_t variable_cardinality[] = { 2, 4, 8, 16, 0 };
+  const size_t variable_cardinality[] = {2, 4, 8, 16, 0};
   size_t function1, function2;
 
   if (dimension % 5 != 0)
@@ -93,10 +88,10 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function,
 
   /* First, find the underlying single-objective continuous problems */
   problem_cont = coco_get_biobj_problem(function, dimension, instance, coco_get_problem_function, new_inst_data,
-      num_new_instances, dimensions, num_dimensions);
+                                        num_new_instances, dimensions, num_dimensions);
   assert(problem_cont != NULL);
-  problem1_cont = ((coco_problem_stacked_data_t *) problem_cont->data)->problem1;
-  problem2_cont = ((coco_problem_stacked_data_t *) problem_cont->data)->problem2;
+  problem1_cont = ((coco_problem_stacked_data_t *)problem_cont->data)->problem1;
+  problem2_cont = ((coco_problem_stacked_data_t *)problem_cont->data)->problem2;
   problem1 = coco_problem_duplicate(problem1_cont);
   problem2 = coco_problem_duplicate(problem2_cont);
   assert(problem1);
@@ -122,8 +117,7 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function,
       largest_values_of_interest[i] = 100;
       if (num_integer == dimension)
         num_integer = i;
-    }
-    else {
+    } else {
       /* Outer problem */
       smallest_values_of_interest[i] = 0;
       largest_values_of_interest[i] = (double)variable_cardinality[j] - 1;
@@ -136,10 +130,10 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function,
   }
 
   /* Second, discretize the single-objective problems */
-  problem1_mixint = transform_vars_discretize(problem1, smallest_values_of_interest,
-      largest_values_of_interest, num_integer);
-  problem2_mixint = transform_vars_discretize(problem2, smallest_values_of_interest,
-      largest_values_of_interest, num_integer);
+  problem1_mixint =
+      transform_vars_discretize(problem1, smallest_values_of_interest, largest_values_of_interest, num_integer);
+  problem2_mixint =
+      transform_vars_discretize(problem2, smallest_values_of_interest, largest_values_of_interest, num_integer);
 
   /* Third, scale the objective values */
   function1 = coco_problem_get_suite_dep_function(problem1);
@@ -149,12 +143,12 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function,
 
   /* Fourth, combine the problems in a bi-objective mixed-integer problem */
   problem = coco_problem_stacked_allocate(problem1_mixint, problem2_mixint, smallest_values_of_interest,
-      largest_values_of_interest);
+                                          largest_values_of_interest);
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   coco_problem_set_name(problem, problem->problem_id);
-  coco_problem_set_id(problem, "bbob-biobj-mixint_f%03lu_i%02lu_d%03lu", (unsigned long) function,
-      (unsigned long) instance, (unsigned long) dimension);
+  coco_problem_set_id(problem, "bbob-biobj-mixint_f%03lu_i%02lu_d%03lu", (unsigned long)function,
+                      (unsigned long)instance, (unsigned long)dimension);
 
   /* Construct problem type */
   coco_problem_set_type(problem, "%s_%s", problem1->problem_type, problem2->problem_type);
@@ -176,13 +170,11 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function,
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite,
-                                                      const size_t function_idx,
-                                                      const size_t dimension_idx,
-                                                      const size_t instance_idx) {
+static coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                      const size_t dimension_idx, const size_t instance_idx) {
 
   coco_problem_t *problem = NULL;
-  suite_biobj_new_inst_t *new_inst_data = (suite_biobj_new_inst_t *) suite->data;
+  suite_biobj_new_inst_t *new_inst_data = (suite_biobj_new_inst_t *)suite->data;
   const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
 
   const size_t function = suite->functions[function_idx];
@@ -190,11 +182,11 @@ static coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite,
   const size_t instance = suite->instances[instance_idx];
 
   if (dimension < dim_large_scale)
-    problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_bbob_problem,
-        &new_inst_data, suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
+    problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_bbob_problem, &new_inst_data,
+                                            suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
   else
-    problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_largescale_problem,
-        &new_inst_data, suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
+    problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_largescale_problem, &new_inst_data,
+                                            suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;
@@ -202,4 +194,3 @@ static coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite,
 
   return problem;
 }
-

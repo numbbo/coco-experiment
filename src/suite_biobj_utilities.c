@@ -19,34 +19,20 @@
  *
  * It should be updated with new instances when/if they are chosen.
  */
-static const size_t suite_biobj_instances[][3] = {
-    { 1, 2, 4 },
-    { 2, 3, 5 },
-    { 3, 7, 8 },
-    { 4, 9, 10 },
-    { 5, 11, 12 },
-    { 6, 13, 14 },
-    { 7, 15, 16 },
-    { 8, 17, 18 },
-    { 9, 19, 21 },
-    { 10, 21, 22 },
-    { 11, 23, 24 },
-    { 12, 25, 26 },
-    { 13, 27, 28 },
-    { 14, 29, 30 },
-    { 15, 31, 34 }
-}; 
- 
+static const size_t suite_biobj_instances[][3] = {{1, 2, 4},    {2, 3, 5},    {3, 7, 8},    {4, 9, 10},   {5, 11, 12},
+                                                  {6, 13, 14},  {7, 15, 16},  {8, 17, 18},  {9, 19, 21},  {10, 21, 22},
+                                                  {11, 23, 24}, {12, 25, 26}, {13, 27, 28}, {14, 29, 30}, {15, 31, 34}};
+
 /**
  * @brief A structure containing information about the new instances.
  */
 typedef struct {
 
-  size_t **new_instances;    /**< @brief A matrix of new instances (equal in form to suite_biobj_instances)
-                                   that needs to be used only when an instance that is not in
-                                   suite_biobj_instances is being invoked. */
+  size_t **new_instances; /**< @brief A matrix of new instances (equal in form to suite_biobj_instances)
+                                that needs to be used only when an instance that is not in
+                                suite_biobj_instances is being invoked. */
 
-  size_t max_new_instances;  /**< @brief The maximal number of new instances. */
+  size_t max_new_instances; /**< @brief The maximal number of new instances. */
 
 } suite_biobj_new_inst_t;
 
@@ -59,7 +45,7 @@ static void suite_biobj_new_inst_free(void *stuff) {
   size_t i;
 
   assert(stuff != NULL);
-  data = (suite_biobj_new_inst_t *) stuff;
+  data = (suite_biobj_new_inst_t *)stuff;
 
   if (data->new_instances) {
     for (i = 0; i < data->max_new_instances; i++) {
@@ -77,11 +63,8 @@ static void suite_biobj_new_inst_free(void *stuff) {
  * @brief  Performs a few checks and returns whether the two given problem instances should break the search
  * for new instances in suite_biobj_get_new_instance().
  */
-static int suite_biobj_check_inst_consistency(const size_t dimension,
-                                              size_t function1,
-                                              size_t instance1,
-                                              size_t function2,
-                                              size_t instance2) {
+static int suite_biobj_check_inst_consistency(const size_t dimension, size_t function1, size_t instance1,
+                                              size_t function2, size_t instance2) {
   coco_problem_t *problem = NULL;
   coco_problem_t *problem1, *problem2;
   int break_search = 0;
@@ -96,8 +79,7 @@ static int suite_biobj_check_inst_consistency(const size_t dimension,
    * vector of doubles of the right dimension) */
   smallest_values_of_interest = coco_allocate_vector_with_value(dimension, -100);
   largest_values_of_interest = coco_allocate_vector_with_value(dimension, 100);
-  problem = coco_problem_stacked_allocate(problem1, problem2, smallest_values_of_interest,
-          largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem1, problem2, smallest_values_of_interest, largest_values_of_interest);
   coco_free_memory(smallest_values_of_interest);
   coco_free_memory(largest_values_of_interest);
 
@@ -107,17 +89,16 @@ static int suite_biobj_check_inst_consistency(const size_t dimension,
     coco_debug(
         "suite_biobj_check_inst_consistency(): The ideal and nadir points of %s are too close in the objective space",
         problem->problem_id);
-    coco_debug("norm = %e, ideal = %e\t%e, nadir = %e\t%e", norm, problem->best_value[0],
-        problem->best_value[1], problem->nadir_value[0], problem->nadir_value[1]);
+    coco_debug("norm = %e, ideal = %e\t%e, nadir = %e\t%e", norm, problem->best_value[0], problem->best_value[1],
+               problem->nadir_value[0], problem->nadir_value[1]);
     break_search = 1;
   }
 
   /* Check whether the extreme optimal points are too close in the decision space */
   norm = mo_get_norm(problem1->best_parameter, problem2->best_parameter, problem->number_of_variables);
   if (norm < apart_enough) {
-    coco_debug(
-        "suite_biobj_check_inst_consistency(): The extreme points of %s are too close in the decision space",
-        problem->problem_id);
+    coco_debug("suite_biobj_check_inst_consistency(): The extreme points of %s are too close in the decision space",
+               problem->problem_id);
     coco_debug("norm = %e", norm);
     break_search = 1;
   }
@@ -129,7 +110,6 @@ static int suite_biobj_check_inst_consistency(const size_t dimension,
   }
 
   return break_search;
-
 }
 
 /**
@@ -143,14 +123,10 @@ static int suite_biobj_check_inst_consistency(const size_t dimension,
  * points apart enough in the decision space. When the instance has been found, it is output through
  * coco_warning, so that the user can see it and eventually manually add it to suite_biobj_instances.
  */
-static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data,
-                                           const size_t instance,
-                                           const size_t instance1,
-                                           const size_t *bbob_functions,
-                                           const size_t num_bbob_functions,
-                                           const size_t *sel_bbob_functions,
-                                           const size_t num_sel_bbob_functions,
-                                           const size_t *dimensions,
+static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data, const size_t instance,
+                                           const size_t instance1, const size_t *bbob_functions,
+                                           const size_t num_bbob_functions, const size_t *sel_bbob_functions,
+                                           const size_t num_sel_bbob_functions, const size_t *dimensions,
                                            const size_t num_dimensions) {
 
   size_t instance2 = 0;
@@ -169,16 +145,17 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data
      * extreme optimal points in the decisions space are apart enough for all problems (all dimensions
      * and function combinations); therefore iterate over all dimensions and function combinations */
 
-    for (f1 = 0; (f1 < num_bbob_functions-1) && !break_search; f1++) {
+    for (f1 = 0; (f1 < num_bbob_functions - 1) && !break_search; f1++) {
       function1 = bbob_functions[f1];
-      for (f2 = f1+1; (f2 < num_bbob_functions) && !break_search; f2++) {
+      for (f2 = f1 + 1; (f2 < num_bbob_functions) && !break_search; f2++) {
         function2 = bbob_functions[f2];
         for (d = 0; (d < num_dimensions) && !break_search; d++) {
           dimension = dimensions[d];
 
           if (dimension == 0) {
             if (!warning_produced)
-              coco_warning("suite_biobj_get_new_instance(): remove filtering of dimensions to get generally acceptable instances!");
+              coco_warning("suite_biobj_get_new_instance(): remove filtering of dimensions to get generally acceptable "
+                           "instances!");
             warning_produced = 1;
             continue;
           }
@@ -196,11 +173,12 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data
         dimension = dimensions[d];
 
         if (dimension == 0) {
-            if (!warning_produced)
-              coco_warning("suite_biobj_get_new_instance(): remove filtering of dimensions to get generally acceptable instances!");
-            warning_produced = 1;
-            continue;
-          }
+          if (!warning_produced)
+            coco_warning("suite_biobj_get_new_instance(): remove filtering of dimensions to get generally acceptable "
+                         "instances!");
+          warning_produced = 1;
+          continue;
+        }
 
         break_search = suite_biobj_check_inst_consistency(dimension, function1, instance1, function2, instance2);
       }
@@ -213,7 +191,7 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data
       /* An appropriate instance was found */
       appropriate_instance_found = 1;
       coco_info("suite_biobj_get_new_instance(): Instance %lu created from instances %lu and %lu",
-          (unsigned long) instance, (unsigned long) instance1, (unsigned long) instance2);
+                (unsigned long)instance, (unsigned long)instance1, (unsigned long)instance2);
 
       /* Save the instance to new_instances */
       for (i = 0; i < new_inst_data->max_new_instances; i++) {
@@ -229,7 +207,7 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data
 
   if (!appropriate_instance_found) {
     coco_error("suite_biobj_get_new_instance(): Could not find suitable instance %lu in %lu tries",
-        (unsigned long) instance, (unsigned long) num_tries);
+               (unsigned long)instance, (unsigned long)num_tries);
     return 0; /* Never reached */
   }
 
@@ -259,22 +237,19 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_biobj_problem(const size_t function,
-                                              const size_t dimension,
-                                              const size_t instance,
+static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_t dimension, const size_t instance,
                                               const coco_get_problem_function_t coco_get_problem_function,
-                                              suite_biobj_new_inst_t **new_inst_data,
-                                              const size_t num_new_instances,
-                                              const size_t *dimensions,
-                                              const size_t num_dimensions) {
-  
+                                              suite_biobj_new_inst_t **new_inst_data, const size_t num_new_instances,
+                                              const size_t *dimensions, const size_t num_dimensions) {
+
   /* Selected functions from the bbob suite that are used to construct the original bbob-biobj suite. */
-  const size_t sel_bbob_functions[] = { 1, 2, 6, 8, 13, 14, 15, 17, 20, 21 };
+  const size_t sel_bbob_functions[] = {1, 2, 6, 8, 13, 14, 15, 17, 20, 21};
   const size_t num_sel_bbob_functions = 10;
   /* All functions from the bbob suite for later use during instance generation. */
-  const size_t all_bbob_functions[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 };
+  const size_t all_bbob_functions[] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+                                       13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
   const size_t num_all_bbob_functions = 24;
-  
+
   coco_problem_t *problem1 = NULL, *problem2 = NULL, *problem = NULL;
   size_t instance1 = 0, instance2 = 0;
   size_t function1_idx, function2_idx;
@@ -286,15 +261,13 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function,
 
   double *smallest_values_of_interest = coco_allocate_vector_with_value(dimension, -100);
   double *largest_values_of_interest = coco_allocate_vector_with_value(dimension, 100);
-  
+
   /* Determine the corresponding single-objective function indices */
   if (function_idx < 55) {
     /* A "magic" formula to compute the BBOB function index from the bi-objective function index */
-    function1_idx = num_sel_bbob_functions
-        - coco_double_to_size_t(
-            floor(-0.5 + sqrt(0.25 + 2.0 * (double) (55 - function_idx - 1)))) - 1;
-    function2_idx = function_idx - (function1_idx * num_sel_bbob_functions) +
-        (function1_idx * (function1_idx + 1)) / 2;
+    function1_idx = num_sel_bbob_functions -
+                    coco_double_to_size_t(floor(-0.5 + sqrt(0.25 + 2.0 * (double)(55 - function_idx - 1)))) - 1;
+    function2_idx = function_idx - (function1_idx * num_sel_bbob_functions) + (function1_idx * (function1_idx + 1)) / 2;
   } else if (function_idx == 55) { /* There is not a simple "magic" formula for functions >= 55 */
     function1_idx = 0;
     function2_idx = 2;
@@ -409,7 +382,7 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function,
   } else {
     coco_error("coco_get_biobj_problem(): Invalid function index %i.", function_idx);
   }
-      
+
   /* Determine the instances */
 
   /* First search for the instance in suite_biobj_instances */
@@ -443,16 +416,17 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function,
 
     if ((*new_inst_data) == NULL) {
       /* Allocate space needed for saving new instances */
-      (*new_inst_data) = (suite_biobj_new_inst_t *) coco_allocate_memory(sizeof(**new_inst_data));
+      (*new_inst_data) = (suite_biobj_new_inst_t *)coco_allocate_memory(sizeof(**new_inst_data));
 
       /* Most often the actual number of new instances will be lower than max_new_instances, because
        * some of them are already in suite_biobj_instances. However, in order to avoid iterating over
        * suite_biobj_new_inst_t, the allocation uses max_new_instances. */
       (*new_inst_data)->max_new_instances = num_new_instances;
 
-      (*new_inst_data)->new_instances = (size_t **) coco_allocate_memory((*new_inst_data)->max_new_instances * sizeof(size_t *));
+      (*new_inst_data)->new_instances =
+          (size_t **)coco_allocate_memory((*new_inst_data)->max_new_instances * sizeof(size_t *));
       for (i = 0; i < (*new_inst_data)->max_new_instances; i++) {
-        (*new_inst_data)->new_instances[i] = (size_t *) malloc(3 * sizeof(size_t));
+        (*new_inst_data)->new_instances[i] = (size_t *)malloc(3 * sizeof(size_t));
         for (j = 0; j < 3; j++) {
           (*new_inst_data)->new_instances[i][j] = 0;
         }
@@ -461,10 +435,11 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function,
 
     /* A simple formula to set the first instance */
     instance1 = 2 * instance + 1;
-    instance2 = suite_biobj_get_new_instance((*new_inst_data), instance, instance1, all_bbob_functions,
-        num_all_bbob_functions, sel_bbob_functions, num_sel_bbob_functions, dimensions, num_dimensions);
+    instance2 =
+        suite_biobj_get_new_instance((*new_inst_data), instance, instance1, all_bbob_functions, num_all_bbob_functions,
+                                     sel_bbob_functions, num_sel_bbob_functions, dimensions, num_dimensions);
   }
-  
+
   /* Construct the problem based on the function index and dimension */
   if (function_idx < 55) {
     problem1 = coco_get_problem_function(sel_bbob_functions[function1_idx], dimension, instance1);
@@ -485,8 +460,8 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function,
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   coco_problem_set_name(problem, problem->problem_id);
   /* Attention! Any change to the problem id affects also archive processing! */
-  coco_problem_set_id(problem, "bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long) function,
-      (unsigned long) instance, (unsigned long) dimension);
+  coco_problem_set_id(problem, "bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function, (unsigned long)instance,
+                      (unsigned long)dimension);
 
   /* Construct problem type */
   coco_problem_set_type(problem, "%s_%s", problem1->problem_type, problem2->problem_type);
@@ -503,9 +478,7 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function,
  * If a suite does not have known optima or it has known optima but the key is not found,
  * the default value is used.
  */
-static void suite_biobj_get_best_hyp_value(const int known_optima,
-                                           const char *key,
-                                           double *value) {
+static void suite_biobj_get_best_hyp_value(const int known_optima, const char *key, double *value) {
 
   static const double default_value = 1.0;
   size_t i, count;
@@ -523,11 +496,10 @@ static void suite_biobj_get_best_hyp_value(const int known_optima,
       }
     }
     /* If it comes to this point, the key was not found */
-    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s could not be found; set to %f",
-        key, default_value);
+    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s could not be found; set to %f", key,
+                 default_value);
     coco_free_memory(curr_key);
   } else {
-    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s is not known; set to %f",
-        key, default_value);
+    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s is not known; set to %f", key, default_value);
   }
 }

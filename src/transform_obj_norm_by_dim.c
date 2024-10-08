@@ -15,7 +15,7 @@
 static void transform_obj_norm_by_dim_evaluate(coco_problem_t *problem, const double *x, double *y) {
 
   coco_evaluate_function(coco_problem_transformed_get_inner_problem(problem), x, y);
-  y[0] *= bbob2009_fmin(1, 40. / ((double) problem->number_of_variables));
+  y[0] *= bbob2009_fmin(1, 40. / ((double)problem->number_of_variables));
   /* Wassim: might want to use a function (with no 40) here that we can put in a helpers file */
 
   assert(y[0] + 1e-13 >= problem->best_value[0]);

@@ -28,7 +28,7 @@ static double f_rosenbrock_raw(const double *x, const size_t number_of_variables
   assert(number_of_variables > 1);
 
   if (coco_vector_contains_nan(x, number_of_variables))
-  	return NAN;
+    return NAN;
 
   for (i = 0; i < number_of_variables - 1; ++i) {
     tmp = (x[i] * x[i] - x[i + 1]);
@@ -55,8 +55,8 @@ static void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x, doub
  */
 static coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
 
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("Rosenbrock function",
-      f_rosenbrock_evaluate, NULL, number_of_variables, -5.0, 5.0, 1.0);
+  coco_problem_t *problem = coco_problem_allocate_from_scalars("Rosenbrock function", f_rosenbrock_evaluate, NULL,
+                                                               number_of_variables, -5.0, 5.0, 1.0);
   coco_problem_set_id(problem, "%s_d%02lu", "rosenbrock", number_of_variables);
 
   /* Compute best solution */
@@ -67,10 +67,8 @@ static coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function,
-                                                          const size_t dimension,
-                                                          const size_t instance,
-                                                          const long rseed,
+static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                          const size_t instance, const long rseed,
                                                           const char *problem_id_template,
                                                           const char *problem_name_template) {
   double *xopt, fopt;
@@ -86,23 +84,23 @@ static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function,
     xopt[i] *= 0.75;
   }
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0){
+  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
     block_size = coco_rotation_matrix_block_size(dimension);
-    factor = coco_double_max(1.0, sqrt((double) block_size) / 8.0);
+    factor = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
   } else {
-    factor = coco_double_max(1.0, sqrt((double) dimension) / 8.0);
+    factor = coco_double_max(1.0, sqrt((double)dimension) / 8.0);
   }
 
   problem = f_rosenbrock_allocate(dimension);
   problem = transform_vars_shift(problem, minus_one, 0);
   problem = transform_vars_scale(problem, factor);
   problem = transform_vars_shift(problem, xopt, 0);
-    
+
   /*if large scale test-bed, normalize by dim*/
-  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0){
-        problem = transform_obj_norm_by_dim(problem);
+  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
+    problem = transform_obj_norm_by_dim(problem);
   }
-    
+
   problem = transform_obj_shift(problem, fopt);
 
   coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
@@ -117,10 +115,8 @@ static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function,
 /**
  * @brief Creates the BBOB rotated Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t function,
-                                                                  const size_t dimension,
-                                                                  const size_t instance,
-                                                                  const long rseed,
+static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                  const size_t instance, const long rseed,
                                                                   const char *problem_id_template,
                                                                   const char *problem_name_template) {
 
@@ -136,7 +132,7 @@ static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t f
   rot1 = bbob2009_allocate_matrix(dimension, dimension);
   bbob2009_compute_rotation(rot1, rseed, dimension);
 
-  factor = coco_double_max(1.0, sqrt((double) dimension) / 8.0);
+  factor = coco_double_max(1.0, sqrt((double)dimension) / 8.0);
   /* Compute affine transformation */
   for (row = 0; row < dimension; ++row) {
     current_row = M + row * dimension;
@@ -149,7 +145,9 @@ static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t f
 
   problem = f_rosenbrock_allocate(dimension);
   for (row = 0; row < dimension; row++) {
-    problem->best_parameter[row] = 0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine(): 'best_parameter' not updated, set to NAN")*/
+    problem->best_parameter[row] =
+        0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine():
+              'best_parameter' not updated, set to NAN")*/
   }
   problem = transform_vars_affine(problem, M, b, dimension);
   problem = transform_obj_shift(problem, fopt);
@@ -174,13 +172,11 @@ static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t f
 /**
  * @brief Creates the BBOB permuted block-rotated Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const size_t function,
-                                                                        const size_t dimension,
-                                                                        const size_t instance,
-                                                                        const long rseed,
+static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                        const size_t instance, const long rseed,
                                                                         const char *problem_id_template,
                                                                         const char *problem_name_template) {
-  
+
   double *xopt, fopt;
   coco_problem_t *problem = NULL;
   double *minus_one, factor;
@@ -199,18 +195,18 @@ static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
 
   block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
   block_size = coco_rotation_matrix_block_size(dimension);
-    
+
   swap_range = coco_get_swap_range(dimension, "bbob-largescale");
   nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   fopt = bbob2009_compute_fopt(function, instance);
-  factor = coco_double_max(1.0, sqrt((double) block_size) / 8.0);
+  factor = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
   minus_one = coco_allocate_vector(dimension);
   xopt = coco_allocate_vector(dimension);
   bbob2009_compute_xopt(xopt, rseed, dimension);
   for (i = 0; i < dimension; ++i) {
-      minus_one[i] = -1.0;
-      xopt[i] *= 0.75;
+    minus_one[i] = -1.0;
+    xopt[i] *= 0.75;
   }
 
   B = coco_allocate_blockmatrix(dimension, block_sizes, nb_blocks);
@@ -230,7 +226,7 @@ static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
   problem = transform_vars_shift(problem, xopt, 0);
   problem = transform_obj_norm_by_dim(problem);
   problem = transform_obj_shift(problem, fopt);
-  
+
   coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
   coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
   coco_problem_set_type(problem, "2-moderate");
@@ -244,5 +240,3 @@ static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
   coco_free_memory(block_sizes);
   return problem;
 }
-
-

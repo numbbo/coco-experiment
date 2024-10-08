@@ -31,22 +31,22 @@
  * finalization.
  */
 typedef struct {
-  FILE *out_file;                /**< @brief File for logging. */
-  size_t num_func_evaluations;   /**< @brief The number of function evaluations performed so far. */
-  size_t num_cons_evaluations;   /**< @brief The number of evaluations of constraints performed so far. */
+  FILE *out_file;              /**< @brief File for logging. */
+  size_t num_func_evaluations; /**< @brief The number of function evaluations performed so far. */
+  size_t num_cons_evaluations; /**< @brief The number of evaluations of constraints performed so far. */
 
-  double best_value;             /**< @brief The best-so-far value. */
-  double current_value;          /**< @brief The current value. */
+  double best_value;    /**< @brief The best-so-far value. */
+  double current_value; /**< @brief The current value. */
 
-  int log_vars;                  /**< @brief Whether to log the decision values. */
-  int log_cons;                  /**< @brief Whether to log the constraints. */
-  int log_only_better;           /**< @brief Whether to log only solutions that are better than previous ones. */
-  int log_time;                  /**< @brief Whether to log evaluation time. */
+  int log_vars;        /**< @brief Whether to log the decision values. */
+  int log_cons;        /**< @brief Whether to log the constraints. */
+  int log_only_better; /**< @brief Whether to log only solutions that are better than previous ones. */
+  int log_time;        /**< @brief Whether to log evaluation time. */
 
-  int precision_x;               /**< @brief Precision for outputting decision values. */
-  int precision_f;               /**< @brief Precision for outputting objective values. */
-  int precision_g;               /**< @brief Precision for outputting constraint values. */
-  int log_discrete_as_int;       /**< @brief Whether to output discrete variables in int or double format. */
+  int precision_x;         /**< @brief Precision for outputting decision values. */
+  int precision_f;         /**< @brief Precision for outputting objective values. */
+  int precision_g;         /**< @brief Precision for outputting constraint values. */
+  int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
 } logger_rw_data_t;
 
 /**
@@ -62,7 +62,7 @@ static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double 
   int log_this_time = 1;
   time_t start, end;
 
-  logger = (logger_rw_data_t *) coco_problem_transformed_get_data(problem);
+  logger = (logger_rw_data_t *)coco_problem_transformed_get_data(problem);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   /* Time the evaluations */
@@ -93,8 +93,8 @@ static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double 
   else if (problem->number_of_objectives == 1)
     log_this_time = !logger->log_only_better;
   if ((logger->num_func_evaluations == 1) || log_this_time) {
-    fprintf(logger->out_file, "%lu\t", (unsigned long) logger->num_func_evaluations);
-    fprintf(logger->out_file, "%lu\t", (unsigned long) logger->num_cons_evaluations);
+    fprintf(logger->out_file, "%lu\t", (unsigned long)logger->num_func_evaluations);
+    fprintf(logger->out_file, "%lu\t", (unsigned long)logger->num_cons_evaluations);
     for (i = 0; i < problem->number_of_objectives; i++)
       fprintf(logger->out_file, "%+.*e\t", logger->precision_f, y[i]);
     if (logger->log_vars) {
@@ -118,7 +118,6 @@ static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double 
 
   if (problem->number_of_constraints > 0)
     coco_free_memory(constraints);
-
 }
 
 /**
@@ -129,7 +128,7 @@ static void logger_rw_free(void *stuff) {
   logger_rw_data_t *logger;
 
   assert(stuff != NULL);
-  logger = (logger_rw_data_t *) stuff;
+  logger = (logger_rw_data_t *)stuff;
 
   if (logger->out_file != NULL) {
     fclose(logger->out_file);
@@ -153,11 +152,11 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
   observer_rw_data_t *observer_data;
   char *path_name, *file_name = NULL;
 
-  logger_data = (logger_rw_data_t *) coco_allocate_memory(sizeof(*logger_data));
+  logger_data = (logger_rw_data_t *)coco_allocate_memory(sizeof(*logger_data));
   logger_data->num_func_evaluations = 0;
   logger_data->num_cons_evaluations = 0;
 
-  observer_data = (observer_rw_data_t *) observer->data;
+  observer_data = (observer_rw_data_t *)observer->data;
   /* Copy values from the observes that you might need even if they do not exist any more */
   logger_data->precision_x = observer->precision_x;
   logger_data->precision_f = observer->precision_f;
@@ -165,22 +164,20 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
   logger_data->log_discrete_as_int = observer->log_discrete_as_int;
 
   if (((observer_data->log_vars_mode == LOG_LOW_DIM) &&
-      (inner_problem->number_of_variables > observer_data->low_dim_vars))
-      || (observer_data->log_vars_mode == LOG_NEVER))
+       (inner_problem->number_of_variables > observer_data->low_dim_vars)) ||
+      (observer_data->log_vars_mode == LOG_NEVER))
     logger_data->log_vars = 0;
   else
     logger_data->log_vars = 1;
 
   if (((observer_data->log_cons_mode == LOG_LOW_DIM) &&
-      (inner_problem->number_of_constraints > observer_data->low_dim_cons))
-      || (observer_data->log_cons_mode == LOG_NEVER)
-      || (inner_problem->number_of_constraints == 0))
+       (inner_problem->number_of_constraints > observer_data->low_dim_cons)) ||
+      (observer_data->log_cons_mode == LOG_NEVER) || (inner_problem->number_of_constraints == 0))
     logger_data->log_cons = 0;
   else
     logger_data->log_cons = 1;
 
-  logger_data->log_only_better = (observer_data->log_only_better) &&
-      (inner_problem->number_of_objectives == 1);
+  logger_data->log_only_better = (observer_data->log_only_better) && (inner_problem->number_of_objectives == 1);
   logger_data->log_time = observer_data->log_time;
 
   logger_data->best_value = DBL_MAX;
@@ -207,17 +204,15 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
           coco_problem_get_suite(inner_problem)->suite_name, coco_problem_get_id(inner_problem),
           coco_problem_get_name(inner_problem), coco_version);
   fprintf(logger_data->out_file, "%% f-evaluations | g-evaluations | %lu objective",
-      (unsigned long) inner_problem->number_of_objectives);
+          (unsigned long)inner_problem->number_of_objectives);
   if (inner_problem->number_of_objectives > 1)
     fprintf(logger_data->out_file, "s");
   if (logger_data->log_vars)
-    fprintf(logger_data->out_file, " | %lu variable",
-        (unsigned long) inner_problem->number_of_variables);
+    fprintf(logger_data->out_file, " | %lu variable", (unsigned long)inner_problem->number_of_variables);
   if (inner_problem->number_of_variables > 1)
     fprintf(logger_data->out_file, "s");
   if (logger_data->log_cons)
-    fprintf(logger_data->out_file, " | %lu constraint",
-        (unsigned long) inner_problem->number_of_constraints);
+    fprintf(logger_data->out_file, " | %lu constraint", (unsigned long)inner_problem->number_of_constraints);
   if (inner_problem->number_of_constraints > 1)
     fprintf(logger_data->out_file, "s");
   if (logger_data->log_time)

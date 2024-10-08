@@ -62,9 +62,9 @@ static double *mo_normalize(const double *y, const double *ideal, const double *
 
   for (i = 0; i < num_obj; i++) {
     assert(num_obj == 2);
-    if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) && (normalized_y[1-i] < 1)) {
-      coco_warning("mo_normalize(): Adjusting %.15e to %.15e", y[1-i], nadir[1-i]);
-      normalized_y[1-i] = 1;
+    if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) && (normalized_y[1 - i] < 1)) {
+      coco_warning("mo_normalize(): Adjusting %.15e to %.15e", y[1 - i], nadir[1 - i]);
+      normalized_y[1 - i] = 1;
     }
   }
 
@@ -120,8 +120,7 @@ static int mo_is_within_ROI(const double *normalized_y, const size_t num_obj) {
 
   for (i = 0; i < num_obj; i++) {
     if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) ||
-        coco_double_almost_equal(normalized_y[i], 1, mo_precision) ||
-        (normalized_y[i] > 0 && normalized_y[i] < 1))
+        coco_double_almost_equal(normalized_y[i], 1, mo_precision) || (normalized_y[i] > 0 && normalized_y[i] < 1))
       continue;
     else
       within = 0;
@@ -150,8 +149,7 @@ static double mo_get_distance_to_ROI(const double *normalized_y, const size_t nu
   diff_1 = normalized_y[1] - 1;
   if ((diff_0 > 0) && (diff_1 > 0)) {
     return sqrt(pow(diff_0, 2) + pow(diff_1, 2));
-  }
-  else if (diff_0 > 0)
+  } else if (diff_0 > 0)
     return diff_0;
   else
     return diff_1;

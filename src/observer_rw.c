@@ -9,21 +9,19 @@
 #include "coco_utilities.c"
 
 /** @brief Enum for denoting when the decision variables and constraints are logged. */
-typedef enum {
-  LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS
-} observer_rw_log_e;
+typedef enum { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS } observer_rw_log_e;
 
 /**
  * @brief The real-world observer data type.
  */
 typedef struct {
-  observer_rw_log_e log_vars_mode;   /**< @brief When the decision variables are logged. */
-  observer_rw_log_e log_cons_mode;   /**< @brief When the constraints are logged. */
-  size_t low_dim_vars;               /**< @brief "Low dimension" for decision variables. */
-  size_t low_dim_cons;               /**< @brief "Low dimension" for constraints. */
-  int log_only_better;               /**< @brief Whether to log only solutions that are better than previous
-                                                 ones (only for the single-objective problems). */
-  int log_time;                      /**< @brief Whether to log time. */
+  observer_rw_log_e log_vars_mode; /**< @brief When the decision variables are logged. */
+  observer_rw_log_e log_cons_mode; /**< @brief When the constraints are logged. */
+  size_t low_dim_vars;             /**< @brief "Low dimension" for decision variables. */
+  size_t low_dim_cons;             /**< @brief "Low dimension" for constraints. */
+  int log_only_better;             /**< @brief Whether to log only solutions that are better than previous
+                                               ones (only for the single-objective problems). */
+  int log_time;                    /**< @brief Whether to log time. */
 } observer_rw_data_t;
 
 static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *problem);
@@ -63,11 +61,11 @@ static void observer_rw(coco_observer_t *observer, const char *options, coco_opt
 
   /* Sets the valid keys for rw observer options
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
-  const char *known_keys[] = { "log_variables", "log_constraints", "low_dim_vars", "low_dim_cons",
-      "log_only_better", "log_time" };
+  const char *known_keys[] = {"log_variables", "log_constraints", "low_dim_vars",
+                              "low_dim_cons",  "log_only_better", "log_time"};
   *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
 
-  observer_data = (observer_rw_data_t *) coco_allocate_memory(sizeof(*observer_data));
+  observer_data = (observer_rw_data_t *)coco_allocate_memory(sizeof(*observer_data));
 
   observer_data->log_vars_mode = LOG_ALWAYS;
   if (coco_options_read_string(options, "log_variables", string_value) > 0) {

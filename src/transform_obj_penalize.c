@@ -20,15 +20,15 @@ typedef struct {
  * @brief Evaluates the transformation.
  */
 static void transform_obj_penalize_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  transform_obj_penalize_data_t *data = (transform_obj_penalize_data_t *) coco_problem_transformed_get_data(problem);
+  transform_obj_penalize_data_t *data = (transform_obj_penalize_data_t *)coco_problem_transformed_get_data(problem);
   const double *lower_bounds = problem->smallest_values_of_interest;
   const double *upper_bounds = problem->largest_values_of_interest;
   double penalty = 0.0;
   size_t i;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-  	coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
-  	return;
+    coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
+    return;
   }
 
   for (i = 0; i < problem->number_of_variables; ++i) {
@@ -58,7 +58,7 @@ static coco_problem_t *transform_obj_penalize(coco_problem_t *inner_problem, con
   transform_obj_penalize_data_t *data;
   assert(inner_problem != NULL);
 
-  data = (transform_obj_penalize_data_t *) coco_allocate_memory(sizeof(*data));
+  data = (transform_obj_penalize_data_t *)coco_allocate_memory(sizeof(*data));
   data->factor = factor;
   problem = coco_problem_transformed_allocate(inner_problem, data, NULL, "transform_obj_penalize");
   problem->evaluate_function = transform_obj_penalize_evaluate;

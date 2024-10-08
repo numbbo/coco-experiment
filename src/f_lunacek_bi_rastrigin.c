@@ -29,8 +29,7 @@ typedef struct {
 /**
  * @brief Implements the Lunacek bi-Rastrigin function without connections to any COCO structures.
  */
-static double f_lunacek_bi_rastrigin_raw(const double *x,
-                                         const size_t number_of_variables,
+static double f_lunacek_bi_rastrigin_raw(const double *x, const size_t number_of_variables,
                                          f_lunacek_bi_rastrigin_data_t *data) {
   double result;
   static const double condition = 100.;
@@ -38,14 +37,14 @@ static double f_lunacek_bi_rastrigin_raw(const double *x,
   double penalty = 0.0;
   static const double mu0 = 2.5;
   static const double d = 1.;
-  const double s = 1. - 0.5 / (sqrt((double) (number_of_variables + 20)) - 4.1);
+  const double s = 1. - 0.5 / (sqrt((double)(number_of_variables + 20)) - 4.1);
   const double mu1 = -sqrt((mu0 * mu0 - d) / s);
   double *tmpvect, sum1 = 0., sum2 = 0., sum3 = 0.;
 
   assert(number_of_variables > 1);
 
   if (coco_vector_contains_nan(x, number_of_variables))
-  	return NAN;
+    return NAN;
 
   for (i = 0; i < number_of_variables; ++i) {
     double tmp;
@@ -67,7 +66,7 @@ static double f_lunacek_bi_rastrigin_raw(const double *x,
   for (i = 0; i < number_of_variables; ++i) {
     double c1;
     tmpvect[i] = 0.0;
-    c1 = pow(sqrt(condition), ((double) i) / (double) (number_of_variables - 1));
+    c1 = pow(sqrt(condition), ((double)i) / (double)(number_of_variables - 1));
     for (j = 0; j < number_of_variables; ++j) {
       tmpvect[i] += c1 * data->rot2[i][j] * (data->x_hat[j] - mu0);
     }
@@ -84,8 +83,8 @@ static double f_lunacek_bi_rastrigin_raw(const double *x,
     sum2 += (data->x_hat[i] - mu1) * (data->x_hat[i] - mu1);
     sum3 += cos(2 * coco_pi * data->z[i]);
   }
-  result = coco_double_min(sum1, d * (double) number_of_variables + s * sum2)
-      + 10. * ((double) number_of_variables - sum3) + 1e4 * penalty;
+  result = coco_double_min(sum1, d * (double)number_of_variables + s * sum2) +
+           10. * ((double)number_of_variables - sum3) + 1e4 * penalty;
   coco_free_memory(tmpvect);
 
   return result;
@@ -96,7 +95,7 @@ static double f_lunacek_bi_rastrigin_raw(const double *x,
  */
 static void f_lunacek_bi_rastrigin_evaluate(coco_problem_t *problem, const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
-  y[0] = f_lunacek_bi_rastrigin_raw(x, problem->number_of_variables, (f_lunacek_bi_rastrigin_data_t *) problem->data);
+  y[0] = f_lunacek_bi_rastrigin_raw(x, problem->number_of_variables, (f_lunacek_bi_rastrigin_data_t *)problem->data);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
@@ -105,7 +104,7 @@ static void f_lunacek_bi_rastrigin_evaluate(coco_problem_t *problem, const doubl
  */
 static void f_lunacek_bi_rastrigin_free(coco_problem_t *problem) {
   f_lunacek_bi_rastrigin_data_t *data;
-  data = (f_lunacek_bi_rastrigin_data_t *) problem->data;
+  data = (f_lunacek_bi_rastrigin_data_t *)problem->data;
   coco_free_memory(data->x_hat);
   coco_free_memory(data->z);
   coco_free_memory(data->xopt);
@@ -124,23 +123,22 @@ static void f_lunacek_bi_rastrigin_free(coco_problem_t *problem) {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t function,
-                                                                    const size_t dimension,
-                                                                    const size_t instance,
-                                                                    const long rseed,
+static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                    const size_t instance, const long rseed,
                                                                     const char *problem_id_template,
                                                                     const char *problem_name_template) {
 
   f_lunacek_bi_rastrigin_data_t *data;
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("Lunacek's bi-Rastrigin function",
-      f_lunacek_bi_rastrigin_evaluate, f_lunacek_bi_rastrigin_free, dimension, -5.0, 5.0, 0.0);
+  coco_problem_t *problem =
+      coco_problem_allocate_from_scalars("Lunacek's bi-Rastrigin function", f_lunacek_bi_rastrigin_evaluate,
+                                         f_lunacek_bi_rastrigin_free, dimension, -5.0, 5.0, 0.0);
 
   const double mu0 = 2.5;
 
   double fopt, *tmpvect;
   size_t i;
 
-  data = (f_lunacek_bi_rastrigin_data_t *) coco_allocate_memory(sizeof(*data));
+  data = (f_lunacek_bi_rastrigin_data_t *)coco_allocate_memory(sizeof(*data));
   /* Allocate temporary storage and space for the rotation matrices */
   data->x_hat = coco_allocate_vector(dimension);
   data->z = coco_allocate_vector(dimension);
@@ -179,18 +177,16 @@ static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t
   return problem;
 }
 
-
-
-/* Functions used in/related to the large scale suite are below. Eventually either merge with above after the standard version is updated with the new approach or put what's below in a separate file*/
-
-
+/* Functions used in/related to the large scale suite are below. Eventually either merge with above after the standard
+ * version is updated with the new approach or put what's below in a separate file*/
 
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
 static void f_lunacek_bi_rastrigin_versatile_data_free(coco_problem_t *problem) {
 
-  f_lunacek_bi_rastrigin_versatile_data_t *versatile_data = (f_lunacek_bi_rastrigin_versatile_data_t *) problem->versatile_data;
+  f_lunacek_bi_rastrigin_versatile_data_t *versatile_data =
+      (f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data;
   /*free the two problems*/
   if (versatile_data->sub_problem_mu0 != NULL) {
     coco_problem_free(versatile_data->sub_problem_mu0);
@@ -199,13 +195,12 @@ static void f_lunacek_bi_rastrigin_versatile_data_free(coco_problem_t *problem) 
     coco_problem_free(versatile_data->sub_problem_mu1);
   }
 
-  coco_free_memory(versatile_data->x_hat);  /*Manh: free the x_hat*/
+  coco_free_memory(versatile_data->x_hat); /*Manh: free the x_hat*/
   coco_free_memory(versatile_data);
   problem->versatile_data = NULL;
   problem->problem_free_function = NULL;
   coco_problem_free(problem);
 }
-
 
 /**
  * @brief Uses the core function to evaluate the sub problem.
@@ -216,26 +211,27 @@ static void f_lunacek_bi_rastrigin_sub_evaluate_core(coco_problem_t *problem, co
   y[0] = f_sphere_raw(x, problem->number_of_variables);
 }
 
-
 /**
  * @brief Allocates the basic lunacek_bi_rastrigin sub problem.
  */
 static coco_problem_t *f_lunacek_bi_rastrigin_sub_problem_allocate(const size_t number_of_variables) {
 
-  coco_problem_t *problem_i = coco_problem_allocate_from_scalars("lunacek_bi_rastrigin_sub function",
-                                                                 f_lunacek_bi_rastrigin_sub_evaluate_core, NULL, number_of_variables, -5.0, 5.0, 0.0);
+  coco_problem_t *problem_i =
+      coco_problem_allocate_from_scalars("lunacek_bi_rastrigin_sub function", f_lunacek_bi_rastrigin_sub_evaluate_core,
+                                         NULL, number_of_variables, -5.0, 5.0, 0.0);
   problem_i->versatile_data = NULL;
   coco_problem_set_id(problem_i, "%s_d%04lu", "lunacek_bi_rastrigin_sub", number_of_variables);
   f_lunacek_bi_rastrigin_sub_evaluate_core(problem_i, problem_i->best_parameter, problem_i->best_value);
   return problem_i;
 }
 
-
 /**
  * @brief Implements the lunacek_bi_rastrigin function without connections to any COCO structures.
  * Wassim: core to not conflict with raw for now
  */
-static double f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,f_lunacek_bi_rastrigin_versatile_data_t *f_lunacek_bi_rastrigin_versatile_data) {
+static double
+f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
+                            f_lunacek_bi_rastrigin_versatile_data_t *f_lunacek_bi_rastrigin_versatile_data) {
 
   coco_problem_t *problem_sub_mu0, *problem_sub_mu1;
   size_t i;
@@ -251,7 +247,7 @@ static double f_lunacek_bi_rastrigin_core(const double *x, const size_t number_o
   problem_sub_mu1 = f_lunacek_bi_rastrigin_versatile_data->sub_problem_mu1;
   problem_sub_mu1->evaluate_function(problem_sub_mu1, x_hat, &y1);
 
-  result += (double) number_of_variables;
+  result += (double)number_of_variables;
 
   for (i = 0; i < number_of_variables; i++) {
     result -= cos(2 * coco_pi * x[i]);
@@ -268,7 +264,8 @@ static double f_lunacek_bi_rastrigin_core(const double *x, const size_t number_o
 static void f_lunacek_bi_rastrigin_evaluate_core(coco_problem_t *problem, const double *x, double *y) {
 
   assert(problem->number_of_objectives == 1);
-  y[0] = f_lunacek_bi_rastrigin_core(x, problem->number_of_variables, ((f_lunacek_bi_rastrigin_versatile_data_t *) problem->versatile_data));
+  y[0] = f_lunacek_bi_rastrigin_core(x, problem->number_of_variables,
+                                     ((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data));
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
@@ -277,26 +274,26 @@ static void f_lunacek_bi_rastrigin_evaluate_core(coco_problem_t *problem, const 
  */
 static coco_problem_t *f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
 
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("lunacek_bi_rastrigin function",
-                                                               f_lunacek_bi_rastrigin_evaluate_core, f_lunacek_bi_rastrigin_versatile_data_free, number_of_variables, -5.0, 5.0, 0.0);
+  coco_problem_t *problem = coco_problem_allocate_from_scalars(
+      "lunacek_bi_rastrigin function", f_lunacek_bi_rastrigin_evaluate_core, f_lunacek_bi_rastrigin_versatile_data_free,
+      number_of_variables, -5.0, 5.0, 0.0);
 
-  problem->versatile_data = (f_lunacek_bi_rastrigin_versatile_data_t *) coco_allocate_memory(sizeof(f_lunacek_bi_rastrigin_versatile_data_t));
-  ((f_lunacek_bi_rastrigin_versatile_data_t *) problem->versatile_data)->x_hat = coco_allocate_vector(number_of_variables); /* Manh: Allocate x_hat in versatile_data */
+  problem->versatile_data =
+      (f_lunacek_bi_rastrigin_versatile_data_t *)coco_allocate_memory(sizeof(f_lunacek_bi_rastrigin_versatile_data_t));
+  ((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->x_hat =
+      coco_allocate_vector(number_of_variables); /* Manh: Allocate x_hat in versatile_data */
   coco_problem_set_id(problem, "%s_d%04lu", "lunacek_bi_rastrigin", number_of_variables);
   /* Compute the best solution later once the sub-problems are well defined */
-  *(problem->best_value) = 0;  /* Manh: set default value to avoid assert() in transformation later*/
+  *(problem->best_value) = 0; /* Manh: set default value to avoid assert() in transformation later*/
   return problem;
 }
 
 /**
  * @brief Creates the BBOB large scale suite Lunacek bi-Rastrigin problem.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(const size_t function,
-                                                                       const size_t dimension,
-                                                                       const size_t instance,
-                                                                       const long rseed,
-                                                                       const char *problem_id_template,
-                                                                       const char *problem_name_template) {
+static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(
+    const size_t function, const size_t dimension, const size_t instance, const long rseed,
+    const char *problem_id_template, const char *problem_name_template) {
   size_t i;
   double fopt;
   double penalty_factor = 1e4;
@@ -317,7 +314,7 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
   double *tmp_normal;
 
   fopt = bbob2009_compute_fopt(function, instance);
-  s = 1. - 0.5 / (sqrt((double) (dimension + 20)) - 4.1);
+  s = 1. - 0.5 / (sqrt((double)(dimension + 20)) - 4.1);
   mu0 = 2.5;
   mu1 = -sqrt((mu0 * mu0 - d) / s);
 
@@ -353,30 +350,32 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
     mu1_vector[i] = mu1;
   }
   /* allocate sub-problems */
-  ((f_lunacek_bi_rastrigin_versatile_data_t *) problem->versatile_data)->sub_problem_mu0 = f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
-  ((f_lunacek_bi_rastrigin_versatile_data_t *) problem->versatile_data)->sub_problem_mu1 = f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
+  ((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu0 =
+      f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
+  ((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu1 =
+      f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
 
   /* set sign_vector */
   tmp_normal = coco_allocate_vector(dimension);
   bbob2009_gauss(tmp_normal, dimension, rseed);
   sign_vector = coco_allocate_vector(dimension);
-  for ( i = 0; i < dimension; i++) { /* set sign(x_opt)*/
-    if ( tmp_normal[i] < 0.0) {/* Wassim: noraml is used here but unif for Schweffel!!! */
+  for (i = 0; i < dimension; i++) { /* set sign(x_opt)*/
+    if (tmp_normal[i] < 0.0) {      /* Wassim: noraml is used here but unif for Schweffel!!! */
       sign_vector[i] = -1.0;
     } else {
       sign_vector[i] = 1.0;
     }
-	coco_debug("An arbitrary message to suppress errors on Windows, see #1909. Please ignore accordingly.");
+    coco_debug("An arbitrary message to suppress errors on Windows, see #1909. Please ignore accordingly.");
   }
 
   /* apply transformations to sub-problems */
-  sub_problem_tmp = &((f_lunacek_bi_rastrigin_versatile_data_t *) problem->versatile_data)->sub_problem_mu0;
+  sub_problem_tmp = &((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu0;
   *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu0_vector, 0);
 
-  sub_problem_tmp = &((f_lunacek_bi_rastrigin_versatile_data_t *) problem->versatile_data)->sub_problem_mu1;
+  sub_problem_tmp = &((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu1;
   *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu1_vector, 0);
-  *sub_problem_tmp = transform_obj_scale(*sub_problem_tmp, s);  /* Manh: need to use s */
-  *sub_problem_tmp = transform_obj_shift(*sub_problem_tmp, d * (double) dimension);
+  *sub_problem_tmp = transform_obj_scale(*sub_problem_tmp, s); /* Manh: need to use s */
+  *sub_problem_tmp = transform_obj_shift(*sub_problem_tmp, d * (double)dimension);
 
   /* transformations on main problem */
   problem = transform_vars_permutation(problem, P22, dimension);
@@ -395,13 +394,12 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
   problem = transform_obj_shift(problem, fopt);
 
   /* set best_parameter and best value*/
-  for ( i = 0; i < dimension; i++) { /* Wassim: to silence warning about best_parameter*/
+  for (i = 0; i < dimension; i++) {                          /* Wassim: to silence warning about best_parameter*/
     problem->best_parameter[i] = 0.5 * mu0 * sign_vector[i]; /* TODO: Documentation no 0.5 in documentation! */
   }
 
   /* f_lunacek_bi_rastrigin_evaluate_core(problem, problem->best_parameter, problem->best_value);
   printf("\n %f , x_opt[0]= %f\n", problem->best_value[0], problem->best_parameter[0]);*/ /* Wassim: for testing purposes, might end up being the one kept though*/
-
 
   coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
   coco_problem_set_name(problem, problem_name_template, function, instance, dimension);

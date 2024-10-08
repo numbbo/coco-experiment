@@ -24,12 +24,9 @@
 #include "suite_biobj_utilities.c"
 #include "suite_bbob.c"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name,
-                                         const size_t number_of_functions,
-                                         const size_t number_of_dimensions,
-                                         const size_t *dimensions,
-                                         const char *default_instances,
-                                         const int known_optima);
+static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t *dimensions,
+                                         const char *default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj suites.
@@ -37,13 +34,13 @@ static coco_suite_t *coco_suite_allocate(const char *suite_name,
 static coco_suite_t *suite_biobj_initialize(const char *suite_name) {
 
   coco_suite_t *suite;
-  const size_t dimensions[] = { 2, 3, 5, 10, 20, 40 };
+  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
   if (strcmp(suite_name, "bbob-biobj") == 0) {
     suite = coco_suite_allocate("bbob-biobj", 55, num_dimensions, dimensions, "instances: 1-15", 1);
   } else if (strcmp(suite_name, "bbob-biobj-ext") == 0) {
-    suite = coco_suite_allocate("bbob-biobj-ext", 55+37, num_dimensions, dimensions, "instances: 1-15", 1);
+    suite = coco_suite_allocate("bbob-biobj-ext", 55 + 37, num_dimensions, dimensions, "instances: 1-15", 1);
   } else {
     coco_error("suite_biobj_initialize(): unknown problem suite");
     return NULL;
@@ -63,8 +60,7 @@ static const char *suite_biobj_get_instances_by_year(const int year) {
 
   if ((year == 2016) || (year == 0000)) { /* test case */
     return "1-10";
-  }
-  else
+  } else
     return "1-15";
 }
 
@@ -77,20 +73,18 @@ static const char *suite_biobj_get_instances_by_year(const int year) {
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_biobj_get_problem(coco_suite_t *suite,
-                                               const size_t function_idx,
-                                               const size_t dimension_idx,
-                                               const size_t instance_idx) {
+static coco_problem_t *suite_biobj_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                               const size_t dimension_idx, const size_t instance_idx) {
 
   coco_problem_t *problem = NULL;
-  suite_biobj_new_inst_t *new_inst_data = (suite_biobj_new_inst_t *) suite->data;
+  suite_biobj_new_inst_t *new_inst_data = (suite_biobj_new_inst_t *)suite->data;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
   const size_t instance = suite->instances[instance_idx];
 
   problem = coco_get_biobj_problem(function, dimension, instance, coco_get_bbob_problem, &new_inst_data,
-      suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
+                                   suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;
@@ -99,4 +93,3 @@ static coco_problem_t *suite_biobj_get_problem(coco_suite_t *suite,
 
   return problem;
 }
-

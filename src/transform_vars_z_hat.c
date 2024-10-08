@@ -26,11 +26,11 @@ static void transform_vars_z_hat_evaluate(coco_problem_t *problem, const double 
   coco_problem_t *inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-  	coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
-  	return;
+    coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
+    return;
   }
 
-  data = (transform_vars_z_hat_data_t *) coco_problem_transformed_get_data(problem);
+  data = (transform_vars_z_hat_data_t *)coco_problem_transformed_get_data(problem);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   data->z[0] = x[0];
@@ -46,7 +46,7 @@ static void transform_vars_z_hat_evaluate(coco_problem_t *problem, const double 
  * @brief Frees the data object.
  */
 static void transform_vars_z_hat_free(void *thing) {
-  transform_vars_z_hat_data_t *data = (transform_vars_z_hat_data_t *) thing;
+  transform_vars_z_hat_data_t *data = (transform_vars_z_hat_data_t *)thing;
   coco_free_memory(data->xopt);
   coco_free_memory(data->z);
 }
@@ -57,7 +57,7 @@ static void transform_vars_z_hat_free(void *thing) {
 static coco_problem_t *transform_vars_z_hat(coco_problem_t *inner_problem, const double *xopt) {
   transform_vars_z_hat_data_t *data;
   coco_problem_t *problem;
-  data = (transform_vars_z_hat_data_t *) coco_allocate_memory(sizeof(*data));
+  data = (transform_vars_z_hat_data_t *)coco_allocate_memory(sizeof(*data));
   data->xopt = coco_duplicate_vector(xopt, inner_problem->number_of_variables);
   data->z = coco_allocate_vector(inner_problem->number_of_variables);
 
@@ -66,18 +66,19 @@ static coco_problem_t *transform_vars_z_hat(coco_problem_t *inner_problem, const
   /* TODO: implement best_parameter transformation if needed in the case of not zero:
      see also issue #814.
   The correct update of best_parameter seems not too difficult and should not anymore
-  break the current implementation of the Schwefel function. 
-   coco_warning("transform_vars_z_hat(): 'best_parameter' not updated"); 
- 
+  break the current implementation of the Schwefel function.
+   coco_warning("transform_vars_z_hat(): 'best_parameter' not updated");
+
   This:
-  
+
   size_t i;
   if (problem->best_parameter != NULL)
-	for (i = 1; i < problem->number_of_variables; ++i)
-	  problem->best_parameter[i] -= 0.25 * (problem->best_parameter[i - 1] - 2.0 * fabs(data->xopt[i - 1]));
+        for (i = 1; i < problem->number_of_variables; ++i)
+          problem->best_parameter[i] -= 0.25 * (problem->best_parameter[i - 1] - 2.0 * fabs(data->xopt[i - 1]));
 
   should do, but gives
-  COCO INFO: ..., d=2, running: f18.Assertion failed: (about_equal_value(hypervolume, 8.1699208579037619e-05)), function test_coco_archive_extreme_solutions, file ./test_coco_archive.c, line 123.
+  COCO INFO: ..., d=2, running: f18.Assertion failed: (about_equal_value(hypervolume, 8.1699208579037619e-05)), function
+  test_coco_archive_extreme_solutions, file ./test_coco_archive.c, line 123.
 
   */
   if (strstr(coco_problem_get_id(inner_problem), "schwefel") == NULL) {

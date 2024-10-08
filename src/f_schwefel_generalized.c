@@ -42,7 +42,7 @@ static double f_schwefel_generalized_raw(const double *x, const size_t number_of
   for (i = 0; i < number_of_variables; ++i) {
     sum += x[i] * sin(sqrt(fabs(x[i])));
   }
-  result = 0.01 * (penalty + Schwefel_constant*100. - sum / (double) number_of_variables);
+  result = 0.01 * (penalty + Schwefel_constant * 100. - sum / (double)number_of_variables);
   /*result = 0.01 * (penalty - sum);*/
 
   return result;
@@ -62,8 +62,8 @@ static void f_schwefel_generalized_evaluate(coco_problem_t *problem, const doubl
  */
 static coco_problem_t *f_schwefel_generalized_allocate(const size_t number_of_variables) {
 
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("Schwefel function",
-      f_schwefel_generalized_evaluate, NULL, number_of_variables, -5.0, 5.0, 420.96874633);
+  coco_problem_t *problem = coco_problem_allocate_from_scalars("Schwefel function", f_schwefel_generalized_evaluate,
+                                                               NULL, number_of_variables, -5.0, 5.0, 420.96874633);
   coco_problem_set_id(problem, "%s_d%02lu", "schwefel", number_of_variables);
 
   /* Compute best solution: best_parameter[i] = 200 * fabs(xopt[i]) */
@@ -74,12 +74,10 @@ static coco_problem_t *f_schwefel_generalized_allocate(const size_t number_of_va
 /**
  * @brief Creates the BBOB Schwefel problem.
  */
-static coco_problem_t *f_schwefel_generalized_bbob_problem_allocate(const size_t function,
-                                                        const size_t dimension,
-                                                        const size_t instance,
-                                                        const long rseed,
-                                                        const char *problem_id_template,
-                                                        const char *problem_name_template) {
+static coco_problem_t *f_schwefel_generalized_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                    const size_t instance, const long rseed,
+                                                                    const char *problem_id_template,
+                                                                    const char *problem_name_template) {
   double *xopt, fopt;
   coco_problem_t *problem = NULL;
   size_t i;
