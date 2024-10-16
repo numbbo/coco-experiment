@@ -10,13 +10,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "coco-experiment"
 authors = [
-  {name = "Asma Atamna"},
-  {name = "Dejan Tušar"},
-  {name = "Dimo Brockhoff", email = "dimo.brockhoff@inria.fr" },
-  {name = "Nikolaus Hansen", email = "nikolaus.hansen@inria.fr" },
-  {name = "Olaf Mersmann", email = "olafm@p-value.net"},
-  {name = "Ouassim Ait ElHara"},
-  {name = "Tea Tušar", email = "tea.tusar@ijs.si" },
+  {name="Asma Atamna"},
+  {name="Dimo Brockhoff"},
+  {name="Lorenzo Consoli"},
+  {name="Ouassim Ait ElHara"},
+  {name="Paul Dufossé"},
+  {name="Nikolaus Hansen"},
+  {name="Leopold Luley"},
+  {name="Olaf Mersmann"},
+  {name="Duc Manh Nguyen"},
+  {name="Phillipe R. Sampaio"},
+  {name="Dejan Tušar"},
+  {name="Tea Tušar"},
+  {name="Konstantinos Varelas}",
 ]
 description = 'Benchmarking framework for all types of black-box optimization algorithms.'
 readme = "README.md"
