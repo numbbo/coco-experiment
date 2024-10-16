@@ -22,7 +22,7 @@ authors = [
   {name="Phillipe R. Sampaio"},
   {name="Dejan Tušar"},
   {name="Tea Tušar"},
-  {name="Konstantinos Varelas}",
+  {name="Konstantinos Varelas"},
 ]
 description = 'Benchmarking framework for all types of black-box optimization algorithms.'
 readme = "README.md"
