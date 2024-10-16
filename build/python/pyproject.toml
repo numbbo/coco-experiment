@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "coco-experiment"
 authors = [
-  {name = "Asma Ataman"},
+  {name = "Asma Atamna"},
   {name = "Dejan Tušar"},
   {name = "Dimo Brockhoff", email = "dimo.brockhoff@inria.fr" },
   {name = "Nikolaus Hansen", email = "nikolaus.hansen@inria.fr" },
