@@ -1,6 +1,5 @@
 #include "minunit.h"
-
-#include "coco.h"
+#include "coco.c"
 #include "about_equal.h"
 
 /**
@@ -18,9 +17,9 @@ MU_TEST(test_logger_bbob_triggers) {
 
   logger_bbob_data_t *logger;
 
-  /* Using only the logarithmic performance targets */
+  /* Using only the logarithmic performance targets (the linear target precision needs to be high) */
   suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
-  observer = coco_observer("bbob", "number_target_triggers: 1");
+  observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
   logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);
@@ -116,7 +115,16 @@ MU_TEST(test_logger_bbob_triggers) {
   target = coco_observer_targets_get_last_target(logger->targets);
   mu_check(about_equal_value(target, 0.007));
 
+  coco_observer_free(observer);
+  coco_suite_free(suite);
+
   /* Testing the targets that fall below log_target_precision */
+  suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
+  suite->known_optima = 1;
+  observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 10 log_target_precision: 1e-5");
+  /* Use the 2-D sphere function */
+  problem = coco_suite_get_next_problem(suite, observer);
+  logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);
 
   x[0] = 0.252; x[1] = -1.156;
   coco_evaluate_function(problem, x, y);
@@ -136,6 +144,10 @@ MU_TEST(test_logger_bbob_triggers) {
 /**
  * Run all tests in this file.
  */
-MU_TEST_SUITE(test_all_logger_bbob) {
+int main(void) {
   MU_RUN_TEST(test_logger_bbob_triggers);
+
+  MU_REPORT();
+
+  return minunit_status;
 }
