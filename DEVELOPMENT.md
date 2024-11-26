@@ -49,7 +49,7 @@ It is harmless to run `fabricate` too often, but forgetting to run it means you 
 
 Change to the unit tests directory
 ```sh
-cd ctest/unit-test
+cd test/unit-test
 ```
 
 Rerun `fabricate` if not already done
