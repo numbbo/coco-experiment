@@ -2,5 +2,4 @@
 %
 % Parameters:
 %   problem  The given problem.
-function value = cocoProblemGetBestValue(problem)
-value = cocoCall('cocoProblemGetBestValue', problem);
+%

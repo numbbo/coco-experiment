@@ -11,8 +11,7 @@
 
 void cocoEvaluateFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-    size_t *ref;
-    mxArray *problem_prop;
+    size_t *ref;    
     coco_problem_t *problem = NULL;
     /* const char *class_name = NULL; */
     int nb_objectives;
@@ -31,9 +30,9 @@ void cocoEvaluateFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *pr
         mexErrMsgIdAndTxt("cocoEvaluateFunction:notDoubleArray","Input x must be an array of doubles.");
     }
     /* test if input dimension is consistent with problem dimension */
-    if(!(mxGetN(prhs[1]) == 1 & mxGetM(prhs[1]) == coco_problem_get_dimension(problem))
-          & !(mxGetM(prhs[1]) == 1 & mxGetN(prhs[1]) == coco_problem_get_dimension(problem))) {
-        mexErrMsgIdAndTxt("cocoEvaluateFunction:wrongDimension", "Input x does not comply with problem dimension.");
+    size_t D = coco_problem_get_dimension(problem);
+    if (!(mxGetM(prhs[1]) == 1 && mxGetN(prhs[1]) == D) && !(mxGetM(prhs[1]) == D && mxGetN(prhs[1]) == D)) {
+      mexErrMsgIdAndTxt("cocoEvaluateFunction:wrongDimension", "Input x does not comply with problem dimension.");
     }
     /* get the x vector */
     x = mxGetPr(prhs[1]);
@@ -47,8 +46,7 @@ void cocoEvaluateFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *pr
 
 void cocoEvaluateConstraint(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-    size_t *ref;
-    mxArray *problem_prop;
+    size_t *ref;    
     coco_problem_t *problem = NULL;
     /* const char *class_name = NULL; */
     int nb_constraints;
@@ -67,8 +65,9 @@ void cocoEvaluateConstraint(int nlhs, mxArray *plhs[], int nrhs, const mxArray *
         mexErrMsgIdAndTxt("cocoEvaluateConstraint:notDoubleArray","Input x must be an array of doubles.");
     }
     /* test if input dimension is consistent with problem dimension */
-    if(!(mxGetN(prhs[1]) == 1 & mxGetM(prhs[1]) == coco_problem_get_dimension(problem))
-          & !(mxGetM(prhs[1]) == 1 & mxGetN(prhs[1]) == coco_problem_get_dimension(problem))) {
+    size_t D = coco_problem_get_dimension(problem);
+    if (!(mxGetM(prhs[1]) == 1 && mxGetN(prhs[1]) == D) 
+        && !(mxGetM(prhs[1]) == D && mxGetN(prhs[1]) == D)) {
         mexErrMsgIdAndTxt("cocoEvaluateConstraint:wrongDimension", "Input x does not comply with problem dimension.");
     }
     /* get the x vector */
@@ -100,10 +99,11 @@ void cocoRecommendSolution(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
         mexErrMsgIdAndTxt("cocoRecommendSolution:notDoubleArray","Input x must be an array of doubles.");
     }
     /* test if input dimension is consistent with problem dimension */
-    if(!(mxGetN(prhs[1]) == 1 & mxGetM(prhs[1]) == coco_problem_get_dimension(problem))
-          & !(mxGetM(prhs[1]) == 1 & mxGetN(prhs[1]) == coco_problem_get_dimension(problem))) {
+    size_t D = coco_problem_get_dimension(problem);
+    if (!(mxGetM(prhs[1]) == 1 && mxGetN(prhs[1]) == D) 
+        && !(mxGetM(prhs[1]) == D && mxGetN(prhs[1]) == D)) {        
         mexErrMsgIdAndTxt("cocoRecommendSolution:wrongDimension", "Input x does not comply with problem dimension.");
-    }
+      }
     /* get the x vector */
     x = mxGetPr(prhs[1]);
     /* call coco_recommend_solution(...) */
@@ -745,8 +745,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         cocoProblemGetNumberOfIntegerVariables(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemgetsmallestvaluesofinterest") == 0) {
         cocoProblemGetSmallestValuesOfInterest(nlhs, plhs, nrhs-1, prhs+1);
-    } else if (strcmp(cocofunction, "cocoproblemgetbestvalue") == 0) {
-        cocoProblemGetBestValue(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemisvalid") == 0) {
         cocoProblemIsValid(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemremoveobserver") == 0) {
