@@ -745,6 +745,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         cocoProblemGetNumberOfIntegerVariables(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemgetsmallestvaluesofinterest") == 0) {
         cocoProblemGetSmallestValuesOfInterest(nlhs, plhs, nrhs-1, prhs+1);
+    } else if (strcmp(cocofunction, "cocoproblemgetbestvalue") == 0) {
+        cocoProblemGetBestValue(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemisvalid") == 0) {
         cocoProblemIsValid(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemremoveobserver") == 0) {
