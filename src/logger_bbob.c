@@ -15,7 +15,8 @@
  * whether the problem has a known optimal value or not*1, respectively), logging in the "tdat"
  * files is triggered by the number of function evaluations, logging in the "rdat" files is
  * triggered by the restart of an algorithm and logging in the "mdat" is triggered every time
- * a solution is recommended.
+ * a solution is recommended and the performance targets are reached (the same targets are 
+ * used as for the "dat" files).
  *
  * *1 Note that the decision about which performance targets to use is done on the suite level
  * and passed to the logger during initialization.
@@ -61,14 +62,19 @@ typedef struct {
   FILE *rdat_file; /**< @brief File with restart information */
   FILE *mdat_file; /**< @brief File with evaluated recommendations */
 
-  size_t num_func_evaluations; /**< @brief The number of function evaluations performed so far. */
-  size_t num_cons_evaluations; /**< @brief The number of evaluations of constraints performed so far. */
-  int last_logged_evaluation;  /**< @brief Whether the last evaluation was logged (needed for finalization) */
+  size_t num_func_evaluations;        /**< @brief The number of function evaluations performed so far. */
+  size_t num_cons_evaluations;        /**< @brief The number of evaluations of constraints performed so far. */
+  size_t last_logged_eval_dat;        /**< @brief The last evaluation logged in the dat file (needed for finalization) */
+  size_t last_logged_eval_tdat;       /**< @brief The last evaluation logged in the tdat file (needed for finalization) */
+  size_t last_logged_eval_mdat;       /**< @brief The last evaluation logged in the mdat file (needed for finalization) */
 
-  double *best_found_solution; /**< @brief The best found solution to this problem. */
-  double best_found_value;     /**< @brief The best found value for this problem. */
-  double current_value;        /**< @brief The current value for this problem. */
-  double optimal_value; /**< @brief The optimal value for this problem (if it is known, otherwise a reference value). */
+  double *best_found_solution;        /**< @brief The best found solution to this problem. */
+  double best_found_value;            /**< @brief The best found value for this problem. */
+  double current_value;               /**< @brief The current value for this problem. */
+  double optimal_value;               /**< @brief The optimal value for this problem (if it is known, otherwise a reference value). */
+
+  double *best_recommended_solution;  /**< @brief The best recommended solution for this problem. */
+  double best_recommended_value;      /**< @brief The best recommended value for this problem. */
 
   size_t function;                    /**< @brief Suite-dependent function number */
   size_t instance;                    /**< @brief Suite-dependent instance number */
@@ -79,6 +85,7 @@ typedef struct {
 
   coco_observer_targets_t *targets;         /**< @brief Triggers based on target values. */
   coco_observer_evaluations_t *evaluations; /**< @brief Triggers based on the number of evaluations. */
+  coco_observer_targets_t *mdat_targets;    /**< @brief Triggers based on target values for recommendations. */
 
 } logger_bbob_data_t;
 
@@ -159,16 +166,16 @@ static int logger_bbob_start_new_line(coco_observer_t *observer, size_t current_
 }
 
 /**
- * @brief Outputs a formated line to a data file
+ * @brief Outputs a formatted line to a data file
  */
 static void logger_bbob_output(FILE *data_file, logger_bbob_data_t *logger, const double *x, double current_value,
-                               const double *constraints) {
+                               double best_value, const double *constraints) {
   /* This function contains many hard-coded values (10.9, 22, 5.4) that could be read through
    * observer options */
   size_t i;
 
   fprintf(data_file, "%lu %lu %+10.9e %+10.9e ", (unsigned long)logger->num_func_evaluations,
-          (unsigned long)logger->num_cons_evaluations, logger->best_found_value - logger->optimal_value, current_value);
+          (unsigned long)logger->num_cons_evaluations, best_value - logger->optimal_value, current_value);
 
   if ((logger->number_of_constraints > 0) && (constraints != NULL)) {
     for (i = 0; i < logger->number_of_constraints; ++i) {
@@ -176,7 +183,7 @@ static void logger_bbob_output(FILE *data_file, logger_bbob_data_t *logger, cons
       fprintf(data_file, "%d", constraints ? logger_bbob_single_digit_constraint(constraints[i]) : (int)(i % 10));
     }
   } else {
-    fprintf(data_file, "%+10.9e", logger->best_found_value);
+    fprintf(data_file, "%+10.9e", best_value);
   }
 
   if (logger->number_of_variables < 22) {
@@ -379,8 +386,6 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
   /* Fulfill contract of a COCO evaluate function */
   coco_evaluate_function(inner_problem, x, y);
   logger->num_func_evaluations++;
-
-  logger->last_logged_evaluation = 0;
   logger->current_value = y[0];
   y_logged = y[0];
   if (inner_problem->is_noisy == 1) {
@@ -440,20 +445,21 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
      * and always at the first evaluation */
     if (logger->num_func_evaluations == 1 ||
         coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value)) {
-      logger_bbob_output(logger->dat_file, logger, x, y_logged, constraints);
+      logger_bbob_output(logger->dat_file, logger, x, y_logged, logger->best_found_value, constraints);
+      logger->last_logged_eval_dat = logger->num_func_evaluations;
     }
   }
 
   /* Add a line in the .tdat file for specific number of evaluations*/
   if (coco_observer_evaluations_trigger(logger->evaluations,
                                         logger->num_func_evaluations + logger->num_cons_evaluations)) {
-    logger_bbob_output(logger->tdat_file, logger, x, y_logged, constraints);
-    logger->last_logged_evaluation = 1;
+    logger_bbob_output(logger->tdat_file, logger, x, y_logged, logger->best_found_value, constraints);
+    logger->last_logged_eval_tdat = logger->num_func_evaluations;
   }
 
   /* Add a line in the .rdat file if the algorithm was restarted */
   if (logger->algorithm_restarted) {
-    logger_bbob_output(logger->rdat_file, logger, x, y_logged, constraints);
+    logger_bbob_output(logger->rdat_file, logger, x, y_logged, logger->best_found_value, constraints);
     logger->algorithm_restarted = 0;
   }
 
@@ -502,8 +508,44 @@ static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
     inner_problem->evaluate_constraint(inner_problem, x, constraints, 0);
   }
 
-  /* Add a line in the .mdat file */
-  logger_bbob_output(logger->mdat_file, logger, x, y_logged, constraints);
+  /* Compute the sum of positive constraint values */
+  double sum_constraints;
+  sum_constraints = 0.0;
+  for (size_t i = 0; i < problem->number_of_constraints; ++i) {
+    if (constraints[i] > 0)
+      sum_constraints += constraints[i];
+  }
+  sum_constraints *= LOGGER_BBOB_WEIGHT_CONSTRAINTS; /* do this before the checks */
+  if (coco_is_nan(sum_constraints))
+    sum_constraints = NAN_FOR_LOGGING;
+  else if (coco_is_inf(sum_constraints))
+    sum_constraints = INFINITY_FOR_LOGGING;
+
+  double max_value;
+  if (problem->is_opt_known) 
+    max_value = coco_double_max(y_logged, logger->optimal_value);
+  else {
+    /* Problems with unknown optimal values */
+    if (sum_constraints > 0) {
+      max_value = LOGGER_BBOB_INFEASIBLE_PENALTY; /* Infeasible solution */
+    } else
+      max_value = y_logged; /* Feasible solution */
+  }
+
+  /* Update recommender state
+   * The logger->best_recommended_value is initialized to INFINITY_FOR_LOGGING.
+   */
+  if (max_value + sum_constraints < logger->best_recommended_value) {
+    for (size_t i = 0; i < problem->number_of_variables; i++)
+      logger->best_recommended_solution[i] = x[i]; /* May well be infeasible */
+
+    logger->best_recommended_value = max_value + sum_constraints;
+    /* Add a line in the .mdat file is the performance target is reached by a feasible solution */
+    if (coco_observer_targets_trigger(logger->mdat_targets, logger->best_recommended_value - logger->optimal_value)) {
+      logger_bbob_output(logger->mdat_file, logger, x, y_logged, logger->best_recommended_value, constraints);
+      logger->last_logged_eval_mdat = logger->num_func_evaluations;
+    }
+  }
 
   /* Free allocated memory */
   if (problem->number_of_constraints > 0)
@@ -533,13 +575,17 @@ static void logger_bbob_free(void *stuff) {
   }
 
   if (logger->dat_file != NULL) {
+    if (logger->num_func_evaluations != logger->last_logged_eval_dat)
+      logger_bbob_output(logger->dat_file, logger, logger->best_found_solution, logger->best_found_value, 
+                         logger->best_found_value, NULL);
     fclose(logger->dat_file);
     logger->dat_file = NULL;
   }
 
   if (logger->tdat_file != NULL) {
-    if (!logger->last_logged_evaluation)
-      logger_bbob_output(logger->tdat_file, logger, logger->best_found_solution, logger->best_found_value, NULL);
+    if (logger->num_func_evaluations != logger->last_logged_eval_tdat)
+      logger_bbob_output(logger->tdat_file, logger, logger->best_found_solution, logger->best_found_value, 
+                         logger->best_found_value, NULL);
     fclose(logger->tdat_file);
     logger->tdat_file = NULL;
   }
@@ -550,6 +596,9 @@ static void logger_bbob_free(void *stuff) {
   }
 
   if (logger->mdat_file != NULL) {
+    if ((logger->num_func_evaluations != logger->last_logged_eval_mdat) && (logger->last_logged_eval_mdat != 0))
+      logger_bbob_output(logger->mdat_file, logger, logger->best_recommended_solution, logger->best_recommended_value, 
+                         logger->best_recommended_value, NULL);
     fclose(logger->mdat_file);
     logger->mdat_file = NULL;
   }
@@ -557,6 +606,11 @@ static void logger_bbob_free(void *stuff) {
   if (logger->best_found_solution != NULL) {
     coco_free_memory(logger->best_found_solution);
     logger->best_found_solution = NULL;
+  }
+
+  if (logger->best_recommended_solution != NULL) {
+    coco_free_memory(logger->best_recommended_solution);
+    logger->best_recommended_solution = NULL;
   }
 
   if (logger->targets != NULL) {
@@ -567,6 +621,11 @@ static void logger_bbob_free(void *stuff) {
   if (logger->evaluations != NULL) {
     coco_observer_evaluations_free(logger->evaluations);
     logger->evaluations = NULL;
+  }
+
+  if (logger->mdat_targets != NULL) {
+    coco_observer_targets_free(logger->mdat_targets);
+    logger->mdat_targets = NULL;
   }
 
   observer = logger->observer;
@@ -640,13 +699,16 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
 
   logger_data->num_func_evaluations = 0;
   logger_data->num_cons_evaluations = 0;
-  logger_data->last_logged_evaluation = 0;
+  /* logger_data->last_logged_evaluation = 0; */
 
   logger_data->best_found_solution = coco_allocate_vector(inner_problem->number_of_variables);
   logger_data->best_found_value = DBL_MAX;
   logger_data->optimal_value = *(inner_problem->best_value);
 
   logger_data->current_value = DBL_MAX;
+  
+  logger_data->best_recommended_solution = coco_allocate_vector(inner_problem->number_of_variables);
+  logger_data->best_recommended_value = INFINITY_FOR_LOGGING;
 
   logger_data->function = coco_problem_get_suite_dep_function(inner_problem);
   logger_data->instance = coco_problem_get_suite_dep_instance(inner_problem);
@@ -660,6 +722,8 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
                                                observer->number_target_triggers, observer->log_target_precision);
   logger_data->evaluations =
       coco_observer_evaluations(observer->base_evaluation_triggers, inner_problem->number_of_variables);
+  logger_data->mdat_targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
+                                                    observer->number_target_triggers, observer->log_target_precision);
 
   coco_debug("Ended   logger_bbob()");
 
