@@ -23,6 +23,7 @@
  */
 
 #include <string>
+#include <filesystem>
 
 //#include <cstdio>
 #include <cassert>
@@ -162,7 +163,7 @@ static bool logger_bbob_start_new_line(coco_observer_t* observer, size_t current
   observer_bbob_data_t *observer_data = ((observer_bbob_data_t *)observer->data);
   assert(observer_data);
 
-  return ((current_function == observer_data->last_function) && (current_dimension == observer_data->last_dimension));
+  return ! ((current_function == observer_data->last_function) && (current_dimension == observer_data->last_dimension));
 }
 
 /**
@@ -225,7 +226,8 @@ static void logger_bbob_open_data_file(FILE** data_file, std::string const& path
 //  strncpy(relative_file_path, file_name, COCO_PATH_MAX - strlen(relative_file_path) - 1);
 //  strncat(relative_file_path, file_extension, COCO_PATH_MAX - strlen(relative_file_path) - 1);
 //  coco_join_path(file_path, sizeof(file_path), path, relative_file_path, nullptr);
-  logger_bbob_open_file(data_file, path + coco_path_separator + file_name + file_extension);
+  std::string fn = std::filesystem::path(path) / (file_name + file_extension);
+  logger_bbob_open_file(data_file, fn);
 }
 
 /**
@@ -233,13 +235,10 @@ static void logger_bbob_open_data_file(FILE** data_file, std::string const& path
  */
 static void logger_bbob_open_info_file(logger_bbob_data_t* logger, std::string const& folder, std::string const& function_string,
                                        std::string const& data_file_name, std::string const& suite_name, bool start_new_line) {
-  std::string data_file_path;
 //  char data_file_path[COCO_PATH_MAX + 2] = {0};
   int add_empty_line = 0;
 //  char file_name[COCO_PATH_MAX + 2] = {0};
 //  char file_path[COCO_PATH_MAX + 2] = {0};
-  std::string file_name;
-  std::string file_path;
   FILE** info_file;
   FILE* tmp_file;
   observer_bbob_data_t *observer_data;
@@ -251,12 +250,12 @@ static void logger_bbob_open_info_file(logger_bbob_data_t* logger, std::string c
   observer_data = ((observer_bbob_data_t *)((coco_observer_t *)logger->observer)->data);
   assert(observer_data);
 
-  data_file_path = data_file_name;
+  std::string data_file_path = data_file_name;
 
   info_file = &(logger->info_file);
 
-  file_name = (std::string)observer_data->prefix + "_f" + function_string + ".info";
-  file_path += coco_path_separator + folder + coco_path_separator + file_name;
+  std::string file_name = (std::string)observer_data->prefix + "_f" + function_string + ".info";
+  std::string file_path = std::filesystem::path(folder) / file_name;
 //  coco_join_path(file_path, sizeof(file_path), folder, file_name, nullptr);
 
   if (*info_file == nullptr) {
@@ -724,12 +723,13 @@ static coco_problem_t* logger_bbob(coco_observer_t *observer, coco_problem_t* in
   logger_data->mdat_targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
                                                     observer->number_target_triggers, observer->log_target_precision);
 
-  coco_debug("Ended   logger_bbob()");
-
   problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_bbob_free, observer->observer_name);
   problem->evaluate_function = logger_bbob_evaluate;
   problem->recommend_solution = logger_bbob_recommend;
 
   observer_data->observed_problem = problem;
+
+  coco_debug("Ended   logger_bbob()");
+
   return problem;
 }

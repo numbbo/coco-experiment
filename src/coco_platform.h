@@ -19,34 +19,34 @@
  * coco_utilities.c */
 #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW64__) || defined(__CYGWIN__)
 #include <windows.h>
-static const char *coco_path_separator = "\\";
+static char const coco_path_separator[] = "\\";
 #define COCO_PATH_MAX MAX_PATH
 #define HAVE_GFA 1
 #elif defined(__gnu_linux__) || defined(__linux__)
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <linux/limits.h>
-static const char *coco_path_separator = "/";
+static char const coco_path_separator[] = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
 #elif defined(__EMSCRIPTEN__)
 #include <sys/stat.h>
 #include <sys/types.h>
-static const char *coco_path_separator = "/";
+static char const coco_path_separator[] = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
 #elif defined(__APPLE__)
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/syslimits.h>
-static const char *coco_path_separator = "/";
+static char const coco_path_separator[] = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
 #elif defined(__FreeBSD__)
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <climits>
-static const char *coco_path_separator = "/";
+static char const coco_path_separator[] = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
 #elif (defined(__sun) || defined(sun)) && (defined(__SVR4) || defined(__svr4__))
@@ -54,7 +54,7 @@ static const char *coco_path_separator = "/";
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <climits>
-static const char *coco_path_separator = "/";
+static char const coco_path_separator[] = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
 #else
@@ -79,9 +79,9 @@ extern "C" {
 
 /* To silence the compiler (implicit-function-declaration warning). */
 /** @cond */
-int rmdir(const char *pathname);
-int unlink(const char *file_name);
-int mkdir(const char *pathname, mode_t mode);
+int rmdir(char const* pathname);
+int unlink(char const* file_name);
+int mkdir(char const* pathname, mode_t mode);
 /** @endcond */
 #endif
 

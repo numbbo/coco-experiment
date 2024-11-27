@@ -5,6 +5,10 @@ project(COCOUnitTest
 
 include(CTest)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 find_library(LIBM m)
 find_library(LIBRT rt)
 
@@ -16,7 +20,7 @@ endif()
 
 macro(minunit_test name)  
   add_executable(${name} ${name}.cpp)
-  set_property(TARGET ${name} PROPERTY CXX_STANDARD 11)
+  #set_property(TARGET ${name} PROPERTY CXX_STANDARD 11)
   target_link_libraries(${name} PUBLIC about_equal)
   if (LIBM)
     target_link_libraries(${name} PUBLIC ${LIBM})

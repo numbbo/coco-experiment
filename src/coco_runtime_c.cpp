@@ -77,6 +77,7 @@ void coco_debug(char const* message, ...) {
   }
 }
 
+// TODO: this must disappear entirely
 void* coco_allocate_memory(const size_t size) {
   void* data;
   if (size == 0) {
@@ -89,4 +90,5 @@ void* coco_allocate_memory(const size_t size) {
   return data;
 }
 
+// TODO: this must disappear entirely
 void coco_free_memory(void* data) { free(data); }

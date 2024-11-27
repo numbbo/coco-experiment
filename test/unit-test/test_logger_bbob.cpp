@@ -231,6 +231,7 @@ MU_TEST(test_logger_bbob_last_line) {
  * Run all tests in this file.
  */
 int main(void) {
+  coco_set_log_level("debug");
   MU_RUN_TEST(test_logger_bbob_triggers);
   MU_RUN_TEST(test_logger_bbob_last_line);
 
