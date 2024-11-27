@@ -12,5 +12,3 @@ extensions.append(Extension(name="cocoex.function",
                             include_dirs=[np.get_include()]))
 
 setup(ext_modules=extensions)
-
-
