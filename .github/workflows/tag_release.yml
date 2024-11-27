@@ -4,7 +4,7 @@ on:
   push:
     # Pattern matched against refs/tags
     tags:        
-      - '**' # This includes hierarchical tags
+      - 'v*' # This includes only tags starting with v
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -22,7 +22,6 @@ jobs:
 
   release-python:
     needs: python-wheels
-    if: ( success() || failure() )
     runs-on: ubuntu-latest
     permissions:
       contents: write
