@@ -50,7 +50,7 @@ MU_TEST(test_coco_observer_targets_trigger) {
   update = coco_observer_targets_trigger(targets, -0.100099999);
   mu_check(!update);
 
-  coco_free_memory(targets);
+  coco_observer_targets_free(targets);
 }
 
 /**
