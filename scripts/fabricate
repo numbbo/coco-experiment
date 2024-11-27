@@ -26,11 +26,11 @@ PYTHON_DIR = BUILD_DIR / "python"
 RUST_DIR = BUILD_DIR / "rust"
 
 CORE_FILES = [
-    "src/coco_random.c",
-    "src/coco_suite.c",
-    "src/coco_observer.c",
-    "src/coco_archive.c",
-    "src/coco_version.c",
+    "src/coco_random.cpp",
+    "src/coco_suite.cpp",
+    "src/coco_observer.cpp",
+    "src/coco_archive.cpp",
+    "src/coco_version.cpp",
 ]
 
 
@@ -250,11 +250,11 @@ OCTAVE_DISTFILE = DIST_DIR / f"cocoex-octave-{COCO_VERSION}.zip"
 JAVA_DISTFILE = DIST_DIR / f"cocoex-java-{COCO_VERSION}.zip"
 RUST_DISTFILE = DIST_DIR / f"cocoex-rust-{COCO_VERSION}.zip"
     
-write_version_to_c_file("src/coco_version.c", COCO_VERSION)
+write_version_to_c_file("src/coco_version.cpp", COCO_VERSION)
 
 if not args.skip_c:
     write_version_file("build/c/VERSION", COCO_VERSION)
-    amalgamate(CORE_FILES + ['src/coco_runtime_c.c'],
+    amalgamate(CORE_FILES + ['src/coco_runtime_c.cpp'],
                C_DIR / 'coco.cpp',args.release)
     amalgamate('src/coco.h',
                C_DIR / 'coco.h',args.release)
@@ -272,7 +272,7 @@ if not args.skip_c:
 
 if not args.skip_python:
     write_version_to_python("build/python/src/cocoex/_version.py", COCO_VERSION)
-    amalgamate(CORE_FILES + ['src/coco_runtime_c.c'],
+    amalgamate(CORE_FILES + ['src/coco_runtime_c.cpp'],
                'build/python/src/cocoex/coco.cpp',
               args.release)
     amalgamate('src/coco.h',
@@ -286,7 +286,7 @@ if not args.skip_python:
 if not args.skip_matlab:
     write_version_file("build/matlab/VERSION", COCO_VERSION)
     
-    amalgamate(CORE_FILES + ['src/coco_runtime_matlab.c'],
+    amalgamate(CORE_FILES + ['src/coco_runtime_matlab.cpp'],
                MATLAB_DIR / 'coco.cpp', args.release)
     amalgamate('src/coco.h', MATLAB_DIR / 'coco.h', args.release)
     
@@ -296,7 +296,7 @@ if not args.skip_matlab:
             archive.write(fn, arcname=f"cocoex-matlab/{fn.name}")
 
 if not args.skip_octave:
-    amalgamate(CORE_FILES + ['src/coco_runtime_c.c'],
+    amalgamate(CORE_FILES + ['src/coco_runtime_c.cpp'],
                OCTAVE_DIR / "coco.cpp", args.release)
     amalgamate('src/coco.h', OCTAVE_DIR / "coco.h", args.release)
     
@@ -319,7 +319,7 @@ if not args.skip_octave:
 
 if not args.skip_java:
     write_version_file(JAVA_DIR / "VERSION", COCO_VERSION)
-    amalgamate(CORE_FILES + ['src/coco_runtime_c.c'], JAVA_DIR / "coco.cpp", args.release)
+    amalgamate(CORE_FILES + ['src/coco_runtime_c.cpp'], JAVA_DIR / "coco.cpp", args.release)
     amalgamate('src/coco.h', JAVA_DIR / "coco.h", args.release)
     
     info("BUNDLE", f"Java -> {JAVA_DISTFILE.name}")
@@ -330,7 +330,7 @@ if not args.skip_java:
 if not args.skip_rust:
     import toml
     write_version_file(RUST_DIR / "VERSION", COCO_VERSION)
-    amalgamate(CORE_FILES + ['src/coco_runtime_c.c'], 
+    amalgamate(CORE_FILES + ['src/coco_runtime_c.cpp'], 
                RUST_DIR / 'coco-sys/vendor/coco.cpp',
                args.release)
     amalgamate('src/coco.h', RUST_DIR / 'coco-sys/vendor/coco.h', args.release)
@@ -358,9 +358,9 @@ if not args.skip_rust:
                 archive.write(fn, arcname=f"cocoex-rust/{fn.relative_to(RUST_DIR)}")
 
 if not args.skip_unit_tests:
-    amalgamate(CORE_FILES + ['src/coco_runtime_c.c'], "test/unit-test/coco.cpp", args.release)
+    amalgamate(CORE_FILES + ['src/coco_runtime_c.cpp'], "test/unit-test/coco.cpp", args.release)
     amalgamate('src/coco.h', "test/unit-test/coco.h", args.release)
 
 if not args.skip_integration_tests:
-    amalgamate(CORE_FILES + ["src/coco_runtime_c.c"], "test/integration-test/coco.cpp", args.release)
+    amalgamate(CORE_FILES + ["src/coco_runtime_c.cpp"], "test/integration-test/coco.cpp", args.release)
     amalgamate("src/coco.h", "test/integration-test/coco.h", args.release)
