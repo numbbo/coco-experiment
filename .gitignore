@@ -14,7 +14,8 @@ __pycache__
 
 build/**/bbob2009_testcases.txt
 build/**/bbob2009_testcases2.txt
-build/**/coco.[ch]
+build/**/coco.cpp
+build/**/coco.h
 build/**/exdata/
 build/**/ppdata/
 build/c/build/
@@ -43,9 +44,11 @@ build/rust/coco-sys/vendor/
 build/rust/target/
 data/
 dist/
-examples/*/coco.[ch]
-src/coco_version.c
-test/**/coco.[ch]
+examples/*/coco.cpp
+examples/*/coco.h
+src/coco_version.cpp
+test/**/coco.cpp
+test/**/coco.h
 test/unit-test/build/
 test/unit-test/exdata/
 test/example-test/
