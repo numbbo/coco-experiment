@@ -99,7 +99,7 @@ extern "C" {
  * repository plus the number of commits after the tag.
  */
 /**@{*/
-extern const char *coco_version;
+extern char const *coco_version;
 /**@}*/
 
 /***********************************************************************************************************/
@@ -107,8 +107,8 @@ extern const char *coco_version;
  * @brief COCO's own pi constant. Simplifies the case, when the value of pi changes.
  */
 /**@{*/
-static const double coco_pi = 3.14159265358979323846;
-static const double coco_two_pi = 2.0 * 3.14159265358979323846;
+static double const coco_pi = 3.14159265358979323846;
+static double const coco_two_pi = 2.0 * 3.14159265358979323846;
 /**@}*/
 
 /***********************************************************************************************************/
@@ -232,7 +232,7 @@ typedef struct coco_random_state_s coco_random_state_t;
 /**
  * @brief Constructs a COCO suite.
  */
-coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance, const char *suite_options);
+coco_suite_t *coco_suite(char const *suite_name, char const *suite_instance, char const *suite_options);
 
 /**
  * @brief Frees the given suite.
@@ -247,33 +247,33 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
 /**
  * @brief Returns the problem of the suite defined by problem_index.
  */
-coco_problem_t *coco_suite_get_problem(coco_suite_t *suite, const size_t problem_index);
+coco_problem_t *coco_suite_get_problem(coco_suite_t *suite, size_t const problem_index);
 
 /**
  * @brief Returns the first problem of the suite defined by function, dimension and instance numbers.
  */
-coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite_t *suite, const size_t function,
-                                                                      const size_t dimension, const size_t instance);
+coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite_t *suite, size_t const function,
+                                                                      size_t const dimension, size_t const instance);
 
 /**
  * @brief Returns the number of problems in the given suite.
  */
-size_t coco_suite_get_number_of_problems(const coco_suite_t *suite);
+size_t coco_suite_get_number_of_problems(coco_suite_t *const suite);
 
 /**
  * @brief Returns the function number in the suite in position function_idx (counting from 0).
  */
-size_t coco_suite_get_function_from_function_index(const coco_suite_t *suite, const size_t function_idx);
+size_t coco_suite_get_function_from_function_index(coco_suite_t const *suite, size_t const function_idx);
 
 /**
  * @brief Returns the dimension number in the suite in position dimension_idx (counting from 0).
  */
-size_t coco_suite_get_dimension_from_dimension_index(const coco_suite_t *suite, const size_t dimension_idx);
+size_t coco_suite_get_dimension_from_dimension_index(coco_suite_t const *suite, size_t const dimension_idx);
 
 /**
  * @brief Returns the instance number in the suite in position instance_idx (counting from 0).
  */
-size_t coco_suite_get_instance_from_instance_index(const coco_suite_t *suite, const size_t instance_idx);
+size_t coco_suite_get_instance_from_instance_index(coco_suite_t const *suite, size_t const instance_idx);
 /**@}*/
 
 /**
@@ -339,14 +339,14 @@ size_t coco_suite_get_instance_from_instance_index(const coco_suite_t *suite, co
  * @brief Computes the index of the problem in the suite that corresponds to the given function, dimension
  * and instance indices.
  */
-size_t coco_suite_encode_problem_index(const coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
-                                       const size_t instance_idx);
+size_t coco_suite_encode_problem_index(coco_suite_t const *suite, size_t const function_idx, size_t const dimension_idx,
+                                       size_t const instance_idx);
 
 /**
  * @brief Computes the function, dimension and instance indexes of the problem with problem_index in the
  * given suite.
  */
-void coco_suite_decode_problem_index(const coco_suite_t *suite, const size_t problem_index, size_t *function_idx,
+void coco_suite_decode_problem_index(coco_suite_t const *suite, size_t const problem_index, size_t *function_idx,
                                      size_t *dimension_idx, size_t *instance_idx);
 /**@}*/
 
@@ -359,7 +359,7 @@ void coco_suite_decode_problem_index(const coco_suite_t *suite, const size_t pro
 /**
  * @brief Constructs a COCO observer.
  */
-coco_observer_t *coco_observer(const char *observer_name, const char *options);
+coco_observer_t *coco_observer(char const *observer_name, char const *options);
 
 /**
  * @brief Frees the given observer.
@@ -379,7 +379,7 @@ coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_obser
 /**
  * @brief Returns result folder name, where logger output is written.
  */
-const char *coco_observer_get_result_folder(const coco_observer_t *observer);
+char const *coco_observer_get_result_folder(coco_observer_t const *observer);
 
 /**
  * @brief Signals the restart of the algorithm
@@ -397,17 +397,17 @@ void coco_observer_signal_restart(coco_observer_t *observer, coco_problem_t *pro
 /**
  * @brief Evaluates the problem function in point x and save the result in y.
  */
-void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y);
+void coco_evaluate_function(coco_problem_t *problem, double const *x, double *y);
 
 /**
  * @brief Evaluates the problem constraints in point x and save the result in y.
  */
-void coco_evaluate_constraint(coco_problem_t *problem, const double *x, double *y);
+void coco_evaluate_constraint(coco_problem_t *problem, double const *x, double *y);
 
 /**
  * @brief Recommends a solution as the current best guesses to the problem. Not implemented yet.
  */
-void coco_recommend_solution(coco_problem_t *problem, const double *x);
+void coco_recommend_solution(coco_problem_t *problem, double const *x);
 
 /**
  * @brief Frees the given problem.
@@ -417,91 +417,91 @@ void coco_problem_free(coco_problem_t *problem);
 /**
  * @brief Returns the name of the problem.
  */
-const char *coco_problem_get_name(const coco_problem_t *problem);
+char const *coco_problem_get_name(coco_problem_t const *problem);
 
 /**
  * @brief Returns the ID of the problem.
  */
-const char *coco_problem_get_id(const coco_problem_t *problem);
+char const *coco_problem_get_id(coco_problem_t const *problem);
 
 /**
  * @brief Returns the type of the problem.
  */
-const char *coco_problem_get_type(const coco_problem_t *problem);
+char const *coco_problem_get_type(coco_problem_t const *problem);
 
 /**
  * @brief Returns the number of variables i.e. the dimension of the problem.
  */
-size_t coco_problem_get_dimension(const coco_problem_t *problem);
+size_t coco_problem_get_dimension(coco_problem_t const *problem);
 
 /**
  * @brief Returns the number of objectives of the problem.
  */
-size_t coco_problem_get_number_of_objectives(const coco_problem_t *problem);
+size_t coco_problem_get_number_of_objectives(coco_problem_t const *problem);
 
 /**
  * @brief Returns the number of constraints of the problem.
  */
-size_t coco_problem_get_number_of_constraints(const coco_problem_t *problem);
+size_t coco_problem_get_number_of_constraints(coco_problem_t const *problem);
 
 /**
  * @brief Returns the number of objective function evaluations done on the problem.
  */
-size_t coco_problem_get_evaluations(const coco_problem_t *problem);
+size_t coco_problem_get_evaluations(coco_problem_t const *problem);
 
 /**
  * @brief Returns the number of constraint function evaluations done on the problem.
  */
-size_t coco_problem_get_evaluations_constraints(const coco_problem_t *problem);
+size_t coco_problem_get_evaluations_constraints(coco_problem_t const *problem);
 
 /**
  * @brief Returns 1 if the final target was hit, 0 otherwise.
  */
-int coco_problem_final_target_hit(const coco_problem_t *problem);
+int coco_problem_final_target_hit(coco_problem_t const *problem);
 
 /**
  * @brief Returns the best observed value for the first objective.
  */
-double coco_problem_get_best_observed_fvalue1(const coco_problem_t *problem);
+double coco_problem_get_best_observed_fvalue1(coco_problem_t const *problem);
 
 /**
  * @brief Returns the target value for the first objective.
  */
-double depreciated_coco_problem_get_final_target_fvalue1(const coco_problem_t *problem);
+double depreciated_coco_problem_get_final_target_fvalue1(coco_problem_t const *problem);
 
 /**
  * @brief Returns a vector of size 'dimension' with lower bounds of the region of interest in
  * the decision space.
  */
-const double *coco_problem_get_smallest_values_of_interest(const coco_problem_t *problem);
+double const *coco_problem_get_smallest_values_of_interest(coco_problem_t const *problem);
 
 /**
  * @brief Returns a vector of size 'dimension' with upper bounds of the region of interest in
  * the decision space.
  */
-const double *coco_problem_get_largest_values_of_interest(const coco_problem_t *problem);
+double const *coco_problem_get_largest_values_of_interest(coco_problem_t const *problem);
 
 /**
  * @brief Returns the number of integer variables. If > 0, all integer variables come before any
  * continuous ones.
  */
-size_t coco_problem_get_number_of_integer_variables(const coco_problem_t *problem);
+size_t coco_problem_get_number_of_integer_variables(coco_problem_t const *problem);
 
 /**
  * @brief For multi-objective problems, returns a vector of largest values of interest in each objective.
  * Currently, this equals the nadir point. For single-objective problems it raises an error.
  */
-const double *coco_problem_get_largest_fvalues_of_interest(const coco_problem_t *problem);
+double const *coco_problem_get_largest_fvalues_of_interest(coco_problem_t const *problem);
 
 /**
  * @brief Returns the problem_index of the problem in its current suite.
  */
-size_t coco_problem_get_suite_dep_index(const coco_problem_t *problem);
+size_t coco_problem_get_suite_dep_index(coco_problem_t const *problem);
 
 /**
  * @brief Returns an initial solution, i.e. a feasible variable setting, to the problem.
  */
-void coco_problem_get_initial_solution(const coco_problem_t *problem, double *initial_solution);
+void coco_problem_get_initial_solution(coco_problem_t const *problem, double *initial_solution);
 /**@}*/
 
 /**
@@ -512,12 +512,12 @@ void coco_problem_get_initial_solution(const coco_problem_t *problem, double *in
 int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parameter);
 
 /**
- *  @brief Returns whether a problem si tainted or not.
+ *  @brief Returns whether a problem is tainted or not.
  *
  * Once `coco_problem_get_best_parameter` is called on a problem it is "tainted" and cannot be used
  * in benchmark experiments.
  */
-int coco_problem_is_tainted(const coco_problem_t *problem);
+int coco_problem_is_tainted(coco_problem_t const *problem);
 
 /***********************************************************************************************************/
 
@@ -571,12 +571,12 @@ void coco_reset_seeds(void);
 /**
  * @brief Safe memory allocation that either succeeds or triggers a coco_error.
  */
-void *coco_allocate_memory(const size_t size);
+void *coco_allocate_memory(size_t const size);
 
 /**
  * @brief Safe memory allocation for a vector of doubles that either succeeds or triggers a coco_error.
  */
-double *coco_allocate_vector(const size_t size);
+double *coco_allocate_vector(size_t const size);
 
 /**
  * @brief Frees the allocated memory.
@@ -593,17 +593,17 @@ void coco_free_memory(void *data);
 /**
  * @brief Signals a fatal error.
  */
-void COCO_NORETURN coco_error(const char *message, ...);
+void COCO_NORETURN coco_error(char const *message, ...);
 
 /**
  * @brief Warns about error conditions.
  */
-void coco_warning(const char *message, ...);
+void coco_warning(char const *message, ...);
 
 /**
  * @brief Outputs some information.
  */
-void coco_info(const char *message, ...);
+void coco_info(char const *message, ...);
 
 /**
  * @brief Prints only the given message without any prefix and new line.
@@ -613,17 +613,17 @@ void coco_info(const char *message, ...);
  *
  * The output is only produced if coco_log_level >= COCO_INFO.
  */
-void coco_info_partial(const char *message, ...);
+void coco_info_partial(char const *message, ...);
 
 /**
  * @brief Outputs detailed information usually used for debugging.
  */
-void coco_debug(const char *message, ...);
+void coco_debug(char const *message, ...);
 
 /**
  * @brief Sets the COCO log level to the given value and returns the previous value of the log level.
  */
-const char *coco_set_log_level(const char *level);
+char const *coco_set_log_level(char const *level);
 /**@}*/
 
 /***********************************************************************************************************/
@@ -636,14 +636,14 @@ const char *coco_set_log_level(const char *level);
 /**
  * @brief Constructs a COCO archive.
  */
-coco_archive_t *coco_archive(const char *suite_name, const size_t function, const size_t dimension,
-                             const size_t instance);
+coco_archive_t *coco_archive(char const *suite_name, size_t const function, size_t const dimension,
+                             size_t const instance);
 /**
  * @brief Adds a solution with objectives (y1, y2) to the archive if none of the existing solutions in the
  * archive dominates it. In this case, returns 1, otherwise the archive is not updated and the method
  * returns 0.
  */
-int coco_archive_add_solution(coco_archive_t *archive, const double y1, const double y2, const char *text);
+int coco_archive_add_solution(coco_archive_t *archive, double const y1, double const y2, char const *text);
 
 /**
  * @brief Returns the number of (non-dominated) solutions in the archive (computed first, if needed).
@@ -659,7 +659,7 @@ double coco_archive_get_hypervolume(coco_archive_t *archive);
  * @brief Returns the text of the next (non-dominated) solution in the archive and "" when there are no
  * solutions left. The first two solutions are always the extreme ones.
  */
-const char *coco_archive_get_next_solution_text(coco_archive_t *archive);
+char const *coco_archive_get_next_solution_text(coco_archive_t *archive);
 
 /**
  * @brief Frees the archive.
@@ -669,7 +669,7 @@ void coco_archive_free(coco_archive_t *archive);
 /**
  * @brief Feeds the solution to the bi-objective logger for logger output reconstruction purposes.
  */
-int coco_logger_biobj_feed_solution(coco_problem_t *problem, const size_t evaluation, const double *y);
+int coco_logger_biobj_feed_solution(coco_problem_t *problem, size_t const evaluation, double const *y);
 /**@}*/
 
 /***********************************************************************************************************/
@@ -681,18 +681,18 @@ int coco_logger_biobj_feed_solution(coco_problem_t *problem, const size_t evalua
 /**
  * @brief Removes the given directory and all its contents.
  */
-int coco_remove_directory(const char *path);
+int coco_remove_directory(char const *path);
 
 /**
  * @brief Formatted string duplication.
  */
-char *coco_strdupf(const char *str, ...);
+char *coco_strdupf(char const *str, ...);
 /**@}*/
 
 /***********************************************************************************************************/
 
-void bbob_problem_best_parameter_print(const coco_problem_t *problem);
-void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem);
+void bbob_problem_best_parameter_print(coco_problem_t const *problem);
+void bbob_biobj_problem_best_parameter_print(coco_problem_t const *problem);
 
 #ifdef __cplusplus
 }
