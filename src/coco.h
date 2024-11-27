@@ -258,7 +258,7 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
 /**
  * @brief Returns the number of problems in the given suite.
  */
-size_t coco_suite_get_number_of_problems(coco_suite_t *const suite);
+size_t coco_suite_get_number_of_problems(coco_suite_t const *suite);
 
 /**
  * @brief Returns the function number in the suite in position function_idx (counting from 0).

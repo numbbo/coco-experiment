@@ -34,7 +34,7 @@
  *
  * @note This function needs to be updated when a new suite is added to COCO.
  */
-static coco_suite_t *coco_suite_intialize(const char *suite_name) {
+static coco_suite_t *coco_suite_intialize(char const *suite_name) {
 
   coco_suite_t *suite = NULL;
 
@@ -70,9 +70,9 @@ static coco_suite_t *coco_suite_intialize(const char *suite_name) {
  *
  * @note This function needs to be updated when a new suite is added to COCO.
  */
-static const char *coco_suite_get_instances_by_year(const coco_suite_t *suite,
-                                                    const int year) {
-  const char *year_string;
+static char const *coco_suite_get_instances_by_year(coco_suite_t const *suite,
+                                                    int const year) {
+  char const *year_string;
   if (strcmp(suite->suite_name, "bbob") == 0) {
     year_string = suite_bbob_get_instances_by_year(year);
   } else if (strcmp(suite->suite_name, "sbox-cost") == 0) {
@@ -106,8 +106,8 @@ static const char *coco_suite_get_instances_by_year(const coco_suite_t *suite,
  *
  * @note This function needs to be updated when a new suite is added to COCO.
  */
-static coco_problem_t *coco_suite_get_problem_from_indices(coco_suite_t *suite, const size_t function_idx,
-                                                           const size_t dimension_idx, const size_t instance_idx) {
+static coco_problem_t *coco_suite_get_problem_from_indices(coco_suite_t *suite, size_t const function_idx,
+                                                           size_t const dimension_idx, size_t const instance_idx) {
 
   coco_problem_t *problem;
 
@@ -153,8 +153,8 @@ static coco_problem_t *coco_suite_get_problem_from_indices(coco_suite_t *suite, 
 /**
  * @brief Saves the best indicator value for the given problem in value.
  */
-static void coco_suite_get_best_indicator_value(const int known_optima, const coco_problem_t *problem,
-                                                const char *indicator_name, double *value) {
+static void coco_suite_get_best_indicator_value(int const known_optima, coco_problem_t const *problem,
+                                                char const *indicator_name, double *value) {
 
   if (strcmp(indicator_name, "hyp") == 0) {
     suite_biobj_get_best_hyp_value(known_optima, problem->problem_id, value);
@@ -169,8 +169,8 @@ static void coco_suite_get_best_indicator_value(const int known_optima, const co
  * suite with the given function, dimension and instance values. If the given
  * values don't correspond to a problem, the function returns NULL.
  */
-coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite_t *suite, const size_t function,
-                                                                      const size_t dimension, const size_t instance) {
+coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite_t *suite, size_t const function,
+                                                                      size_t const dimension, size_t const instance) {
 
   size_t i;
   int function_idx, dimension_idx, instance_idx;
@@ -218,9 +218,9 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
  * This function sets the functions and dimensions contained in the suite, while
  * the instances are set by the function coco_suite_set_instance.
  */
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima) {
+static coco_suite_t *coco_suite_allocate(char const *suite_name, size_t const number_of_functions,
+                                         size_t const number_of_dimensions, size_t const *dimensions,
+                                         char const *default_instances, int const known_optima) {
 
   coco_suite_t *suite;
   size_t i;
@@ -273,7 +273,7 @@ static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t nu
 /**
  * @brief Sets the suite instance to the given instance_numbers.
  */
-static void coco_suite_set_instance(coco_suite_t *suite, const size_t *instance_numbers) {
+static void coco_suite_set_instance(coco_suite_t *suite, size_t const *instance_numbers) {
 
   size_t i;
 
@@ -297,8 +297,8 @@ static void coco_suite_set_instance(coco_suite_t *suite, const size_t *instance_
  * function performs the conversion from user-friendly indices starting from 1
  * to C-friendly indices starting from 0).
  */
-static void coco_suite_filter_indices(size_t *items, const size_t number_of_items, const size_t *indices,
-                                      const char *name) {
+static void coco_suite_filter_indices(size_t *items, size_t const number_of_items, size_t const *indices,
+                                      char const *name) {
 
   size_t i, j;
   size_t count = coco_count_numbers(indices, COCO_MAX_INSTANCES, name);
@@ -324,7 +324,7 @@ static void coco_suite_filter_indices(size_t *items, const size_t number_of_item
  * in dimension_numbers.
  */
 static void coco_suite_filter_dimensions(coco_suite_t *suite,
-                                         const size_t *dimension_numbers) {
+                                         size_t const *dimension_numbers) {
 
   size_t i, j;
   size_t count =
@@ -350,8 +350,8 @@ static void coco_suite_filter_dimensions(coco_suite_t *suite,
  * function has been filtered out through suite_options in the coco_suite
  * function, the result is 0.
  */
-size_t coco_suite_get_function_from_function_index(const coco_suite_t *suite,
-                                                   const size_t function_idx) {
+size_t coco_suite_get_function_from_function_index(coco_suite_t const *suite,
+                                                   size_t const function_idx) {
 
   if (function_idx >= suite->number_of_functions) {
     coco_error("coco_suite_get_function_from_function_index(): function index "
@@ -372,8 +372,8 @@ size_t coco_suite_get_function_from_function_index(const coco_suite_t *suite,
  * function, the result is 0.
  */
 size_t
-coco_suite_get_dimension_from_dimension_index(const coco_suite_t *suite,
-                                              const size_t dimension_idx) {
+coco_suite_get_dimension_from_dimension_index(coco_suite_t const *suite,
+                                              size_t const dimension_idx) {
 
   if (dimension_idx >= suite->number_of_dimensions) {
     coco_error("coco_suite_get_dimension_from_dimension_index(): dimensions index exceeding the number of dimensions "
@@ -392,8 +392,8 @@ coco_suite_get_dimension_from_dimension_index(const coco_suite_t *suite,
  * instance has been filtered out through suite_options in the coco_suite
  * function, the result is 0.
  */
-size_t coco_suite_get_instance_from_instance_index(const coco_suite_t *suite,
-                                                   const size_t instance_idx) {
+size_t coco_suite_get_instance_from_instance_index(coco_suite_t const *suite,
+                                                   size_t const instance_idx) {
 
   if (instance_idx >= suite->number_of_instances) {
     coco_error("coco_suite_get_instance_from_instance_index(): instance index "
@@ -458,7 +458,7 @@ void coco_suite_free(coco_suite_t *suite) {
  * problem has been filtered out from the suite).
  */
 coco_problem_t *coco_suite_get_problem(coco_suite_t *suite,
-                                       const size_t problem_index) {
+                                       size_t const problem_index) {
 
   size_t function_idx = 0, instance_idx = 0, dimension_idx = 0;
   coco_suite_decode_problem_index(suite, problem_index, &function_idx,
@@ -478,7 +478,7 @@ coco_problem_t *coco_suite_get_problem(coco_suite_t *suite,
  *
  * @return The number of problems in the suite.
  */
-size_t coco_suite_get_number_of_problems(const coco_suite_t *suite) {
+size_t coco_suite_get_number_of_problems(coco_suite_t const *suite) {
   return (suite->number_of_instances * suite->number_of_functions *
           suite->number_of_dimensions);
 }
@@ -491,12 +491,12 @@ size_t coco_suite_get_number_of_problems(const coco_suite_t *suite) {
  * warning is raised). See the coco_suite function for more information about
  * the required format.
  */
-static size_t *coco_suite_get_instance_indices(const coco_suite_t *suite,
-                                               const char *suite_instance) {
+static size_t *coco_suite_get_instance_indices(coco_suite_t const *suite,
+                                               char const *suite_instance) {
 
   int year = -1;
   char *instances = NULL;
-  const char *year_string = NULL;
+  char const *year_string = NULL;
   long year_found, instances_found;
   int parse_year = 1, parse_instances = 1;
   size_t *result = NULL;
@@ -555,8 +555,8 @@ static size_t *coco_suite_get_instance_indices(const coco_suite_t *suite,
  * returns 1. If such an item cannot be found, current_item_id points to the
  * first positive item and the method returns 0.
  */
-static int coco_suite_is_next_item_found(const size_t *items,
-                                         const size_t number_of_items,
+static int coco_suite_is_next_item_found(size_t const *items,
+                                         size_t const number_of_items,
                                          long *current_item_id) {
 
   if ((*current_item_id) != (long)number_of_items - 1) {
@@ -681,8 +681,8 @@ static int coco_suite_is_next_dimension_found(coco_suite_t *suite) {
  *
  * @return The constructed suite object.
  */
-coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
-                         const char *suite_options) {
+coco_suite_t *coco_suite(char const *suite_name, char const *suite_instance,
+                         char const *suite_options) {
 
   coco_suite_t *suite;
   size_t *instances;
@@ -697,8 +697,8 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
       *redundant_option_keys;
 
   /* Sets the valid keys for suite options and suite instance */
-  const char *known_keys_o[] = {"dimensions", "dimension_indices", "function_indices", "instance_indices"};
-  const char *known_keys_i[] = {"year", "instances"};
+  char const *known_keys_o[] = {"dimensions", "dimension_indices", "function_indices", "instance_indices"};
+  char const *known_keys_i[] = {"year", "instances"};
 
   /* Initialize the suite */
   suite = coco_suite_intialize(suite_name);
@@ -958,8 +958,8 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
  * @return The problem index in the suite computed from function_idx,
  * dimension_idx and instance_idx.
  */
-size_t coco_suite_encode_problem_index(const coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
-                                       const size_t instance_idx) {
+size_t coco_suite_encode_problem_index(coco_suite_t const *suite, size_t const function_idx, size_t const dimension_idx,
+                                       size_t const instance_idx) {
 
   return instance_idx + (function_idx * suite->number_of_instances) +
          (dimension_idx * suite->number_of_instances * suite->number_of_functions);
@@ -975,7 +975,7 @@ size_t coco_suite_encode_problem_index(const coco_suite_t *suite, const size_t f
  * @param instance_idx Pointer to the index of the instance, which is set by
  * this function.
  */
-void coco_suite_decode_problem_index(const coco_suite_t *suite, const size_t problem_index, size_t *function_idx,
+void coco_suite_decode_problem_index(coco_suite_t const *suite, size_t const problem_index, size_t *function_idx,
                                      size_t *dimension_idx, size_t *instance_idx) {
 
   if (problem_index > (suite->number_of_instances * suite->number_of_functions *
