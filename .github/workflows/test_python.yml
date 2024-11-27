@@ -119,10 +119,11 @@ jobs:
         pytest --cov=cocoex test/
   
   python-wheels-example:
-    needs: [python-wheels-build, python-wheels-build]
+    needs: python-wheels-build
+    if: success() || failure()
     strategy:
+      fail-fast: false
       matrix:
-        fail-fast: false
         buildplat:
           - [ubuntu-20.04, manylinux_x86_64]
           - [ubuntu-20.04, musllinux_x86_64]
