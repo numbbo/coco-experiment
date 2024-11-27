@@ -120,7 +120,7 @@ jobs:
         CIBW_PRERELEASE_PYTHONS: True
         CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
     - name: Archive Python wheels
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist-python-wheels
         path: dist/coco_experiment*.whl
@@ -256,7 +256,7 @@ jobs:
       run: ctest --test-dir build 
     - name: Store reports
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: c-test-${{matrix.os}}
         path: |
@@ -294,7 +294,7 @@ jobs:
       working-directory: ${{github.workspace}}/cocoex-java/
       run: java -classpath build/coco.jar -Djava.library.path=build/ ExampleExperiment 
     - name: Archive Java example experiment results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: java-example-${{matrix.os}}
         path: cocoex-java/exdata/*
@@ -324,7 +324,7 @@ jobs:
       working-directory: ${{github.workspace}}/cocoex-octave/
       run: octave --no-gui exampleexperiment.m                
     - name: Archive Octave example experiment results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: octave-example
         path: cocoex-octave/exdata/*
@@ -376,7 +376,7 @@ jobs:
       working-directory: ${{github.workspace}}/cocoex-rust/
       run: cargo run --example example-experiment
     - name: Archive Rust example experiment results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: rust-example-${{matrix.os}}
         path: cocoex-rust/exdata/*
