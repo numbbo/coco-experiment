@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(COCOUnitTest
-        DESCRIPTION "COCO C unit tests"
-        LANGUAGES C)
+        DESCRIPTION "COCO CPP integration tests"
+        LANGUAGES C CXX)
 
 include(CTest)
 
@@ -13,7 +13,11 @@ if(MATH_LIBRARY)
 endif()
 
 macro(integration_test name) 
-  add_executable(${name} ${name}.c ${ARGN})  
+  if(EXISTS "${PROJECT_SOURCE_DIR}/${name}.cpp")
+    add_executable(${name} ${name}.cpp ${ARGN})
+  else()
+    add_executable(${name} ${name}.c ${ARGN})
+  endif()
   if (LIBM)
     target_link_libraries(${name} PUBLIC ${LIBM})
   endif()
@@ -25,8 +29,8 @@ macro(integration_test name)
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endmacro()
 
-integration_test(test_bbob-constrained coco.c)
-integration_test(test_bbob-largescale coco.c)
+integration_test(test_bbob-constrained coco.cpp)
+integration_test(test_bbob-largescale coco.cpp)
 integration_test(test_bbob-mixint)
-integration_test(test_biobj coco.c)
-integration_test(test_instance_extraction coco.c)
+integration_test(test_biobj coco.cpp)
+integration_test(test_instance_extraction coco.cpp)

@@ -9,7 +9,7 @@
 #include <time.h>
 
 // FIXME: Is this _really_ necessary?
-#include "coco.c"
+#include "coco.cpp"
 
 /**
  * A random search optimizer.
@@ -48,7 +48,7 @@ void my_optimizer(coco_problem_t *problem, coco_observer_t *observer) {
 }
 
 /* Each time: run the benchmark and delete the output folder */
-void run_once(char *suite_name, char *suite_options, char *observer_name, char *observer_options) {
+void run_once(char const* suite_name, char const * suite_options, char const * observer_name, char const * observer_options) {
 
   coco_suite_t *suite;
   coco_observer_t *observer;
@@ -69,7 +69,7 @@ void run_once(char *suite_name, char *suite_options, char *observer_name, char *
  * discrete points and checks only the optima (even if the optima match, the transformation could
  * be wrong).
  */
-void check_discretization_single(char *suite_name, char *suite_options) {
+void check_discretization_single(char const * suite_name, char const * suite_options) {
 
   coco_suite_t *suite;
   coco_problem_t *problem_cont, *problem_disc, *problem_tmp;
@@ -179,7 +179,7 @@ void check_discretization_single(char *suite_name, char *suite_options) {
  * before they were stacked to form bi-objective problems, i.e. the 'wrapping' order was:
  * stacking(scale(discretize(problem1)), scale(discretize(problem2)))
  */
-void check_discretization_bi(char *suite_name, char *suite_options) {
+void check_discretization_bi(char const * suite_name, char const * suite_options) {
 
   coco_suite_t *suite;
   coco_problem_t *problem_disc;
