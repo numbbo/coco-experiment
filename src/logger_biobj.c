@@ -803,14 +803,17 @@ static void logger_biobj_recommend(coco_problem_t *problem, const double *x) {
 
   logger_biobj_data_t *logger;
   coco_problem_t *inner_problem;
+  observer_biobj_data_t *observer_data;
   size_t i, j;
   double *y = NULL;
   double *constraints = NULL;
 
   logger = (logger_biobj_data_t *)coco_problem_transformed_get_data(problem);
+  observer_data = (observer_biobj_data_t *)(((coco_observer_t *)logger->observer)->data);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   /* Evaluate the objectives */
+  y = coco_allocate_vector(problem->number_of_objectives);
   coco_evaluate_function(inner_problem, x, y);
 
   /* Evaluate the constraints */
@@ -819,6 +822,14 @@ static void logger_biobj_recommend(coco_problem_t *problem, const double *x) {
     inner_problem->evaluate_constraint(inner_problem, x, constraints, 0);
   }
   logger->num_cons_evaluations = problem->evaluations_constraints;
+
+  /* If this is the first call to the recommend function (on any problem), warn about the large 
+  resulting files */
+  if (observer_data->large_mdat_file_warning == 0) {
+    coco_warning("Using the logger_biobj_recommend function may result in the creation of large "
+                 "mdat files since every recommended solution is logged");
+    observer_data->large_mdat_file_warning = 1;
+  }
 
   /* Log to the mdat file */
   fprintf(logger->mdat_file, "%lu\t", (unsigned long)logger->num_func_evaluations);
