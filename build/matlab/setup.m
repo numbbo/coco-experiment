@@ -4,7 +4,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 more off; % turn off page-wise output
 
-fprintf("compiling cocoCall.c...");
-mex("cocoCall.c", "coco.cpp");
-fprintf('Done\n');
-fprintf('Preparation of all mex files finished.\n');
+fprintf("MEX     cocoCall.cpp");
+mex("cocoCall.cpp");
