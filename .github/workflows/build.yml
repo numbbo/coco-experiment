@@ -111,6 +111,8 @@ jobs:
     needs: [source-build, paths-filter]
     if: needs.paths-filter.outputs.python == 'true'
     uses: ./.github/workflows/test_python.yml
+    with:
+      run-id: ${{github.run_id}}
 
   c-test:
     needs: [source-build, paths-filter]
