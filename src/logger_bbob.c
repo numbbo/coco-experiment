@@ -699,6 +699,7 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
 
   logger_data->num_func_evaluations = 0;
   logger_data->num_cons_evaluations = 0;
+  logger_data->last_logged_eval_mdat = 0;
   /* logger_data->last_logged_evaluation = 0; */
 
   logger_data->best_found_solution = coco_allocate_vector(inner_problem->number_of_variables);
