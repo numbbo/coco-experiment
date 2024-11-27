@@ -22,6 +22,8 @@
  * and passed to the logger during initialization.
  */
 
+#include <string>
+
 #include <cstdio>
 #include <cassert>
 #include <climits>
@@ -230,7 +232,7 @@ static void logger_bbob_open_data_file(FILE **data_file, const char *path, const
 /**
  * @brief Creates the info file (if it didn't exist before) and opens it
  */
-static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *folder, const char *function_string,
+static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *folder, std::string const& function_string,
                                        const char *data_file_name, const char *suite_name, int start_new_line) {
   char data_file_path[COCO_PATH_MAX + 2] = {0};
   int add_empty_line = 0;
@@ -253,7 +255,7 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *f
 
   strncpy(file_name, observer_data->prefix, COCO_PATH_MAX - strlen(file_name) - 1);
   strncat(file_name, "_f", COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, function_string, COCO_PATH_MAX - strlen(file_name) - 1);
+  strncat(file_name, function_string.c_str(), COCO_PATH_MAX - strlen(file_name) - 1);
   strncat(file_name, ".info", COCO_PATH_MAX - strlen(file_name) - 1);
   coco_join_path(file_path, sizeof(file_path), folder, file_name, NULL);
 
@@ -703,10 +705,10 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
   /* logger_data->last_logged_evaluation = 0; */
 
   logger_data->best_found_solution = coco_allocate_vector(inner_problem->number_of_variables);
-  logger_data->best_found_value = DBL_MAX;
+  logger_data->best_found_value = std::numeric_limits<double>::max();
   logger_data->optimal_value = *(inner_problem->best_value);
 
-  logger_data->current_value = DBL_MAX;
+  logger_data->current_value = std::numeric_limits<double>::max();
   
   logger_data->best_recommended_solution = coco_allocate_vector(inner_problem->number_of_variables);
   logger_data->best_recommended_value = INFINITY_FOR_LOGGING;

@@ -665,7 +665,7 @@ static coco_problem_t *logger_sbox_cost(coco_observer_t *observer,
   logger_data->function_id = coco_problem_get_suite_dep_function(inner_problem);
   logger_data->instance_id = coco_problem_get_suite_dep_instance(inner_problem);
   logger_data->written_last_eval = 0;
-  logger_data->last_fvalue = DBL_MAX;
+  logger_data->last_fvalue = std::numeric_limits<double>::max();
   logger_data->is_initialized = 0;
   logger_data->log_discrete_as_int = observer->log_discrete_as_int;
 

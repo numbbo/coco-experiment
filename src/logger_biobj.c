@@ -516,7 +516,7 @@ static logger_biobj_indicator_t *logger_biobj_indicator(const logger_biobj_data_
   indicator->target_hit = 0;
   indicator->evaluation_logged = 0;
   indicator->current_value = 0;
-  indicator->additional_penalty = DBL_MAX;
+  indicator->additional_penalty = std::numeric_limits<double>::max();
   indicator->overall_value = 0;
   indicator->previous_value = 0;
 

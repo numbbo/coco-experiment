@@ -180,8 +180,8 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
   logger_data->log_only_better = (observer_data->log_only_better) && (inner_problem->number_of_objectives == 1);
   logger_data->log_time = observer_data->log_time;
 
-  logger_data->best_value = DBL_MAX;
-  logger_data->current_value = DBL_MAX;
+  logger_data->best_value = std::numeric_limits<double>::max();
+  logger_data->current_value = std::numeric_limits<double>::max();
 
   /* Construct file name */
   path_name = coco_allocate_string(COCO_PATH_MAX + 1);

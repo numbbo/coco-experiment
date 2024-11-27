@@ -112,8 +112,8 @@ typedef struct {
 static coco_observer_log_targets_t *coco_observer_log_targets(const size_t number_of_targets, const double precision) {
 
   coco_observer_log_targets_t *log_targets = (coco_observer_log_targets_t *)coco_allocate_memory(sizeof(*log_targets));
-  log_targets->exponent = INT_MAX;
-  log_targets->value = DBL_MAX;
+  log_targets->exponent = std::numeric_limits<int>::max();
+  log_targets->value = std::numeric_limits<double>::max();
   log_targets->number_of_triggers = number_of_targets;
   log_targets->precision = precision;
 
@@ -205,7 +205,7 @@ static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_ta
 static coco_observer_lin_targets_t *coco_observer_lin_targets(const double precision) {
 
   coco_observer_lin_targets_t *lin_targets = (coco_observer_lin_targets_t *)coco_allocate_memory(sizeof(*lin_targets));
-  lin_targets->value = DBL_MAX;
+  lin_targets->value = std::numeric_limits<double>::max();
   lin_targets->precision = precision;
 
   return lin_targets;

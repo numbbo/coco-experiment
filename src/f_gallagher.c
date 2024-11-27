@@ -352,7 +352,7 @@ static double f_gallagher_core(const double *x, size_t number_of_variables,
   double result = 0;
   double y, w_i;
   size_t i, j;
-  double maxf = DBL_MAX;
+  double maxf = std::numeric_limits<double>::max();
   double *x_local;
   x_local = coco_allocate_vector(number_of_variables);
 

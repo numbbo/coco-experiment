@@ -971,11 +971,11 @@ static size_t coco_double_to_size_t(const double number) { return (size_t)coco_d
  * @brief Rounds the given double to the nearest integer (returns the number in int type)
  */
 static int coco_double_to_int(const double number) {
-  if (number > (double)INT_MAX) {
-    coco_error("coco_double_to_int(): Cannot cast %f to the nearest integer, max %d allowed", number, INT_MAX);
+  if (number > (double)std::numeric_limits<int>::max()) {
+    coco_error("coco_double_to_int(): Cannot cast %f to the nearest integer, max %d allowed", number, std::numeric_limits<int>::max());
     return -1; /* Never reached */
-  } else if (number < (double)INT_MIN) {
-    coco_error("coco_double_to_int(): Cannot cast %f to the nearest integer, min %d allowed", number, INT_MIN);
+  } else if (number < (double)std::numeric_limits<int>::min()) {
+    coco_error("coco_double_to_int(): Cannot cast %f to the nearest integer, min %d allowed", number, std::numeric_limits<int>::min());
     return -1; /* Never reached */
   } else {
     return (int)(number + 0.5);

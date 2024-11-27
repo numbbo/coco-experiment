@@ -194,7 +194,7 @@ static coco_problem_t *coco_problem_allocate(const size_t number_of_variables, c
   problem->evaluations = 0;
   problem->evaluations_constraints = 0;
   problem->final_target_delta[0] = 1e-8; /* in case to be modified by the benchmark */
-  problem->best_observed_fvalue[0] = DBL_MAX;
+  problem->best_observed_fvalue[0] = std::numeric_limits<double>::max();
   problem->best_observed_evaluation[0] = 0;
   problem->suite = NULL; /* To be initialized in the coco_suite_get_problem_from_indices() function */
   problem->suite_dep_index = 0;
