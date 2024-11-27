@@ -1,9 +1,6 @@
 name: valgrind
 
 on:
-  push:
-  pull_request:
-    branches: [ main ]
   workflow_dispatch: # allow triggering workflow manually
     inputs:
       reason:
