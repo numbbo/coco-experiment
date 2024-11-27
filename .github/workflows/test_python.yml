@@ -8,7 +8,6 @@ on:
         type: string
 
 jobs:
-
   python-wheels-build:
     needs: paths-filter
     if: needs.paths-filter.outputs.python == 'true'
