@@ -24,7 +24,7 @@
 
 #include <string>
 
-#include <cstdio>
+//#include <cstdio>
 #include <cassert>
 #include <climits>
 #include <cfloat>
@@ -35,7 +35,7 @@
 
 #include "coco_utilities.cpp"
 #include "coco_problem.cpp"
-#include "coco_string.cpp"
+//#include "coco_string.cpp"
 #include "coco_observer.cpp"
 #include "observer_bbob.cpp"
 
@@ -58,11 +58,11 @@ typedef struct {
   int is_initialized;        /**< @brief Whether the logger was already initialized */
   int algorithm_restarted;   /**< @brief Whether the algorithm has restarted (output information to .rdat file). */
 
-  FILE *info_file; /**< @brief Index file */
-  FILE *dat_file;  /**< @brief File with function value aligned data */
-  FILE *tdat_file; /**< @brief File with number of evaluations aligned data */
-  FILE *rdat_file; /**< @brief File with restart information */
-  FILE *mdat_file; /**< @brief File with evaluated recommendations */
+  FILE* info_file; /**< @brief Index FILE */
+  FILE* dat_file;  /**< @brief File with function value aligned data */
+  FILE* tdat_file; /**< @brief File with number of evaluations aligned data */
+  FILE* rdat_file; /**< @brief File with restart information */
+  FILE* mdat_file; /**< @brief File with evaluated recommendations */
 
   size_t num_func_evaluations;        /**< @brief The number of function evaluations performed so far. */
   size_t num_cons_evaluations;        /**< @brief The number of evaluations of constraints performed so far. */
@@ -115,14 +115,14 @@ typedef struct {
  * best measured fitness |
  * x1 | x2...
  */
-static const char *logger_bbob_data_format = "bbob-new2";
+static const char logger_bbob_data_format[] = "bbob-new2";
 
 /**
  * @brief The header used by the logger in .?dat files
  *
  * See also logger_bbob_data_format
  */
-static const char *logger_bbob_header = "%% "
+static const char logger_bbob_header[] = "%% "
                                         "f evaluations | "
                                         "g evaluations | "
                                         "best noise-free fitness - %s (%13.12e) + sum g_i+ | "
@@ -158,19 +158,18 @@ static int logger_bbob_single_digit_constraint(const double c) {
  * A new line should be started when the current dimension or the current function differ from
  * the last logged dimension and function.
  */
-static int logger_bbob_start_new_line(coco_observer_t *observer, size_t current_dimension, size_t current_function) {
+static bool logger_bbob_start_new_line(coco_observer_t* observer, size_t current_dimension, size_t current_function) {
   observer_bbob_data_t *observer_data = ((observer_bbob_data_t *)observer->data);
   assert(observer_data);
 
-  if ((current_function == observer_data->last_function) && (current_dimension == observer_data->last_dimension))
-    return 0;
-  return 1;
+  return ((current_function == observer_data->last_function) && (current_dimension == observer_data->last_dimension));
 }
 
 /**
  * @brief Outputs a formatted line to a data file
  */
-static void logger_bbob_output(FILE *data_file, logger_bbob_data_t *logger, const double *x, double current_value,
+template <typename VECTOR>
+static void logger_bbob_output(FILE* data_file, logger_bbob_data_t* logger, VECTOR x, double current_value,
                                double best_value, const double *constraints) {
   /* This function contains many hard-coded values (10.9, 22, 5.4) that could be read through
    * observer options */
@@ -207,11 +206,11 @@ static void logger_bbob_output(FILE *data_file, logger_bbob_data_t *logger, cons
 /**
  * @brief Opens the file in append mode
  */
-static void logger_bbob_open_file(FILE **file, const char *file_path) {
+static void logger_bbob_open_file(FILE* *file, std::string const& file_path) {
   if (*file == nullptr) {
-    *file = fopen(file_path, "a");
+    *file = fopen(file_path.c_str(), "a");
     if (*file == nullptr) {
-      coco_error("logger_bbob_open_file(): Error opening file: %s\nError: %d", file_path, errno);
+      coco_error("logger_bbob_open_file(): Error opening file: %s\nError: %d", file_path.c_str(), errno);
     }
   }
 }
@@ -219,20 +218,20 @@ static void logger_bbob_open_file(FILE **file, const char *file_path) {
 /**
  * @brief Creates the data file (if it didn't exist before) and opens it
  */
-static void logger_bbob_open_data_file(FILE **data_file, const char *path, const char *file_name,
-                                       const char *file_extension) {
-  char file_path[COCO_PATH_MAX + 2] = {0};
-  char relative_file_path[COCO_PATH_MAX + 2] = {0};
-  strncpy(relative_file_path, file_name, COCO_PATH_MAX - strlen(relative_file_path) - 1);
-  strncat(relative_file_path, file_extension, COCO_PATH_MAX - strlen(relative_file_path) - 1);
-  coco_join_path(file_path, sizeof(file_path), path, relative_file_path, nullptr);
-  logger_bbob_open_file(data_file, file_path);
+static void logger_bbob_open_data_file(FILE* *data_file, std::string const& path, std::string const& file_name,
+                                       std::string const& file_extension) {
+//  char file_path[COCO_PATH_MAX + 2] = {0};
+//  char relative_file_path[COCO_PATH_MAX + 2] = {0};
+//  strncpy(relative_file_path, file_name, COCO_PATH_MAX - strlen(relative_file_path) - 1);
+//  strncat(relative_file_path, file_extension, COCO_PATH_MAX - strlen(relative_file_path) - 1);
+//  coco_join_path(file_path, sizeof(file_path), path, relative_file_path, nullptr);
+  logger_bbob_open_file(data_file, path + coco_path_separator + file_name + file_extension);
 }
 
 /**
  * @brief Creates the info file (if it didn't exist before) and opens it
  */
-static void logger_bbob_open_info_file(logger_bbob_data_t *logger, std::string const& folder, std::string const& function_string,
+static void logger_bbob_open_info_file(logger_bbob_data_t* logger, std::string const& folder, std::string const& function_string,
                                        std::string const& data_file_name, std::string const& suite_name, bool start_new_line) {
   std::string data_file_path;
 //  char data_file_path[COCO_PATH_MAX + 2] = {0};
@@ -241,8 +240,8 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, std::string c
 //  char file_path[COCO_PATH_MAX + 2] = {0};
   std::string file_name;
   std::string file_path;
-  FILE **info_file;
-  FILE *tmp_file;
+  FILE* *info_file;
+  FILE* tmp_file;
   observer_bbob_data_t *observer_data;
 
   coco_debug("Started logger_bbob_open_info_file()");
@@ -268,7 +267,7 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, std::string c
       add_empty_line = 1;
       fclose(tmp_file);
     }
-    logger_bbob_open_file(info_file, file_path.c_str());
+    logger_bbob_open_file(info_file, file_path);
     if (start_new_line) {
       if (add_empty_line)
         fprintf(*info_file, "\n");
@@ -289,27 +288,23 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, std::string c
 /**
  * @brief Generates the files and folders needed by the logger if they don't already exist
  */
-static void logger_bbob_initialize(logger_bbob_data_t *logger, int is_opt_known) {
+static void logger_bbob_initialize(logger_bbob_data_t* logger, bool is_opt_known) {
 
   char relative_path[COCO_PATH_MAX + 2] = {0}; /* Relative path to the .dat file from where the .info file is */
   char folder_path[COCO_PATH_MAX + 2] = {0};
   char *function_string;
   char *dimension_string;
-  char const*str_pointer;
   char *relative_path_pointer = nullptr;
-  int start_new_line;
+  bool start_new_line;
   observer_bbob_data_t *observer_data;
 
   coco_debug("Started logger_bbob_initialize()");
 
-  if (is_opt_known == 0)
-    str_pointer = "Fref";
-  else
-    str_pointer = "Fopt";
+  std::string str_opt_known = is_opt_known ? "Fopt" : "Fref";
 
   assert(logger);
   assert(logger->observer);
-  observer_data = ((observer_bbob_data_t *)((coco_observer_t *)logger->observer)->data);
+  observer_data = ((observer_bbob_data_t*)((coco_observer_t*)logger->observer)->data);
 
   function_string = coco_strdupf("%lu", (unsigned long)logger->function);
   dimension_string = coco_strdupf("%lu", (unsigned long)logger->number_of_variables);
@@ -336,20 +331,20 @@ static void logger_bbob_initialize(logger_bbob_data_t *logger, int is_opt_known)
     relative_path_pointer = coco_strdup(observer_data->last_dat_file);
   }
 
-  /* info file */
+  /* info FILE* /
   logger_bbob_open_info_file(logger, logger->observer->result_folder, function_string, relative_path_pointer,
                              logger->suite_name, start_new_line);
   fprintf(logger->info_file, ", %lu", (unsigned long)logger->instance);
 
   /* data files */
   logger_bbob_open_data_file(&(logger->dat_file), logger->observer->result_folder, relative_path_pointer, ".dat");
-  fprintf(logger->dat_file, logger_bbob_header, str_pointer, logger->optimal_value);
+  fprintf(logger->dat_file, logger_bbob_header, str_opt_known.c_str(), logger->optimal_value);
   logger_bbob_open_data_file(&(logger->tdat_file), logger->observer->result_folder, relative_path_pointer, ".tdat");
-  fprintf(logger->tdat_file, logger_bbob_header, str_pointer, logger->optimal_value);
+  fprintf(logger->tdat_file, logger_bbob_header, str_opt_known.c_str(), logger->optimal_value);
   logger_bbob_open_data_file(&(logger->rdat_file), logger->observer->result_folder, relative_path_pointer, ".rdat");
-  fprintf(logger->rdat_file, logger_bbob_header, str_pointer, logger->optimal_value);
+  fprintf(logger->rdat_file, logger_bbob_header, str_opt_known.c_str(), logger->optimal_value);
   logger_bbob_open_data_file(&(logger->mdat_file), logger->observer->result_folder, relative_path_pointer, ".mdat");
-  fprintf(logger->mdat_file, logger_bbob_header, str_pointer, logger->optimal_value);
+  fprintf(logger->mdat_file, logger_bbob_header, str_opt_known.c_str(), logger->optimal_value);
 
   logger->is_initialized = 1;
   coco_free_memory(dimension_string);
@@ -367,7 +362,7 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
   size_t i;
   double y_logged, max_value = 0, sum_constraints;
   double *constraints = nullptr;
-  logger_bbob_data_t *logger = (logger_bbob_data_t *)coco_problem_transformed_get_data(problem);
+  logger_bbob_data_t* logger = (logger_bbob_data_t* )coco_problem_transformed_get_data(problem);
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
   const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, nullptr);
 
@@ -480,7 +475,7 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
 static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
   double y_logged;
   double *constraints = nullptr, *y = nullptr;
-  logger_bbob_data_t *logger = (logger_bbob_data_t *)coco_problem_transformed_get_data(problem);
+  logger_bbob_data_t* logger = (logger_bbob_data_t* )coco_problem_transformed_get_data(problem);
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
   const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, nullptr);
 
@@ -561,7 +556,7 @@ static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
 static void logger_bbob_free(void *stuff) {
   assert(stuff);
 
-  logger_bbob_data_t *logger = (logger_bbob_data_t *)stuff;
+  logger_bbob_data_t* logger = (logger_bbob_data_t* )stuff;
   coco_observer_t *observer; /* The observer might not exist at this point */
 
   coco_debug("Started logger_bbob_free()");
@@ -648,7 +643,7 @@ static void logger_bbob_free(void *stuff) {
  * Has to be taken care of here due to
  */
 static void logger_bbob_data_nullify_observer(void *stuff) {
-  logger_bbob_data_t *logger = (logger_bbob_data_t *)stuff;
+  logger_bbob_data_t* logger = (logger_bbob_data_t* )stuff;
   logger->observer = nullptr;
 }
 
@@ -657,7 +652,7 @@ static void logger_bbob_data_nullify_observer(void *stuff) {
  */
 static void logger_bbob_signal_restart(coco_problem_t *problem) {
 
-  logger_bbob_data_t *logger = (logger_bbob_data_t *)coco_problem_transformed_get_data(problem);
+  logger_bbob_data_t* logger = (logger_bbob_data_t* )coco_problem_transformed_get_data(problem);
   assert(logger);
 
   if (logger->num_func_evaluations > 0)
@@ -666,7 +661,7 @@ static void logger_bbob_signal_restart(coco_problem_t *problem) {
 
 static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *inner_problem) {
   coco_problem_t *problem;
-  logger_bbob_data_t *logger_data;
+  logger_bbob_data_t* logger_data;
   observer_bbob_data_t *observer_data;
   coco_suite_t *suite;
   size_t i;
@@ -688,7 +683,7 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
     coco_error("logger_bbob(): The observed problem must be closed before a new problem can be observed");
   }
 
-  logger_data = (logger_bbob_data_t *)coco_allocate_memory(sizeof(*logger_data));
+  logger_data = (logger_bbob_data_t* )coco_allocate_memory(sizeof(*logger_data));
   logger_data->observer = observer;
   logger_data->suite_name = coco_problem_get_suite(inner_problem)->suite_name;
   logger_data->is_initialized = 0;
