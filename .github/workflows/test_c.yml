@@ -1,0 +1,47 @@
+name: test-c
+
+on:
+  push:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "build/c/*"
+      - "src/*"
+      
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  c-test:
+    strategy:
+      matrix:
+        # FIXME: Currently fails on windows because of path issues.
+        # 
+        # Debug and add `windows-latest` back to list at some point.
+        os: [ubuntu-latest, macos-14]
+    runs-on: ${{matrix.os}}
+    defaults:
+      run:
+        working-directory: ${{github.workspace}}
+    steps:
+    - name: Download C source package
+      uses: actions/download-artifact@v3
+      with:
+        name: dist-c
+    - name: Unpack
+      run: unzip cocoex-c-*.zip
+    - name: Build 
+      working-directory: ${{github.workspace}}/cocoex-c/
+      run: cmake -B build && cmake --build build
+    - name: Test
+      working-directory: ${{github.workspace}}/cocoex-c/
+      run: ctest --test-dir build 
+    - name: Store reports
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: c-test-${{matrix.os}}
+        path: |
+            **/build/
+

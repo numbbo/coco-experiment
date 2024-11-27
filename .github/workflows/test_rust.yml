@@ -1,0 +1,65 @@
+name: test-rust
+
+on:
+  push:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "build/rust/*"
+      - "src/*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  
+  rust-test:
+    if: false # Disabled since we don't have any tests yes
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    defaults:
+      run:
+        working-directory: ${{github.workspace}}
+    steps:
+    - name: Download Rust source package
+      uses: actions/download-artifact@v3
+      with:
+        name: dist-rust
+    - name: Unpack
+      run: unzip cocoex-rust-*.zip
+    - name: Build 
+      working-directory: ${{github.workspace}}/cocoex-rust/
+      run: cargo build -r
+    - name: Test 
+      working-directory: ${{github.workspace}}/cocoex-rust/
+      run: cargo test -r
+
+  rust-example:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    defaults:
+      run:
+        working-directory: ${{github.workspace}}
+    steps:
+    - name: Download Rust source package
+      uses: actions/download-artifact@v3
+      with:
+        name: dist-rust
+    - name: Unpack
+      run: unzip cocoex-rust-*.zip
+    - name: Build 
+      working-directory: ${{github.workspace}}/cocoex-rust/
+      run: cargo build -r 
+    - name: Example Experiment
+      working-directory: ${{github.workspace}}/cocoex-rust/
+      run: cargo run --example example-experiment
+    - name: Archive Rust example experiment results
+      uses: actions/upload-artifact@v3
+      with:
+        name: rust-example-${{matrix.os}}
+        path: cocoex-rust/exdata/*
