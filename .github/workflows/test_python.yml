@@ -59,10 +59,12 @@ jobs:
       run: python -m pip install cibuildwheel==2.16.2
     - name: Build cocoex wheel
       shell: bash
-      run: python -m cibuildwheel --print-build-identifiers --output-dir dist/ coco_experiment-*.tar.gz
+      run: python -m cibuildwheel --output-dir dist/ coco_experiment-*.tar.gz
       env:
         CIBW_PRERELEASE_PYTHONS: True
         CIBW_BUILD: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
+        CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=10.12
+        CIBW_BUILD_VERBOSITY: 2
     - name: Archive Python wheels
       uses: actions/upload-artifact@v4
       with:
