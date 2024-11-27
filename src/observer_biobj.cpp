@@ -15,10 +15,10 @@ typedef enum { LOG_NONDOM_NONE, LOG_NONDOM_FINAL, LOG_NONDOM_ALL, LOG_NONDOM_REA
 /** @brief Enum for denoting when the decision variables are logged. */
 typedef enum { LOG_VARS_NEVER, LOG_VARS_LOW_DIM, LOG_VARS_ALWAYS } observer_biobj_log_vars_e;
 
-static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *problem);
-static void logger_biobj_free(void *logger);
-static void logger_biobj_signal_restart(coco_problem_t *problem);
-static void logger_biobj_data_nullify_observer(void *logger_data);
+static coco_problem_t* logger_biobj(coco_observer_t *observer, coco_problem_t* problem);
+static void logger_biobj_free(void* logger);
+static void logger_biobj_signal_restart(coco_problem_t* problem);
+static void logger_biobj_data_nullify_observer(void* logger_data);
 
 /**
  * @brief The bbob-biobj observer data type.
@@ -28,7 +28,7 @@ static void logger_biobj_data_nullify_observer(void *logger_data);
  * to free both objects without problems.
  */
 typedef struct {
-  coco_problem_t *observed_problem; /**< @brief Pointer to the observed problem (nullptr if none is observed) */
+  coco_problem_t* observed_problem; /**< @brief Pointer to the observed problem (nullptr if none is observed) */
 
   observer_biobj_log_nondom_e log_nondom_mode; /**< @brief Handling of the nondominated solutions. */
   observer_biobj_log_vars_e log_vars_mode;     /**< @brief When the decision variables are logged. */
@@ -45,16 +45,16 @@ typedef struct {
 /**
  * @brief  Makes sure the observer_biobj_data_t object is not pointing to any problem.
  */
-static void observer_biobj_data_free(void *stuff) {
+static void observer_biobj_data_free(void* stuff) {
 
   observer_biobj_data_t *data = (observer_biobj_data_t *)stuff;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
 
   coco_debug("Started observer_bbob_data_free()");
 
   /* Make sure that the observed problem's pointer to the observer points to nullptr */
   if (data->observed_problem) {
-    problem = (coco_problem_t *)data->observed_problem;
+    problem = (coco_problem_t* )data->observed_problem;
     if (problem->data) {
       logger_biobj_data_nullify_observer(coco_problem_transformed_get_data(problem));
     }
@@ -88,15 +88,15 @@ static void observer_biobj_data_free(void *stuff) {
  * "log_decision_variables: low_dim" and "compute_indicators: 1". If set to 0, it does not change the values
  * of the other options. The default value is 0.
  */
-static void observer_biobj(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
+static void observer_biobj(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
 
   observer_biobj_data_t *observer_data;
   char string_value[COCO_PATH_MAX + 1];
 
   /* Sets the valid keys for bbob-biobj observer options
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
-  const char *known_keys[] = {"log_nondominated", "log_decision_variables", "compute_indicators", "produce_all_data"};
-  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
+  char const* known_keys[] = {"log_nondominated", "log_decision_variables", "compute_indicators", "produce_all_data"};
+  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
 
   observer_data = (observer_biobj_data_t *)coco_allocate_memory(sizeof(*observer_data));
 

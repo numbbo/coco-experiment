@@ -6,10 +6,10 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *problem);
-static void logger_bbob_free(void *logger);
-static void logger_bbob_signal_restart(coco_problem_t *problem);
-static void logger_bbob_data_nullify_observer(void *logger_data);
+static coco_problem_t* logger_bbob(coco_observer_t *observer, coco_problem_t* problem);
+static void logger_bbob_free(void* logger);
+static void logger_bbob_signal_restart(coco_problem_t* problem);
+static void logger_bbob_data_nullify_observer(void* logger_data);
 
 /**
  * @brief The bbob observer data type.
@@ -19,23 +19,23 @@ static void logger_bbob_data_nullify_observer(void *logger_data);
  * to free both objects without problems.
  */
 typedef struct {
-  coco_problem_t *observed_problem; /**< @brief Pointer to the observed problem (nullptr if none is observed) */
-  char *prefix;                     /**< @brief Prefix in the name of the info and data files */
+  coco_problem_t* observed_problem; /**< @brief Pointer to the observed problem (nullptr if none is observed) */
+  char* prefix;                     /**< @brief Prefix in the name of the info and data files */
 
   /* Store the information on the last function, dimension and dat file used, to be able to tell when the
    * logger needs to write in a new dat file.  */
   size_t last_function;  /**< @brief The function that was logged last */
   size_t last_dimension; /**< @brief The dimension that was logged last */
-  char *last_dat_file;   /**< @brief The name of the .dat file that was last used for logging */
+  char* last_dat_file;   /**< @brief The name of the .dat file that was last used for logging */
 } observer_bbob_data_t;
 
 /**
  * @brief  Frees the memory of the given observer_bbob_data_t object.
  */
-static void observer_bbob_data_free(void *stuff) {
+static void observer_bbob_data_free(void* stuff) {
 
   observer_bbob_data_t *data = (observer_bbob_data_t *)stuff;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
 
   coco_debug("Started observer_bbob_data_free()");
 
@@ -51,7 +51,7 @@ static void observer_bbob_data_free(void *stuff) {
 
   /* Make sure that the observed problem's pointer to the observer points to nullptr */
   if (data->observed_problem) {
-    problem = (coco_problem_t *)data->observed_problem;
+    problem = (coco_problem_t* )data->observed_problem;
     if (problem->data) {
       logger_bbob_data_nullify_observer(coco_problem_transformed_get_data(problem));
     }
@@ -68,13 +68,13 @@ static void observer_bbob_data_free(void *stuff) {
  *
  * - "prefix: STRING" defines the prefix of the name of the info files. The default value is "bbobex".
  */
-static void observer_bbob(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
+static void observer_bbob(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
 
   observer_bbob_data_t *observer_data;
   /* Sets the valid keys for bbob observer options
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
-  const char *known_keys[] = {"prefix"};
-  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
+  char const* known_keys[] = {"prefix"};
+  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
 
   observer_data = (observer_bbob_data_t *)coco_allocate_memory(sizeof(*observer_data));
   observer_data->observed_problem = nullptr;

@@ -19,10 +19,10 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_obj_penalize_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_obj_penalize_evaluate(coco_problem_t* problem, const double* x, double* y) {
   transform_obj_penalize_data_t *data = (transform_obj_penalize_data_t *)coco_problem_transformed_get_data(problem);
-  const double *lower_bounds = problem->smallest_values_of_interest;
-  const double *upper_bounds = problem->largest_values_of_interest;
+  const double* lower_bounds = problem->smallest_values_of_interest;
+  const double* upper_bounds = problem->largest_values_of_interest;
   double penalty = 0.0;
   size_t i;
 
@@ -53,8 +53,8 @@ static void transform_obj_penalize_evaluate(coco_problem_t *problem, const doubl
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_penalize(coco_problem_t *inner_problem, const double factor) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_obj_penalize(coco_problem_t* inner_problem, const double factor) {
+  coco_problem_t* problem;
   transform_obj_penalize_data_t *data;
   assert(inner_problem);
 

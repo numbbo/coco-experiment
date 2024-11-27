@@ -18,9 +18,9 @@ typedef struct {
 /**
  * @brief Evaluates the transformed function.
  */
-static void transform_obj_shift_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+static void transform_obj_shift_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
   transform_obj_shift_data_t *data;
-  double *cons_values;
+  double* cons_values;
   int is_feasible;
   size_t i;
 
@@ -48,7 +48,7 @@ static void transform_obj_shift_evaluate_function(coco_problem_t *problem, const
 /**
  * @brief Evaluates the gradient of the transformed function at x
  */
-static void transform_obj_shift_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void transform_obj_shift_evaluate_gradient(coco_problem_t* problem, const double* x, double* y) {
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -61,8 +61,8 @@ static void transform_obj_shift_evaluate_gradient(coco_problem_t *problem, const
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_shift(coco_problem_t *inner_problem, const double offset) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_obj_shift(coco_problem_t* inner_problem, const double offset) {
+  coco_problem_t* problem;
   transform_obj_shift_data_t *data;
   size_t i;
   data = (transform_obj_shift_data_t *)coco_allocate_memory(sizeof(*data));

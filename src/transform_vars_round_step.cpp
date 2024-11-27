@@ -15,7 +15,7 @@
  */
 typedef struct {
   double alpha;
-  double *rounded_x;
+  double* rounded_x;
 } transform_vars_round_step_data_t;
 
 /**
@@ -28,10 +28,10 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_round_step_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_round_step_evaluate(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   transform_vars_round_step_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   data = (transform_vars_round_step_data_t *)coco_problem_transformed_get_data(problem);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
@@ -56,7 +56,7 @@ static void transform_vars_round_step_evaluate(coco_problem_t *problem, const do
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_round_step_free(void *thing) {
+static void transform_vars_round_step_free(void* thing) {
   transform_vars_round_step_data_t *data = (transform_vars_round_step_data_t *)thing;
   coco_free_memory(data->rounded_x);
 }
@@ -64,9 +64,9 @@ static void transform_vars_round_step_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_round_step(coco_problem_t *inner_problem, const double alpha) {
+static coco_problem_t* transform_vars_round_step(coco_problem_t* inner_problem, const double alpha) {
   transform_vars_round_step_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   size_t i;
 
   data = (transform_vars_round_step_data_t *)coco_allocate_memory(sizeof(*data));

@@ -33,8 +33,8 @@ static size_t coco_rotation_matrix_block_size(size_t const dimension) {
  * to double arrays.
  * each row contains only the block_sizes[i] possibly non-zero elements
  */
-static double **coco_allocate_blockmatrix(const size_t n, const size_t *block_sizes, const size_t nb_blocks) {
-  double **matrix = nullptr;
+static double** coco_allocate_blockmatrix(const size_t n, const size_t* block_sizes, const size_t nb_blocks) {
+  double** matrix = nullptr;
   size_t current_blocksize;
   size_t next_bs_change;
   size_t idx_blocksize;
@@ -47,7 +47,7 @@ static double **coco_allocate_blockmatrix(const size_t n, const size_t *block_si
   }
   assert(sum_block_sizes == n);
 
-  matrix = (double **)coco_allocate_memory(sizeof(double *) * n);
+  matrix = (double** )coco_allocate_memory(sizeof(double* ) * n);
   idx_blocksize = 0;
   next_bs_change = block_sizes[idx_blocksize];
 
@@ -66,7 +66,7 @@ static double **coco_allocate_blockmatrix(const size_t n, const size_t *block_si
  * @brief frees a block diagonal matrix (same as a matrix but in case of change, easier to update separately from
  * free_matrix)
  */
-static void coco_free_block_matrix(double **matrix, const size_t n) {
+static void coco_free_block_matrix(double** matrix, const size_t n) {
   size_t i;
   for (i = 0; i < n; ++i) {
     if (matrix[i]) {
@@ -81,9 +81,9 @@ static void coco_free_block_matrix(double **matrix, const size_t n) {
  * @brief Compute a ${DIM}x${DIM} block-diagonal matrix based on ${seed} and block_sizes and stores it in ${B}.
  * B is a 2D vector with DIM lines and each line has blocksize(line) elements (the zeros are not stored)
  */
-static void coco_compute_blockrotation(double **B, long seed, COCO_UNUSED size_t n, size_t *block_sizes,
+static void coco_compute_blockrotation(double** B, long seed, COCO_UNUSED size_t n, size_t* block_sizes,
                                        size_t nb_blocks) {
-  double **current_block;
+  double** current_block;
   size_t i, j;
   size_t idx_block, current_blocksize, cumsum_prev_block_sizes;
   COCO_UNUSED size_t sum_block_sizes;
@@ -116,9 +116,9 @@ static void coco_compute_blockrotation(double **B, long seed, COCO_UNUSED size_t
 /**
  * @brief makes a copy of a block_matrix
  */
-static double **coco_copy_block_matrix(const double *const *B, const size_t dimension, const size_t *block_sizes,
+static double** coco_copy_block_matrix(const double* const* B, const size_t dimension, const size_t* block_sizes,
                                        const size_t nb_blocks) {
-  double **dest;
+  double** dest;
   size_t i, j, idx_blocksize, current_blocksize, next_bs_change;
 
   dest = coco_allocate_blockmatrix(dimension, block_sizes, nb_blocks);
@@ -141,8 +141,8 @@ static double **coco_copy_block_matrix(const double *const *B, const size_t dime
 /**
  * @brief returns the list of block_sizes and sets nb_blocks to its correct value
  */
-static size_t *coco_get_block_sizes(size_t *nb_blocks, size_t dimension, const char *suite_name) {
-  size_t *block_sizes;
+static size_t* coco_get_block_sizes(size_t* nb_blocks, size_t dimension, char const* suite_name) {
+  size_t* block_sizes;
   size_t block_size;
   size_t i;
 

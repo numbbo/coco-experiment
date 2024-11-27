@@ -20,18 +20,18 @@
  * @brief Data type for transform_vars_affine.
  */
 typedef struct {
-  double *M, *b, *x;
+  double* M, *b, *x;
 } transform_vars_affine_data_t;
 
 /**
  * @brief Evaluates the transformed objective function.
  */
-static void transform_vars_affine_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_affine_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
   size_t i, j;
-  double *cons_values;
+  double* cons_values;
   int is_feasible;
   transform_vars_affine_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -43,7 +43,7 @@ static void transform_vars_affine_evaluate_function(coco_problem_t *problem, con
 
   for (i = 0; i < inner_problem->number_of_variables; ++i) {
     /* data->M has problem->number_of_variables columns and inner_problem->number_of_variables rows. */
-    const double *current_row = data->M + i * problem->number_of_variables;
+    const double* current_row = data->M + i * problem->number_of_variables;
     data->x[i] = data->b[i];
     for (j = 0; j < problem->number_of_variables; ++j) {
       data->x[i] += x[j] * current_row[j];
@@ -65,11 +65,11 @@ static void transform_vars_affine_evaluate_function(coco_problem_t *problem, con
 /**
  * @brief Evaluates the transformed constraint.
  */
-static void transform_vars_affine_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
+static void transform_vars_affine_evaluate_constraint(coco_problem_t* problem, const double* x, double* y,
                                                       int update_counter) {
   size_t i, j;
   transform_vars_affine_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_constraints(problem));
@@ -81,7 +81,7 @@ static void transform_vars_affine_evaluate_constraint(coco_problem_t *problem, c
 
   for (i = 0; i < inner_problem->number_of_variables; ++i) {
     /* data->M has problem->number_of_variables columns and inner_problem->number_of_variables rows. */
-    const double *current_row = data->M + i * problem->number_of_variables;
+    const double* current_row = data->M + i * problem->number_of_variables;
     data->x[i] = data->b[i];
     for (j = 0; j < problem->number_of_variables; ++j) {
       data->x[i] += x[j] * current_row[j];
@@ -93,12 +93,12 @@ static void transform_vars_affine_evaluate_constraint(coco_problem_t *problem, c
 /**
  * @brief Evaluates the gradient of the transformed function.
  */
-static void transform_vars_affine_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_affine_evaluate_gradient(coco_problem_t* problem, const double* x, double* y) {
   size_t i, j;
   transform_vars_affine_data_t *data;
-  coco_problem_t *inner_problem;
-  double *current_row;
-  double *gradient;
+  coco_problem_t* inner_problem;
+  double* current_row;
+  double* gradient;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -144,7 +144,7 @@ static void transform_vars_affine_evaluate_gradient(coco_problem_t *problem, con
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_affine_free(void *thing) {
+static void transform_vars_affine_free(void* thing) {
   transform_vars_affine_data_t *data = (transform_vars_affine_data_t *)thing;
   coco_free_memory(data->M);
   coco_free_memory(data->b);
@@ -154,7 +154,7 @@ static void transform_vars_affine_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_affine(coco_problem_t *inner_problem, const double *M, const double *b,
+static coco_problem_t* transform_vars_affine(coco_problem_t* inner_problem, const double* M, const double* b,
                                              const size_t number_of_variables) {
   /*
    * TODOs:
@@ -163,7 +163,7 @@ static coco_problem_t *transform_vars_affine(coco_problem_t *inner_problem, cons
    */
 
   size_t i, j;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   transform_vars_affine_data_t *data;
   size_t entries_in_M;
 

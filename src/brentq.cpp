@@ -44,12 +44,12 @@
 
 #include <cmath>
 
-typedef double (*callback_type)(double, void *);
+typedef double (*callback_type)(double, void* );
 
 static double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter,
-                     void *func_data);
+                     void* func_data);
 
-static double brentinv(callback_type f, double y, void *func_data);
+static double brentinv(callback_type f, double y, void* func_data);
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -88,7 +88,7 @@ static double brentinv(callback_type f, double y, void *func_data);
 
 */
 
-double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter, void *func_data) {
+double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter, void* func_data) {
 
   double xpre = xa, xcur = xb;
   double xblk = 0., fpre, fcur, fblk = 0., spre = 0., scur = 0., sbis;
@@ -185,7 +185,7 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
   proceeding with halving/doubling.
 */
 
-double brentinv(callback_type f, double y, void *func_data) {
+double brentinv(callback_type f, double y, void* func_data) {
   double xres, xmin, xmax, fval;
 
   fval = (*f)(y, func_data);

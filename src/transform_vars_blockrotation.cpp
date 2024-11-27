@@ -19,21 +19,21 @@
  * @brief Data type for transform_vars_blockrotation.
  */
 typedef struct {
-  double **B; /**< @brief the block-diagonal matrices*/
-  double *Bx;
+  double** B; /**< @brief the block-diagonal matrices*/
+  double* Bx;
   size_t dimension;
-  size_t *block_sizes;        /**< @brief the list of block-sizes*/
+  size_t* block_sizes;        /**< @brief the list of block-sizes*/
   size_t nb_blocks;           /**< @brief the number of blocks in the matrix */
-  size_t *block_size_map;     /**< @brief maps a row to the block-size of the block to
+  size_t* block_size_map;     /**< @brief maps a row to the block-size of the block to
                                  which it belong, keep until better way is found */
-  size_t *first_non_zero_map; /**< @brief maps a row to the index of its first
+  size_t* first_non_zero_map; /**< @brief maps a row to the index of its first
                                  non zero element */
 } transform_vars_blockrotation_t;
 
 /*
  * @brief return i-th row of blockrotation problem->data->B in y.
  */
-static void transform_vars_blockrotation_get_row(coco_problem_t *problem, size_t i, double *y) {
+static void transform_vars_blockrotation_get_row(coco_problem_t* problem, size_t i, double* y) {
   size_t j, current_blocksize, first_non_zero_ind; /* cp-paste from apply */
   transform_vars_blockrotation_t *data;
 
@@ -52,7 +52,7 @@ static void transform_vars_blockrotation_get_row(coco_problem_t *problem, size_t
  * @brief Computes y = Bx, where all the pertinent information about B is given
  * in the problem data.
  */
-static void transform_vars_blockrotation_apply(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_blockrotation_apply(coco_problem_t* problem, const double* x, double* y) {
   size_t i, j, current_blocksize, first_non_zero_ind;
   transform_vars_blockrotation_t *data;
 
@@ -74,8 +74,8 @@ static void transform_vars_blockrotation_apply(coco_problem_t *problem, const do
   }
 }
 
-static void transform_vars_blockrotation_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
+static void transform_vars_blockrotation_evaluate(coco_problem_t* problem, const double* x, double* y) {
+  coco_problem_t* inner_problem = coco_problem_transformed_get_inner_problem(problem);
   transform_vars_blockrotation_t *data;
   data = (transform_vars_blockrotation_t *)coco_problem_transformed_get_data(problem);
 
@@ -85,7 +85,7 @@ static void transform_vars_blockrotation_evaluate(coco_problem_t *problem, const
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
-static void transform_vars_blockrotation_free(void *stuff) {
+static void transform_vars_blockrotation_free(void* stuff) {
   transform_vars_blockrotation_t *data = (transform_vars_blockrotation_t *)stuff;
   coco_free_block_matrix(data->B, data->dimension);
   coco_free_memory(data->block_sizes);
@@ -97,10 +97,10 @@ static void transform_vars_blockrotation_free(void *stuff) {
 /*
  * @brief test blockrotation on its own rows and raise coco_error in case
  */
-static void transform_vars_blockrotation_test(coco_problem_t *problem, double precision) {
+static void transform_vars_blockrotation_test(coco_problem_t* problem, double precision) {
   size_t i, j;
   size_t number_of_variables = coco_problem_get_dimension(problem);
-  double *y = coco_allocate_vector(number_of_variables);
+  double* y = coco_allocate_vector(number_of_variables);
 
   for (i = 0; i < number_of_variables; ++i) { /* for each row */
     transform_vars_blockrotation_get_row(problem, i, y);
@@ -118,10 +118,10 @@ static void transform_vars_blockrotation_test(coco_problem_t *problem, double pr
   coco_free_memory(y);
 }
 
-static coco_problem_t *transform_vars_blockrotation(coco_problem_t *inner_problem, const double *const *B,
-                                                    const size_t number_of_variables, const size_t *block_sizes,
+static coco_problem_t* transform_vars_blockrotation(coco_problem_t* inner_problem, const double* const* B,
+                                                    const size_t number_of_variables, const size_t* block_sizes,
                                                     const size_t nb_blocks) {
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   transform_vars_blockrotation_t *data;
   size_t idx_blocksize, next_bs_change, current_blocksize;
   size_t i;

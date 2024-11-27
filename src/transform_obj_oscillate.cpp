@@ -12,7 +12,7 @@
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_obj_oscillate_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_obj_oscillate_evaluate(coco_problem_t* problem, const double* x, double* y) {
   static const double factor = 0.1;
   size_t i;
 
@@ -39,8 +39,8 @@ static void transform_obj_oscillate_evaluate(coco_problem_t *problem, const doub
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_oscillate(coco_problem_t *inner_problem) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_obj_oscillate(coco_problem_t* inner_problem) {
+  coco_problem_t* problem;
   problem = coco_problem_transformed_allocate(inner_problem, nullptr, nullptr, "transform_obj_oscillate");
   problem->evaluate_function = transform_obj_oscillate_evaluate;
   /* Compute best value */

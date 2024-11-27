@@ -12,18 +12,18 @@
  * @brief Data type for transform_vars_z_hat.
  */
 typedef struct {
-  double *xopt;
-  double *z;
+  double* xopt;
+  double* z;
   coco_problem_free_function_t old_free_problem;
 } transform_vars_z_hat_data_t;
 
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_z_hat_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_z_hat_evaluate(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   transform_vars_z_hat_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -45,7 +45,7 @@ static void transform_vars_z_hat_evaluate(coco_problem_t *problem, const double 
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_z_hat_free(void *thing) {
+static void transform_vars_z_hat_free(void* thing) {
   transform_vars_z_hat_data_t *data = (transform_vars_z_hat_data_t *)thing;
   coco_free_memory(data->xopt);
   coco_free_memory(data->z);
@@ -54,9 +54,9 @@ static void transform_vars_z_hat_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_z_hat(coco_problem_t *inner_problem, const double *xopt) {
+static coco_problem_t* transform_vars_z_hat(coco_problem_t* inner_problem, const double* xopt) {
   transform_vars_z_hat_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   data = (transform_vars_z_hat_data_t *)coco_allocate_memory(sizeof(*data));
   data->xopt = coco_duplicate_vector(xopt, inner_problem->number_of_variables);
   data->z = coco_allocate_vector(inner_problem->number_of_variables);

@@ -13,20 +13,20 @@
  * @brief Data type for transform_vars_permblockdiag.
  */
 typedef struct {
-  double **B;
-  double *x;
-  size_t *P1; /*permutation matrices, P1 for the columns of B and P2 for its rows*/
-  size_t *P2;
-  size_t *block_sizes;
+  double** B;
+  double* x;
+  size_t* P1; /*permutation matrices, P1 for the columns of B and P2 for its rows*/
+  size_t* P2;
+  size_t* block_sizes;
   size_t nb_blocks;
-  size_t *block_size_map;     /* maps rows to blocksizes, keep until better way is found */
-  size_t *first_non_zero_map; /* maps a row to the index of its first non zero element */
+  size_t* block_size_map;     /* maps rows to blocksizes, keep until better way is found */
+  size_t* first_non_zero_map; /* maps a row to the index of its first non zero element */
 } transform_vars_permblockdiag_t;
 
-static void transform_vars_permblockdiag_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_permblockdiag_evaluate(coco_problem_t* problem, const double* x, double* y) {
   size_t i, j, current_blocksize, first_non_zero_ind;
   transform_vars_permblockdiag_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -49,7 +49,7 @@ static void transform_vars_permblockdiag_evaluate(coco_problem_t *problem, const
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
-static void transform_vars_permblockdiag_free(void *thing) {
+static void transform_vars_permblockdiag_free(void* thing) {
   transform_vars_permblockdiag_t *data = (transform_vars_permblockdiag_t *)thing;
   coco_free_memory(data->B);
   coco_free_memory(data->P1);
@@ -65,11 +65,11 @@ static void transform_vars_permblockdiag_free(void *thing) {
  *
  * The matrix M is stored in row-major format.
  */
-static coco_problem_t *transform_vars_permblockdiag(coco_problem_t *inner_problem, const double *const *B,
-                                                    const size_t *P1, const size_t *P2,
-                                                    const size_t number_of_variables, const size_t *block_sizes,
+static coco_problem_t* transform_vars_permblockdiag(coco_problem_t* inner_problem, const double* const* B,
+                                                    const size_t* P1, const size_t* P2,
+                                                    const size_t number_of_variables, const size_t* block_sizes,
                                                     const size_t nb_blocks) {
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   transform_vars_permblockdiag_t *data;
   size_t entries_in_M, idx_blocksize, next_bs_change, current_blocksize;
   int i;

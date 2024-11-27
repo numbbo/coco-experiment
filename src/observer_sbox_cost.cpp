@@ -6,8 +6,8 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-// static coco_problem_t *logger_sbox_cost(coco_observer_t *observer, coco_problem_t *problem);
-// static void logger_sbox_cost_free(void *logger);
+// static coco_problem_t* logger_sbox_cost(coco_observer_t *observer, coco_problem_t* problem);
+// static void logger_sbox_cost_free(void* logger);
 
 /**
  * @brief The sbox_cost observer data type.
@@ -23,7 +23,7 @@ typedef struct {
 /**
  * @brief Initializes the sbox_cost observer.
  */
-static void observer_sbox_cost(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
+static void observer_sbox_cost(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
   // FIXME: Use sbox_cost logger once ported to new logging code
   observer->logger_allocate_function = logger_bbob;
   observer->logger_free_function = logger_bbob_free;

@@ -26,10 +26,10 @@ static double bbob2009_round(double x) { return floor(x + 0.5); }
 /**
  * @brief Allocates a n by m matrix structured as an array of pointers to double arrays.
  */
-static double **bbob2009_allocate_matrix(const size_t n, const size_t m) {
-  double **matrix = nullptr;
+static double** bbob2009_allocate_matrix(const size_t n, const size_t m) {
+  double** matrix = nullptr;
   size_t i;
-  matrix = (double **)coco_allocate_memory(sizeof(double *) * n);
+  matrix = (double** )coco_allocate_memory(sizeof(double* ) * n);
   for (i = 0; i < n; ++i) {
     matrix[i] = coco_allocate_vector(m);
   }
@@ -39,7 +39,7 @@ static double **bbob2009_allocate_matrix(const size_t n, const size_t m) {
 /**
  * @brief Frees the matrix structured as an array of pointers to double arrays.
  */
-static void bbob2009_free_matrix(double **matrix, const size_t n) {
+static void bbob2009_free_matrix(double** matrix, const size_t n) {
   size_t i;
   for (i = 0; i < n; ++i) {
     if (matrix[i]) {
@@ -53,7 +53,7 @@ static void bbob2009_free_matrix(double **matrix, const size_t n) {
 /**
  * @brief Generates N uniform random numbers using inseed as the seed and stores them in r.
  */
-static void bbob2009_unif(double *r, size_t N, long inseed) {
+static void bbob2009_unif(double* r, size_t N, long inseed) {
   /* generates N uniform numbers with starting seed */
   long aktseed;
   long tmp;
@@ -94,7 +94,7 @@ static void bbob2009_unif(double *r, size_t N, long inseed) {
 /**
  * @brief Converts from packed matrix storage to an array of array of double representation.
  */
-static double **bbob2009_reshape(double **B, double *vector, const size_t m, const size_t n) {
+static double** bbob2009_reshape(double** B, double* vector, const size_t m, const size_t n) {
   size_t i, j;
   for (i = 0; i < m; i++) {
     for (j = 0; j < n; j++) {
@@ -107,7 +107,7 @@ static double **bbob2009_reshape(double **B, double *vector, const size_t m, con
 /**
  * @brief Generates N Gaussian random numbers using the given seed and stores them in g.
  */
-static void bbob2009_gauss(double *g, const size_t N, const long seed) {
+static void bbob2009_gauss(double* g, const size_t N, const long seed) {
   size_t i;
   double uniftmp[6000];
   assert(2 * N < 6000);
@@ -124,7 +124,7 @@ static void bbob2009_gauss(double *g, const size_t N, const long seed) {
 /**
  * @brief Computes a DIM by DIM rotation matrix based on seed and stores it in B.
  */
-static void bbob2009_compute_rotation(double **B, const long seed, const size_t DIM) {
+static void bbob2009_compute_rotation(double** B, const long seed, const size_t DIM) {
   /* To ensure temporary data fits into gvec */
   double prod;
   double gvect[2000];
@@ -152,9 +152,9 @@ static void bbob2009_compute_rotation(double **B, const long seed, const size_t 
   }
 }
 
-static void bbob2009_copy_rotation_matrix(double **rot, double *M, double *b, const size_t DIM) {
+static void bbob2009_copy_rotation_matrix(double** rot, double* M, double* b, const size_t DIM) {
   size_t row, column;
-  double *current_row;
+  double* current_row;
 
   for (row = 0; row < DIM; ++row) {
     current_row = M + row * DIM;
@@ -168,7 +168,7 @@ static void bbob2009_copy_rotation_matrix(double **rot, double *M, double *b, co
 /**
  * @brief Randomly computes the location of the global optimum.
  */
-static void bbob2009_compute_xopt(double *xopt, const long seed, const size_t DIM) {
+static void bbob2009_compute_xopt(double* xopt, const long seed, const size_t DIM) {
   size_t i;
   bbob2009_unif(xopt, DIM, seed);
   for (i = 0; i < DIM; i++) {
@@ -182,7 +182,7 @@ static void bbob2009_compute_xopt(double *xopt, const long seed, const size_t DI
  * @brief Randomly computes the location of the global optimum in the larger space
  * of [-5, 5]^DIM compared to `bbob2009_compute_xopt`.
  */
-static void sbox_cost_compute_xopt(double *xopt, const long seed, const size_t DIM) {
+static void sbox_cost_compute_xopt(double* xopt, const long seed, const size_t DIM) {
   size_t i;
   bbob2009_unif(xopt, DIM, seed);
   for (i = 0; i < DIM; i++) {

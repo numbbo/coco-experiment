@@ -31,7 +31,7 @@
  * finalization.
  */
 typedef struct {
-  FILE *out_file;              /**< @brief File for logging. */
+  FILE* out_file;              /**< @brief File for logging. */
   size_t num_func_evaluations; /**< @brief The number of function evaluations performed so far. */
   size_t num_cons_evaluations; /**< @brief The number of evaluations of constraints performed so far. */
 
@@ -53,11 +53,11 @@ typedef struct {
  * @brief Evaluates the function and constraints and outputs the information according to the
  * observer options.
  */
-static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void logger_rw_evaluate(coco_problem_t* problem, const double* x, double* y) {
 
   logger_rw_data_t *logger;
-  coco_problem_t *inner_problem;
-  double *constraints = nullptr;
+  coco_problem_t* inner_problem;
+  double* constraints = nullptr;
   size_t i;
   int log_this_time = 1;
   time_t start, end;
@@ -123,7 +123,7 @@ static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double 
 /**
  * @brief Frees the memory of the given rw logger.
  */
-static void logger_rw_free(void *stuff) {
+static void logger_rw_free(void* stuff) {
 
   logger_rw_data_t *logger;
 
@@ -145,12 +145,12 @@ static void logger_rw_free(void *stuff) {
  * is finalized.
  * - This reduces function calls.
  */
-static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inner_problem) {
+static coco_problem_t* logger_rw(coco_observer_t *observer, coco_problem_t* inner_problem) {
 
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   logger_rw_data_t *logger_data;
   observer_rw_data_t *observer_data;
-  char *path_name, *file_name = nullptr;
+  char* path_name, *file_name = nullptr;
 
   logger_data = (logger_rw_data_t *)coco_allocate_memory(sizeof(*logger_data));
   logger_data->num_func_evaluations = 0;

@@ -84,7 +84,7 @@ double coco_sample_uniform_noise(void) {
  * @brief Applies a penalty to solution outside the feasible hypercube
  */
 /**@{*/
-double coco_boundary_handling(coco_problem_t *problem, const double *x) {
+double coco_boundary_handling(coco_problem_t* problem, const double* x) {
   double penalty, lower_bound, upper_bound;
   size_t dimension;
   penalty = 0.0;

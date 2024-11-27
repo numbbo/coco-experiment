@@ -16,16 +16,16 @@
 #include "f_sphere.cpp"
 #include "f_step_ellipsoid.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
+static coco_suite_t* coco_suite_allocate(char const* suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t* dimensions,
+                                         char const* default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob suite.
  */
-static coco_suite_t *suite_bbob_noisy_initialize(void) {
+static coco_suite_t* suite_bbob_noisy_initialize(void) {
 
-  coco_suite_t *suite;
+  coco_suite_t* suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
@@ -38,7 +38,7 @@ static coco_suite_t *suite_bbob_noisy_initialize(void) {
 /**
  * @brief Sets the instances associated with years for the bbob suite.
  */
-static const char *suite_bbob_noisy_get_instances_by_year(const int year) {
+static char const* suite_bbob_noisy_get_instances_by_year(const int year) {
 
   if (year <= 2009) {
     return "1-15";
@@ -53,13 +53,13 @@ static const char *suite_bbob_noisy_get_instances_by_year(const int year) {
  *
  * Useful for other suites as well (see for example suite_biobj.c).
  */
-static coco_problem_t *coco_get_bbob_noisy_problem(const size_t function, const size_t dimension,
+static coco_problem_t* coco_get_bbob_noisy_problem(const size_t function, const size_t dimension,
                                                    const size_t instance) {
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *inner_problem = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* inner_problem = nullptr;
 
-  const char *problem_id_template = "bbob_noisy_f%lu_i%02lu_d%02lu";
-  const char *problem_name_template = "BBOB-NOISY suite problem f%lu instance %lu in %luD";
+  char const* problem_id_template = "bbob_noisy_f%lu_i%02lu_d%02lu";
+  char const* problem_name_template = "BBOB-NOISY suite problem f%lu instance %lu in %luD";
 
   long rseed;
   const long rseed_1 = (long)(1 + 10000 * instance);
@@ -324,10 +324,10 @@ static coco_problem_t *coco_get_bbob_noisy_problem(const size_t function, const 
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_bbob_noisy_get_problem(coco_suite_t *suite, const size_t function_idx,
+static coco_problem_t* suite_bbob_noisy_get_problem(coco_suite_t* suite, const size_t function_idx,
                                                     const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];

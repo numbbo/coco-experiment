@@ -16,13 +16,13 @@
  * @brief Data type for transform_vars_gallagher_blockrotation.
  */
 typedef struct {
-  double *x;
+  double* x;
 } transform_vars_gallagher_blockrotation_t;
 
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_gallagher_blockrotation_free(void *thing) {
+static void transform_vars_gallagher_blockrotation_free(void* thing) {
   transform_vars_gallagher_blockrotation_t *data = (transform_vars_gallagher_blockrotation_t *)thing;
   coco_free_memory(data->x);
 }
@@ -31,18 +31,18 @@ static void transform_vars_gallagher_blockrotation_free(void *thing) {
  * @brief Data type in problem->versatile_data of f_gallagher.c
  */
 typedef struct {
-  double *x;
+  double* x;
   size_t number_of_peaks;
-  coco_problem_t **sub_problems;
-  double *rotated_x;
+  coco_problem_t** sub_problems;
+  double* rotated_x;
   size_t nb_blocks, *block_sizes, *block_size_map, *first_non_zero_map;
-  double **B;
+  double** B;
 } f_gallagher_versatile_data_t;
 
 /**
  * @brief allows to free the gallagher_versatile_data part of the problem.
  */
-static void f_gallagher_versatile_data_free(coco_problem_t *problem) {
+static void f_gallagher_versatile_data_free(coco_problem_t* problem) {
   size_t i;
   f_gallagher_versatile_data_t *versatile_data = (f_gallagher_versatile_data_t *)problem->versatile_data;
   if (versatile_data->sub_problems) {
@@ -75,10 +75,10 @@ static void f_gallagher_versatile_data_free(coco_problem_t *problem) {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_gallagher_blockrotation_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_gallagher_blockrotation_evaluate(coco_problem_t* problem, const double* x, double* y) {
   size_t i, j;
   transform_vars_gallagher_blockrotation_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
   f_gallagher_versatile_data_t *versatile_data;
 
   data = (transform_vars_gallagher_blockrotation_t *)coco_problem_transformed_get_data(problem);
@@ -103,10 +103,10 @@ static void transform_vars_gallagher_blockrotation_evaluate(coco_problem_t *prob
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
-static COCO_UNUSED coco_problem_t *transform_vars_gallagher_blockrotation(coco_problem_t *inner_problem);
+static COCO_UNUSED coco_problem_t* transform_vars_gallagher_blockrotation(coco_problem_t* inner_problem);
 
-static coco_problem_t *transform_vars_gallagher_blockrotation(coco_problem_t *inner_problem) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_vars_gallagher_blockrotation(coco_problem_t* inner_problem) {
+  coco_problem_t* problem;
   transform_vars_gallagher_blockrotation_t *data;
 
   data = (transform_vars_gallagher_blockrotation_t *)coco_allocate_memory(sizeof(*data));

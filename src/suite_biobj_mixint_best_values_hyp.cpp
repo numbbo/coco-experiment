@@ -7,10 +7,10 @@
  *
  * @note Because this file is used for automatically retrieving the existing best hypervolume values for
  * pre-processing purposes, its formatting should not be altered. This means that there must be exactly one
- * string per line, the first string appearing on the next line after "static const char..." (no comments 
+ * string per line, the first string appearing on the next line after "static char const..." (no comments 
  * allowed in between). Nothing should be placed on the last line (line with };).
  */
-static const char *suite_biobj_mixint_best_values_hyp[] = {
+static char const* suite_biobj_mixint_best_values_hyp[] = {
   "bbob-biobj-mixint_f001_i01_d005 1.0",
   "bbob-biobj-mixint_f001_i01_d010 1.0",
   "bbob-biobj-mixint_f001_i01_d020 1.0",

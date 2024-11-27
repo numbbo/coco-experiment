@@ -12,7 +12,7 @@
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_obj_norm_by_dim_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_obj_norm_by_dim_evaluate(coco_problem_t* problem, const double* x, double* y) {
 
   coco_evaluate_function(coco_problem_transformed_get_inner_problem(problem), x, y);
   y[0] *= bbob2009_fmin(1, 40. / ((double)problem->number_of_variables));
@@ -24,8 +24,8 @@ static void transform_obj_norm_by_dim_evaluate(coco_problem_t *problem, const do
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_norm_by_dim(coco_problem_t *inner_problem) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_obj_norm_by_dim(coco_problem_t* inner_problem) {
+  coco_problem_t* problem;
 
   problem = coco_problem_transformed_allocate(inner_problem, nullptr, nullptr, "transform_obj_norm_by_dim");
   problem->evaluate_function = transform_obj_norm_by_dim_evaluate;

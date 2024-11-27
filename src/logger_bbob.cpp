@@ -18,7 +18,7 @@
  * a solution is recommended and the performance targets are reached (the same targets are 
  * used as for the "dat" files).
  *
- * *1 Note that the decision about which performance targets to use is done on the suite level
+ ** 1 Note that the decision about which performance targets to use is done on the suite level
  * and passed to the logger during initialization.
  */
 
@@ -54,7 +54,7 @@
  */
 typedef struct {
   coco_observer_t *observer; /**< @brief Pointer to the observer (might be nullptr at the end) */
-  char *suite_name;          /**< @brief The suite name */
+  char* suite_name;          /**< @brief The suite name */
   int is_initialized;        /**< @brief Whether the logger was already initialized */
   int algorithm_restarted;   /**< @brief Whether the algorithm has restarted (output information to .rdat file). */
 
@@ -70,12 +70,12 @@ typedef struct {
   size_t last_logged_eval_tdat;       /**< @brief The last evaluation logged in the tdat file (needed for finalization) */
   size_t last_logged_eval_mdat;       /**< @brief The last evaluation logged in the mdat file (needed for finalization) */
 
-  double *best_found_solution;        /**< @brief The best found solution to this problem. */
+  double* best_found_solution;        /**< @brief The best found solution to this problem. */
   double best_found_value;            /**< @brief The best found value for this problem. */
   double current_value;               /**< @brief The current value for this problem. */
   double optimal_value;               /**< @brief The optimal value for this problem (if it is known, otherwise a reference value). */
 
-  double *best_recommended_solution;  /**< @brief The best recommended solution for this problem. */
+  double* best_recommended_solution;  /**< @brief The best recommended solution for this problem. */
   double best_recommended_value;      /**< @brief The best recommended value for this problem. */
 
   size_t function;                    /**< @brief Suite-dependent function number */
@@ -85,9 +85,9 @@ typedef struct {
   size_t number_of_constraints;       /**< @brief Number of constraints */
   int log_discrete_as_int;            /**< @brief Whether to output discrete variables in integer or double format. */
 
-  coco_observer_targets_t *targets;         /**< @brief Triggers based on target values. */
-  coco_observer_evaluations_t *evaluations; /**< @brief Triggers based on the number of evaluations. */
-  coco_observer_targets_t *mdat_targets;    /**< @brief Triggers based on target values for recommendations. */
+  coco_observer_targets_t* targets;         /**< @brief Triggers based on target values. */
+  coco_observer_evaluations_t* evaluations; /**< @brief Triggers based on the number of evaluations. */
+  coco_observer_targets_t* mdat_targets;    /**< @brief Triggers based on target values for recommendations. */
 
 } logger_bbob_data_t;
 
@@ -115,14 +115,14 @@ typedef struct {
  * best measured fitness |
  * x1 | x2...
  */
-static const char logger_bbob_data_format[] = "bbob-new2";
+static char const logger_bbob_data_format[] = "bbob-new2";
 
 /**
  * @brief The header used by the logger in .?dat files
  *
  * See also logger_bbob_data_format
  */
-static const char logger_bbob_header[] = "%% "
+static char const logger_bbob_header[] = "%% "
                                         "f evaluations | "
                                         "g evaluations | "
                                         "best noise-free fitness - %s (%13.12e) + sum g_i+ | "
@@ -170,7 +170,7 @@ static bool logger_bbob_start_new_line(coco_observer_t* observer, size_t current
  */
 template <typename VECTOR>
 static void logger_bbob_output(FILE* data_file, logger_bbob_data_t* logger, VECTOR x, double current_value,
-                               double best_value, const double *constraints) {
+                               double best_value, const double* constraints) {
   /* This function contains many hard-coded values (10.9, 22, 5.4) that could be read through
    * observer options */
   size_t i;
@@ -206,7 +206,7 @@ static void logger_bbob_output(FILE* data_file, logger_bbob_data_t* logger, VECT
 /**
  * @brief Opens the file in append mode
  */
-static void logger_bbob_open_file(FILE* *file, std::string const& file_path) {
+static void logger_bbob_open_file(FILE** file, std::string const& file_path) {
   if (*file == nullptr) {
     *file = fopen(file_path.c_str(), "a");
     if (*file == nullptr) {
@@ -218,7 +218,7 @@ static void logger_bbob_open_file(FILE* *file, std::string const& file_path) {
 /**
  * @brief Creates the data file (if it didn't exist before) and opens it
  */
-static void logger_bbob_open_data_file(FILE* *data_file, std::string const& path, std::string const& file_name,
+static void logger_bbob_open_data_file(FILE** data_file, std::string const& path, std::string const& file_name,
                                        std::string const& file_extension) {
 //  char file_path[COCO_PATH_MAX + 2] = {0};
 //  char relative_file_path[COCO_PATH_MAX + 2] = {0};
@@ -240,7 +240,7 @@ static void logger_bbob_open_info_file(logger_bbob_data_t* logger, std::string c
 //  char file_path[COCO_PATH_MAX + 2] = {0};
   std::string file_name;
   std::string file_path;
-  FILE* *info_file;
+  FILE** info_file;
   FILE* tmp_file;
   observer_bbob_data_t *observer_data;
 
@@ -292,9 +292,9 @@ static void logger_bbob_initialize(logger_bbob_data_t* logger, bool is_opt_known
 
   char relative_path[COCO_PATH_MAX + 2] = {0}; /* Relative path to the .dat file from where the .info file is */
   char folder_path[COCO_PATH_MAX + 2] = {0};
-  char *function_string;
-  char *dimension_string;
-  char *relative_path_pointer = nullptr;
+  char* function_string;
+  char* dimension_string;
+  char* relative_path_pointer = nullptr;
   bool start_new_line;
   observer_bbob_data_t *observer_data;
 
@@ -331,7 +331,7 @@ static void logger_bbob_initialize(logger_bbob_data_t* logger, bool is_opt_known
     relative_path_pointer = coco_strdup(observer_data->last_dat_file);
   }
 
-  /* info FILE* /
+  /* info FILE */
   logger_bbob_open_info_file(logger, logger->observer->result_folder, function_string, relative_path_pointer,
                              logger->suite_name, start_new_line);
   fprintf(logger->info_file, ", %lu", (unsigned long)logger->instance);
@@ -358,12 +358,12 @@ static void logger_bbob_initialize(logger_bbob_data_t* logger, bool is_opt_known
  * @brief Evaluates the function, increases the number of evaluations and outputs information according to
  * observer options.
  */
-static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void logger_bbob_evaluate(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   double y_logged, max_value = 0, sum_constraints;
-  double *constraints = nullptr;
+  double* constraints = nullptr;
   logger_bbob_data_t* logger = (logger_bbob_data_t* )coco_problem_transformed_get_data(problem);
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
+  coco_problem_t* inner_problem = coco_problem_transformed_get_inner_problem(problem);
   const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, nullptr);
 
   if (problem->is_tainted || inner_problem->is_tainted) {
@@ -472,11 +472,11 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
  * @brief Evaluates the function and outputs information according to observer options to the file with
  * recommendations. The evaluation result is not returned and the evaluation counter is not increased.
  */
-static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
+static void logger_bbob_recommend(coco_problem_t* problem, const double* x) {
   double y_logged;
-  double *constraints = nullptr, *y = nullptr;
+  double* constraints = nullptr, *y = nullptr;
   logger_bbob_data_t* logger = (logger_bbob_data_t* )coco_problem_transformed_get_data(problem);
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
+  coco_problem_t* inner_problem = coco_problem_transformed_get_inner_problem(problem);
   const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, nullptr);
 
   if (!logger->is_initialized) {
@@ -553,7 +553,7 @@ static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
 /**
  * @brief Takes care of some final output and frees the logger data
  */
-static void logger_bbob_free(void *stuff) {
+static void logger_bbob_free(void* stuff) {
   assert(stuff);
 
   logger_bbob_data_t* logger = (logger_bbob_data_t* )stuff;
@@ -642,7 +642,7 @@ static void logger_bbob_free(void *stuff) {
  *
  * Has to be taken care of here due to
  */
-static void logger_bbob_data_nullify_observer(void *stuff) {
+static void logger_bbob_data_nullify_observer(void* stuff) {
   logger_bbob_data_t* logger = (logger_bbob_data_t* )stuff;
   logger->observer = nullptr;
 }
@@ -650,7 +650,7 @@ static void logger_bbob_data_nullify_observer(void *stuff) {
 /**
  * @brief Saves the information that the algorithm has restarted
  */
-static void logger_bbob_signal_restart(coco_problem_t *problem) {
+static void logger_bbob_signal_restart(coco_problem_t* problem) {
 
   logger_bbob_data_t* logger = (logger_bbob_data_t* )coco_problem_transformed_get_data(problem);
   assert(logger);
@@ -659,18 +659,18 @@ static void logger_bbob_signal_restart(coco_problem_t *problem) {
     logger->algorithm_restarted = 1;
 }
 
-static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *inner_problem) {
-  coco_problem_t *problem;
+static coco_problem_t* logger_bbob(coco_observer_t *observer, coco_problem_t* inner_problem) {
+  coco_problem_t* problem;
   logger_bbob_data_t* logger_data;
   observer_bbob_data_t *observer_data;
-  coco_suite_t *suite;
+  coco_suite_t* suite;
   size_t i;
 
   coco_debug("Started logger_bbob()");
 
   assert(inner_problem);
   assert(inner_problem->suite);
-  suite = (coco_suite_t *)inner_problem->suite;
+  suite = (coco_suite_t* )inner_problem->suite;
   if (inner_problem->number_of_objectives != 1) {
     coco_warning("logger_bbob(): The bbob logger shouldn't be used to log a problem with %d objectives",
                  inner_problem->number_of_objectives);

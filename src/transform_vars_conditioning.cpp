@@ -13,17 +13,17 @@
  * @brief Data type for transform_vars_conditioning.
  */
 typedef struct {
-  double *x;
+  double* x;
   double alpha;
 } transform_vars_conditioning_data_t;
 
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_conditioning_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_conditioning_evaluate(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   transform_vars_conditioning_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -46,11 +46,11 @@ static void transform_vars_conditioning_evaluate(coco_problem_t *problem, const 
 /**
  * @brief Evaluates the gradient of the transformed function.
  */
-static void transform_vars_conditioning_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_conditioning_evaluate_gradient(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   transform_vars_conditioning_data_t *data;
-  coco_problem_t *inner_problem;
-  double *gradient;
+  coco_problem_t* inner_problem;
+  double* gradient;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -77,7 +77,7 @@ static void transform_vars_conditioning_evaluate_gradient(coco_problem_t *proble
   coco_free_memory(gradient);
 }
 
-static void transform_vars_conditioning_free(void *thing) {
+static void transform_vars_conditioning_free(void* thing) {
   transform_vars_conditioning_data_t *data = (transform_vars_conditioning_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -85,9 +85,9 @@ static void transform_vars_conditioning_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_conditioning(coco_problem_t *inner_problem, const double alpha) {
+static coco_problem_t* transform_vars_conditioning(coco_problem_t* inner_problem, const double alpha) {
   transform_vars_conditioning_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
 
   data = (transform_vars_conditioning_data_t *)coco_allocate_memory(sizeof(*data));
   data->x = coco_allocate_vector(inner_problem->number_of_variables);

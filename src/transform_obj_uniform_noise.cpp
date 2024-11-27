@@ -16,9 +16,9 @@ typedef struct {
 /**
  * @brief Evaluates the transformed objective function by applying uniform multiplicative noise.
  */
-static void transform_obj_uniform_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+static void transform_obj_uniform_noise_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
   double uniform_noise_term1, uniform_noise_term2;
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
+  coco_problem_t* inner_problem = coco_problem_transformed_get_inner_problem(problem);
   double fopt = *(inner_problem->best_value);
   transform_obj_uniform_noise_data_t *data;
   data = (transform_obj_uniform_noise_data_t *)coco_problem_transformed_get_data(problem);
@@ -42,9 +42,9 @@ static void transform_obj_uniform_noise_evaluate_function(coco_problem_t *proble
 /**
  * @brief Allocates a noisy problem with uniform noise.
  */
-static coco_problem_t *transform_obj_uniform_noise(coco_problem_t *inner_problem, const double alpha,
+static coco_problem_t* transform_obj_uniform_noise(coco_problem_t* inner_problem, const double alpha,
                                                    const double beta) {
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   transform_obj_uniform_noise_data_t *data;
   data = (transform_obj_uniform_noise_data_t *)coco_allocate_memory(sizeof(*data));
   data->alpha = alpha;

@@ -15,8 +15,8 @@ typedef struct {
 /**
  * @brief Evaluates the transformed objective function by applying gaussian multiplicative noise.
  */
-static void transform_obj_gaussian_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
+static void transform_obj_gaussian_noise_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
+  coco_problem_t* inner_problem = coco_problem_transformed_get_inner_problem(problem);
   double fopt = *(inner_problem->best_value);
   transform_obj_gaussian_noise_data_t *data;
   data = (transform_obj_gaussian_noise_data_t *)coco_problem_transformed_get_data(problem);
@@ -35,8 +35,8 @@ static void transform_obj_gaussian_noise_evaluate_function(coco_problem_t *probl
 /**
  * @brief Allocates a noisy problem with gaussian noise.
  */
-static coco_problem_t *transform_obj_gaussian_noise(coco_problem_t *inner_problem, const double beta) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_obj_gaussian_noise(coco_problem_t* inner_problem, const double beta) {
+  coco_problem_t* problem;
   transform_obj_gaussian_noise_data_t *data;
   data = (transform_obj_gaussian_noise_data_t *)coco_allocate_memory(sizeof(*data));
   data->beta = beta;

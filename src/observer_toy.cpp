@@ -6,20 +6,20 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-static coco_problem_t *logger_toy(coco_observer_t *observer, coco_problem_t *problem);
-static void logger_toy_free(void *logger);
+static coco_problem_t* logger_toy(coco_observer_t *observer, coco_problem_t* problem);
+static void logger_toy_free(void* logger);
 
 /**
  * @brief The toy observer data type.
  */
 typedef struct {
-  FILE *log_file; /**< @brief File used for logging. */
+  FILE* log_file; /**< @brief File used for logging. */
 } observer_toy_data_t;
 
 /**
  * @brief Frees memory of the toy observer data structure.
  */
-static void observer_toy_free(void *stuff) {
+static void observer_toy_free(void* stuff) {
 
   observer_toy_data_t *data;
 
@@ -38,16 +38,16 @@ static void observer_toy_free(void *stuff) {
  * Possible options:
  * - file_name: string (name of the output file; default value is "first_hitting_times.dat")
  */
-static void observer_toy(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
+static void observer_toy(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
 
   observer_toy_data_t *observer_data;
-  char *string_value;
-  char *file_name;
+  char* string_value;
+  char* file_name;
 
   /* Sets the valid keys for toy observer options
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
-  const char *known_keys[] = {"file_name"};
-  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
+  char const* known_keys[] = {"file_name"};
+  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
 
   observer_data = (observer_toy_data_t *)coco_allocate_memory(sizeof(*observer_data));
 

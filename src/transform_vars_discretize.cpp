@@ -27,17 +27,17 @@
  * @brief Data type for transform_vars_discretize.
  */
 typedef struct {
-  double *offset;
+  double* offset;
 } transform_vars_discretize_data_t;
 
 /**
  * @brief Evaluates the transformed objective function.
  */
-static void transform_vars_discretize_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_discretize_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   transform_vars_discretize_data_t *data;
-  coco_problem_t *inner_problem;
-  double *discretized_x;
+  coco_problem_t* inner_problem;
+  double* discretized_x;
   double l, u, inner_l, inner_u, outer_l, outer_u;
   int n;
 
@@ -77,7 +77,7 @@ static void transform_vars_discretize_evaluate_function(coco_problem_t *problem,
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_discretize_free(void *thing) {
+static void transform_vars_discretize_free(void* thing) {
   transform_vars_discretize_data_t *data = (transform_vars_discretize_data_t *)thing;
   coco_free_memory(data->offset);
 }
@@ -85,12 +85,12 @@ static void transform_vars_discretize_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem,
-                                                 const double *smallest_values_of_interest,
-                                                 const double *largest_values_of_interest,
+static coco_problem_t* transform_vars_discretize(coco_problem_t* inner_problem,
+                                                 const double* smallest_values_of_interest,
+                                                 const double* largest_values_of_interest,
                                                  const size_t number_of_integer_variables) {
   transform_vars_discretize_data_t *data;
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
   double l, u, inner_l, inner_u, outer_l, outer_u;
   double outer_xopt, inner_xopt, inner_approx_xopt;
   const double precision_offset = 1e-7; /* Needed to avoid issues with rounding doubles */

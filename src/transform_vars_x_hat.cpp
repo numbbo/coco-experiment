@@ -14,17 +14,17 @@
  */
 typedef struct {
   long seed;
-  double *x;
+  double* x;
   coco_problem_free_function_t old_free_problem;
 } transform_vars_x_hat_data_t;
 
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_x_hat_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_x_hat_evaluate(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   transform_vars_x_hat_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -51,7 +51,7 @@ static void transform_vars_x_hat_evaluate(coco_problem_t *problem, const double 
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_x_hat_free(void *thing) {
+static void transform_vars_x_hat_free(void* thing) {
   transform_vars_x_hat_data_t *data = (transform_vars_x_hat_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -59,9 +59,9 @@ static void transform_vars_x_hat_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_x_hat(coco_problem_t *inner_problem, const long seed) {
+static coco_problem_t* transform_vars_x_hat(coco_problem_t* inner_problem, const long seed) {
   transform_vars_x_hat_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   size_t i;
 
   data = (transform_vars_x_hat_data_t *)coco_allocate_memory(sizeof(*data));

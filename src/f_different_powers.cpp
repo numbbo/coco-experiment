@@ -20,7 +20,7 @@
  * @brief Implements the different powers function without connections to any
  * COCO structures.
  */
-static double f_different_powers_raw(const double *x,
+static double f_different_powers_raw(const double* x,
                                      const size_t number_of_variables) {
 
   size_t i;
@@ -42,8 +42,8 @@ static double f_different_powers_raw(const double *x,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_different_powers_evaluate(coco_problem_t *problem,
-                                        const double *x, double *y) {
+static void f_different_powers_evaluate(coco_problem_t* problem,
+                                        const double* x, double* y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_different_powers_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -64,8 +64,8 @@ double sign(double x) {
 /**
  * @brief Evaluates the gradient of the function "different powers".
  */
-static void f_different_powers_evaluate_gradient(coco_problem_t *problem,
-                                                 const double *x, double *y) {
+static void f_different_powers_evaluate_gradient(coco_problem_t* problem,
+                                                 const double* x, double* y) {
 
   size_t i;
   double sum = 0.0;
@@ -87,10 +87,10 @@ static void f_different_powers_evaluate_gradient(coco_problem_t *problem,
 /**
  * @brief Allocates the basic different powers problem.
  */
-static coco_problem_t *
+static coco_problem_t* 
 f_different_powers_allocate(const size_t number_of_variables) {
 
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("different powers function", f_different_powers_evaluate,
+  coco_problem_t* problem = coco_problem_allocate_from_scalars("different powers function", f_different_powers_evaluate,
                                                                nullptr, number_of_variables, -5.0, 5.0, 0.0);
   problem->evaluate_gradient = f_different_powers_evaluate_gradient;
   coco_problem_set_id(problem, "%s_d%02lu", "different_powers",
@@ -105,17 +105,17 @@ f_different_powers_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB different powers problem.
  */
-static coco_problem_t *f_different_powers_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_different_powers_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                 const size_t instance, const long rseed,
-                                                                const char *problem_id_template,
-                                                                const char *problem_name_template) {
+                                                                char const* problem_id_template,
+                                                                char const* problem_name_template) {
 
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
 
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double **rot1;
+  double* M = coco_allocate_vector(dimension * dimension);
+  double* b = coco_allocate_vector(dimension);
+  double** rot1;
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -150,11 +150,11 @@ static coco_problem_t *f_different_powers_bbob_problem_allocate(const size_t fun
 /**
  * @brief Creates the bbob-constrained different powers problem.
  */
-static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(const size_t function,
+static coco_problem_t* f_different_powers_bbob_constrained_problem_allocate(const size_t function,
                                                                             const size_t dimension,
                                                                             const size_t instance, const long rseed,
-                                                                            const char *problem_id_template,
-                                                                            const char *problem_name_template) {
+                                                                            char const* problem_id_template,
+                                                                            char const* problem_name_template) {
   /* Different powers function used in bbob-constrained test suite.
    * In this version, the (unconstrained) optimum, xopt, is set to
    * a distance of 1e-2 to the origin. By doing so, the optimum of
@@ -163,12 +163,12 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
    */
 
   size_t i;
-  double *xopt, fopt, result;
-  coco_problem_t *problem = nullptr;
+  double* xopt, fopt, result;
+  coco_problem_t* problem = nullptr;
 
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double **rot1;
+  double* M = coco_allocate_vector(dimension * dimension);
+  double* b = coco_allocate_vector(dimension);
+  double** rot1;
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -217,21 +217,21 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
  * @brief Creates the BBOB generalized permuted block-rotated sum of different
  * powers problem.
  */
-static coco_problem_t *f_different_powers_permblockdiag_bbob_problem_allocate(const size_t function,
+static coco_problem_t* f_different_powers_permblockdiag_bbob_problem_allocate(const size_t function,
                                                                               const size_t dimension,
                                                                               const size_t instance, const long rseed,
-                                                                              const char *problem_id_template,
-                                                                              const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
+                                                                              char const* problem_id_template,
+                                                                              char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
 
-  double **B;
-  const double *const *B_copy;
+  double** B;
+  const double* const* B_copy;
 
-  size_t *P1 = coco_allocate_vector_size_t(dimension);
-  size_t *P2 = coco_allocate_vector_size_t(dimension);
+  size_t* P1 = coco_allocate_vector_size_t(dimension);
+  size_t* P2 = coco_allocate_vector_size_t(dimension);
 
-  size_t *block_sizes;
+  size_t* block_sizes;
   size_t nb_blocks;
   size_t swap_range;
   size_t nb_swaps;
@@ -249,7 +249,7 @@ static coco_problem_t *f_different_powers_permblockdiag_bbob_problem_allocate(co
   }
 
   B = coco_allocate_blockmatrix(dimension, block_sizes, nb_blocks);
-  B_copy = (const double *const *)B;
+  B_copy = (const double* const* )B;
   coco_compute_blockrotation(B, rseed + 1000000, dimension, block_sizes,
                              nb_blocks);
 

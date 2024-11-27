@@ -27,7 +27,7 @@ typedef struct {
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
-static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *problem) {
+static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t* problem) {
 
   f_sharp_ridge_generalized_versatile_data_t *versatile_data =
       (f_sharp_ridge_generalized_versatile_data_t *)problem->versatile_data;
@@ -42,7 +42,7 @@ static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *proble
  * any COCO structures.
  */
 static double
-f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
+f_sharp_ridge_generalized_raw(const double* x, const size_t number_of_variables,
                               f_sharp_ridge_generalized_versatile_data_t *f_sharp_ridge_generalized_versatile_data) {
 
   static const double alpha = 100.0;
@@ -77,8 +77,8 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem,
-                                               const double *x, double *y) {
+static void f_sharp_ridge_generalized_evaluate(coco_problem_t* problem,
+                                               const double* x, double* y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_sharp_ridge_generalized_raw(x, problem->number_of_variables,
                                        (f_sharp_ridge_generalized_versatile_data_t *)problem->versatile_data);
@@ -88,10 +88,10 @@ static void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem,
 /**
  * @brief Allocates the basic sharp ridge problem.
  */
-static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
+static coco_problem_t* f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
                                                           size_t proportion_of_linear_dims) {
   /* Wassim: proportion_of_linear_dims should probably be allowed to be non-integer */
-  coco_problem_t *problem = coco_problem_allocate_from_scalars(
+  coco_problem_t* problem = coco_problem_allocate_from_scalars(
       "sharp ridge function", f_sharp_ridge_generalized_evaluate, f_sharp_ridge_generalized_versatile_data_free,
       number_of_variables, -5.0, 5.0, 0.0);
 
@@ -112,21 +112,21 @@ static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of
  * @brief Creates the BBOB permuted block-rotated generalized sharp ridge
  * problem
  */
-static coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
+static coco_problem_t* f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
-    const char *problem_id_template, const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
-  double **B1;
-  double **B2;
-  const double *const *B1_copy;
-  const double *const *B2_copy;
-  size_t *P11 = coco_allocate_vector_size_t(dimension);
-  size_t *P21 = coco_allocate_vector_size_t(dimension);
-  size_t *P12 = coco_allocate_vector_size_t(dimension);
-  size_t *P22 = coco_allocate_vector_size_t(dimension);
-  size_t *block_sizes1;
-  size_t *block_sizes2;
+    char const* problem_id_template, char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
+  double** B1;
+  double** B2;
+  const double* const* B1_copy;
+  const double* const* B2_copy;
+  size_t* P11 = coco_allocate_vector_size_t(dimension);
+  size_t* P21 = coco_allocate_vector_size_t(dimension);
+  size_t* P12 = coco_allocate_vector_size_t(dimension);
+  size_t* P22 = coco_allocate_vector_size_t(dimension);
+  size_t* block_sizes1;
+  size_t* block_sizes2;
   size_t nb_blocks1;
   size_t nb_blocks2;
   size_t swap_range;
@@ -151,8 +151,8 @@ static coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allo
 
   B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
   B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);
-  B1_copy = (const double *const *)B1;
-  B2_copy = (const double *const *)B2;
+  B1_copy = (const double* const* )B1;
+  B2_copy = (const double* const* )B2;
 
   coco_compute_blockrotation(B1, rseed + 1000000, dimension, block_sizes1, nb_blocks1);
   coco_compute_blockrotation(B2, rseed, dimension, block_sizes2, nb_blocks2);

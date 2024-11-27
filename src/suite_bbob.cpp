@@ -27,16 +27,16 @@
 #include "f_step_ellipsoid.cpp"
 #include "f_weierstrass.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
+static coco_suite_t* coco_suite_allocate(char const* suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t* dimensions,
+                                         char const* default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob suite.
  */
-static coco_suite_t *suite_bbob_initialize(void) {
+static coco_suite_t* suite_bbob_initialize(void) {
 
-  coco_suite_t *suite;
+  coco_suite_t* suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
@@ -49,7 +49,7 @@ static coco_suite_t *suite_bbob_initialize(void) {
 /**
  * @brief Sets the instances associated with years for the bbob suite.
  */
-static const char *suite_bbob_get_instances_by_year(const int year) {
+static char const* suite_bbob_get_instances_by_year(const int year) {
 
   if (year >= 2023) {
     return "1-5,101-110";
@@ -82,11 +82,11 @@ static const char *suite_bbob_get_instances_by_year(const int year) {
  *
  * Useful for other suites as well (see for example suite_biobj.c).
  */
-coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
-  coco_problem_t *problem = nullptr;
+coco_problem_t* coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
+  coco_problem_t* problem = nullptr;
 
-  const char *problem_id_template = "bbob_f%03lu_i%02lu_d%02lu";
-  const char *problem_name_template = "BBOB suite problem f%lu instance %lu in %luD";
+  char const* problem_id_template = "bbob_f%03lu_i%02lu_d%02lu";
+  char const* problem_name_template = "BBOB suite problem f%lu instance %lu in %luD";
 
   const long rseed = (long)(function + 10000 * instance);
   const long rseed_3 = (long)(3 + 10000 * instance);
@@ -200,10 +200,10 @@ coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimens
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
+static coco_problem_t* suite_bbob_get_problem(coco_suite_t* suite, const size_t function_idx,
                                               const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];

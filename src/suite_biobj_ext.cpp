@@ -39,7 +39,7 @@ static const size_t suite_biobj_ext_instances[][3] = {
  */
 typedef struct {
 
-  size_t **new_instances; /**< @brief A matrix of new instances (equal in form to suite_biobj_ext_instances)
+  size_t** new_instances; /**< @brief A matrix of new instances (equal in form to suite_biobj_ext_instances)
                                 that needs to be used only when an instance that is not in
                                 suite_biobj_ext_instances is being invoked. */
 
@@ -47,19 +47,19 @@ typedef struct {
 
 } suite_biobj_ext_t;
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
-static void suite_biobj_ext_free(void *stuff);
-static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t instance, const size_t instance1,
-                                               const size_t num_bbob_functions, const size_t *bbob_functions);
+static coco_suite_t* coco_suite_allocate(char const* suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t* dimensions,
+                                         char const* default_instances, const int known_optima);
+static void suite_biobj_ext_free(void* stuff);
+static size_t suite_biobj_ext_get_new_instance(coco_suite_t* suite, const size_t instance, const size_t instance1,
+                                               const size_t num_bbob_functions, const size_t* bbob_functions);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj-ext suite.
  */
-static coco_suite_t *suite_biobj_ext_initialize(void) {
+static coco_suite_t* suite_biobj_ext_initialize(void) {
 
-  coco_suite_t *suite;
+  coco_suite_t* suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
@@ -72,7 +72,7 @@ static coco_suite_t *suite_biobj_ext_initialize(void) {
 /**
  * @brief Sets the instances associated with years for the bbob-biobj-ext suite.
  */
-static const char *suite_biobj_ext_get_instances_by_year(const int year) {
+static char const* suite_biobj_ext_get_instances_by_year(const int year) {
 
   if (year == 0000) { /* default/test case */
     return "1-10";
@@ -106,7 +106,7 @@ static const char *suite_biobj_ext_get_instances_by_year(const int year) {
  * @return The problem that corresponds to the given parameters.
  * @note Copied from suite_bbob_biobj.c and extended.
  */
-static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const size_t function_idx,
+static coco_problem_t* suite_biobj_ext_get_problem(coco_suite_t* suite, const size_t function_idx,
                                                    const size_t dimension_idx, const size_t instance_idx) {
 
   const size_t num_bbob_functions = 10;
@@ -116,7 +116,7 @@ static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const si
   const size_t all_bbob_functions[] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
                                        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
 
-  coco_problem_t *problem1, *problem2, *problem = nullptr;
+  coco_problem_t* problem1, *problem2, *problem = nullptr;
   size_t instance1 = 0, instance2 = 0;
   size_t function1_idx, function2_idx;
 
@@ -129,8 +129,8 @@ static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const si
   const size_t num_existing_instances = sizeof(suite_biobj_ext_instances) / sizeof(suite_biobj_ext_instances[0]);
   int instance_found = 0;
 
-  double *smallest_values_of_interest = coco_allocate_vector_with_value(dimension, -100);
-  double *largest_values_of_interest = coco_allocate_vector_with_value(dimension, 100);
+  double* smallest_values_of_interest = coco_allocate_vector_with_value(dimension, -100);
+  double* largest_values_of_interest = coco_allocate_vector_with_value(dimension, 100);
 
   /* First, create all problems from the bbob-biobj suite */
   if (function_idx < 55) {
@@ -294,9 +294,9 @@ static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const si
        * suite_biobj_ext_instances, the allocation uses max_new_instances. */
       data->max_new_instances = suite->number_of_instances;
 
-      data->new_instances = (size_t **)coco_allocate_memory(data->max_new_instances * sizeof(size_t *));
+      data->new_instances = (size_t** )coco_allocate_memory(data->max_new_instances * sizeof(size_t* ));
       for (i = 0; i < data->max_new_instances; i++) {
-        data->new_instances[i] = (size_t *)malloc(3 * sizeof(size_t));
+        data->new_instances[i] = (size_t* )malloc(3 * sizeof(size_t));
         for (j = 0; j < 3; j++) {
           data->new_instances[i][j] = 0;
         }
@@ -347,11 +347,11 @@ static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const si
  */
 static int check_consistency_of_instances(const size_t dimension, size_t function1, size_t instance1, size_t function2,
                                           size_t instance2) {
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem1, *problem2;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem1, *problem2;
   int break_search = 0;
   double norm;
-  double *smallest_values_of_interest, *largest_values_of_interest;
+  double* smallest_values_of_interest, *largest_values_of_interest;
   const double apart_enough = 1e-4;
 
   problem1 = coco_get_bbob_problem(function1, dimension, instance1);
@@ -407,8 +407,8 @@ static int check_consistency_of_instances(const size_t dimension, size_t functio
  *
  * @note Copied from suite_bbob_biobj.c.
  */
-static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t instance, const size_t instance1,
-                                               const size_t num_bbob_functions, const size_t *bbob_functions) {
+static size_t suite_biobj_ext_get_new_instance(coco_suite_t* suite, const size_t instance, const size_t instance1,
+                                               const size_t num_bbob_functions, const size_t* bbob_functions) {
   size_t instance2 = 0;
   size_t num_tries = 0;
   const size_t max_tries = 1000;
@@ -503,7 +503,7 @@ static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t
  * @brief  Frees the memory of the given bi-objective suite.
  * @note   Copied from suite_bbob_biobj.c.
  */
-static void suite_biobj_ext_free(void *stuff) {
+static void suite_biobj_ext_free(void* stuff) {
 
   suite_biobj_ext_t *data;
   size_t i;

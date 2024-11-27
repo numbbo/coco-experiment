@@ -24,8 +24,8 @@ typedef struct {
   int log_time;                    /**< @brief Whether to log time. */
 } observer_rw_data_t;
 
-static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *problem);
-static void logger_rw_free(void *logger);
+static coco_problem_t* logger_rw(coco_observer_t *observer, coco_problem_t* problem);
+static void logger_rw_free(void* logger);
 
 /**
  * @brief Initializes the observer for real-world problems.
@@ -54,16 +54,16 @@ static void logger_rw_free(void *logger);
  * - "log_time: 0/1" determines whether the time needed to evaluate each solution is logged (0) or not (1).
  * The default value is 0.
  */
-static void observer_rw(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
+static void observer_rw(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
 
   observer_rw_data_t *observer_data;
   char string_value[COCO_PATH_MAX + 1];
 
   /* Sets the valid keys for rw observer options
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
-  const char *known_keys[] = {"log_variables", "log_constraints", "low_dim_vars",
+  char const* known_keys[] = {"log_variables", "log_constraints", "low_dim_vars",
                               "low_dim_cons",  "log_only_better", "log_time"};
-  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
+  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
 
   observer_data = (observer_rw_data_t *)coco_allocate_memory(sizeof(*observer_data));
 

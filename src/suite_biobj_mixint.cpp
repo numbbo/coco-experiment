@@ -13,17 +13,17 @@
 #include "transform_obj_scale.cpp"
 #include "suite_bbob_mixint.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
-static void suite_biobj_new_inst_free(void *stuff);
+static coco_suite_t* coco_suite_allocate(char const* suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t* dimensions,
+                                         char const* default_instances, const int known_optima);
+static void suite_biobj_new_inst_free(void* stuff);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj-mixint suite.
  */
-static coco_suite_t *suite_biobj_mixint_initialize(void) {
+static coco_suite_t* suite_biobj_mixint_initialize(void) {
 
-  coco_suite_t *suite;
+  coco_suite_t* suite;
   const size_t dimensions[] = {5, 10, 20, 40, 80, 160};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
@@ -38,7 +38,7 @@ static coco_suite_t *suite_biobj_mixint_initialize(void) {
  *
  * @note The instances of the bi-objective suites generally do not changes with years.
  */
-static const char *suite_biobj_mixint_get_instances_by_year(const int year) {
+static char const* suite_biobj_mixint_get_instances_by_year(const int year) {
 
   (void)year; /* To get rid of compiler warnings */
   return "1-15";
@@ -62,20 +62,20 @@ static const char *suite_biobj_mixint_get_instances_by_year(const int year) {
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, const size_t dimension,
+static coco_problem_t* coco_get_biobj_mixint_problem(const size_t function, const size_t dimension,
                                                      const size_t instance,
                                                      const coco_get_problem_function_t coco_get_problem_function,
                                                      suite_biobj_new_inst_t **new_inst_data,
-                                                     const size_t num_new_instances, const size_t *dimensions,
+                                                     const size_t num_new_instances, const size_t* dimensions,
                                                      const size_t num_dimensions) {
 
-  coco_problem_t *problem_cont = nullptr, *problem = nullptr;
-  coco_problem_t *problem1, *problem2;
-  coco_problem_t *problem1_mixint, *problem2_mixint;
-  coco_problem_t *problem1_cont, *problem2_cont;
+  coco_problem_t* problem_cont = nullptr, *problem = nullptr;
+  coco_problem_t* problem1, *problem2;
+  coco_problem_t* problem1_mixint, *problem2_mixint;
+  coco_problem_t* problem1_cont, *problem2_cont;
 
-  double *smallest_values_of_interest = coco_allocate_vector(dimension);
-  double *largest_values_of_interest = coco_allocate_vector(dimension);
+  double* smallest_values_of_interest = coco_allocate_vector(dimension);
+  double* largest_values_of_interest = coco_allocate_vector(dimension);
 
   size_t i, j;
   size_t num_integer = dimension;
@@ -170,10 +170,10 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, cons
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
+static coco_problem_t* suite_biobj_mixint_get_problem(coco_suite_t* suite, const size_t function_idx,
                                                       const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
   suite_biobj_new_inst_t *new_inst_data = (suite_biobj_new_inst_t *)suite->data;
   const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
 

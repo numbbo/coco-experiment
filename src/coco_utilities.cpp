@@ -46,7 +46,7 @@ static coco_log_level_type_e coco_log_level = COCO_INFO;
  *
  * @return The previous coco_log_level value as an immutable string.
  */
-const char *coco_set_log_level(const char *log_level) {
+char const* coco_set_log_level(char const* log_level) {
 
   coco_log_level_type_e previous_log_level = coco_log_level;
 
@@ -99,14 +99,14 @@ const char *coco_set_log_level(const char *log_level) {
  * @param path_max_length The maximum length of the path.
  * @param ... Additional strings, must end with nullptr
  */
-static void coco_join_path(char *path, const size_t path_max_length, ...) {
+static void coco_join_path(char* path, const size_t path_max_length, ...) {
   const size_t path_separator_length = strlen(coco_path_separator);
   va_list args;
-  char *path_component;
+  char* path_component;
   size_t path_length = strlen(path);
 
   va_start(args, path_max_length);
-  while (nullptr != (path_component = va_arg(args, char *))) {
+  while (nullptr != (path_component = va_arg(args, char* ))) {
     size_t component_length = strlen(path_component);
     if (path_length + path_separator_length + component_length >= path_max_length) {
       coco_error("coco_join_path() failed because the ${path} is too short.");
@@ -129,7 +129,7 @@ static void coco_join_path(char *path, const size_t path_max_length, ...) {
  *
  * @return 1 if the path exists and corresponds to a directory and 0 otherwise.
  */
-static int coco_directory_exists(const char *path) {
+static int coco_directory_exists(char const* path) {
   int res;
 #if defined(HAVE_GFA)
   DWORD dwAttrib = GetFileAttributesA(path);
@@ -152,7 +152,7 @@ static int coco_directory_exists(const char *path) {
  *
  * @return 1 if the path exists and corresponds to a file and 0 otherwise.
  */
-static int coco_file_exists(const char *path) {
+static int coco_file_exists(char const* path) {
   int res;
 #if defined(HAVE_GFA)
   DWORD dwAttrib = GetFileAttributesA(path);
@@ -175,7 +175,7 @@ static int coco_file_exists(const char *path) {
  *
  * @return 0 if the created directory has not existed before and 1 otherwise.
  */
-static int coco_mkdir(const char *path) {
+static int coco_mkdir(char const* path) {
   int result = 0;
 
   /* Do not create the path if is of the form "C:" (two letters, of which the second is a colon)*/
@@ -208,9 +208,9 @@ static int coco_mkdir(const char *path) {
  *
  * @return 0 if the created directory has not existed before and 1 otherwise.
  */
-static int coco_create_directory(const char *path) {
-  char *path_copy = nullptr;
-  char *tmp, *p;
+static int coco_create_directory(char const* path) {
+  char* path_copy = nullptr;
+  char* tmp, *p;
   char path_sep = coco_path_separator[0];
   size_t len = strlen(path);
 
@@ -250,11 +250,11 @@ static int coco_create_directory(const char *path) {
  * path/filename-0002.ext will be tried, and so on. If path/filename-9999.ext exists as well, the function throws
  * an error. Every 1000 trials a warning is issued.
  */
-static void coco_create_unique_filename(const char *path, char **file_name, const char *ext) {
+static void coco_create_unique_filename(char const* path, char** file_name, char const* ext) {
   int counter = 1;
   char file_path[COCO_PATH_MAX + 2] = {0};
   char relative_file_path[COCO_PATH_MAX + 2] = {0};
-  char *new_file_name;
+  char* new_file_name;
 
   strncpy(relative_file_path, *file_name, COCO_PATH_MAX - strlen(relative_file_path) - 1);
   strncat(relative_file_path, ext, COCO_PATH_MAX - strlen(relative_file_path) - 1);
@@ -297,10 +297,10 @@ static void coco_create_unique_filename(const char *path, char **file_name, cons
  * to it. If path already exists, path-0001 will be tried. If this one exists as well, path-0002 will be tried,
  * and so on. If path-9999 exists as well, an error is raised. Every 1000 trials a warning is issued.
  */
-static void coco_create_unique_directory(char **path) {
+static void coco_create_unique_directory(char** path) {
 
   int counter = 1;
-  char *new_path;
+  char* new_path;
 
   if (coco_create_directory(*path) == 0) {
     /* Directory created */
@@ -335,11 +335,11 @@ static void coco_create_unique_directory(char **path) {
  *
  * @return 0 on successful completion, and -1 on error.
  */
-int coco_remove_directory(const char *path) {
+int coco_remove_directory(char const* path) {
 #if _MSC_VER
   WIN32_FIND_DATA find_data_file;
   HANDLE find_handle = nullptr;
-  char *buf;
+  char* buf;
   int r = -1;
   int r2 = -1;
 
@@ -388,7 +388,7 @@ int coco_remove_directory(const char *path) {
   DIR *d = opendir(path);
   int r = -1;
   int r2 = -1;
-  char *buf;
+  char* buf;
 
   /* Nothing to do if the folder does not exist */
   if (!coco_directory_exists(path))
@@ -440,7 +440,7 @@ int coco_remove_directory(const char *path) {
  *
  * @return 0 on successful completion, and -1 on error.
  */
-int coco_remove_file(const char *file_name) {
+int coco_remove_file(char const* file_name) {
 #if _MSC_VER
   int r = -1;
   /* Try to delete the file */
@@ -462,17 +462,17 @@ int coco_remove_file(const char *file_name) {
  * @name Methods regarding memory allocations
  */
 /**@{*/
-double *coco_allocate_vector(const size_t number_of_elements) {
+double* coco_allocate_vector(const size_t number_of_elements) {
   const size_t block_size = number_of_elements * sizeof(double);
-  return (double *)coco_allocate_memory(block_size);
+  return (double* )coco_allocate_memory(block_size);
 }
 
 /**
  * @brief Allocates memory for a vector and sets all its elements to value.
  */
-static double *coco_allocate_vector_with_value(const size_t number_of_elements, double value) {
+static double* coco_allocate_vector_with_value(const size_t number_of_elements, double value) {
   const size_t block_size = number_of_elements * sizeof(double);
-  double *vector = (double *)coco_allocate_memory(block_size);
+  double* vector = (double* )coco_allocate_memory(block_size);
   size_t i;
 
   for (i = 0; i < number_of_elements; i++)
@@ -485,19 +485,19 @@ static double *coco_allocate_vector_with_value(const size_t number_of_elements, 
  * @brief Safe memory allocation for a vector with size_t elements that either succeeds or triggers a
  * coco_error.
  */
-static size_t *coco_allocate_vector_size_t(const size_t number_of_elements) {
+static size_t* coco_allocate_vector_size_t(const size_t number_of_elements) {
   const size_t block_size = number_of_elements * sizeof(size_t);
-  return (size_t *)coco_allocate_memory(block_size);
+  return (size_t*)coco_allocate_memory(block_size);
 }
 
-static char *coco_allocate_string(const size_t number_of_elements) {
+static char* coco_allocate_string(const size_t number_of_elements) {
   const size_t block_size = number_of_elements * sizeof(char);
-  return (char *)coco_allocate_memory(block_size);
+  return (char*)coco_allocate_memory(block_size);
 }
 
-static double *coco_duplicate_vector(const double *src, const size_t number_of_elements) {
+static double* coco_duplicate_vector(const double* src, const size_t number_of_elements) {
   size_t i;
-  double *dst;
+  double* dst;
 
   assert(src);
   assert(number_of_elements > 0);
@@ -520,17 +520,17 @@ static double *coco_duplicate_vector(const double *src, const size_t number_of_e
 /**
  * @brief Allocates an option keys structure holding the given number of option keys.
  */
-static coco_option_keys_t *coco_option_keys_allocate(const size_t count, const char **keys) {
+static coco_option_keys_t* coco_option_keys_allocate(const size_t count, char const** keys) {
 
   size_t i;
-  coco_option_keys_t *option_keys;
+  coco_option_keys_t* option_keys;
 
   if ((count == 0) || (! keys))
     return nullptr;
 
-  option_keys = (coco_option_keys_t *)coco_allocate_memory(sizeof(*option_keys));
+  option_keys = (coco_option_keys_t* )coco_allocate_memory(sizeof(*option_keys));
 
-  option_keys->keys = (char **)coco_allocate_memory(count * sizeof(char *));
+  option_keys->keys = (char** )coco_allocate_memory(count * sizeof(char* ));
   for (i = 0; i < count; i++) {
     assert(keys[i]);
     option_keys->keys[i] = coco_strdup(keys[i]);
@@ -543,7 +543,7 @@ static coco_option_keys_t *coco_option_keys_allocate(const size_t count, const c
 /**
  * @brief Frees the given option keys structure.
  */
-static void coco_option_keys_free(coco_option_keys_t *option_keys) {
+static void coco_option_keys_free(coco_option_keys_t* option_keys) {
 
   size_t i;
 
@@ -559,19 +559,19 @@ static void coco_option_keys_free(coco_option_keys_t *option_keys) {
 /**
  * @brief Returns redundant option keys (the ones present in given_option_keys but not in known_option_keys).
  */
-static coco_option_keys_t *coco_option_keys_get_redundant(const coco_option_keys_t *known_option_keys,
-                                                          const coco_option_keys_t *given_option_keys) {
+static coco_option_keys_t* coco_option_keys_get_redundant(const coco_option_keys_t* known_option_keys,
+                                                          const coco_option_keys_t* given_option_keys) {
 
   size_t i, j, count = 0;
   int found;
-  char **redundant_keys;
-  coco_option_keys_t *redundant_option_keys;
+  char** redundant_keys;
+  coco_option_keys_t* redundant_option_keys;
 
   assert(known_option_keys);
   assert(given_option_keys);
 
   /* Find the redundant keys */
-  redundant_keys = (char **)coco_allocate_memory(given_option_keys->count * sizeof(char *));
+  redundant_keys = (char** )coco_allocate_memory(given_option_keys->count * sizeof(char* ));
   for (i = 0; i < given_option_keys->count; i++) {
     found = 0;
     for (j = 0; j < known_option_keys->count; j++) {
@@ -584,7 +584,7 @@ static coco_option_keys_t *coco_option_keys_get_redundant(const coco_option_keys
       redundant_keys[count++] = coco_strdup(given_option_keys->keys[i]);
     }
   }
-  redundant_option_keys = coco_option_keys_allocate(count, (const char **)redundant_keys);
+  redundant_option_keys = coco_option_keys_allocate(count, (char const** )redundant_keys);
 
   /* Free memory */
   for (i = 0; i < count; i++) {
@@ -598,13 +598,13 @@ static coco_option_keys_t *coco_option_keys_get_redundant(const coco_option_keys
 /**
  * @brief Adds additional option keys to the given basic option keys (changes the basic keys).
  */
-static void coco_option_keys_add(coco_option_keys_t **basic_option_keys,
-                                 const coco_option_keys_t *additional_option_keys) {
+static void coco_option_keys_add(coco_option_keys_t** basic_option_keys,
+                                 const coco_option_keys_t* additional_option_keys) {
 
   size_t i, j;
   size_t new_count;
-  char **new_keys;
-  coco_option_keys_t *new_option_keys;
+  char** new_keys;
+  coco_option_keys_t* new_option_keys;
 
   assert(*basic_option_keys);
   if (! additional_option_keys)
@@ -612,14 +612,14 @@ static void coco_option_keys_add(coco_option_keys_t **basic_option_keys,
 
   /* Construct the union of both keys */
   new_count = (*basic_option_keys)->count + additional_option_keys->count;
-  new_keys = (char **)coco_allocate_memory(new_count * sizeof(char *));
+  new_keys = (char** )coco_allocate_memory(new_count * sizeof(char* ));
   for (i = 0; i < (*basic_option_keys)->count; i++) {
     new_keys[i] = coco_strdup((*basic_option_keys)->keys[i]);
   }
   for (j = 0; j < additional_option_keys->count; j++) {
     new_keys[(*basic_option_keys)->count + j] = coco_strdup(additional_option_keys->keys[j]);
   }
-  new_option_keys = coco_option_keys_allocate(new_count, (const char **)new_keys);
+  new_option_keys = coco_option_keys_allocate(new_count, (char const** )new_keys);
 
   /* Free the old basic keys */
   coco_option_keys_free(*basic_option_keys);
@@ -638,14 +638,14 @@ static void coco_option_keys_add(coco_option_keys_t **basic_option_keys,
  * number of keys. Values that are strings surrounded by quotation marks should work as long as they come
  * in pairs.
  */
-static coco_option_keys_t *coco_option_keys(const char *option_string) {
+static coco_option_keys_t* coco_option_keys(char const* option_string) {
 
   size_t i;
-  char **keys;
-  coco_option_keys_t *option_keys = nullptr;
-  char *string_to_parse, *key, *string_pointer;
-  char *cleaned_option_string = nullptr;
-  const char *replacement_string = "STR";
+  char** keys;
+  coco_option_keys_t* option_keys = nullptr;
+  char* string_to_parse, *key, *string_pointer;
+  char* cleaned_option_string = nullptr;
+  char const* replacement_string = "STR";
 
   /* Check for empty string */
   if ((! option_string) || (strlen(option_string) == 0)) {
@@ -711,7 +711,7 @@ static coco_option_keys_t *coco_option_keys(const char *option_string) {
       coco_free_memory(string_to_parse);
     }
 
-    option_keys = coco_option_keys_allocate(i, (const char **)keys);
+    option_keys = coco_option_keys_allocate(i, (char const** )keys);
 
     /* Free the keys */
     for (i = 0; *(keys + i); i++) {
@@ -730,9 +730,9 @@ static coco_option_keys_t *coco_option_keys(const char *option_string) {
  *
  * Can be used to output information about the given option_keys.
  */
-static char *coco_option_keys_get_output_string(const coco_option_keys_t *option_keys, const char *info_string) {
+static char* coco_option_keys_get_output_string(const coco_option_keys_t* option_keys, char const* info_string) {
   size_t i;
-  char *string = nullptr, *new_string;
+  char* string = nullptr, *new_string;
 
   if ((option_keys) && (option_keys->count > 0)) {
 
@@ -756,7 +756,7 @@ static char *coco_option_keys_get_output_string(const coco_option_keys_t *option
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read(const char *options, const char *name, const char *format, void *pointer) {
+static int coco_options_read(char const* options, char const* name, char const* format, void* pointer) {
 
   long i1, i2;
 
@@ -788,7 +788,7 @@ static int coco_options_read(const char *options, const char *name, const char *
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_int(const char *options, const char *name, int *pointer) {
+static int coco_options_read_int(char const* options, char const* name, int *pointer) {
   return coco_options_read(options, name, " %i", pointer);
 }
 
@@ -801,7 +801,7 @@ static int coco_options_read_int(const char *options, const char *name, int *poi
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_size_t(const char *options, const char *name, size_t *pointer) {
+static int coco_options_read_size_t(char const* options, char const* name, size_t* pointer) {
   return coco_options_read(options, name, "%lu", pointer);
 }
 
@@ -814,7 +814,7 @@ static int coco_options_read_size_t(const char *options, const char *name, size_
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_double(const char *options, const char *name, double *pointer) {
+static int coco_options_read_double(char const* options, char const* name, double* pointer) {
   return coco_options_read(options, name, "%lf", pointer);
 }
 
@@ -828,7 +828,7 @@ static int coco_options_read_double(const char *options, const char *name, doubl
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_string(const char *options, const char *name, char *pointer) {
+static int coco_options_read_string(char const* options, char const* name, char* pointer) {
 
   long i1, i2;
 
@@ -867,7 +867,7 @@ static int coco_options_read_string(const char *options, const char *name, char 
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_values(const char *options, const char *name, char *pointer) {
+static int coco_options_read_values(char const* options, char const* name, char* pointer) {
 
   long i1, i2;
   int i;
@@ -1004,7 +1004,7 @@ static int coco_is_nan(const double x) {
 /**
  * @brief Returns 1 if the input vector of dimension dim contains any NAN values and 0 otherwise.
  */
-static int coco_vector_contains_nan(const double *x, const size_t dim) {
+static int coco_vector_contains_nan(const double* x, const size_t dim) {
   size_t i;
   for (i = 0; i < dim; i++) {
     if (COCO_UNLIKELY(coco_is_nan(x[i])))
@@ -1016,7 +1016,7 @@ static int coco_vector_contains_nan(const double *x, const size_t dim) {
 /**
  * @brief Sets all dim values of y to NAN.
  */
-static void coco_vector_set_to_nan(double *y, const size_t dim) {
+static void coco_vector_set_to_nan(double* y, const size_t dim) {
   size_t i;
   for (i = 0; i < dim; i++) {
     y[i] = NAN;
@@ -1035,7 +1035,7 @@ static int coco_is_inf(const double x) {
 /**
  * @brief Sets all dim values of y to Inf.
  */
-static void coco_vector_set_to_inf(double *y, const size_t dim) {
+static void coco_vector_set_to_inf(double* y, const size_t dim) {
   size_t i;
   for (i = 0; i < dim; i++) {
     y[i] = INFINITY;
@@ -1045,7 +1045,7 @@ static void coco_vector_set_to_inf(double *y, const size_t dim) {
 /**
  * @brief Returns 1 if the input vector of dimension dim contains no NaN of inf values, and 0 otherwise.
  */
-static int coco_vector_isfinite(const double *x, const size_t dim) {
+static int coco_vector_isfinite(const double* x, const size_t dim) {
   size_t i;
   for (i = 0; i < dim; i++) {
     if (COCO_UNLIKELY(coco_is_nan(x[i])) || COCO_UNLIKELY(coco_is_inf(x[i])))
@@ -1070,10 +1070,10 @@ static int coco_vector_isfinite(const double *x, const size_t dim) {
  * @param x Decision vector.
  * @param constraint_values Vector of contraints values resulting from evaluation.
  */
-static int coco_is_feasible(coco_problem_t *problem, const double *x, double *constraint_values) {
+static int coco_is_feasible(coco_problem_t* problem, const double* x, double* constraint_values) {
 
   size_t i;
-  double *cons_values = constraint_values;
+  double* cons_values = constraint_values;
   int ret_val = 1;
 
   /* Return 0 if the decision vector contains any INFINITY or NaN values */
@@ -1117,9 +1117,9 @@ static int coco_is_feasible(coco_problem_t *problem, const double *x, double *co
  *
  * The caller is responsible for freeing the allocated memory using coco_free_memory().
  */
-static char *coco_current_time_get_string(void) {
+static char* coco_current_time_get_string(void) {
   time_t timer;
-  char *time_string = coco_allocate_string(30);
+  char* time_string = coco_allocate_string(30);
   struct tm *tm_info;
   time(&timer);
   tm_info = localtime(&timer);
@@ -1135,7 +1135,7 @@ static char *coco_current_time_get_string(void) {
  * If there are more than max_count numbers, a coco_error is raised. The name argument is used
  * only to provide more informative output in case of any problems.
  */
-static size_t coco_count_numbers(const size_t *numbers, const size_t max_count, const char *name) {
+static size_t coco_count_numbers(const size_t* numbers, const size_t max_count, char const* name) {
 
   size_t count = 0;
   while ((count < max_count) && (numbers[count] != 0)) {
@@ -1156,7 +1156,7 @@ static size_t coco_count_numbers(const size_t *numbers, const size_t max_count, 
  *
  * Example: coco_vector_scale(x, dimension, 1, coco_vector_norm(x, dimension));
  */
-static double coco_vector_scale(double *x, size_t dimension, double nom, double denom) {
+static double coco_vector_scale(double* x, size_t dimension, double nom, double denom) {
 
   size_t i;
 
@@ -1174,7 +1174,7 @@ static double coco_vector_scale(double *x, size_t dimension, double nom, double 
  * @brief return norm of vector x.
  *
  */
-static double coco_vector_norm(const double *x, size_t dimension) {
+static double coco_vector_norm(const double* x, size_t dimension) {
 
   size_t i;
   double ssum = 0.0;
@@ -1191,7 +1191,7 @@ static double coco_vector_norm(const double *x, size_t dimension) {
  * @brief return scalar product between vectors x and y.
  *
  */
-static double coco_vector_scalar_product(const double *x, const double *y, size_t dimension) {
+static double coco_vector_scalar_product(const double* x, const double* y, size_t dimension) {
 
   size_t i;
   double ssum = 0.0;
@@ -1211,7 +1211,7 @@ static double coco_vector_scalar_product(const double *x, const double *y, size_
  * (up to a chosen precision), the function returns 1. Otherwise, it returns 0.
  * The matrix M must be represented as an array of doubles.
  */
-static int coco_is_orthogonal(const double *M, const size_t nb_rows, const size_t nb_columns) {
+static int coco_is_orthogonal(const double* M, const size_t nb_rows, const size_t nb_columns) {
 
   size_t i, j, z;
   double sum;
@@ -1243,7 +1243,7 @@ static int coco_is_orthogonal(const double *M, const size_t nb_rows, const size_
 /**
  * @brief Returns 1 if the input vector x is (close to) zero and 0 otherwise.
  */
-static int coco_vector_is_zero(const double *x, const size_t dim) {
+static int coco_vector_is_zero(const double* x, const size_t dim) {
   size_t i = 0;
   int is_zero = 1;
 

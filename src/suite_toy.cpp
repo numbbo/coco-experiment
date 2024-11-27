@@ -12,16 +12,16 @@
 #include "f_rosenbrock.cpp"
 #include "f_sphere.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
+static coco_suite_t* coco_suite_allocate(char const* suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t* dimensions,
+                                         char const* default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the toy suite.
  */
-static coco_suite_t *suite_toy_initialize(void) {
+static coco_suite_t* suite_toy_initialize(void) {
 
-  coco_suite_t *suite;
+  coco_suite_t* suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
@@ -39,10 +39,10 @@ static coco_suite_t *suite_toy_initialize(void) {
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
+static coco_problem_t* suite_toy_get_problem(coco_suite_t* suite, const size_t function_idx, const size_t dimension_idx,
                                              const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];

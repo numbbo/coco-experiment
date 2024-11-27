@@ -20,7 +20,7 @@
  * @brief The toy logger data type.
  */
 typedef struct {
-  FILE *log_file;                       /**< @brief Pointer to the file already prepared for logging. */
+  FILE* log_file;                       /**< @brief Pointer to the file already prepared for logging. */
   coco_observer_log_targets_t *targets; /**< @brief Triggers based on logarithmic target values. */
   size_t number_of_evaluations;         /**< @brief The number of evaluations performed so far. */
   int precision_x;                      /**< @brief Precision for outputting decision values. */
@@ -30,7 +30,7 @@ typedef struct {
 /**
  * @brief Frees the memory of the given toy logger.
  */
-static void logger_toy_free(void *stuff) {
+static void logger_toy_free(void* stuff) {
 
   logger_toy_data_t *logger;
 
@@ -47,7 +47,7 @@ static void logger_toy_free(void *stuff) {
  * @brief Evaluates the function, increases the number of evaluations and outputs information based on the
  * targets that have been hit.
  */
-static void logger_toy_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void logger_toy_evaluate(coco_problem_t* problem, const double* x, double* y) {
 
   logger_toy_data_t *logger = (logger_toy_data_t *)coco_problem_transformed_get_data(problem);
   size_t i;
@@ -72,10 +72,10 @@ static void logger_toy_evaluate(coco_problem_t *problem, const double *x, double
 /**
  * @brief Initializes the toy logger.
  */
-static coco_problem_t *logger_toy(coco_observer_t *observer, coco_problem_t *inner_problem) {
+static coco_problem_t* logger_toy(coco_observer_t *observer, coco_problem_t* inner_problem) {
 
   logger_toy_data_t *logger_data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
 
   if (inner_problem->number_of_objectives != 1) {
     coco_warning("logger_toy(): The toy logger shouldn't be used to log a problem with %d objectives",

@@ -16,8 +16,8 @@ typedef struct {
 /**
  * @brief Evaluates the transformed objective function by applying cauchy additive noise.
  */
-static void transform_obj_cauchy_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
+static void transform_obj_cauchy_noise_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
+  coco_problem_t* inner_problem = coco_problem_transformed_get_inner_problem(problem);
   transform_obj_cauchy_noise_data_t *data;
   data = (transform_obj_cauchy_noise_data_t *)coco_problem_transformed_get_data(problem);
   double uniform_indicator, numerator_normal_variate, denominator_normal_variate;
@@ -40,8 +40,8 @@ static void transform_obj_cauchy_noise_evaluate_function(coco_problem_t *problem
 /**
  * @brief Allocates a noisy problem with cauchy noise.
  */
-static coco_problem_t *transform_obj_cauchy_noise(coco_problem_t *inner_problem, const double alpha, const double p) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_obj_cauchy_noise(coco_problem_t* inner_problem, const double alpha, const double p) {
+  coco_problem_t* problem;
   transform_obj_cauchy_noise_data_t *data;
   data = (transform_obj_cauchy_noise_data_t *)coco_allocate_memory(sizeof(*data));
   data->alpha = alpha;

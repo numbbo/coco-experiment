@@ -12,19 +12,19 @@
  * @brief Data type for transform_vars_shift.
  */
 typedef struct {
-  double *offset;
-  double *shifted_x;
+  double* offset;
+  double* shifted_x;
 } transform_vars_shift_data_t;
 
 /**
  * @brief Evaluates the transformed objective function.
  */
-static void transform_vars_shift_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_shift_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
-  double *cons_values;
+  double* cons_values;
   int is_feasible;
   transform_vars_shift_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -53,11 +53,11 @@ static void transform_vars_shift_evaluate_function(coco_problem_t *problem, cons
 /**
  * @brief Evaluates the transformed constraint function.
  */
-static void transform_vars_shift_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
+static void transform_vars_shift_evaluate_constraint(coco_problem_t* problem, const double* x, double* y,
                                                      int update_counter) {
   size_t i;
   transform_vars_shift_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -76,10 +76,10 @@ static void transform_vars_shift_evaluate_constraint(coco_problem_t *problem, co
 /**
  * @brief Evaluates the gradient of the transformed function at x
  */
-static void transform_vars_shift_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_shift_evaluate_gradient(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
   transform_vars_shift_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -98,7 +98,7 @@ static void transform_vars_shift_evaluate_gradient(coco_problem_t *problem, cons
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_shift_free(void *thing) {
+static void transform_vars_shift_free(void* thing) {
   transform_vars_shift_data_t *data = (transform_vars_shift_data_t *)thing;
   coco_free_memory(data->shifted_x);
   coco_free_memory(data->offset);
@@ -110,10 +110,10 @@ static void transform_vars_shift_free(void *thing) {
  * CAVEAT: when shifting the constraint only, the best_value of best_parameter
  *         will get in an inconsistent state.
  */
-static coco_problem_t *transform_vars_shift(coco_problem_t *inner_problem, const double *offset,
+static coco_problem_t* transform_vars_shift(coco_problem_t* inner_problem, const double* offset,
                                             const int shift_constraint_only) {
   transform_vars_shift_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
   size_t i;
 
   data = (transform_vars_shift_data_t *)coco_allocate_memory(sizeof(*data));

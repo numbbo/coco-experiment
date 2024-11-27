@@ -31,16 +31,16 @@
  * @brief Data type for the step ellipsoid problem.
  */
 typedef struct {
-  double *x, *xx;
-  double *xopt, fopt, penalty_scale;
-  double **rot1, **rot2;
+  double* x, *xx;
+  double* xopt, fopt, penalty_scale;
+  double** rot1, **rot2;
 } f_step_ellipsoid_data_t;
 
 /**
  * @brief Implements the step ellipsoid function without connections to any COCO
  * structures.
  */
-static double f_step_ellipsoid_raw(const double *x, const size_t number_of_variables,
+static double f_step_ellipsoid_raw(const double* x, const size_t number_of_variables,
                                    const f_step_ellipsoid_data_t *data) {
 
   static const double condition = 100;
@@ -101,8 +101,8 @@ static double f_step_ellipsoid_raw(const double *x, const size_t number_of_varia
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_step_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
-                                      double *y) {
+static void f_step_ellipsoid_evaluate(coco_problem_t* problem, const double* x,
+                                      double* y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_step_ellipsoid_raw(x, problem->number_of_variables, (f_step_ellipsoid_data_t *)problem->data);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -111,7 +111,7 @@ static void f_step_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Frees the step ellipsoid data object.
  */
-static void f_step_ellipsoid_free(coco_problem_t *problem) {
+static void f_step_ellipsoid_free(coco_problem_t* problem) {
   f_step_ellipsoid_data_t *data;
   data = (f_step_ellipsoid_data_t *)problem->data;
   coco_free_memory(data->x);
@@ -130,14 +130,14 @@ static void f_step_ellipsoid_free(coco_problem_t *problem) {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_t *f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                              const size_t instance, const long rseed, const void *args,
-                                                              const char *problem_id_template,
-                                                              const char *problem_name_template) {
+static coco_problem_t* f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                              const size_t instance, const long rseed, const void* args,
+                                                              char const* problem_id_template,
+                                                              char const* problem_name_template) {
 
   f_step_ellipsoid_data_t *data;
   size_t i;
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("step ellipsoid function", f_step_ellipsoid_evaluate,
+  coco_problem_t* problem = coco_problem_allocate_from_scalars("step ellipsoid function", f_step_ellipsoid_evaluate,
                                                                f_step_ellipsoid_free, dimension, -5.0, 5.0, 0);
 
   data = (f_step_ellipsoid_data_t *)coco_allocate_memory(sizeof(*data));
@@ -184,7 +184,7 @@ static coco_problem_t *f_step_ellipsoid_bbob_problem_allocate(const size_t funct
  * @brief Implements the step ellipsoid function without connections to any COCO
  * structures.
  */
-static double f_step_ellipsoid_core(const double *x, const size_t number_of_variables,
+static double f_step_ellipsoid_core(const double* x, const size_t number_of_variables,
                                     f_step_ellipsoid_versatile_data_t *f_step_ellipsoid_versatile_data) {
 
   static const double condition = 100;
@@ -205,8 +205,8 @@ static double f_step_ellipsoid_core(const double *x, const size_t number_of_vari
 /**
  * @brief Uses the raw function to evaluate the ls COCO problem.
  */
-static void f_step_ellipsoid_permblock_evaluate(coco_problem_t *problem,
-                                                const double *x, double *y) {
+static void f_step_ellipsoid_permblock_evaluate(coco_problem_t* problem,
+                                                const double* x, double* y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_step_ellipsoid_core(x, problem->number_of_variables,
                                (f_step_ellipsoid_versatile_data_t *)problem->versatile_data);
@@ -216,7 +216,7 @@ static void f_step_ellipsoid_permblock_evaluate(coco_problem_t *problem,
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
-static void f_step_ellipsoid_versatile_data_free(coco_problem_t *problem) {
+static void f_step_ellipsoid_versatile_data_free(coco_problem_t* problem) {
   coco_free_memory((f_step_ellipsoid_versatile_data_t *)problem->versatile_data);
   problem->versatile_data = nullptr;
   problem->problem_free_function = nullptr;
@@ -228,9 +228,9 @@ static void f_step_ellipsoid_versatile_data_free(coco_problem_t *problem) {
  * an additional coordinate is added that will contain the value of \hat{z}_1 but that is ignored by functions other
  * that f_step_ellipsoid_core and transform_vars_round_step. The latter sets it.
  */
-static coco_problem_t *f_step_ellipsoid_allocate(const size_t number_of_variables) {
+static coco_problem_t* f_step_ellipsoid_allocate(const size_t number_of_variables) {
 
-  coco_problem_t *problem = coco_problem_allocate_from_scalars(
+  coco_problem_t* problem = coco_problem_allocate_from_scalars(
       "step ellipsoid function", f_step_ellipsoid_permblock_evaluate, nullptr, number_of_variables, -5.0, 5.0, 0.0);
   problem->versatile_data =
       (f_step_ellipsoid_versatile_data_t *)coco_allocate_memory(sizeof(f_step_ellipsoid_versatile_data_t));
@@ -251,19 +251,19 @@ static coco_problem_t *f_step_ellipsoid_allocate(const size_t number_of_variable
  * Wassim: TODO: make the zhat1 value default to x1 when no transformation is
  * applied and the data type defined here
  */
-static coco_problem_t *f_step_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function,
+static coco_problem_t* f_step_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function,
                                                                             const size_t dimension,
                                                                             const size_t instance, const long rseed,
-                                                                            const char *problem_id_template,
-                                                                            const char *problem_name_template) {
+                                                                            char const* problem_id_template,
+                                                                            char const* problem_name_template) {
   double alpha = 10.; /*parameter of rounding*/
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
-  double **B1, **B2;
-  const double *const *B1_copy;
-  const double *const *B2_copy;
-  size_t *P11, *P12, *P21, *P22;
-  size_t *block_sizes1, *block_sizes2, nb_blocks1, nb_blocks2, swap_range1,
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
+  double** B1, **B2;
+  const double* const* B1_copy;
+  const double* const* B2_copy;
+  size_t* P11, *P12, *P21, *P22;
+  size_t* block_sizes1, *block_sizes2, nb_blocks1, nb_blocks2, swap_range1,
       swap_range2, nb_swaps1, nb_swaps2;
   double penalty_factor = 1.;
 
@@ -284,8 +284,8 @@ static coco_problem_t *f_step_ellipsoid_permblockdiag_bbob_problem_allocate(cons
 
   B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
   B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);
-  B1_copy = (const double *const *)B1;
-  B2_copy = (const double *const *)B2;
+  B1_copy = (const double* const* )B1;
+  B2_copy = (const double* const* )B2;
   coco_compute_blockrotation(B1, rseed + 1000000, dimension, block_sizes1,
                              nb_blocks1);
   coco_compute_blockrotation(B2, rseed, dimension, block_sizes2, nb_blocks2);

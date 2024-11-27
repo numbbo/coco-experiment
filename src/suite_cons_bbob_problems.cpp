@@ -19,9 +19,9 @@
  * by a random vector in order to move the optimal solution away
  * from the origin.
  *
- * ***************************************************
+ ** **************************************************
  * General idea for building the constrained functions
- * ***************************************************
+ ** **************************************************
  *
  * 1. Choose a bbob function f whose raw version is pseudoconvex
  *    to be the objective function. (see note below)
@@ -66,9 +66,9 @@
  * @note The testbed provides the user an initial solution which is given
  *       by the feasible direction p scaled by some constant.
  *
- * *************************************************
+ ** ************************************************
  * COCO data structure for the constrained functions
- * *************************************************
+ ** ************************************************
  *
  * First, we create a coco_problem_t object for the objective function.
  * Then, coco_problem_t objects are created for each constraint and
@@ -136,7 +136,7 @@ static size_t nb_of_linear_constraints(const size_t function, const size_t dimen
  *
  *
  */
-static void feasible_direction_set_length(double *feasible_direction, const double *xopt, size_t dimension,
+static void feasible_direction_set_length(double* feasible_direction, const double* xopt, size_t dimension,
                                           long rseed) {
   const long seed_offset = 412;    /* was sampled uniform in 0-999 */
   const double feas_shrink = 0.75; /* scale randomly between 0.75 and 1.0 */
@@ -164,19 +164,19 @@ static void feasible_direction_set_length(double *feasible_direction, const doub
  * @brief Objective function: sphere
  *        Constraint(s): linear
  */
-static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance,
                                                                     const size_t number_of_linear_constraints,
-                                                                    const long rseed, double *feasible_direction,
-                                                                    const double *xopt, const char *problem_id_template,
-                                                                    const char *problem_name_template) {
+                                                                    const long rseed, double* feasible_direction,
+                                                                    const double* xopt, char const* problem_id_template,
+                                                                    char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  char *problem_type_temp = nullptr;
-  double *all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -232,18 +232,18 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
  * @brief Objective function: ellipsoid
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_t* 
 f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                 const size_t number_of_linear_constraints, const long rseed,
-                                                double *feasible_direction, const double *xopt,
-                                                const char *problem_id_template, const char *problem_name_template) {
+                                                double* feasible_direction, const double* xopt,
+                                                char const* problem_id_template, char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  char *problem_type_temp = nullptr;
-  double *all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -307,17 +307,17 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
  * @brief Objective function: rotated ellipsoid
  *        Constraint(s): linear
  */
-static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
+static coco_problem_t* f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
-    const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
-    const char *problem_name_template) {
+    const long rseed, double* feasible_direction, const double* xopt, char const* problem_id_template,
+    char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  char *problem_type_temp = nullptr;
-  double *all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -380,18 +380,18 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
  * @brief Objective function: linear slope
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_t* 
 f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                    const size_t number_of_linear_constraints, const long rseed,
-                                                   double *feasible_direction, const double *xopt,
-                                                   const char *problem_id_template, const char *problem_name_template) {
+                                                   double* feasible_direction, const double* xopt,
+                                                   char const* problem_id_template, char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  char *problem_type_temp = nullptr;
-  double *all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -452,19 +452,19 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
  * @brief Objective function: discus
  *        Constraint(s): linear
  */
-static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance,
                                                                     const size_t number_of_linear_constraints,
-                                                                    const long rseed, double *feasible_direction,
-                                                                    const double *xopt, const char *problem_id_template,
-                                                                    const char *problem_name_template) {
+                                                                    const long rseed, double* feasible_direction,
+                                                                    const double* xopt, char const* problem_id_template,
+                                                                    char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  char *problem_type_temp = nullptr;
-  double *all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -527,18 +527,18 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
  * @brief Objective function: bent cigar
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_t* 
 f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                  const size_t number_of_linear_constraints, const long rseed,
-                                                 double *feasible_direction, const double *xopt,
-                                                 const char *problem_id_template, const char *problem_name_template) {
+                                                 double* feasible_direction, const double* xopt,
+                                                 char const* problem_id_template, char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  char *problem_type_temp = nullptr;
-  double *all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -601,17 +601,17 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
  * @brief Objective function: different powers
  *        Constraint(s): linear
  */
-static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
+static coco_problem_t* f_different_powers_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
-    const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
-    const char *problem_name_template) {
+    const long rseed, double* feasible_direction, const double* xopt, char const* problem_id_template,
+    char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  char *problem_type_temp = nullptr;
-  double *all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -671,18 +671,18 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
  * @brief Objective function: rastrigin
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_t* 
 f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                 const size_t number_of_linear_constraints, const long rseed,
-                                                double *feasible_direction, const double *xopt,
-                                                const char *problem_id_template, const char *problem_name_template) {
+                                                double* feasible_direction, const double* xopt,
+                                                char const* problem_id_template, char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  double *all_zeros = nullptr;
-  char *problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 
@@ -746,17 +746,17 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
  * @brief Objective function: rastrigin
  *        Constraint(s): linear
  */
-static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
+static coco_problem_t* f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
-    const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
-    const char *problem_name_template) {
+    const long rseed, double* feasible_direction, const double* xopt, char const* problem_id_template,
+    char const* problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem_c = nullptr;
 
-  double *all_zeros = nullptr;
-  char *problem_type_temp = nullptr;
+  double* all_zeros = nullptr;
+  char* problem_type_temp = nullptr;
 
   all_zeros = coco_allocate_vector(dimension);
 

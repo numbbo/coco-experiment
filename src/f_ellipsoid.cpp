@@ -29,7 +29,7 @@ typedef struct {
  * @brief Implements the ellipsoid function without connections to any COCO
  * structures.
  */
-static double f_ellipsoid_raw(const double *x, const size_t number_of_variables, f_ellipsoid_data_t *data) {
+static double f_ellipsoid_raw(const double* x, const size_t number_of_variables, f_ellipsoid_data_t *data) {
 
   size_t i = 0;
   double result;
@@ -49,8 +49,8 @@ static double f_ellipsoid_raw(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
-                                 double *y) {
+static void f_ellipsoid_evaluate(coco_problem_t* problem, const double* x,
+                                 double* y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_ellipsoid_raw(x, problem->number_of_variables, (f_ellipsoid_data_t *)problem->data);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -59,7 +59,7 @@ static void f_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Evaluates the gradient of the ellipsoid function.
  */
-static void f_ellipsoid_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+static void f_ellipsoid_evaluate_gradient(coco_problem_t* problem, const double* x, double* y) {
 
   double exponent;
   size_t i = 0;
@@ -73,9 +73,9 @@ static void f_ellipsoid_evaluate_gradient(coco_problem_t *problem, const double 
 /**
  * @brief Allocates the basic ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_allocate(const size_t number_of_variables, const double conditioning) {
+static coco_problem_t* f_ellipsoid_allocate(const size_t number_of_variables, const double conditioning) {
 
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("ellipsoid function", f_ellipsoid_evaluate, nullptr,
+  coco_problem_t* problem = coco_problem_allocate_from_scalars("ellipsoid function", f_ellipsoid_evaluate, nullptr,
                                                                number_of_variables, -5.0, 5.0, 0.0);
   problem->evaluate_gradient = f_ellipsoid_evaluate_gradient;
   coco_problem_set_id(problem, "%s_d%02lu", "ellipsoid", number_of_variables);
@@ -91,12 +91,12 @@ static coco_problem_t *f_ellipsoid_allocate(const size_t number_of_variables, co
 /**
  * @brief Creates the BBOB ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                          const size_t instance, const long rseed,
-                                                         const char *problem_id_template,
-                                                         const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
+                                                         char const* problem_id_template,
+                                                         char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -129,18 +129,18 @@ static coco_problem_t *f_ellipsoid_bbob_problem_allocate(const size_t function, 
 /**
  * @brief Creates the BBOB rotated ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_ellipsoid_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                  const size_t instance, const long rseed,
-                                                                 const void *args, const char *problem_id_template,
-                                                                 const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
+                                                                 const void* args, char const* problem_id_template,
+                                                                 char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
 
   f_ellipsoid_args_t *f_ellipsoid_args;
   f_ellipsoid_args = ((f_ellipsoid_args_t *)args);
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double **rot1;
+  double* M = coco_allocate_vector(dimension * dimension);
+  double* b = coco_allocate_vector(dimension);
+  double** rot1;
 
   double conditioning = f_ellipsoid_args->conditioning;
   xopt = coco_allocate_vector(dimension);
@@ -173,17 +173,17 @@ static coco_problem_t *f_ellipsoid_rotated_bbob_problem_allocate(const size_t fu
 /**
  * @brief Creates the BBOB permuted block-rotated ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                        const size_t instance, const long rseed,
-                                                                       const char *problem_id_template,
-                                                                       const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
-  double **B;
-  const double *const *B_copy;
-  size_t *P1 = coco_allocate_vector_size_t(dimension);
-  size_t *P2 = coco_allocate_vector_size_t(dimension);
-  size_t *block_sizes;
+                                                                       char const* problem_id_template,
+                                                                       char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
+  double** B;
+  const double* const* B_copy;
+  size_t* P1 = coco_allocate_vector_size_t(dimension);
+  size_t* P2 = coco_allocate_vector_size_t(dimension);
+  size_t* block_sizes;
   size_t nb_blocks;
   size_t swap_range;
   size_t nb_swaps;
@@ -202,7 +202,7 @@ static coco_problem_t *f_ellipsoid_permblockdiag_bbob_problem_allocate(const siz
 
   B = coco_allocate_blockmatrix(dimension, block_sizes, nb_blocks);
   coco_compute_blockrotation(B, rseed + 1000000, dimension, block_sizes, nb_blocks);
-  B_copy = (const double *const *)
+  B_copy = (const double* const* )
       B; /*TODO: silences the warning, not sure if it prevents the modification of B at all levels. Check everywhere*/
 
   coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, dimension, nb_swaps, swap_range);
@@ -234,12 +234,12 @@ static coco_problem_t *f_ellipsoid_permblockdiag_bbob_problem_allocate(const siz
 /**
  * @brief Creates the ellipsoid problem for the constrained BBOB suite
  */
-static coco_problem_t *f_ellipsoid_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_ellipsoid_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                               const size_t instance, const long rseed,
-                                                              const char *problem_id_template,
-                                                              const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
+                                                              char const* problem_id_template,
+                                                              char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -267,16 +267,16 @@ static coco_problem_t *f_ellipsoid_cons_bbob_problem_allocate(const size_t funct
  * @brief Creates the rotated ellipsoid problem for the constrained
  *        BBOB suite
  */
-static coco_problem_t *f_ellipsoid_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_ellipsoid_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                       const size_t instance, const long rseed,
-                                                                      const char *problem_id_template,
-                                                                      const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
+                                                                      char const* problem_id_template,
+                                                                      char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
 
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double **rot1;
+  double* M = coco_allocate_vector(dimension * dimension);
+  double* b = coco_allocate_vector(dimension);
+  double** rot1;
 
   xopt = coco_allocate_vector(dimension);
   if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {

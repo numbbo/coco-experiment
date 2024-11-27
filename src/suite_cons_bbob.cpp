@@ -9,16 +9,16 @@
 #include "suite_cons_bbob_problems.cpp"
 #include "transform_obj_scale.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
+static coco_suite_t* coco_suite_allocate(char const* suite_name, const size_t number_of_functions,
+                                         const size_t number_of_dimensions, const size_t* dimensions,
+                                         char const* default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob suite.
  */
-static coco_suite_t *suite_cons_bbob_initialize(const char *suite_name) {
+static coco_suite_t* suite_cons_bbob_initialize(char const* suite_name) {
 
-  coco_suite_t *suite;
+  coco_suite_t* suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
@@ -32,7 +32,7 @@ static coco_suite_t *suite_cons_bbob_initialize(const char *suite_name) {
  * @brief Sets the instances associated with years for the constrained
  *        bbob suite.
  */
-static const char *suite_cons_bbob_get_instances_by_year(const int year) {
+static char const* suite_cons_bbob_get_instances_by_year(const int year) {
 
   if ((year >= 2022) || (year == 0)) {
     return "1-15";
@@ -47,18 +47,18 @@ static const char *suite_cons_bbob_get_instances_by_year(const int year) {
 /**
  * @brief Creates and returns a constrained BBOB problem.
  */
-static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const size_t function, const size_t dimension,
+static coco_problem_t* coco_get_cons_bbob_problem(char const* suite_name, const size_t function, const size_t dimension,
                                                   const size_t instance) {
 
   size_t number_of_linear_constraints;
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
 
-  double *feasible_direction = coco_allocate_vector(dimension);
-  double *xopt = coco_allocate_vector(dimension);
+  double* feasible_direction = coco_allocate_vector(dimension);
+  double* xopt = coco_allocate_vector(dimension);
   long rseed = (long)(function + 10000 * instance);
 
-  const char *problem_id_template = "bbob-constrained_f%03lu_i%02lu_d%02lu";
-  const char *problem_name_template = "bbob-constrained suite problem f%lu instance %lu in %luD";
+  char const* problem_id_template = "bbob-constrained_f%03lu_i%02lu_d%02lu";
+  char const* problem_name_template = "bbob-constrained suite problem f%lu instance %lu in %luD";
   if (strcmp(suite_name, "bbob-constrained-active-only") == 0) {
     /* CAVEAT: the first 28 chars of this ID are used in c_linear_cons_bbob_problem_allocate()
      * in c_linear.c to make the decision whether inactive constraints are added */
@@ -167,10 +167,10 @@ static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const 
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
+static coco_problem_t* suite_cons_bbob_get_problem(coco_suite_t* suite, const size_t function_idx,
                                                    const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];

@@ -25,13 +25,13 @@ static double tcomp_uv_inv(double yi, tasy_data *dasy, tosz_data *dosz) {
  *        xopt is needed because transform_vars_shift is not yet called
  *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
  */
-static void transform_inv_initial_composed(coco_problem_t *problem, const double *xopt) {
+static void transform_inv_initial_composed(coco_problem_t* problem, const double* xopt) {
   size_t i;
   size_t j;
   int is_in_bounds;
   double di;
   double xi;
-  double *sol = nullptr;
+  double* sol = nullptr;
   double halving_factor = .5;
 
   transform_vars_asymmetric_data_t *data_asy;
@@ -40,7 +40,7 @@ static void transform_inv_initial_composed(coco_problem_t *problem, const double
   transform_vars_oscillate_data_t *data_osz;
   tosz_data *dosz;
 
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   sol = coco_allocate_vector(problem->number_of_variables);

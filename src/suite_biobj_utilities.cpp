@@ -28,7 +28,7 @@ static const size_t suite_biobj_instances[][3] = {{1, 2, 4},    {2, 3, 5},    {3
  */
 typedef struct {
 
-  size_t **new_instances; /**< @brief A matrix of new instances (equal in form to suite_biobj_instances)
+  size_t** new_instances; /**< @brief A matrix of new instances (equal in form to suite_biobj_instances)
                                 that needs to be used only when an instance that is not in
                                 suite_biobj_instances is being invoked. */
 
@@ -39,7 +39,7 @@ typedef struct {
 /**
  * @brief  Frees the memory of the given suite_biobj_new_inst_t object.
  */
-static void suite_biobj_new_inst_free(void *stuff) {
+static void suite_biobj_new_inst_free(void* stuff) {
 
   suite_biobj_new_inst_t *data;
   size_t i;
@@ -65,11 +65,11 @@ static void suite_biobj_new_inst_free(void *stuff) {
  */
 static int suite_biobj_check_inst_consistency(const size_t dimension, size_t function1, size_t instance1,
                                               size_t function2, size_t instance2) {
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem1, *problem2;
+  coco_problem_t* problem = nullptr;
+  coco_problem_t* problem1, *problem2;
   int break_search = 0;
   double norm;
-  double *smallest_values_of_interest, *largest_values_of_interest;
+  double* smallest_values_of_interest, *largest_values_of_interest;
   const double apart_enough = 1e-4;
 
   problem1 = coco_get_bbob_problem(function1, dimension, instance1);
@@ -124,9 +124,9 @@ static int suite_biobj_check_inst_consistency(const size_t dimension, size_t fun
  * coco_warning, so that the user can see it and eventually manually add it to suite_biobj_instances.
  */
 static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data, const size_t instance,
-                                           const size_t instance1, const size_t *bbob_functions,
-                                           const size_t num_bbob_functions, const size_t *sel_bbob_functions,
-                                           const size_t num_sel_bbob_functions, const size_t *dimensions,
+                                           const size_t instance1, const size_t* bbob_functions,
+                                           const size_t num_bbob_functions, const size_t* sel_bbob_functions,
+                                           const size_t num_sel_bbob_functions, const size_t* dimensions,
                                            const size_t num_dimensions) {
 
   size_t instance2 = 0;
@@ -237,10 +237,10 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_t dimension, const size_t instance,
+static coco_problem_t* coco_get_biobj_problem(const size_t function, const size_t dimension, const size_t instance,
                                               const coco_get_problem_function_t coco_get_problem_function,
                                               suite_biobj_new_inst_t **new_inst_data, const size_t num_new_instances,
-                                              const size_t *dimensions, const size_t num_dimensions) {
+                                              const size_t* dimensions, const size_t num_dimensions) {
 
   /* Selected functions from the bbob suite that are used to construct the original bbob-biobj suite. */
   const size_t sel_bbob_functions[] = {1, 2, 6, 8, 13, 14, 15, 17, 20, 21};
@@ -250,7 +250,7 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
                                        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
   const size_t num_all_bbob_functions = 24;
 
-  coco_problem_t *problem1 = nullptr, *problem2 = nullptr, *problem = nullptr;
+  coco_problem_t* problem1 = nullptr, *problem2 = nullptr, *problem = nullptr;
   size_t instance1 = 0, instance2 = 0;
   size_t function1_idx, function2_idx;
   const size_t function_idx = function - 1;
@@ -259,8 +259,8 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
   const size_t num_existing_instances = sizeof(suite_biobj_instances) / sizeof(suite_biobj_instances[0]);
   int instance_found = 0;
 
-  double *smallest_values_of_interest = coco_allocate_vector_with_value(dimension, -100);
-  double *largest_values_of_interest = coco_allocate_vector_with_value(dimension, 100);
+  double* smallest_values_of_interest = coco_allocate_vector_with_value(dimension, -100);
+  double* largest_values_of_interest = coco_allocate_vector_with_value(dimension, 100);
 
   /* Determine the corresponding single-objective function indices */
   if (function_idx < 55) {
@@ -426,9 +426,9 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
       (*new_inst_data)->max_new_instances = num_new_instances;
 
       (*new_inst_data)->new_instances =
-          (size_t **)coco_allocate_memory((*new_inst_data)->max_new_instances * sizeof(size_t *));
+          (size_t** )coco_allocate_memory((*new_inst_data)->max_new_instances * sizeof(size_t* ));
       for (i = 0; i < (*new_inst_data)->max_new_instances; i++) {
-        (*new_inst_data)->new_instances[i] = (size_t *)malloc(3 * sizeof(size_t));
+        (*new_inst_data)->new_instances[i] = (size_t* )malloc(3 * sizeof(size_t));
         for (j = 0; j < 3; j++) {
           (*new_inst_data)->new_instances[i][j] = 0;
         }
@@ -483,16 +483,16 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
  * If a suite does not have known optima or it has known optima but the key is not found,
  * the default value is used.
  */
-static void suite_biobj_get_best_hyp_value(const int known_optima, const char *key, double *value) {
+static void suite_biobj_get_best_hyp_value(const int known_optima, char const* key, double* value) {
 
   static const double default_value = 1.0;
   size_t i, count;
-  char *curr_key;
+  char* curr_key;
   *value = default_value;
 
   if (known_optima) {
     curr_key = coco_allocate_string(COCO_PATH_MAX + 1);
-    count = sizeof(suite_biobj_best_values_hyp) / sizeof(char *);
+    count = sizeof(suite_biobj_best_values_hyp) / sizeof(char* );
     for (i = 0; i < count; i++) {
       sscanf(suite_biobj_best_values_hyp[i], "%s %lf", curr_key, value);
       if (strcmp(curr_key, key) == 0) {

@@ -76,7 +76,7 @@ typedef struct {
   /* Second trigger */
   size_t value2;            /**< @brief The next value for the second trigger. */
   size_t exponent2;         /**< @brief Exponent used to compute the second trigger. */
-  size_t *base_evaluations; /**< @brief The base evaluation numbers used to
+  size_t* base_evaluations; /**< @brief The base evaluation numbers used to
                                compute the actual evaluation numbers that
                                trigger logging. */
   size_t base_count;        /**< @brief The number of base evaluations. */
@@ -239,9 +239,9 @@ static int coco_observer_lin_targets_trigger(coco_observer_lin_targets_t *lin_ta
  * are used only if the suite has a known optimum. The linear targets are always
  * used.
  */
-static coco_observer_targets_t *coco_observer_targets(const int optima_known, const double lin_precision,
+static coco_observer_targets_t* coco_observer_targets(const int optima_known, const double lin_precision,
                                                       const size_t number_of_targets, const double log_precision) {
-  coco_observer_targets_t *targets = (coco_observer_targets_t *)coco_allocate_memory(sizeof(*targets));
+  coco_observer_targets_t* targets = (coco_observer_targets_t* )coco_allocate_memory(sizeof(*targets));
   targets->use_log_targets = (number_of_targets > 0) && optima_known;
   targets->lin_targets = coco_observer_lin_targets(lin_precision);
   if (targets->use_log_targets)
@@ -254,7 +254,7 @@ static coco_observer_targets_t *coco_observer_targets(const int optima_known, co
 /**
  * @brief Computes and returns whether the given value should trigger logging.
  */
-static int coco_observer_targets_trigger(coco_observer_targets_t *targets, const double given_value) {
+static int coco_observer_targets_trigger(coco_observer_targets_t* targets, const double given_value) {
 
   int log_trigger = coco_observer_log_targets_trigger(targets->log_targets, given_value);
   int lin_trigger = coco_observer_lin_targets_trigger(targets->lin_targets, given_value);
@@ -264,7 +264,7 @@ static int coco_observer_targets_trigger(coco_observer_targets_t *targets, const
 /**
  * @brief Returns the last triggered target.
  */
-static double coco_observer_targets_get_last_target(coco_observer_targets_t *targets) {
+static double coco_observer_targets_get_last_target(coco_observer_targets_t* targets) {
   assert(targets->lin_targets);
   double last_target = ((coco_observer_lin_targets_t *)targets->lin_targets)->value;
 
@@ -281,7 +281,7 @@ static double coco_observer_targets_get_last_target(coco_observer_targets_t *tar
 /**
  * @brief Frees the given targets object.
  */
-static void coco_observer_targets_free(coco_observer_targets_t *targets) {
+static void coco_observer_targets_free(coco_observer_targets_t* targets) {
 
   assert(targets);
   coco_free_memory(targets->lin_targets);
@@ -316,9 +316,9 @@ static void coco_observer_targets_free(coco_observer_targets_t *targets) {
  * dim*1, dim*2, dim*5, 10*dim*1, 10*dim*2, 10*dim*5, 100*dim*1, 100*dim*2,
  * 100*dim*5, ...
  */
-static coco_observer_evaluations_t *coco_observer_evaluations(const char *base_evaluations, const size_t dimension) {
+static coco_observer_evaluations_t* coco_observer_evaluations(char const* base_evaluations, const size_t dimension) {
 
-  coco_observer_evaluations_t *evaluations = (coco_observer_evaluations_t *)coco_allocate_memory(sizeof(*evaluations));
+  coco_observer_evaluations_t* evaluations = (coco_observer_evaluations_t* )coco_allocate_memory(sizeof(*evaluations));
 
   /* First trigger */
   evaluations->value1 = 1;
@@ -345,7 +345,7 @@ static coco_observer_evaluations_t *coco_observer_evaluations(const char *base_e
  * The second condition is:
  * evaluation_number == 10**(exponent1/number_of_triggers)
  */
-static int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t *evaluations,
+static int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t* evaluations,
                                                    const size_t evaluation_number) {
 
   assert(evaluations);
@@ -371,7 +371,7 @@ static int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t *
  * evaluation_number == base_evaluation[base_index] * dimension *
  * (10**exponent2)
  */
-static int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t *evaluations,
+static int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t* evaluations,
                                                     const size_t evaluation_number) {
 
   assert(evaluations);
@@ -400,7 +400,7 @@ static int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t 
  * - every 10**(exponent1/number_of_triggers) for exponent1 >= 0
  * - every base_evaluation * dimension * (10**exponent2) for exponent2 >= 0
  */
-static int coco_observer_evaluations_trigger(coco_observer_evaluations_t *evaluations, const size_t evaluation_number) {
+static int coco_observer_evaluations_trigger(coco_observer_evaluations_t* evaluations, const size_t evaluation_number) {
 
   /* Both functions need to be called so that both triggers are correctly
    * updated */
@@ -413,7 +413,7 @@ static int coco_observer_evaluations_trigger(coco_observer_evaluations_t *evalua
 /**
  * @brief Frees the given evaluations object.
  */
-static void coco_observer_evaluations_free(coco_observer_evaluations_t *evaluations) {
+static void coco_observer_evaluations_free(coco_observer_evaluations_t* evaluations) {
 
   assert(evaluations);
   coco_free_memory(evaluations->base_evaluations);
@@ -428,9 +428,9 @@ static void coco_observer_evaluations_free(coco_observer_evaluations_t *evaluati
  * @brief Allocates memory for a coco_observer_t instance.
  */
 static coco_observer_t *coco_observer_allocate(
-    const char *result_folder, const char *observer_name, const char *algorithm_name, const char *algorithm_info,
+    char const* result_folder, char const* observer_name, char const* algorithm_name, char const* algorithm_info,
     const size_t number_target_triggers, const double log_target_precision, const double lin_target_precision,
-    const size_t number_evaluation_triggers, const char *base_evaluation_triggers, const int precision_x,
+    const size_t number_evaluation_triggers, char const* base_evaluation_triggers, const int precision_x,
     const int precision_f, const int precision_g, const int log_discrete_as_int) {
 
   coco_observer_t *observer;
@@ -504,7 +504,7 @@ void coco_observer_free(coco_observer_t *observer) {
  * problems with known optima, which creates *.info, *.dat, *.tdat and *.rdat
  * files and logs the distance to the optimum.
  * - "bbob-biobj" is the observer for bi-objective problems, which creates
- * *.info, *.dat and *.tdat files for the given indicators, as well as an
+ ** .info, *.dat and *.tdat files for the given indicators, as well as an
  * archive folder with *.adat files containing nondominated solutions.
  * - "rw" is an observer for single- and bi-objective real-world problems that
  * logs all information (can be configured to long only some information) and
@@ -563,23 +563,23 @@ void coco_observer_free(coco_observer_t *observer) {
  * @return The constructed observer object or nullptr if observer_name equals nullptr,
  * "" or "no_observer".
  */
-coco_observer_t *coco_observer(const char *observer_name, const char *observer_options) {
+coco_observer_t *coco_observer(char const* observer_name, char const* observer_options) {
 
   coco_observer_t *observer;
-  char *path, *outer_folder, *result_folder, *algorithm_name, *algorithm_info;
+  char* path, *outer_folder, *result_folder, *algorithm_name, *algorithm_info;
   int precision_x, precision_f, precision_g, log_discrete_as_int;
 
   size_t number_target_triggers;
   size_t number_evaluation_triggers;
   double log_target_precision, lin_target_precision;
-  char *base_evaluation_triggers;
+  char* base_evaluation_triggers;
 
-  coco_option_keys_t *known_option_keys, *given_option_keys, *additional_option_keys, *redundant_option_keys;
+  coco_option_keys_t* known_option_keys, *given_option_keys, *additional_option_keys, *redundant_option_keys;
 
   /* Sets the valid keys for observer options
    * IMPORTANT: This list should be up-to-date with the code and the
    * documentation */
-  const char *known_keys[] = {"outer_folder",
+  char const* known_keys[] = {"outer_folder",
                               "result_folder",
                               "algorithm_name",
                               "algorithm_info",
@@ -764,7 +764,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
   }
 
   /* Check for redundant option keys */
-  known_option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
+  known_option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
   coco_option_keys_add(&known_option_keys, additional_option_keys);
   given_option_keys = coco_option_keys(observer_options);
 
@@ -774,9 +774,9 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
     if ((redundant_option_keys) && (redundant_option_keys->count > 0)) {
       /* Warn the user that some of given options are being ignored and output
        * the valid options */
-      char *output_redundant = coco_option_keys_get_output_string(
+      char* output_redundant = coco_option_keys_get_output_string(
           redundant_option_keys, "coco_observer(): Some keys in observer options were ignored:\n");
-      char *output_valid =
+      char* output_valid =
           coco_option_keys_get_output_string(known_option_keys, "Valid keys for observer options are:\n");
       coco_warning("%s%s", output_redundant, output_valid);
       coco_free_memory(output_redundant);
@@ -802,7 +802,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
  * @return The observed problem in the form of a new COCO problem instance or
  * the same problem if the observer is nullptr.
  */
-coco_problem_t *coco_problem_add_observer(coco_problem_t *problem, coco_observer_t *observer) {
+coco_problem_t* coco_problem_add_observer(coco_problem_t* problem, coco_observer_t *observer) {
 
   if (! problem)
     return nullptr;
@@ -826,10 +826,10 @@ coco_problem_t *coco_problem_add_observer(coco_problem_t *problem, coco_observer
  * @return The unobserved problem as a pointer to the inner problem or the same
  * problem if the problem was not observed.
  */
-coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_observer_t *observer) {
+coco_problem_t* coco_problem_remove_observer(coco_problem_t* problem, coco_observer_t *observer) {
 
-  coco_problem_t *problem_unobserved;
-  char *prefix;
+  coco_problem_t* problem_unobserved;
+  char* prefix;
 
   if ((!observer) || (observer->is_active == 0)) {
     coco_warning("coco_problem_remove_observer(): The problem was not observed. %s",
@@ -867,7 +867,7 @@ coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_obser
  *
  * @return The result folder name, where the logger writes its output.
  */
-const char *coco_observer_get_result_folder(const coco_observer_t *observer) {
+char const* coco_observer_get_result_folder(const coco_observer_t *observer) {
   if (!observer) {
     coco_warning("coco_observer_get_result_folder(): no observer to get "
                  "result_folder from");
@@ -887,7 +887,7 @@ const char *coco_observer_get_result_folder(const coco_observer_t *observer) {
  * @param problem The observed COCO problem.
  * @param observer The COCO observer that will record the restart information.
  */
-void coco_observer_signal_restart(coco_observer_t *observer, coco_problem_t *problem) {
+void coco_observer_signal_restart(coco_observer_t *observer, coco_problem_t* problem) {
 
   if ((!observer) || (observer->is_active == 0)) {
     coco_warning("coco_observer_signal_restart(): The problem is not being observed. %s",

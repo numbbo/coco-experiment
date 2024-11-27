@@ -17,7 +17,7 @@
  * @brief Data type for transform_vars_asymmetric.
  */
 typedef struct {
-  double *x;
+  double* x;
   double beta;
 } transform_vars_asymmetric_data_t;
 
@@ -57,7 +57,7 @@ static double tasy_uv_inv(double yi, tasy_data *d) {
 /**
  * @brief Multivariate, coordinate-wise, asymmetric non-linear transformation.
  */
-static void tasy(transform_vars_asymmetric_data_t *data, const double *x, size_t number_of_variables) {
+static void tasy(transform_vars_asymmetric_data_t *data, const double* x, size_t number_of_variables) {
   size_t i;
   tasy_data *d;
   d = (tasy_data*)coco_allocate_memory(sizeof(*d));
@@ -75,12 +75,12 @@ static void tasy(transform_vars_asymmetric_data_t *data, const double *x, size_t
 /**
  * @brief Evaluates the transformed function.
  */
-static void transform_vars_asymmetric_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_asymmetric_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
 
-  double *cons_values;
+  double* cons_values;
   int is_feasible;
   transform_vars_asymmetric_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -107,12 +107,12 @@ static void transform_vars_asymmetric_evaluate_function(coco_problem_t *problem,
 /**
  * @brief Evaluates the transformed constraint.
  */
-static void transform_vars_asymmetric_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
+static void transform_vars_asymmetric_evaluate_constraint(coco_problem_t* problem, const double* x, double* y,
                                                           int update_counter) {
   size_t i;
   double exponent;
   transform_vars_asymmetric_data_t *data;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_constraints(problem));
@@ -139,7 +139,7 @@ static void transform_vars_asymmetric_evaluate_constraint(coco_problem_t *proble
   inner_problem->evaluate_constraint(inner_problem, data->x, y, update_counter);
 }
 
-static void transform_vars_asymmetric_free(void *thing) {
+static void transform_vars_asymmetric_free(void* thing) {
   transform_vars_asymmetric_data_t *data = (transform_vars_asymmetric_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -147,9 +147,9 @@ static void transform_vars_asymmetric_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_asymmetric(coco_problem_t *inner_problem, const double beta) {
+static coco_problem_t* transform_vars_asymmetric(coco_problem_t* inner_problem, const double beta) {
   transform_vars_asymmetric_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
 
   data = (transform_vars_asymmetric_data_t *)coco_allocate_memory(sizeof(*data));
   data->x = coco_allocate_vector(inner_problem->number_of_variables);
@@ -178,13 +178,13 @@ static coco_problem_t *transform_vars_asymmetric(coco_problem_t *inner_problem, 
  *        xopt is needed because transform_vars_shift is not yet called
  *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
  */
-static void transform_inv_initial_asymmetric(coco_problem_t *problem, const double *xopt) {
+static void transform_inv_initial_asymmetric(coco_problem_t* problem, const double* xopt) {
   size_t i;
   size_t j;
   int is_in_bounds;
   double di;
   double xi;
-  double *sol = nullptr;
+  double* sol = nullptr;
   double halving_factor = .5;
 
   transform_vars_asymmetric_data_t *data;

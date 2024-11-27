@@ -19,7 +19,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_obj_power_evaluate(coco_problem_t *problem, const double *x, double *y) {
+static void transform_obj_power_evaluate(coco_problem_t* problem, const double* x, double* y) {
   transform_obj_power_data_t *data;
   size_t i;
 
@@ -40,9 +40,9 @@ static void transform_obj_power_evaluate(coco_problem_t *problem, const double *
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_power(coco_problem_t *inner_problem, const double exponent) {
+static coco_problem_t* transform_obj_power(coco_problem_t* inner_problem, const double exponent) {
   transform_obj_power_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_t* problem;
 
   data = (transform_obj_power_data_t *)coco_allocate_memory(sizeof(*data));
   data->exponent = exponent;

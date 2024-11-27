@@ -20,7 +20,7 @@
  * @brief Implements the Rosenbrock function without connections to any COCO
  * structures.
  */
-static double f_rosenbrock_raw(const double *x,
+static double f_rosenbrock_raw(const double* x,
                                const size_t number_of_variables) {
 
   size_t i = 0;
@@ -46,8 +46,8 @@ static double f_rosenbrock_raw(const double *x,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x,
-                                  double *y) {
+static void f_rosenbrock_evaluate(coco_problem_t* problem, const double* x,
+                                  double* y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_rosenbrock_raw(x, problem->number_of_variables);
   assert(y[0] + 1e-13 >= problem->best_value[0]);
@@ -56,9 +56,9 @@ static void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Allocates the basic Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
+static coco_problem_t* f_rosenbrock_allocate(const size_t number_of_variables) {
 
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("Rosenbrock function", f_rosenbrock_evaluate, nullptr,
+  coco_problem_t* problem = coco_problem_allocate_from_scalars("Rosenbrock function", f_rosenbrock_evaluate, nullptr,
                                                                number_of_variables, -5.0, 5.0, 1.0);
   coco_problem_set_id(problem, "%s_d%02lu", "rosenbrock", number_of_variables);
 
@@ -70,14 +70,14 @@ static coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                           const size_t instance, const long rseed,
-                                                          const char *problem_id_template,
-                                                          const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
+                                                          char const* problem_id_template,
+                                                          char const* problem_name_template) {
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
   size_t i, block_size;
-  double *minus_one, factor;
+  double* minus_one, factor;
 
   minus_one = coco_allocate_vector(dimension);
   xopt = coco_allocate_vector(dimension);
@@ -124,17 +124,17 @@ static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function,
 /**
  * @brief Creates the BBOB rotated Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_rosenbrock_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                   const size_t instance, const long rseed,
-                                                                  const char *problem_id_template,
-                                                                  const char *problem_name_template) {
+                                                                  char const* problem_id_template,
+                                                                  char const* problem_name_template) {
 
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_t* problem = nullptr;
   size_t row, column;
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double *current_row, **rot1, factor;
+  double* M = coco_allocate_vector(dimension * dimension);
+  double* b = coco_allocate_vector(dimension);
+  double* current_row, **rot1, factor;
   double tmp; /* Wassim: will serve to set the optimal solution "manually"*/
 
   fopt = bbob2009_compute_fopt(function, instance);
@@ -185,26 +185,26 @@ static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t f
 /**
  * @brief Creates the BBOB permuted block-rotated Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+static coco_problem_t* f_rosenbrock_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                         const size_t instance, const long rseed,
-                                                                        const char *problem_id_template,
-                                                                        const char *problem_name_template) {
+                                                                        char const* problem_id_template,
+                                                                        char const* problem_name_template) {
 
-  double *xopt, fopt;
-  coco_problem_t *problem = nullptr;
-  double *minus_one, factor;
+  double* xopt, fopt;
+  coco_problem_t* problem = nullptr;
+  double* minus_one, factor;
   size_t i;
 
-  double **B;
-  const double *const *B_copy;
-  size_t *P1 = coco_allocate_vector_size_t(dimension);
-  size_t *P2 = coco_allocate_vector_size_t(dimension);
-  size_t *block_sizes;
+  double** B;
+  const double* const* B_copy;
+  size_t* P1 = coco_allocate_vector_size_t(dimension);
+  size_t* P2 = coco_allocate_vector_size_t(dimension);
+  size_t* block_sizes;
   size_t block_size;
   size_t nb_blocks;
   size_t swap_range;
   size_t nb_swaps;
-  double *best_parameter = coco_allocate_vector(
+  double* best_parameter = coco_allocate_vector(
       dimension); /* Manh: will serve to set the optimal solution "manually"*/
 
   block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
@@ -228,7 +228,7 @@ static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
   }
 
   B = coco_allocate_blockmatrix(dimension, block_sizes, nb_blocks);
-  B_copy = (const double *const *)B;
+  B_copy = (const double* const* )B;
 
   coco_compute_blockrotation(B, rseed, dimension, block_sizes, nb_blocks);
   coco_compute_truncated_uniform_swap_permutation(

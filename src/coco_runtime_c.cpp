@@ -13,7 +13,7 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-void coco_error(const char *message, ...) {
+void coco_error(char const* message, ...) {
   va_list args;
 
   fprintf(stderr, "COCO FATAL ERROR: ");
@@ -24,7 +24,7 @@ void coco_error(const char *message, ...) {
   exit(EXIT_FAILURE);
 }
 
-void coco_warning(const char *message, ...) {
+void coco_warning(char const* message, ...) {
   va_list args;
 
   if (coco_log_level >= COCO_WARNING) {
@@ -36,7 +36,7 @@ void coco_warning(const char *message, ...) {
   }
 }
 
-void coco_info(const char *message, ...) {
+void coco_info(char const* message, ...) {
   va_list args;
 
   if (coco_log_level >= COCO_INFO) {
@@ -53,7 +53,7 @@ void coco_info(const char *message, ...) {
  * A function similar to coco_info that prints only the given message without any prefix and without
  * adding a new line.
  */
-void coco_info_partial(const char *message, ...) {
+void coco_info_partial(char const* message, ...) {
   va_list args;
 
   if (coco_log_level >= COCO_INFO) {
@@ -64,7 +64,7 @@ void coco_info_partial(const char *message, ...) {
   }
 }
 
-void coco_debug(const char *message, ...) {
+void coco_debug(char const* message, ...) {
   va_list args;
 
   if (coco_log_level >= COCO_DEBUG) {
@@ -77,8 +77,8 @@ void coco_debug(const char *message, ...) {
   }
 }
 
-void *coco_allocate_memory(const size_t size) {
-  void *data;
+void* coco_allocate_memory(const size_t size) {
+  void* data;
   if (size == 0) {
     coco_error("coco_allocate_memory() called with 0 size.");
     return nullptr; /* never reached */
@@ -89,4 +89,4 @@ void *coco_allocate_memory(const size_t size) {
   return data;
 }
 
-void coco_free_memory(void *data) { free(data); }
+void coco_free_memory(void* data) { free(data); }

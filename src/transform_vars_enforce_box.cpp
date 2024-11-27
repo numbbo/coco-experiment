@@ -11,11 +11,11 @@
 /**
  * @brief Evaluates the transformed objective function.
  */
-static void transform_vars_enforce_box_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+static void transform_vars_enforce_box_evaluate_function(coco_problem_t* problem, const double* x, double* y) {
   size_t i;
-  double *cons_values;
+  double* cons_values;
   int is_feasible;
-  coco_problem_t *inner_problem;
+  coco_problem_t* inner_problem;
 
   if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
     coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
@@ -49,8 +49,8 @@ static void transform_vars_enforce_box_evaluate_function(coco_problem_t *problem
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_enforce_box(coco_problem_t *inner_problem) {
-  coco_problem_t *problem;
+static coco_problem_t* transform_vars_enforce_box(coco_problem_t* inner_problem) {
+  coco_problem_t* problem;
 
   problem = coco_problem_transformed_allocate(inner_problem, nullptr, nullptr, "transform_vars_enforce_box");
 
