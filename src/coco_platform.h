@@ -13,7 +13,7 @@
 #ifndef COCOEX_COCO_PLATFORM_H
 #define COCOEX_COCO_PLATFORM_H
 
-#include <stddef.h>
+#include <cstddef>
 
 /* Definitions of COCO_PATH_MAX, coco_path_separator, HAVE_GFA and HAVE_STAT heavily used by functions in
  * coco_utilities.c */
@@ -45,7 +45,7 @@ static const char *coco_path_separator = "/";
 #elif defined(__FreeBSD__)
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <limits.h>
+#include <climits>
 static const char *coco_path_separator = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
@@ -53,7 +53,7 @@ static const char *coco_path_separator = "/";
 /* Solaris */
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <limits.h>
+#include <climits>
 static const char *coco_path_separator = "/";
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX

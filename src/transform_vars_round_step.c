@@ -4,7 +4,7 @@
  * TODO: should this be a helper function instead?
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

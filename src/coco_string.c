@@ -3,10 +3,10 @@
  * @brief Definitions of functions that manipulate strings.
  */
 
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <ctype.h>
+#include <cstdlib>
+#include <cstddef>
+#include <cstring>
+#include <cctype>
 
 #include "coco.h"
 

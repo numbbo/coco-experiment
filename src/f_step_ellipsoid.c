@@ -11,8 +11,8 @@
  * TODO: It would be nice to have a generic step ellipsoid function to
  * complement this one.
  */
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 
 #include "coco.h"
 #include "coco_problem.c"

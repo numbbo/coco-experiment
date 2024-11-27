@@ -3,8 +3,8 @@
  * @brief Implementation of the bent cigar function and problem.
  */
 
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 
 #include "coco.h"
 #include "coco_problem.c"

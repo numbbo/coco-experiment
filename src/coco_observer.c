@@ -5,9 +5,9 @@
 
 #include "coco.h"
 #include "coco_internal.h"
-#include <float.h>
-#include <limits.h>
-#include <math.h>
+#include <cfloat>
+#include <climits>
+#include <cmath>
 
 /**
  * @brief The type for triggers based on logarithmic target values (targets that

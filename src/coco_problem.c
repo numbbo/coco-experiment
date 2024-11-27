@@ -3,7 +3,7 @@
  * @brief Definitions of functions regarding COCO problems.
  */
 
-#include <float.h>
+#include <cfloat>
 #include "coco.h"
 #include "coco_internal.h"
 

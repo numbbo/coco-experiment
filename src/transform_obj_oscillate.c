@@ -3,8 +3,8 @@
  * @brief Implementation of oscillating the objective value.
  */
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 #include "coco.h"
 #include "coco_problem.c"

@@ -10,7 +10,7 @@
  * and combine them into test suites.
  */
 
-#include <time.h>
+#include <ctime>
 
 #include "coco.h"
 #include "coco_internal.h"

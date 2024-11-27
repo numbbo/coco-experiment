@@ -3,7 +3,7 @@
  * @brief Implementation of scaling the objective value by the given factor.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

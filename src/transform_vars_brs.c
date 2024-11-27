@@ -3,8 +3,8 @@
  * @brief Implementation of the ominous 's_i scaling' of the BBOB Bueche-Rastrigin problem.
  */
 
-#include <math.h>
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

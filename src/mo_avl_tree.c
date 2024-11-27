@@ -31,9 +31,9 @@
 
  *****************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
 
 /* In order to easily (un)comment unused functions */
 #define AVL_TREE_COMMENT_UNUSED 1

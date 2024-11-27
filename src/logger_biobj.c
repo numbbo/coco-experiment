@@ -38,9 +38,9 @@
  * normalized ROI is assumed.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstring>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_internal.h"

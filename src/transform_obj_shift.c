@@ -3,7 +3,7 @@
  * @brief Implementation of shifting the objective value by the given offset.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

@@ -3,7 +3,7 @@
  * @brief Implementation of shifting all decision values by an offset.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

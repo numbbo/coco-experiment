@@ -3,9 +3,9 @@
  * @brief Implementation of the Weierstrass function and problem.
  */
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
 
 #include "coco.h"
 #include "coco_problem.c"

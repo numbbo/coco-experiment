@@ -3,8 +3,8 @@
  * @brief Implementation of raising the objective value to the power of a given exponent.
  */
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 #include "coco.h"
 #include "coco_problem.c"

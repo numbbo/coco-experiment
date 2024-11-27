@@ -3,8 +3,8 @@
  * @brief implements functions needed by transform_vars_blockrotation.c
  */
 
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 #include "coco.h"
 
 #include "coco_random.c" /*tmp*/

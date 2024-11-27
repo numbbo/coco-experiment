@@ -6,8 +6,8 @@
  * @note Edited to fulfill needs from the constrained test bed.
  */
 
-#include <math.h>
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

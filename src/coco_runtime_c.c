@@ -6,9 +6,9 @@
  * through the respective language runtime.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
 
 #include "coco.h"
 #include "coco_utilities.c"

@@ -3,7 +3,7 @@
  * @brief Implementation of the Rosenbrock function and problem.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

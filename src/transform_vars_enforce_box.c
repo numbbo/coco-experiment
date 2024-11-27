@@ -3,7 +3,7 @@
  * @brief Enforce box constraint, returning NaN if box is violated.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

@@ -13,12 +13,12 @@
 
 /* TODO: Document this file in doxygen style! */
 
-#include <assert.h>
-#include <errno.h>
-#include <float.h>
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
+#include <cassert>
+#include <cerrno>
+#include <cfloat>
+#include <climits>
+#include <cmath>
+#include <cstdio>
 
 #include "coco.h"
 

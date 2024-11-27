@@ -5,14 +5,14 @@
 
 #include "coco_platform.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <assert.h>
-#include <ctype.h>
-#include <errno.h>
-#include <limits.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+#include <cassert>
+#include <cctype>
+#include <cerrno>
+#include <climits>
 
 #include "coco.h"
 #include "coco_internal.h"

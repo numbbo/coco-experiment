@@ -3,7 +3,7 @@
  * @brief Implementation of permuting the decision values.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

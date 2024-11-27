@@ -79,7 +79,7 @@
  *
  */
 
-#include <math.h>
+#include <cmath>
 
 #include "coco.h"
 #include "coco_utilities.c"

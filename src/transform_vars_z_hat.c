@@ -3,7 +3,7 @@
  * @brief Implementation of the z^hat transformation of decision values for the BBOB Schwefel problem.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

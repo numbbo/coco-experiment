@@ -4,7 +4,7 @@
  * Mostly used to in the large-scale testsuite
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

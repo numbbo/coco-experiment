@@ -3,7 +3,7 @@
  * @brief Implementation of multiplying the decision values by the vector 1+-.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

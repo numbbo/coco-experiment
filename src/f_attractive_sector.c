@@ -3,8 +3,8 @@
  * @brief Implementation of the attractive sector function and problem.
  */
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 #include "coco.h"
 #include "coco_problem.c"

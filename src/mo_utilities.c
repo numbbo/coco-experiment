@@ -3,8 +3,8 @@
  * @brief Definitions of miscellaneous functions used for multi-objective problems.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include "coco.h"
 
 /**

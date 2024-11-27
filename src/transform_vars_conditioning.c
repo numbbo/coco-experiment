@@ -3,8 +3,8 @@
  * @brief Implementation of conditioning decision values.
  */
 
-#include <math.h>
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

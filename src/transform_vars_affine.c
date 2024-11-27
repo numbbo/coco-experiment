@@ -11,7 +11,7 @@
  * see https://github.com/numbbo/coco/issues/814#issuecomment-303724400
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

@@ -6,9 +6,9 @@
  * legacy code. New test beds should strive to use the new COCO facilities for random number generation etc.
  */
 
-#include <math.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cmath>
+#include <cstdio>
+#include <cassert>
 #include "coco.h"
 
 /** @brief Maximal dimension used in BBOB2009. */

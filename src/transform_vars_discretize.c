@@ -18,7 +18,7 @@
  * x < 0 is mapped to 0 and any value x > (n-1) is mapped to (n-1).
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "coco.h"
 #include "coco_problem.c"

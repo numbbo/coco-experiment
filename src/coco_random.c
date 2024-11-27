@@ -6,10 +6,10 @@
  * eventually be fixed.
  */
 
-#include <math.h>
+#include <cmath>
+#include <cstdio>
 
 #include "coco.h"
-#include <stdio.h>
 
 #define COCO_NORMAL_POLAR /* Use polar transformation method */
 
