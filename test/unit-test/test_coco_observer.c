@@ -29,7 +29,7 @@ MU_TEST(test_coco_observer_targets_trigger) {
 
   update = coco_observer_targets_trigger(targets, 0.00000099999);
   mu_check(update);
-  mu_check(about_equal_value(coco_observer_targets_get_last_target(targets), 1e-5));
+  mu_check(about_equal_value(coco_observer_targets_get_last_target(targets), 1e-3));
 
   /* An improvement on the lin targets should not trigger an update if it is not an improvement overall */
   update = coco_observer_targets_trigger(targets, 0.00999);
@@ -39,9 +39,9 @@ MU_TEST(test_coco_observer_targets_trigger) {
   mu_check(update);
   mu_check(about_equal_value(coco_observer_targets_get_last_target(targets), 0));
 
-  update = coco_observer_targets_trigger(targets, -0.000099999);
+  update = coco_observer_targets_trigger(targets, -0.00100001);
   mu_check(update);
-  mu_check(about_equal_value(coco_observer_targets_get_last_target(targets), -0.00001));
+  mu_check(about_equal_value(coco_observer_targets_get_last_target(targets), -1.0e-3));
 
   update = coco_observer_targets_trigger(targets, -0.99999);
   mu_check(update);
