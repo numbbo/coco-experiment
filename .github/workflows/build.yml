@@ -86,24 +86,18 @@ jobs:
           - [macos-14, macosx_x86_64]
           - [windows-2019, win_amd64]
           - [windows-2019, win32]
-        python: ["cp39", "cp310", "cp311", "cp312", "pp39"]
+        python: 
+          - ["cp39", 3.9]
+          - ["cp310", 3.10]
+          - ["cp311", 3.11]
+          - ["cp312", 3.12]
+          - ["pp39", pp]
         exclude:
           # Don't build PyPy 32-bit windows
           - buildplat: [windows-2019, win32]
-            python: "pp39"
+            python: ["pp39", pp]
           - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
-            python: "pp39"
-        include:
-          - py_v: 3.9
-            python: "cp39"
-          - py_v: 3.10
-            python: "cp310"
-          - py_v: 3.11
-            python: "cp311"
-          - py_v: 3.12
-            python: "cp312"
-          - py_v: 3.9p
-            python: "pp39"
+            python: ["pp39", pp]
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
@@ -129,11 +123,11 @@ jobs:
       run: python -m cibuildwheel --output-dir dist/ coco_experiment-*.tar.gz
       env:
         CIBW_PRERELEASE_PYTHONS: True
-        CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+        CIBW_BUILD: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
     - name: Archive Python wheels
       uses: actions/upload-artifact@v4
       with:
-        name: dist-python-wheels-${{ matrix.py_env }}-${{ matrix.buildplat[1] }}
+        name: dist-python-wheels-${{ matrix.python[1] }}-${{ matrix.buildplat[1] }}
         path: dist/coco_experiment*.whl
   
   python-wheels-test:
