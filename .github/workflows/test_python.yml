@@ -2,7 +2,8 @@ name: test-python
 
 on:
   workflow_run:
-    workflows: [build]
+    workflows:
+      - build
     types:
       - completed
 
