@@ -74,24 +74,59 @@ jobs:
         name: dist-python-sdist
         path: |
           dist/coco_experiment*.tar.gz
-  
 
-  python_test:
-    needs: source-build
+  paths-filter:
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      c: ${{ steps.filter.outputs.c }}
+      java: ${{ steps.filter.outputs.java }}
+      octave: ${{ steps.filter.outputs.octave }}
+      rust: ${{ steps.filter.outputs.rust }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          python:
+            - "build/python/**"
+            - "src/**"
+            - "test/**"
+          c:
+            - "build/c/**"
+            - "src/**"
+          java:
+            - "build/java/**"
+            - "src/**"
+          octave:
+            - "build/octave/**"
+            - "src/**"
+          rust:
+            - "build/rust/**"
+            - "src/**"
+
+  python-test:
+    needs: [source-build, paths-filter]
+    if: needs.paths-filter.outputs.python == 'true'
     uses: ./.github/workflows/test_python.yml
 
   c-test:
-    needs: source-build
+    needs: [source-build, paths-filter]
+    if: needs.paths-filter.outputs.c == 'true'
     uses: ./.github/workflows/test_c.yml
  
-  java-example:
-    needs: source-build
+  java-test:
+    needs: [source-build, paths-filter]
+    if: needs.paths-filter.outputs.java == 'true'
     uses: ./.github/workflows/test_java.yml
 
-  octave-example:
-    needs: source-build
+  octave-test:
+    needs: [source-build, paths-filter]
+    if: needs.paths-filter.outputs.octave == 'true'
     uses: ./.github/workflows/test_octave.yml
   
   rust-test:
-    needs: source-build
+    needs: [source-build, paths-filter]
+    if: needs.paths-filter.outputs.rust == 'true'
     uses: ./.github/workflows/test_rust.yml

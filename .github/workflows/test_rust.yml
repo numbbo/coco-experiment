@@ -1,10 +1,6 @@
 name: test-rust
 
-on:
-  workflow_call:
-    paths:
-      - "build/rust/*"
-      - "src/*"
+on: workflow_call
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}

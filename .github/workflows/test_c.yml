@@ -1,10 +1,6 @@
 name: test-c
 
-on:
-  workflow_call:
-    paths:
-      - "build/c/*"
-      - "src/*"
+on: workflow_call
       
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
