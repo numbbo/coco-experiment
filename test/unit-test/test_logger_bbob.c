@@ -1,8 +1,9 @@
-include "minunit.h"
-#include "coco.c"
-#include "about_equal.h"
 #include <stdio.h>
 
+#include "minunit.h"
+#include "about_equal.h"
+
+#include "coco.c"
 
 /**
  * Counts the number of lines in a file.
