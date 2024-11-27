@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(COCOUnitTest
-        DESCRIPTION "COCO C unit tests"
-        LANGUAGES C)
+        DESCRIPTION "COCO CPP unit tests"
+        LANGUAGES C CXX)
 
 include(CTest)
 
@@ -15,7 +15,8 @@ if(MATH_LIBRARY)
 endif()
 
 macro(minunit_test name)  
-  add_executable(${name} ${name}.c)
+  add_executable(${name} ${name}.cpp)
+  set_property(TARGET ${name} PROPERTY CXX_STANDARD 11)
   target_link_libraries(${name} PUBLIC about_equal)
   if (LIBM)
     target_link_libraries(${name} PUBLIC ${LIBM})
@@ -28,7 +29,7 @@ macro(minunit_test name)
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endmacro()
 
-add_executable(test_tainted_problem test_tainted_problem.c coco.c)
+add_executable(test_tainted_problem test_tainted_problem.c coco.cpp)
 if (LIBM)
   target_link_libraries(test_tainted_problem PUBLIC ${LIBM})
 endif()

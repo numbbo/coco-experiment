@@ -1,6 +1,6 @@
 #include "minunit.h"
 
-#include "coco.c"
+#include "coco.cpp"
 
 /**
  * Tests coco_string-related functions.

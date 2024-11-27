@@ -1,6 +1,6 @@
 #include "minunit.h"
 
-#include "coco.c"
+#include "coco.cpp"
 
 /**
  * Tests the creation of new instances of the bi-objective suites.

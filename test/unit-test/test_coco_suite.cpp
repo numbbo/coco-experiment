@@ -1,5 +1,5 @@
-#include "coco.h"
 #include "minunit.h"
+#include "coco.h"
 
 /**
  * Tests the function coco_suite_get_problem.

@@ -1,7 +1,7 @@
 #include "minunit.h"
-
-#include "coco.c"
 #include "about_equal.h"
+
+#include "coco.cpp"
 
 /**
  * Tests the function coco_observer_targets_trigger.

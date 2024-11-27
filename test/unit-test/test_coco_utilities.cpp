@@ -1,6 +1,6 @@
 #include "minunit.h"
 
-#include "coco.c"
+#include "coco.cpp"
 
 static char *convert_to_string_with_newlines(char **array) {
 
@@ -10,7 +10,7 @@ static char *convert_to_string_with_newlines(char **array) {
   if ((array == NULL) || (*array == NULL))
     return NULL;
 
-  result = coco_allocate_memory(1000 * sizeof(char));
+  result = (char *)coco_allocate_memory(1000 * sizeof(char));
   result[0] = '\0';
 
   if (array) {
@@ -83,7 +83,7 @@ static void create_time_string(char **string) {
   /* Retrieve the current time as string of the defined format */
   time(&date_time);
   date_time_info = localtime(&date_time);
-  date_time_string = coco_allocate_memory(sizeof(char) * date_time_len);
+  date_time_string = (char *)coco_allocate_memory(sizeof(char) * date_time_len);
   date_time_string[0] = '\1';
 
   len = strftime(date_time_string, date_time_len, date_time_format, date_time_info);
@@ -292,7 +292,7 @@ static char *convert_to_string(size_t *array) {
   if (array == NULL)
     return NULL;
 
-  result = coco_allocate_memory(1000 * sizeof(char));
+  result = (char *)coco_allocate_memory(1000 * sizeof(char));
   result[0] = '\0';
 
   while (array[i] > 0) {

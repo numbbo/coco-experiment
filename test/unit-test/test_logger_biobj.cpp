@@ -1,8 +1,9 @@
 #include <math.h>
 
 #include "minunit.h"
-#include "coco.c"
 #include "about_equal.h"
+
+#include "coco.cpp"
 
 /**
  * Tests several things in the computation of the modified hypervolume indicator for a specific

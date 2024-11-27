@@ -3,7 +3,7 @@
 #include "minunit.h"
 #include "about_equal.h"
 
-#include "coco.c"
+#include "coco.cpp"
 
 /**
  * Counts the number of lines in a file.
