@@ -22,6 +22,7 @@ jobs:
 
   release-python:
     needs: python-wheels
+    if: ( success() || failure() )
     runs-on: ubuntu-latest
     permissions:
       contents: write
