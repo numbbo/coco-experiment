@@ -1,4 +1,4 @@
-#include "minunit.h"
+include "minunit.h"
 #include "coco.c"
 #include "about_equal.h"
 #include <stdio.h>
@@ -205,8 +205,8 @@ MU_TEST(test_logger_bbob_last_line) {
   coco_observer_free(observer);
   coco_suite_free(suite);
 
-  filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
-    coco_path_separator, "bbobexp_f1_DIM2.dat");
+  filename =
+      coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", coco_path_separator, "bbobexp_f1_DIM2.dat");
   mu_check(count_lines_in_file(filename) == 5);
   coco_free_memory(filename);
 
@@ -218,8 +218,11 @@ MU_TEST(test_logger_bbob_last_line) {
   filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
     coco_path_separator, "bbobexp_f1_DIM2.mdat");
   mu_check(count_lines_in_file(filename) == 3);
-  coco_free_memory(filename);
 
+  coco_free_memory(x);
+  coco_free_memory(y);
+  coco_free_memory(folder);
+  coco_free_memory(filename);
 }
 
 
