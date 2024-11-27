@@ -221,9 +221,12 @@ static coco_problem_t *coco_problem_duplicate(const coco_problem_t *other) {
 
   problem->versatile_data = other->versatile_data; /* Wassim: make the pointers the same*/
 
-  if (other->best_parameter) {
-    problem->best_parameter = coco_allocate_vector(problem->number_of_variables);
-  }
+  /*
+   * OME: coco_problem_allocate allocates ->best_parameter. No need to do it here since that leaks memory.
+   * if (other->best_parameter) {
+   *  problem->best_parameter = coco_allocate_vector(problem->number_of_variables);
+   * }
+   */
 
   for (i = 0; i < problem->number_of_variables; ++i) {
     problem->smallest_values_of_interest[i] = other->smallest_values_of_interest[i];

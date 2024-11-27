@@ -176,5 +176,5 @@ int main(void) {
 
   MU_REPORT();
 
-  int minunit_status;
+  int MU_EXIT_CODE;
 }

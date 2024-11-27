@@ -1,6 +1,12 @@
 name: source-build
 
-on: workflow_call
+on:
+  workflow_call:
+    # Map the workflow outputs to job outputs
+    outputs:
+      run_id:
+        description: "Run id"
+        value: ${{github.run_id}}
 
 jobs:
   source-build:
@@ -28,5 +34,38 @@ jobs:
         ctest --test-dir build
     - name: Build coco-experiment Python package
       run: python -m build -s -o dist build/python
+    - name: Build coco-experiment Python package
+      run: python -m build -s -o dist build/python
+    - name: Archive C source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-c
+        path: dist/cocoex-c-*.zip
+    - name: Archive Java source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-java
+        path: dist/cocoex-java-*.zip
+    - name: Archive Matlab source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-matlab
+        path: dist/cocoex-matlab-*.zip
+    - name: Archive Octave source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-octave
+        path: dist/cocoex-octave-*.zip
+    - name: Archive Rust source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-rust
+        path: dist/cocoex-rust-*.zip
+    - name: Archive cocoex Python source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-python-sdist
+        path: |
+          dist/coco_experiment*.tar.gz
 
  

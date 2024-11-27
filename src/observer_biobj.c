@@ -35,6 +35,7 @@ typedef struct {
 
   int compute_indicators; /**< @brief Whether to compute indicators. */
   int produce_all_data;   /**< @brief Whether to produce all data. */
+  int large_mdat_file_warning;    /**< @brief Whether the large mdat file warning has already been output. */
 
   long previous_function;  /**< @brief Function of the previous logged problem. */
   long previous_dimension; /**< @brief Dimension of the previous logged problem */
@@ -126,6 +127,7 @@ static void observer_biobj(coco_observer_t *observer, const char *options, coco_
 
   if (coco_options_read_int(options, "produce_all_data", &(observer_data->produce_all_data)) == 0)
     observer_data->produce_all_data = 0;
+  observer_data->large_mdat_file_warning = 0;
 
   if (observer_data->produce_all_data) {
     observer_data->compute_indicators = 1;
