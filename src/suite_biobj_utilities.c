@@ -412,11 +412,13 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
   }
 
   if (!instance_found) {
+    int must_free = 0;
     /* Finally, if the instance is not found, create a new one */
 
     if ((*new_inst_data) == NULL) {
       /* Allocate space needed for saving new instances */
       (*new_inst_data) = (suite_biobj_new_inst_t *)coco_allocate_memory(sizeof(**new_inst_data));
+      must_free = 1;
 
       /* Most often the actual number of new instances will be lower than max_new_instances, because
        * some of them are already in suite_biobj_instances. However, in order to avoid iterating over
@@ -438,7 +440,9 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
     instance2 =
         suite_biobj_get_new_instance((*new_inst_data), instance, instance1, all_bbob_functions, num_all_bbob_functions,
                                      sel_bbob_functions, num_sel_bbob_functions, dimensions, num_dimensions);
-    coco_free_memory(new_inst_data);
+    if (must_free) {
+      coco_free_memory(*new_inst_data);
+    }
   }
 
   /* Construct the problem based on the function index and dimension */
