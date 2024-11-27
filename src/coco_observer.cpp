@@ -774,13 +774,13 @@ coco_observer_t *coco_observer(char const* observer_name, char const* observer_o
     if ((redundant_option_keys) && (redundant_option_keys->count > 0)) {
       /* Warn the user that some of given options are being ignored and output
        * the valid options */
-      char* output_redundant = coco_option_keys_get_output_string(
+      std::string output_redundant = coco_option_keys_get_output_string(
           redundant_option_keys, "coco_observer(): Some keys in observer options were ignored:\n");
-      char* output_valid =
+      std::string output_valid =
           coco_option_keys_get_output_string(known_option_keys, "Valid keys for observer options are:\n");
-      coco_warning("%s%s", output_redundant, output_valid);
-      coco_free_memory(output_redundant);
-      coco_free_memory(output_valid);
+      coco_warning("%s%s", output_redundant.c_str(), output_valid.c_str());
+//      coco_free_memory(output_redundant);
+//      coco_free_memory(output_valid);
     }
 
     coco_option_keys_free(given_option_keys);

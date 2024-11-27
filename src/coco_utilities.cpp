@@ -730,21 +730,25 @@ static coco_option_keys_t* coco_option_keys(char const* option_string) {
  *
  * Can be used to output information about the given option_keys.
  */
-static char* coco_option_keys_get_output_string(const coco_option_keys_t* option_keys, char const* info_string) {
-  size_t i;
-  char* string = nullptr, *new_string;
+static std::string coco_option_keys_get_output_string(const coco_option_keys_t* option_keys, std::string const& info_string) {
+//  char* string = nullptr, *new_string;
 
+  std::string result;
   if ((option_keys) && (option_keys->count > 0)) {
 
-    string = coco_strdup(info_string);
-    for (i = 0; i < option_keys->count; i++) {
-      new_string = coco_strdupf("%s %s\n", string, option_keys->keys[i]);
-      coco_free_memory(string);
-      string = new_string;
+//    string = coco_strdup(info_string);
+    result = info_string;
+    for (size_t i=0; i<option_keys->count; i++) {
+        result += " ";
+        result += option_keys->keys[i];
+//      new_string = coco_strdupf("%s %s\n", string, option_keys->keys[i]);
+//      coco_free_memory(string);
+//      string = new_string;
     }
   }
+  return result;
 
-  return string;
+//  return string;
 }
 
 /**
