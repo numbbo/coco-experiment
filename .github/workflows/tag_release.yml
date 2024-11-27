@@ -3,8 +3,8 @@ name: tag-release
 on:
   push:
     # Pattern matched against refs/tags
-#    tags:        
-#      - '**' # This includes hierarchical tags
+    tags:        
+      - '**' # This includes hierarchical tags
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
