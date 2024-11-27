@@ -3,22 +3,28 @@ name: tag-release
 on:
   push:
     # Pattern matched against refs/tags
-    tags:        
-      - '**' # This includes hierarchical tags
-      
+#    tags:        
+#      - '**' # This includes hierarchical tags
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+   
 jobs:
+  source-build:
+    uses: ./.github/workflows/source_build.yml
+
   release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: build
-      uses: ./.github/workflows/source_build.yml
-    - name: Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          dist/**
+      - name: Download Python source package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-python-sdist
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/**
 
 
