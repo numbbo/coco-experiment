@@ -69,4 +69,3 @@ and compiler. However, compilation has been tested successfully under
    - Windows 10 with MATLAB 2008a and MinGW
    - Windows XP with MATLAB 2008b and MinGW
    - Windows 7 with GNU Octave 4.0.0
-  
