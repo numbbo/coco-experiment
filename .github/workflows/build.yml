@@ -51,7 +51,7 @@ jobs:
 
   python-test:
     needs: [source-build, paths-filter]
-    if: needs.paths-filter.outputs.python == 'true'
+    if: needs.paths-filter.outputs.python == 'false'
     uses: ./.github/workflows/test_python.yml
 
   c-test:
