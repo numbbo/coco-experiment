@@ -10,12 +10,15 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: build
-        uses: ./.github/workflows/source_build.yml
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/**
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: build
+      uses: ./.github/workflows/source_build.yml
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/**
 
 
