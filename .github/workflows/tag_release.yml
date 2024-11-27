@@ -15,6 +15,7 @@ jobs:
     uses: ./.github/workflows/source_build.yml
 
   release:
+    needs: source-build
     runs-on: ubuntu-latest
     steps:
       - name: Download Python source package
