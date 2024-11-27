@@ -10,8 +10,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  source-build:
-    uses: ./.github/workflows/source_build.yml
+  source-builod:
+    runs-on: ubuntu-latest
+    steps:
+    - name: build
+      uses: ./.github/workflows/source_build.yml
+    - name: Archive C source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-c
+        path: dist/cocoex-c-*.zip
+    - name: Archive Java source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-java
+        path: dist/cocoex-java-*.zip
+    - name: Archive Matlab source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-matlab
+        path: dist/cocoex-matlab-*.zip
+    - name: Archive Octave source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-octave
+        path: dist/cocoex-octave-*.zip
+    - name: Archive Rust source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-rust
+        path: dist/cocoex-rust-*.zip
+    - name: Archive cocoex Python source package
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-python-sdist
+        path: |
+          dist/coco_experiment*.tar.gz
+
   
   python-wheels-build:
     needs: source-build
