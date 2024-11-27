@@ -1,10 +1,10 @@
 name: test-python
 
-  workflow_call:
-    inputs:
-      run-id:
-        required: true
-        type: string
+workflow_call:
+  inputs:
+    run-id:
+      required: true
+      type: string
 
 jobs:
 
