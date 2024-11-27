@@ -8,6 +8,17 @@ on:
       - completed
 
 jobs:
+
+  test-job:
+    name: Test Step
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+      - run: git branch
+      - run: env
+
   paths-filter:
     runs-on: ubuntu-latest
     outputs:
