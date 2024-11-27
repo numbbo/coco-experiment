@@ -1,12 +1,6 @@
 name: source-build
 
-on:
-  workflow_call:
-    # Map the workflow outputs to job outputs
-    outputs:
-      run_id:
-        description: "Run id"
-        value: ${{github.run_id}}
+on: workflow_call
 
 jobs:
   source-build:

@@ -18,12 +18,6 @@ jobs:
   source-build:
     uses: ./.github/workflows/source_build.yml
 
-  job2:
-    runs-on: ubuntu-latest
-    needs: source-build
-    steps:
-      - run: echo ${{ needs.source-build.outputs.run_id }}
-
   paths-filter:
     runs-on: ubuntu-latest
     outputs:
