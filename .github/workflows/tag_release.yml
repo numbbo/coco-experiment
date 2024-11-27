@@ -17,11 +17,14 @@ jobs:
   release:
     needs: source-build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download Python source package
         uses: actions/download-artifact@v4
         with:
           name: dist-python-sdist
+          path: dist
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
