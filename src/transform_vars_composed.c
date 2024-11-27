@@ -44,8 +44,8 @@ static void transform_inv_initial_composed(coco_problem_t *problem, const double
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   sol = coco_allocate_vector(problem->number_of_variables);
-  dasy = coco_allocate_memory(sizeof(*dasy));
-  dosz = coco_allocate_memory(sizeof(*dosz));
+  dasy = (tasy_data*)coco_allocate_memory(sizeof(*dasy));
+  dosz = (tosz_data*)coco_allocate_memory(sizeof(*dosz));
 
   data_asy = (transform_vars_asymmetric_data_t *)coco_problem_transformed_get_data(inner_problem);
   data_osz = (transform_vars_oscillate_data_t *)coco_problem_transformed_get_data(problem);

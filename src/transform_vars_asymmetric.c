@@ -60,7 +60,7 @@ static double tasy_uv_inv(double yi, tasy_data *d) {
 static void tasy(transform_vars_asymmetric_data_t *data, const double *x, size_t number_of_variables) {
   size_t i;
   tasy_data *d;
-  d = coco_allocate_memory(sizeof(*d));
+  d = (tasy_data*)coco_allocate_memory(sizeof(*d));
 
   d->beta = data->beta;
   d->n = number_of_variables;
@@ -191,7 +191,7 @@ static void transform_inv_initial_asymmetric(coco_problem_t *problem, const doub
   tasy_data *d;
 
   sol = coco_allocate_vector(problem->number_of_variables);
-  d = coco_allocate_memory(sizeof(*d));
+  d = (tasy_data*)coco_allocate_memory(sizeof(*d));
 
   data = (transform_vars_asymmetric_data_t *)coco_problem_transformed_get_data(problem);
 

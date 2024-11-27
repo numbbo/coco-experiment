@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 3.19)
 project(coco
   DESCRIPTION "Example COCO experiment"
-  LANGUAGES C)
+  LANGUAGES C CXX)
 include(CTest)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_library(MATH_LIBRARY m)
 
 ## Add core coco experiment library to build
-add_library(coco STATIC coco.c coco.h)
+add_library(coco STATIC coco.cpp coco.h)
 target_include_directories(coco PUBLIC .)
 if(MATH_LIBRARY)
     target_link_libraries(coco PUBLIC ${MATH_LIBRARY})

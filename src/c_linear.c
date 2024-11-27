@@ -171,7 +171,7 @@ static coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const d
   if (gradient_norm <= 0)
     coco_error("c_linear_transform(): gradient norm %f<=0 zero", gradient_norm);
 
-  data = coco_allocate_memory(sizeof(*data));
+  data = (linear_constraint_data_t*)coco_allocate_memory(sizeof(*data));
   data->gradient = coco_duplicate_vector(gradient, inner_problem->number_of_variables);
   data->x = coco_allocate_vector(inner_problem->number_of_variables);
   data->x_shift_factor = shift_factor;

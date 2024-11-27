@@ -63,7 +63,7 @@ static double tosz_uv_inv(double yi, tosz_data *d) {
 static void tosz(transform_vars_oscillate_data_t *data, const double *x, size_t number_of_variables) {
   size_t i;
   tosz_data *d;
-  d = coco_allocate_memory(sizeof(*d));
+  d = (tosz_data*)coco_allocate_memory(sizeof(*d));
 
   d->alpha = data->alpha;
 
@@ -192,7 +192,7 @@ static void transform_inv_initial_oscillate(coco_problem_t *problem, const doubl
   tosz_data *d;
 
   sol = coco_allocate_vector(problem->number_of_variables);
-  d = coco_allocate_memory(sizeof(*d));
+  d = (tosz_data*)coco_allocate_memory(sizeof(*d));
 
   data = (transform_vars_oscillate_data_t *)coco_problem_transformed_get_data(problem);
   d->alpha = data->alpha;

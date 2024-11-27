@@ -292,7 +292,7 @@ static void logger_bbob_initialize(logger_bbob_data_t *logger, int is_opt_known)
   char folder_path[COCO_PATH_MAX + 2] = {0};
   char *function_string;
   char *dimension_string;
-  char *str_pointer;
+  char const*str_pointer;
   char *relative_path_pointer = NULL;
   int start_new_line;
   observer_bbob_data_t *observer_data;
