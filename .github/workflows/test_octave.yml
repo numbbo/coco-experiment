@@ -1,0 +1,34 @@
+name: test-octave
+
+on: workflow_call
+
+jobs:
+
+  octave-example:
+    # FIXME: Should also test on windows and macos
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{github.workspace}}
+    steps:
+    - name: Install Octave
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y octave liboctave-dev
+    - name: Download Octave source package
+      uses: actions/download-artifact@v4
+      with:
+        name: dist-octave
+    - name: Unpack
+      run: unzip cocoex-octave-*.zip
+    - name: Build 
+      working-directory: ${{github.workspace}}/cocoex-octave/
+      run: mkoctfile --verbose --mex cocoCall.c  
+    - name: Experiment
+      working-directory: ${{github.workspace}}/cocoex-octave/
+      run: octave --no-gui exampleexperiment.m                
+    - name: Archive Octave example experiment results
+      uses: actions/upload-artifact@v4
+      with:
+        name: octave-example
+        path: cocoex-octave/exdata/*
