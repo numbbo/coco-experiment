@@ -16,7 +16,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y octave liboctave-dev
     - name: Download Octave source package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dist-octave
     - name: Unpack
@@ -28,7 +28,7 @@ jobs:
       working-directory: ${{github.workspace}}/cocoex-octave/
       run: octave --no-gui exampleexperiment.m                
     - name: Archive Octave example experiment results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: octave-example
         path: cocoex-octave/exdata/*

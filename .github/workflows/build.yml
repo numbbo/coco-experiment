@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   source-build:
-    uses: ./.github/workflows/test_python.yml
+    uses: ./.github/workflows/source_build.yml
 
   job2:
     runs-on: ubuntu-latest
@@ -79,3 +79,4 @@ jobs:
     needs: [source-build, paths-filter]
     if: needs.paths-filter.outputs.rust == 'true'
     uses: ./.github/workflows/test_rust.yml
+

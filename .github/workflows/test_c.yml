@@ -16,7 +16,7 @@ jobs:
         working-directory: ${{github.workspace}}
     steps:
     - name: Download C source package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dist-c
     - name: Unpack
@@ -29,7 +29,7 @@ jobs:
       run: ctest --test-dir build 
     - name: Store reports
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: c-test-${{matrix.os}}
         path: |
