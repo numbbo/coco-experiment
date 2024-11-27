@@ -21,7 +21,7 @@ jobs:
       build_only: "true"
 
   release-python:
-    needs: source-build
+    needs: [source-build, python-wheels]
     runs-on: ubuntu-latest
     permissions:
       contents: write
