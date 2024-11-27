@@ -43,8 +43,8 @@ jobs:
         python:
           - ["cp39", "3.9"]
           - ["cp310", "3.10"]
-          - ["cp311", "3.11"],
-          - ["cp312", "3.12"],
+          - ["cp311", "3.11"]
+          - ["cp312", "3.12"]
           - ["pp39", "pp"]
         exclude:
           # Don't build PyPy 32-bit windows
