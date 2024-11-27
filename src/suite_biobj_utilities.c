@@ -438,6 +438,7 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
     instance2 =
         suite_biobj_get_new_instance((*new_inst_data), instance, instance1, all_bbob_functions, num_all_bbob_functions,
                                      sel_bbob_functions, num_sel_bbob_functions, dimensions, num_dimensions);
+    coco_free_memory(new_inst_data);
   }
 
   /* Construct the problem based on the function index and dimension */
