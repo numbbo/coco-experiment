@@ -9,8 +9,6 @@ on:
 
 jobs:
   python-wheels-build:
-    needs: paths-filter
-    if: needs.paths-filter.outputs.python == 'true'
     # This strategy is taken straight from the numpy wheels.yaml CI job
     # 
     # Since we depend on numpy, there's no reason to try and build a binary cocoex wheel
