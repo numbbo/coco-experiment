@@ -54,6 +54,8 @@
 %   * cocoProblemGetSmallestValuesOfInterest: problem
 %       Returns a vector of size 'dimension' with lower bounds of the region
 %         of interest in the decision space for the given problem.
+%   * cocoProblemGetBestValue: problem
+%       Returns the best objective value that is achievable.
 %   * cocoProblemIsValid: problem
 %       Returns 1 if the given problem is a valid Coco problem, 0 otherwise.
 %   * cocoProblemRemoveObserver: problem, observer

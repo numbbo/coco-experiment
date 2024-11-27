@@ -496,6 +496,29 @@ void cocoProblemGetSmallestValuesOfInterest(int nlhs, mxArray *plhs[], int nrhs,
     }
 }
 
+void cocoProblemGetBestValue(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+    size_t *ref;
+    coco_problem_t *problem = NULL;    
+    double res;
+    
+    /* Check for proper number of input and arguments */
+    if (nrhs != 1) {
+        mexErrMsgIdAndTxt("cocoProblemGetBestValue:nrhs","One input required.");
+    }
+    if (nlhs < 1) {
+        mexErrMsgIdAndTxt("cocoProblemGetBestValue:nlhs","One output argument required.");
+    }
+
+    /* Get the problem */
+    ref = (size_t *)mxGetData(prhs[0]);
+    problem = (coco_problem_t *)(*ref);
+
+    /* Return best value objective value */
+    res = coco_problem_get_best_value(problem);
+    plhs[0] = mxCreateDoubleScalar(res);
+}
+
 void cocoProblemIsValid(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     size_t *ref;
@@ -722,6 +745,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         cocoProblemGetNumberOfIntegerVariables(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemgetsmallestvaluesofinterest") == 0) {
         cocoProblemGetSmallestValuesOfInterest(nlhs, plhs, nrhs-1, prhs+1);
+    } else if (strcmp(cocofunction, "cocoproblemgetbestvalue") == 0) {
+        cocoProblemGetBestValue(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemisvalid") == 0) {
         cocoProblemIsValid(nlhs, plhs, nrhs-1, prhs+1);
     } else if (strcmp(cocofunction, "cocoproblemremoveobserver") == 0) {
