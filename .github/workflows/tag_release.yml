@@ -14,21 +14,27 @@ jobs:
   source-build:
     uses: ./.github/workflows/source_build.yml
 
-  release:
+  release-python:
     needs: source-build
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+    # Dedicated environments with protections for publishing are strongly recommended.
+    environment:
+      name: release
+      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
+      # url: https://pypi.org/p/YOURPROJECT
     steps:
       - name: Download Python source package
         uses: actions/download-artifact@v4
         with:
           name: dist-python-sdist
-          path: dist
+          path: ./dist/
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/**
-
-
+            ./dist/**
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
