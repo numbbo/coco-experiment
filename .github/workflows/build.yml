@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  source-builod:
+  source-build:
     runs-on: ubuntu-latest
     steps:
     - name: build
