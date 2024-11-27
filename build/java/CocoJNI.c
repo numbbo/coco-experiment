@@ -4,6 +4,8 @@
  *
  * TODO: Check if the casts from pointer to C structure actually work (how can this be done?)
  */
+#include "CocoJNI.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -12,8 +14,6 @@
 #include <jni.h>
 
 #include "coco.h"
-#include "coco.c"
-#include "CocoJNI.h"
 
 /*
  * Class:     CocoJNI
