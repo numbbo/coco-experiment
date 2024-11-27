@@ -12,15 +12,13 @@ concurrency:
    
 jobs:
   source-build:
-    - name: source-build
-      uses: ./.github/workflows/source_build.yml
+    uses: ./.github/workflows/source_build.yml
 
   python-wheels:
     needs: source-build
-    - name: build-wheels
-      uses: ./.github/workflows/test_python.yml
-      with:
-        build_only: "true"
+    uses: ./.github/workflows/test_python.yml
+    with:
+      build_only: "true"
 
   release-python:
     needs: source-build

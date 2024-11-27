@@ -7,6 +7,7 @@ on:
         description: "only run wheel builds job"
         required: false
         default: 'false'
+        type: string
 
 jobs:
   python-wheels-build:
