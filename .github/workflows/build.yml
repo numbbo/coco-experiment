@@ -109,28 +109,26 @@ jobs:
 
   python-test:
     needs: [source-build, paths-filter]
-    if: needs.paths-filter.outputs.python == 'false'
+    if: needs.paths-filter.outputs.python == 'true'
     uses: ./.github/workflows/test_python.yml
-    with:
-      run-id: ${{github.run_id}}
 
   c-test:
     needs: [source-build, paths-filter]
-    if: needs.paths-filter.outputs.c == 'false'
+    if: needs.paths-filter.outputs.c == 'true'
     uses: ./.github/workflows/test_c.yml
  
   java-test:
     needs: [source-build, paths-filter]
-    if: needs.paths-filter.outputs.java == 'false'
+    if: needs.paths-filter.outputs.java == 'true'
     uses: ./.github/workflows/test_java.yml
 
   octave-test:
     needs: [source-build, paths-filter]
-    if: needs.paths-filter.outputs.octave == 'false'
+    if: needs.paths-filter.outputs.octave == 'true'
     uses: ./.github/workflows/test_octave.yml
   
   rust-test:
     needs: [source-build, paths-filter]
-    if: needs.paths-filter.outputs.rust == 'false'
+    if: needs.paths-filter.outputs.rust == 'true'
     uses: ./.github/workflows/test_rust.yml
 
