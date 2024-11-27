@@ -86,7 +86,17 @@ jobs:
           - [macos-14, macosx_x86_64]
           - [windows-2019, win_amd64]
           - [windows-2019, win32]
-        python: ["cp39", "cp310", "cp311", "cp312", "pp39"]
+        python:
+            - name: "cp39"
+              version: 3.9
+            - name: "cp310"
+              version: 3.10
+            - name: "cp311"
+              version: 3.11
+            - name: "cp312"
+              version: 3.12
+            - name: "pp39"
+              version: pp39
         exclude:
           # Don't build PyPy 32-bit windows
           - buildplat: [windows-2019, win32]
@@ -118,11 +128,11 @@ jobs:
       run: python -m cibuildwheel --output-dir dist/ coco_experiment-*.tar.gz
       env:
         CIBW_PRERELEASE_PYTHONS: True
-        CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+        CIBW_BUILD: ${{ matrix.python.name }}-${{ matrix.buildplat[1] }}
     - name: Archive Python wheels
       uses: actions/upload-artifact@v4
       with:
-        name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
+        name: dist-python-wheels-${{ matrix.python.version }}-${{ matrix.buildplat[1] }}
         path: dist/coco_experiment*.whl
   
   python-wheels-test:
