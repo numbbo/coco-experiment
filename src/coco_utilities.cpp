@@ -6,6 +6,7 @@
 #include "coco_platform.h"
 
 #include <string>
+#include <limits>
 
 #include <cstdarg>
 #include <cstdio>
