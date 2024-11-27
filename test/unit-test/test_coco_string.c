@@ -48,5 +48,5 @@ int main(void) {
 
   MU_REPORT();
 
-  return minunit_status;
+  return MU_EXIT_CODE;
 }
