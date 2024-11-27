@@ -5,6 +5,8 @@
 
 #include "coco_platform.h"
 
+#include <string>
+
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>

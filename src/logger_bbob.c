@@ -232,12 +232,15 @@ static void logger_bbob_open_data_file(FILE **data_file, const char *path, const
 /**
  * @brief Creates the info file (if it didn't exist before) and opens it
  */
-static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *folder, std::string const& function_string,
-                                       const char *data_file_name, const char *suite_name, int start_new_line) {
-  char data_file_path[COCO_PATH_MAX + 2] = {0};
+static void logger_bbob_open_info_file(logger_bbob_data_t *logger, std::string const& folder, std::string const& function_string,
+                                       std::string const& data_file_name, std::string const& suite_name, bool start_new_line) {
+  std::string data_file_path;
+//  char data_file_path[COCO_PATH_MAX + 2] = {0};
   int add_empty_line = 0;
-  char file_name[COCO_PATH_MAX + 2] = {0};
-  char file_path[COCO_PATH_MAX + 2] = {0};
+//  char file_name[COCO_PATH_MAX + 2] = {0};
+//  char file_path[COCO_PATH_MAX + 2] = {0};
+  std::string file_name;
+  std::string file_path;
   FILE **info_file;
   FILE *tmp_file;
   observer_bbob_data_t *observer_data;
@@ -249,37 +252,35 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *f
   observer_data = ((observer_bbob_data_t *)((coco_observer_t *)logger->observer)->data);
   assert(observer_data != NULL);
 
-  strncpy(data_file_path, data_file_name, COCO_PATH_MAX - strlen(data_file_path) - 1);
+  data_file_path = data_file_name;
 
   info_file = &(logger->info_file);
 
-  strncpy(file_name, observer_data->prefix, COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, "_f", COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, function_string.c_str(), COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, ".info", COCO_PATH_MAX - strlen(file_name) - 1);
-  coco_join_path(file_path, sizeof(file_path), folder, file_name, NULL);
+  file_name = (std::string)observer_data->prefix + "_f" + function_string + ".info";
+  file_path += coco_path_separator + folder + coco_path_separator + file_name;
+//  coco_join_path(file_path, sizeof(file_path), folder, file_name, NULL);
 
   if (*info_file == NULL) {
     add_empty_line = 0;
     /* If the file already exists, an empty line is needed */
-    tmp_file = fopen(file_path, "r");
+    tmp_file = fopen(file_path.c_str(), "r");
     if (tmp_file != NULL) {
       add_empty_line = 1;
       fclose(tmp_file);
     }
-    logger_bbob_open_file(info_file, file_path);
+    logger_bbob_open_file(info_file, file_path.c_str());
     if (start_new_line) {
       if (add_empty_line)
         fprintf(*info_file, "\n");
       fprintf(*info_file,
               "suite = '%s', funcId = %lu, DIM = %lu, Precision = %.3e, algId = '%s', coco_version = '%s', logger = "
               "'%s', data_format = '%s'\n",
-              suite_name, (unsigned long)logger->function, (unsigned long)logger->number_of_variables, pow(10, -8),
+              suite_name.c_str(), (unsigned long)logger->function, (unsigned long)logger->number_of_variables, pow(10, -8),
               logger->observer->algorithm_name, coco_version, ((coco_observer_t *)logger->observer)->observer_name,
               logger_bbob_data_format);
       fprintf(*info_file, "%%\n");
       /* data_file_path does not have the extension */
-      fprintf(*info_file, "%s.dat", data_file_path);
+      fprintf(*info_file, "%s.dat", data_file_path.c_str());
     }
   }
   coco_debug("Ended   logger_bbob_open_info_file()");
