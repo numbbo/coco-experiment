@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include <stdlib.h>
 
 #include "coco.h"
-#include "coco.c"
 
 #include "mex.h"
 
+double coco_problem_get_best_value(coco_problem_t const *);
 
 void cocoEvaluateFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {

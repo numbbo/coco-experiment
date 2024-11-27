@@ -6,7 +6,7 @@
  */
 
 #include <cstdio>
-#include <stdlib>
+#include <cstdlib>
 #include <cstdarg>
 
 #include <mex.h>
