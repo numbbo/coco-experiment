@@ -100,9 +100,9 @@ jobs:
         exclude:
           # Don't build PyPy 32-bit windows
           - buildplat: [windows-2019, win32]
-            python: "pp39"
+            python.name: "pp39"
           - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
-            python: "pp39"
+            python.name: "pp39"
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
