@@ -1,9 +1,7 @@
 name: test-python
 
 on:
-  push:
-  pull_request:
-    branches: [ main ]
+  workflow_call:
     paths:
       - "build/python/*"
       - "src/*"

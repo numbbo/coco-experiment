@@ -1,9 +1,7 @@
 name: test-octave
 
 on:
-  push:
-  pull_request:
-    branches: [ main ]
+  workflow_call:
     paths:
       - "build/octave/*"
       - "src/*"
