@@ -14,7 +14,6 @@
 typedef struct {
   double *offset;
   double *shifted_x;
-  coco_problem_free_function_t old_free_problem;
 } transform_vars_shift_data_t;
 
 /**
