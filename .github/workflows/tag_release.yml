@@ -12,7 +12,15 @@ concurrency:
    
 jobs:
   source-build:
-    uses: ./.github/workflows/source_build.yml
+    - name: source-build
+      uses: ./.github/workflows/source_build.yml
+
+  python-wheels:
+    needs: source-build
+    - name: build-wheels
+      uses: ./.github/workflows/test_python.yml
+      with:
+        build_only: "true"
 
   release-python:
     needs: source-build
@@ -31,10 +39,22 @@ jobs:
         with:
           name: dist-python-sdist
           path: ./dist/
+      - name: Download Python source package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-python-wheels
+          path: ./dist/          
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Download remaining source packages
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist/
+          pattern: dist-*
+          merge-multiple: true    
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             ./dist/**
-      - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+
