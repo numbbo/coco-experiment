@@ -169,8 +169,6 @@ jobs:
           delete-merged: true
 
   python-lint:
-    needs: paths-filter
-    if: needs.paths-filter.outputs.python == 'true' 
     runs-on: "ubuntu-latest"
     steps:
     - uses: actions/download-artifact@v4
