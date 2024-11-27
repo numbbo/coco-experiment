@@ -7,7 +7,7 @@
  */
 MU_TEST(test_coco_string_trim) {
 
-	char *sample_strings[] = {
+	char const* sample_strings[] = {
 			"nothing to trim",
 			"    trim the front",
 			"trim the back     ",
@@ -19,7 +19,7 @@ MU_TEST(test_coco_string_trim) {
 			"a",
 			"",
 			NULL };
-	char *result_strings[] = {
+	char const* result_strings[] = {
 			"nothing to trim",
 			"trim the front",
 			"trim the back",
