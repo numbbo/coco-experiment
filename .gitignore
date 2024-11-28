@@ -63,3 +63,4 @@ test/regression-test/data/*
 test/regression-test/bbob_noisy_regression_test/data_legacy/*.json
 test/regression-test/bbob_noisy_regression_test/results
 build/c/.vscode
+bare_problem.c
