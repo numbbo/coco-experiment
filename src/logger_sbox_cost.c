@@ -1,6 +1,6 @@
 /**
  * @file logger_sbox_cost.c
- * @brief Implementation of the sbox_cost logger.
+ * @brief Implementation of the sbox_cost/bbob-boxed logger.
  *
  * Logs the performance of a single-objective optimizer on noisy or noiseless
  * problems. It produces four kinds of files:
@@ -110,7 +110,7 @@ static const char *sbox_cost_file_header_str =
 static const char *sbox_cost_cdata_file_header_str =
     "%% f evaluations | x1 | x2 ...\n";
 
-static const char *sbox_cost_logger_name = "sbox_cost";
+static const char *sbox_cost_logger_name = "bbob-boxed";
 
 /**
  * adds a formated line to a data file
@@ -346,7 +346,7 @@ static void logger_sbox_cost_initialize(logger_sbox_cost_data_t *logger,
                        should be a better way of doing this! */
   char *tmpc_dim;   /* serves to extract the dimension as a char *. There should
                        be a better way of doing this! */
-  char indexFile_prefix[] = "sbox_costexp";
+  char indexFile_prefix[] = "bbob-boxed";
 
   assert(logger != NULL);
   assert(inner_problem != NULL);
@@ -363,7 +363,7 @@ static void logger_sbox_cost_initialize(logger_sbox_cost_data_t *logger,
   coco_join_path(folder_path, sizeof(folder_path),
                  logger->observer->result_folder, dataFile_path, NULL);
   coco_create_directory(folder_path);
-  strncat(dataFile_path, "/sbox_costexp_f",
+  strncat(dataFile_path, "/bbob-boxed_f",
           COCO_PATH_MAX - strlen(dataFile_path) - 1);
   strncat(dataFile_path, tmpc_funId, COCO_PATH_MAX - strlen(dataFile_path) - 1);
   strncat(dataFile_path, "_DIM", COCO_PATH_MAX - strlen(dataFile_path) - 1);
