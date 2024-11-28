@@ -153,10 +153,9 @@ void cocoProblemAddObserver(int nlhs, mxArray *plhs[], int nrhs, const mxArray *
   if (nrhs != 2) {
     mexErrMsgIdAndTxt("cocoProblemAddObserver:nrhs", "Two inputs required.");
   }
-
-  /* get the suite */
-  UNPACK_OBSERVER(0);
-  UNPACK_PROBLEM(1);
+  
+  UNPACK_PROBLEM(0);
+  UNPACK_OBSERVER(1);
 
   /* call coco_problem_add_observer() */
   observedproblem = coco_problem_add_observer(problem, observer);
