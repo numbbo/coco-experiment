@@ -24,7 +24,7 @@ build/java/build/
 build/matlab/*.mex
 build/octave/*.mex
 build/octave/coco*.m
-build/octave/cocoCall.c
+build/octave/cocoCall.cpp
 build/octave/cons.m
 build/octave/exampleexperiment.m
 build/octave/my_fmincon.m

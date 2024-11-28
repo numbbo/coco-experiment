@@ -4,5 +4,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 more off; % turn off page-wise output
 
-fprintf("MEX     cocoCall.cpp");
+fprintf("MEX     cocoCall.cpp\n");
 mex("cocoCall.cpp");

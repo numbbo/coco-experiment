@@ -8,37 +8,26 @@
 
 #include "mex.h"
 
-#define UNPACK_PROBLEM(IDX)                                                                                            \
+#define UNPACK_THING(TYPE, THING, IDX)                                                                                 \
   if (nrhs < IDX) {                                                                                                    \
-    mexErrMsgIdAndTxt(mexFunctionName(), "Missing argument " #IDX ", expected problem.");                              \
+    mexErrMsgIdAndTxt(mexFunctionName(), "Missing argument " #IDX ", expected " #THING ".");                           \
   }                                                                                                                    \
-  coco_problem_t *problem = (coco_problem_t *)(*((size_t *)mxGetData(prhs[IDX])));                                     \
-  if (problem == NULL) {                                                                                               \
-    mexErrMsgIdAndTxt(mexFunctionName(), "Invalid problem (NULL) given.");                                             \
+  if (!mxIsScalar(prhs[IDX])) {                                                                                        \
+    mexErrMsgIdAndTxt(mexFunctionName(), "Argument " #IDX " not scalar. Expected pointer to " #THING ".");             \
+  }                                                                                                                    \
+  TYPE *THING = reinterpret_cast<TYPE *>((uint64_t)mxGetScalar(prhs[IDX]));
+
+#define UNPACK_THING_NOT_NULL(TYPE, THING, IDX)                                                                        \
+  UNPACK_THING(TYPE, THING, IDX)                                                                                       \
+  if (THING == nullptr) {                                                                                                 \
+    mexErrMsgIdAndTxt(mexFunctionName(), "Invalid " #THING " (NULL) passed in.");                                      \
   }
 
-#define UNPACK_OBSERVER(IDX)                                                                                           \
-  if (nrhs < IDX) {                                                                                                    \
-    mexErrMsgIdAndTxt(mexFunctionName(), "Missing argument " #IDX ", expected observer.");                             \
-  }                                                                                                                    \
-  coco_observer_t *observer = (coco_observer_t *)(*((size_t *)mxGetData(prhs[IDX])));                                  \
-  if (observer == NULL) {                                                                                              \
-    mexErrMsgIdAndTxt(mexFunctionName(), "Invalid observer (NULL) given.");                                            \
-  }
+#define UNPACK_PROBLEM(IDX) UNPACK_THING_NOT_NULL(coco_problem_t, problem, IDX)
+#define UNPACK_OBSERVER(IDX) UNPACK_THING_NOT_NULL(coco_observer_t, observer, IDX)
+#define UNPACK_SUITE(IDX) UNPACK_THING_NOT_NULL(coco_suite_t, suite, IDX)
 
-#define UNPACK_SUITE(IDX)                                                                                              \
-  if (nrhs < IDX) {                                                                                                    \
-    mexErrMsgIdAndTxt(mexFunctionName(), "Missing argument " #IDX ", expected suite.");                                \
-  }                                                                                                                    \
-  coco_suite_t *suite = (coco_suite_t *)(*((size_t *)mxGetData(prhs[IDX])));                                           \
-  if (suite == NULL) {                                                                                                 \
-    mexErrMsgIdAndTxt(mexFunctionName(), "Invalid suite (NULL) given.");                                               \
-  }
-
-
-#define RETURN_POINTER(PTR, IDX)                                                                                       \
-  plhs[IDX] = mxCreateNumericMatrix(1, 1, mxINT64_CLASS, mxREAL);                                                      \
-  *((size_t *)mxGetData(plhs[0])) = reinterpret_cast<size_t>(PTR);
+#define RETURN_POINTER(PTR, IDX) plhs[IDX] = mxCreateDoubleScalar(reinterpret_cast<int64_t>(PTR));
 
 void cocoEvaluateFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   /* const char *class_name = NULL; */
@@ -125,7 +114,7 @@ void cocoRecommendSolution(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 }
 
 void cocoObserver(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  coco_observer_t *observer = NULL;
+  coco_observer_t *observer = nullptr;
 
   /* check for proper number of arguments */
   if (nrhs != 2) {
@@ -200,18 +189,11 @@ void cocoProblemFree(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 }
 
 void cocoProblemGetDimension(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  size_t *ref;
-  coco_problem_t *problem = NULL;
   const mwSize dims[2] = {1, 1};
   size_t *res;
 
-  /* check for proper number of arguments */
-  if (nrhs != 1) {
-    mexErrMsgIdAndTxt("cocoProblemGetDimension:nrhs", "One input required.");
-  }
-  /* get the problem */
-  ref = (size_t *)mxGetData(prhs[0]);
-  problem = (coco_problem_t *)(*ref);
+  UNPACK_PROBLEM(0);
+
   /* prepare the return value */
   plhs[0] = mxCreateNumericArray(2, dims, mxINT32_CLASS, mxREAL);
   res = (size_t *)mxGetData(plhs[0]);
@@ -298,7 +280,7 @@ void cocoProblemGetLargestValuesOfInterest(int nlhs, mxArray *plhs[], int nrhs, 
 
 void cocoProblemGetName(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t *ref;
-  coco_problem_t *pb = NULL;
+  coco_problem_t *pb = nullptr;
   const char *res;
 
   /* check for proper number of arguments */
@@ -316,7 +298,7 @@ void cocoProblemGetName(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs
 
 void cocoProblemGetNumberOfObjectives(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t *ref;
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
   const mwSize dims[2] = {1, 1};
   size_t *res;
 
@@ -334,18 +316,11 @@ void cocoProblemGetNumberOfObjectives(int nlhs, mxArray *plhs[], int nrhs, const
 }
 
 void cocoProblemGetNumberOfConstraints(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  size_t *ref;
-  coco_problem_t *problem = NULL;
   const mwSize dims[2] = {1, 1};
   size_t *res;
 
-  /* check for proper number of arguments */
-  if (nrhs != 1) {
-    mexErrMsgIdAndTxt("cocoProblemGetNumberOfConstraints:nrhs", "One input required.");
-  }
-  /* get the problem */
-  ref = (size_t *)mxGetData(prhs[0]);
-  problem = (coco_problem_t *)(*ref);
+  UNPACK_PROBLEM(0);
+
   /* prepare the return value */
   plhs[0] = mxCreateNumericArray(2, dims, mxINT32_CLASS, mxREAL);
   res = (size_t *)mxGetData(plhs[0]);
@@ -353,18 +328,11 @@ void cocoProblemGetNumberOfConstraints(int nlhs, mxArray *plhs[], int nrhs, cons
 }
 
 void cocoProblemGetNumberOfIntegerVariables(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  size_t *ref;
-  coco_problem_t *problem = NULL;
   const mwSize dims[2] = {1, 1};
   size_t *res;
 
-  /* check for proper number of arguments */
-  if (nrhs != 1) {
-    mexErrMsgIdAndTxt("cocoProblemGetNumberOfIntegerVariables:nrhs", "One input required.");
-  }
-  /* get the problem */
-  ref = (size_t *)mxGetData(prhs[0]);
-  problem = (coco_problem_t *)(*ref);
+  UNPACK_PROBLEM(0);
+
   /* prepare the return value */
   plhs[0] = mxCreateNumericArray(2, dims, mxINT32_CLASS, mxREAL);
   res = (size_t *)mxGetData(plhs[0]);
@@ -372,20 +340,13 @@ void cocoProblemGetNumberOfIntegerVariables(int nlhs, mxArray *plhs[], int nrhs,
 }
 
 void cocoProblemGetSmallestValuesOfInterest(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  size_t *ref;
-  coco_problem_t *problem = NULL;
   size_t nb_dim;
   size_t i;
   const double *res;
   double *v; /* intermediate variable that aloows to set plhs[0] */
 
-  /* check for proper number of arguments */
-  if (nrhs != 1) {
-    mexErrMsgIdAndTxt("cocoProblemGetSmallestValuesOfInterest:nrhs", "One input required.");
-  }
-  /* get the problem */
-  ref = (size_t *)mxGetData(prhs[0]);
-  problem = (coco_problem_t *)(*ref);
+  UNPACK_PROBLEM(0);
+
   nb_dim = coco_problem_get_dimension(problem);
   plhs[0] = mxCreateDoubleMatrix(1, nb_dim, mxREAL);
   v = mxGetPr(plhs[0]);
@@ -398,7 +359,7 @@ void cocoProblemGetSmallestValuesOfInterest(int nlhs, mxArray *plhs[], int nrhs,
 
 void cocoProblemGetBestValue(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t *ref;
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
   double res;
 
   /* Check for proper number of input and arguments */
@@ -419,45 +380,27 @@ void cocoProblemGetBestValue(int nlhs, mxArray *plhs[], int nrhs, const mxArray 
 }
 
 void cocoProblemIsValid(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  size_t *ref;
-  coco_problem_t *pb = NULL;
+  /* Cannot use UNPACK_PROBLEM because it checks for NULL values. */
+  UNPACK_THING(coco_problem_t, problem, 0);
 
-  /* check for proper number of arguments */
-  if (nrhs != 1) {
-    mexErrMsgIdAndTxt("problemIsValid:nrhs", "One input required.");
-  }
-  /* get the problem */
-  ref = (size_t *)mxGetData(prhs[0]);
-  pb = (coco_problem_t *)(*ref);
-  plhs[0] = mxCreateLogicalScalar(pb != NULL);
+  plhs[0] = mxCreateLogicalScalar(problem != nullptr);
 }
 
 void cocoProblemRemoveObserver(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  coco_problem_t *problem;
-  coco_observer_t *observer;
   coco_problem_t *unobservedproblem;
-  size_t *ref;
-  size_t *ref2;
 
   /* check for proper number of arguments */
   if (nrhs != 2) {
     mexErrMsgIdAndTxt("cocoProblemREmoveObserver:nrhs", "Two inputs required.");
   }
 
-  /* get the suite */
-  ref = (size_t *)mxGetData(prhs[0]);
-  problem = (coco_problem_t *)(*ref);
-  /* get the observer */
-  ref2 = (size_t *)mxGetData(prhs[1]);
-  observer = (coco_observer_t *)(*ref2);
+  UNPACK_PROBLEM(0);
+  UNPACK_OBSERVER(1);
 
   /* call coco_problem_remove_observer() */
   unobservedproblem = coco_problem_remove_observer(problem, observer);
 
-  /* prepare the return value */
-  plhs[0] = mxCreateNumericMatrix(1, 1, mxINT64_CLASS, mxREAL);
-  ref = (size_t *)mxGetData(plhs[0]);
-  *ref = (size_t)unobservedproblem;
+  RETURN_POINTER(unobservedproblem, 0);
 }
 
 void cocoSetLogLevel(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -481,8 +424,7 @@ void cocoSuite(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   char *suite_name;
   char *suite_instance;
   char *suite_options;
-  coco_suite_t *suite = NULL;
-  size_t *res;
+  coco_suite_t *suite = nullptr;
 
   /* check for proper number of arguments */
   if (nrhs != 3) {
@@ -496,24 +438,12 @@ void cocoSuite(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   suite_options = mxArrayToString(prhs[2]);
   /* call coco_suite() */
   suite = coco_suite(suite_name, suite_instance, suite_options);
-  /* prepare the return value */
-  plhs[0] = mxCreateNumericMatrix(1, 1, mxINT64_CLASS, mxREAL);
-  res = (size_t *)mxGetData(plhs[0]);
-  *res = (size_t)suite;
+
+  RETURN_POINTER(suite, 0);
 }
 
 void cocoSuiteFree(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  coco_suite_t *suite = NULL;
-  size_t *ref;
-
-  /* check for proper number of arguments */
-  if (nrhs != 1) {
-    mexErrMsgIdAndTxt("cocoSuiteFree:nrhs", "One input required.");
-  }
-  /* get the suite */
-  ref = (size_t *)mxGetData(prhs[0]);
-  suite = (coco_suite_t *)(*ref);
-  /* call coco_suite_free() */
+  UNPACK_SUITE(0);
   coco_suite_free(suite);
 }
 
@@ -530,11 +460,11 @@ void cocoSuiteGetProblem(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
   if (nrhs != 2) {
     mexErrMsgIdAndTxt("cocoSuiteGetProblem:nrhs", "Two inputs required.\n Try \'help cocoSuiteGetProblem.m\'.");
   }
-  UNPACK_SUITE(0);  
+  UNPACK_SUITE(0);
   size_t findex = (size_t)mxGetScalar(prhs[1]);
-  
+
   coco_problem_t *problem = coco_suite_get_problem(suite, findex);
-  
+
   RETURN_POINTER(problem, 0);
 }
 
