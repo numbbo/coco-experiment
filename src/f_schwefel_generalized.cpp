@@ -1,5 +1,5 @@
 /**
- * @file f_schwefel_generalized.c
+ * @file f_schwefel_generalized.cpp
  * @brief Implementation of the Schwefel function and problem.
  */
 

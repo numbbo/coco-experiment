@@ -1,5 +1,5 @@
 /**
- * @file f_step_ellipsoid.c
+ * @file f_step_ellipsoid.cpp
  * @brief Implementation of the step ellipsoid function and problem.
  *
  * The BBOB step ellipsoid function intertwines the variable and objective

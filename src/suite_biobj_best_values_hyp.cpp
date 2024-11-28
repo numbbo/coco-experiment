@@ -1,5 +1,5 @@
 /**
- * @file suite_biobj_best_values_hyp.c
+ * @file suite_biobj_best_values_hyp.cpp
  *
  * @brief The best known hypervolume values for the bi-objective suite problems (only bbob-biobj and
  * bbob-biobj-ext problems are included at this time).

@@ -1,5 +1,5 @@
 /**
- * @file observer_sbox_cost.c
+ * @file observer_sbox_cost.cpp
  * @brief Implementation of the sbox_cost observer.
  */
 

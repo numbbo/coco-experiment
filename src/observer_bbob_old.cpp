@@ -1,5 +1,5 @@
 /**
- * @file observer_bbob_old.c
+ * @file observer_bbob_old.cpp
  * @brief Old implementation of the bbob observer.
  */
 

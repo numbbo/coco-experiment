@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_x_hat.c
+ * @file transform_vars_x_hat.cpp
  * @brief Implementation of multiplying the decision values by the vector 1+-.
  */
 

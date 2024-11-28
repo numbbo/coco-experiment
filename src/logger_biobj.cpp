@@ -1,5 +1,5 @@
 /**
- * @file logger_biobj.c
+ * @file logger_biobj.cpp
  * @brief Implementation of the bbob-biobj logger.
  *
  * Logs the performance of an optimizer on bi-objective problems with or without constraints and with or

@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_composed.c
+ * @file transform_vars_composed.cpp
  * @brief Implementation of inverse transformation composed by tasy and tosz.
  * @author Paul Dufosse
  */

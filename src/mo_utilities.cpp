@@ -1,5 +1,5 @@
 /**
- * @file mo_utilities.c
+ * @file mo_utilities.cpp
  * @brief Definitions of miscellaneous functions used for multi-objective problems.
  */
 

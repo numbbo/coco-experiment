@@ -1,5 +1,5 @@
 /**
- * @file f_different_powers.c
+ * @file f_different_powers.cpp
  * @brief Implementation of the different powers function and problem.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file f_weierstrass.c
+ * @file f_weierstrass.cpp
  * @brief Implementation of the Weierstrass function and problem.
  */
 

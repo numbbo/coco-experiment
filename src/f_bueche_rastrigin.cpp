@@ -1,5 +1,5 @@
 /**
- * @file f_bueche_rastrigin.c
+ * @file f_bueche_rastrigin.cpp
  * @brief Implementation of the Bueche-Rastrigin function and problem.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_affine.c
+ * @file transform_vars_affine.cpp
  * @brief Implementation of performing an affine transformation on decision values.
  *
  * x |-> Mx + b <br>

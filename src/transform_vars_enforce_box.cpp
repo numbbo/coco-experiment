@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_enforce_box.c
+ * @file transform_vars_enforce_box.cpp
  * @brief Enforce box constraint, returning NaN if box is violated.
  */
 

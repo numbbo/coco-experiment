@@ -1,5 +1,5 @@
 /**
- * @file f_linear_slope.c
+ * @file f_linear_slope.cpp
  * @brief Implementation of the linear slope function and problem.
  */
 

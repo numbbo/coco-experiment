@@ -1,5 +1,5 @@
 /**
- * @file f_griewank_rosenbrock.c
+ * @file f_griewank_rosenbrock.cpp
  * @brief Implementation of the Griewank-Rosenbrock function and problem.
  */
 

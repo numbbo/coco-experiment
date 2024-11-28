@@ -1,5 +1,5 @@
 /**
- * @file logger_toy.c
+ * @file logger_toy.cpp
  * @brief Implementation of the toy logger.
  *
  * Logs the evaluation number, function value the target hit and all the variables each time a target has

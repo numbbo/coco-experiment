@@ -1,5 +1,5 @@
 /**
- * @file coco_runtime_c.c
+ * @file coco_runtime_c.cpp
  * @brief Generic COCO runtime implementation for the C language.
  *
  * Other language interfaces might want to replace this so that memory allocation and error handling go

@@ -1,5 +1,5 @@
 /**
- * @file suite_toy.c
+ * @file suite_toy.cpp
  * @brief Implementation of a toy suite containing 6 noiseless "bas.cpp" single-objective functions in 5
  * dimensions.
  */

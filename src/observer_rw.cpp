@@ -1,5 +1,5 @@
 /**
- * @file observer_rw.c
+ * @file observer_rw.cpp
  * @brief Implementation of an observer for real-world problems.
  */
 
@@ -54,7 +54,7 @@ static void logger_rw_free(void* logger);
  * - "log_time: 0/1" determines whether the time needed to evaluate each solution is logged (0) or not (1).
  * The default value is 0.
  */
-static void observer_rw(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
+static void observer_rw(coco_observer_t *observer, std::string const& options, coco_option_keys_t*& option_keys) {
 
   observer_rw_data_t *observer_data;
   char string_value[COCO_PATH_MAX + 1];
@@ -63,12 +63,12 @@ static void observer_rw(coco_observer_t *observer, char const* options, coco_opt
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
   char const* known_keys[] = {"log_variables", "log_constraints", "low_dim_vars",
                               "low_dim_cons",  "log_only_better", "log_time"};
-  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
+  option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
 
   observer_data = (observer_rw_data_t *)coco_allocate_memory(sizeof(*observer_data));
 
   observer_data->log_vars_mode = LOG_ALWAYS;
-  if (coco_options_read_string(options, "log_variables", string_value) > 0) {
+  if (coco_options_read_string(options.c_str(), "log_variables", string_value) > 0) {
     if (strcmp(string_value, "none") == 0)
       observer_data->log_vars_mode = LOG_NEVER;
     else if (strcmp(string_value, "all") == 0)
@@ -78,7 +78,7 @@ static void observer_rw(coco_observer_t *observer, char const* options, coco_opt
   }
 
   observer_data->log_cons_mode = LOG_ALWAYS;
-  if (coco_options_read_string(options, "log_constraints", string_value) > 0) {
+  if (coco_options_read_string(options.c_str(), "log_constraints", string_value) > 0) {
     if (strcmp(string_value, "none") == 0)
       observer_data->log_cons_mode = LOG_NEVER;
     else if (strcmp(string_value, "all") == 0)
@@ -87,16 +87,16 @@ static void observer_rw(coco_observer_t *observer, char const* options, coco_opt
       observer_data->log_cons_mode = LOG_LOW_DIM;
   }
 
-  if (coco_options_read_size_t(options, "low_dim_vars", &(observer_data->low_dim_vars)) == 0)
+  if (coco_options_read_size_t(options.c_str(), "low_dim_vars", &(observer_data->low_dim_vars)) == 0)
     observer_data->low_dim_vars = 10;
 
-  if (coco_options_read_size_t(options, "low_dim_cons", &(observer_data->low_dim_cons)) == 0)
+  if (coco_options_read_size_t(options.c_str(), "low_dim_cons", &(observer_data->low_dim_cons)) == 0)
     observer_data->low_dim_cons = 10;
 
-  if (coco_options_read_int(options, "log_only_better", &(observer_data->log_only_better)) == 0)
+  if (coco_options_read_int(options.c_str(), "log_only_better", &(observer_data->log_only_better)) == 0)
     observer_data->log_only_better = 0;
 
-  if (coco_options_read_int(options, "log_time", &(observer_data->log_time)) == 0)
+  if (coco_options_read_int(options.c_str(), "log_time", &(observer_data->log_time)) == 0)
     observer_data->log_time = 0;
 
   observer->logger_allocate_function = logger_rw;

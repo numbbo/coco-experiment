@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_oscillate.c
+ * @file transform_obj_oscillate.cpp
  * @brief Implementation of oscillating the objective value.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file suite_biobj_mixint_best_values_hyp.c
+ * @file suite_biobj_mixint_best_values_hyp.cpp
  *
  * @brief The best known hypervolume values for the bbob-biobj-mixint suite problems.
  *

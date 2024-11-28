@@ -1,5 +1,5 @@
 /**
- * @file f_katsuura.c
+ * @file f_katsuura.cpp
  * @brief Implementation of the Katsuura function and problem.
  */
 

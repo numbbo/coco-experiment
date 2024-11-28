@@ -1,5 +1,5 @@
 /**
- * @file suite_biobj_mixint.c
+ * @file suite_biobj_mixint.cpp
  * @brief Implementation of a bi-objective mixed-integer suite. The functions are the same as those
  * in the bbob-biobj-ext suite with 92 functions, but the large-scale implementations of the
  * functions are used instead of the original ones for dimensions over 40.

@@ -1,5 +1,5 @@
 /**
- * @file f_bent_cigar.c
+ * @file f_bent_cigar.cpp
  * @brief Implementation of the bent cigar function and problem.
  */
 

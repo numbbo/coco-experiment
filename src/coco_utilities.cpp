@@ -1,5 +1,5 @@
 /**
- * @file coco_utilities.c
+ * @file coco_utilities.cpp
  * @brief Definitions of miscellaneous functions used throughout the COCO framework.
  */
 

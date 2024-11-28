@@ -1,5 +1,5 @@
 /**
- * @file f_sharp_ridge_generalized.c
+ * @file f_sharp_ridge_generalized.cpp
  * @brief Implementation of the generalized sharp ridge function and problem.
  */
 

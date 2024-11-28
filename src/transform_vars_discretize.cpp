@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_discretize.c
+ * @file transform_vars_discretize.cpp
  *
  * @brief Implementation of transforming a continuous problem to a mixed-integer problem by making some
  * of its variables discrete. The integer variables are considered as bounded (any variable outside the

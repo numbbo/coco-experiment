@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_conditioning.c
+ * @file transform_vars_conditioning.cpp
  * @brief Implementation of conditioning decision values.
  */
 

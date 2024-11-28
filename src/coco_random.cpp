@@ -1,5 +1,5 @@
 /**
- * @file coco_random.c
+ * @file coco_random.cpp
  * @brief Definitions of functions regarding COCO random numbers.
  *
  * @note This file contains non-C89-standard types (such as uint32_t and uint64_t), which should

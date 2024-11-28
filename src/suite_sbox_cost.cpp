@@ -1,4 +1,4 @@
-/** @file suite_sbox_cost.c
+/** @file suite_sbox_cost.cpp
  *
  * @brief Implementation of the SBOX-COST suite, containing the 24 noiseless
  * single-objective functions in 6 dimensions from the original BBOB suite.

@@ -1,5 +1,5 @@
 /**
- * @file f_sphere.c
+ * @file f_sphere.cpp
  * @brief Implementation of the sphere function and problem.
  */
 

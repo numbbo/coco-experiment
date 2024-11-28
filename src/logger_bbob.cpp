@@ -1,5 +1,5 @@
 /**
- * @file logger_bbob.c
+ * @file logger_bbob.cpp
  * @brief Implementation of the bbob logger.
  *
  * Logs the performance of an optimizer on single-objective problems with or without constraints
@@ -230,17 +230,11 @@ static void logger_bbob_open_data_file(FILE*& data_file, std::string const& path
  */
 static void logger_bbob_open_info_file(logger_bbob_data_t* logger, std::string const& folder, std::string const& function_string,
                                        std::string const& data_file_name, std::string const& suite_name, bool start_new_line) {
-//  char data_file_path[COCO_PATH_MAX + 2] = {0};
-  bool add_empty_line = false;
-//  char file_name[COCO_PATH_MAX + 2] = {0};
-//  char file_path[COCO_PATH_MAX + 2] = {0};
-  observer_bbob_data_t* observer_data;
-
   coco_debug("Started logger_bbob_open_info_file()");
 
   assert(logger);
   assert(logger->observer);
-  observer_data = ((observer_bbob_data_t* )((coco_observer_t *)logger->observer)->data);
+  observer_bbob_data_t* observer_data = ((observer_bbob_data_t*)((coco_observer_t*)logger->observer)->data);
   assert(observer_data);
 
   std::string data_file_path = data_file_name;
@@ -249,11 +243,10 @@ static void logger_bbob_open_info_file(logger_bbob_data_t* logger, std::string c
 
   std::string file_name = (std::string)observer_data->prefix + "_f" + function_string + ".info";
   std::string file_path = std::filesystem::path(folder) / file_name;
-//  coco_join_path(file_path, sizeof(file_path), folder, file_name, nullptr);
 
   if (! info_file) {
-    add_empty_line = false;
-    /* If the file already exists, an empty line is needed */
+    bool add_empty_line = false;
+    // If the file already exists then an empty line is needed
     FILE* tmp_file = fopen(file_path.c_str(), "r");
     if (tmp_file) {
       add_empty_line = true;
@@ -270,7 +263,7 @@ static void logger_bbob_open_info_file(logger_bbob_data_t* logger, std::string c
               logger->observer->algorithm_name, coco_version, ((coco_observer_t *)logger->observer)->observer_name,
               logger_bbob_data_format);
       fprintf(info_file, "%%\n");
-      /* data_file_path does not have the extension */
+      // data_file_path does not have the extension
       fprintf(info_file, "%s.dat", data_file_path.c_str());
     }
   }

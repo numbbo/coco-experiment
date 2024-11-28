@@ -1,5 +1,5 @@
 /**
- * @file f_ellipsoid.c
+ * @file f_ellipsoid.cpp
  * @brief Implementation of the ellipsoid function and problem.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file suite_biobj_utilities.c
+ * @file suite_biobj_utilities.cpp
  * @brief Implementation of some functions (mostly handling instances) used by the bi-objective suites.
  *
  * @note Because some bi-objective problems constructed from two single-objective ones have a single optimal

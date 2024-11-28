@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_permblockdiag.c
+ * @file transform_vars_permblockdiag.cpp
  */
 
 #include <cassert>

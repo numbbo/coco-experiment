@@ -1,5 +1,5 @@
 /**
- * @file suite_bbob_legacy_code.c
+ * @file suite_bbob_legacy_code.cpp
  * @brief Legacy code from BBOB2009 required to replicate the 2009 functions.
  *
  * All of this code should only be used by the suite_bbob2009 functions to provide compatibility to the

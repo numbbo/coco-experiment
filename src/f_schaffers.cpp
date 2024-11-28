@@ -1,5 +1,5 @@
 /**
- * @file f_schaffers.c
+ * @file f_schaffers.cpp
  * @brief Implementation of the Schaffer's F7 function and problem,
  * transformations not implemented for the moment.
  */

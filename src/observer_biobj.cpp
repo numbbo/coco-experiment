@@ -1,5 +1,5 @@
 /**
- * @file observer_biobj.c
+ * @file observer_biobj.cpp
  * @brief Implementation of the bbob-biobj observer.
  */
 

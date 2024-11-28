@@ -1,5 +1,5 @@
 /**
- * @file f_lunacek_bi_rastrigin.c
+ * @file f_lunacek_bi_rastrigin.cpp
  * @brief Implementation of the Lunacek bi-Rastrigin function and problem.
  */
 

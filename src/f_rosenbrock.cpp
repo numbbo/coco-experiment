@@ -1,5 +1,5 @@
 /**
- * @file f_rosenbrock.c
+ * @file f_rosenbrock.cpp
  * @brief Implementation of the Rosenbrock function and problem.
  */
 

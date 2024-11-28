@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_brs.c
+ * @file transform_vars_brs.cpp
  * @brief Implementation of the ominous 's_i scaling' of the BBOB Bueche-Rastrigin problem.
  */
 

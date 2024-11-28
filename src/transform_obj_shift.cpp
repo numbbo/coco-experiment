@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_shift.c
+ * @file transform_obj_shift.cpp
  * @brief Implementation of shifting the objective value by the given offset.
  */
 

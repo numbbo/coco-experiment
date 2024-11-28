@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_scale.c
+ * @file transform_obj_scale.cpp
  * @brief Implementation of scaling the objective value by the given factor.
  */
 

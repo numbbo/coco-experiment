@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_penalize.c
+ * @file transform_obj_penalize.cpp
  * @brief Implementation of adding a penalty to the objective value for solutions outside of the ROI in the
  * decision space.
  */

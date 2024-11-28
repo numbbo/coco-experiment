@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_x_hat_generic.c
+ * @file transform_vars_x_hat_generic.cpp
  * @brief Implementation of multiplying the decision values by the vector 1+-.
  * Wassim: TODO: should eventually replace the non generic version in its use in Schwefel where xopt would be set
  * elsewhere

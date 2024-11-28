@@ -1,5 +1,5 @@
 /**
- * @file observer_bbob.c
+ * @file observer_bbob.cpp
  * @brief Implementation of the bbob observer.
  */
 
@@ -68,15 +68,13 @@ static void observer_bbob_data_free(void* stuff) {
  *
  * - "prefix: STRING" defines the prefix of the name of the info files. The default value is "bbobex".
  */
-static void observer_bbob(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
-
-  observer_bbob_data_t* observer_data;
-  /* Sets the valid keys for bbob observer options
-   * IMPORTANT: This list should be up-to-date with the code and the documentation */
+static void observer_bbob(coco_observer_t *observer, std::string const& options, coco_option_keys_t*& option_keys) {
+  // Sets the valid keys for bbob observer options
+  // IMPORTANT: This list should be up-to-date with the code and the documentation
   char const* known_keys[] = {"prefix"};
-  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
+  option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
 
-  observer_data = (observer_bbob_data_t* )coco_allocate_memory(sizeof(*observer_data));
+  observer_bbob_data_t* observer_data = (observer_bbob_data_t*)coco_allocate_memory(sizeof(*observer_data));
   observer_data->observed_problem = nullptr;
   observer_data->prefix = coco_allocate_string(COCO_PATH_MAX + 1);
 
@@ -85,7 +83,7 @@ static void observer_bbob(coco_observer_t *observer, char const* options, coco_o
   observer_data->last_dat_file = coco_allocate_string(COCO_PATH_MAX + 1);
   strncpy(observer_data->last_dat_file, "init", COCO_PATH_MAX);
 
-  if (coco_options_read_string(options, "prefix", observer_data->prefix) == 0) {
+  if (coco_options_read_string(options.c_str(), "prefix", observer_data->prefix) == 0) {
     strcpy(observer_data->prefix, "bbobexp");
   }
 
@@ -94,6 +92,4 @@ static void observer_bbob(coco_observer_t *observer, char const* options, coco_o
   observer->restart_function = logger_bbob_signal_restart;
   observer->data_free_function = observer_bbob_data_free;
   observer->data = observer_data;
-
-  (void)options; /* To silence the compiler */
 }

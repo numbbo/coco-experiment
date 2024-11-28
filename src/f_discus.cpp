@@ -1,5 +1,5 @@
 /**
- * @file f_discus.c
+ * @file f_discus.cpp
  * @brief Implementation of the discus function and problem.
  */
 

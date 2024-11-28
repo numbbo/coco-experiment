@@ -1,5 +1,5 @@
 /**
- * @file coco_runtime_matlab.c
+ * @file coco_runtime_matlab.cpp
  * @brief Specific COCO runtime implementation for the Matlab language
  * that replaces coco_runtime_c.c with the Matlab-specific counterparts.
  *

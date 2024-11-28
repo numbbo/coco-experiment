@@ -1,5 +1,5 @@
 /**
- * @file observer_toy.c
+ * @file observer_toy.cpp
  * @brief Implementation of the toy observer.
  */
 

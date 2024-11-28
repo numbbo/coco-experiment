@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_shift.c
+ * @file transform_vars_shift.cpp
  * @brief Implementation of shifting all decision values by an offset.
  */
 

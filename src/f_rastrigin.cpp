@@ -1,5 +1,5 @@
 /**
- * @file f_rastrigin.c
+ * @file f_rastrigin.cpp
  * @brief Implementation of the Rastrigin function and problem.
  */
 

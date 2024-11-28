@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_permutation_helpers.c
+ * @file transform_vars_permutation_helpers.cpp
  * @brief implements functions needed by transform_vars_permutation.c
  */
 

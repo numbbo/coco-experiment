@@ -1,5 +1,5 @@
 /**
- * @file f_gallagher.c
+ * @file f_gallagher.cpp
  * @brief Implementation of the Gallagher function and problem.
  */
 

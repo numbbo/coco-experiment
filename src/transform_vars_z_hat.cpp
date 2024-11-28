@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_z_hat.c
+ * @file transform_vars_z_hat.cpp
  * @brief Implementation of the z^hat transformation of decision values for the BBOB Schwefel problem.
  */
 

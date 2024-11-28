@@ -1,5 +1,5 @@
 /**
- * @file  c_linear.c
+ * @file  c_linear.cpp
  * @brief Implements the linear constraints for the suite of
  *        constrained problems.
  */

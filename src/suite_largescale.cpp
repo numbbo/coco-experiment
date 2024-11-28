@@ -1,5 +1,5 @@
 /**
- * @file suite_largescale.c
+ * @file suite_largescale.cpp
  * @brief Implementation of the bbob large-scale suite containing 24 functions in 6 large dimensions.
  */
 

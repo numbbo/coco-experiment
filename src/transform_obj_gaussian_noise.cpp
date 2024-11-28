@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_uniform_noise.c
+ * @file transform_obj_uniform_noise.cpp
  * @brief Implementation of the Uniform noise model
  */
 #include "coco.h"

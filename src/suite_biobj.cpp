@@ -1,5 +1,5 @@
 /**
- * @file suite_biobj.c
+ * @file suite_biobj.cpp
  * @brief Implementation of two bi-objective suites created by combining two single-objective problems
  * from the bbob suite:
  * - bbob-biobj contains 55 functions and 6 dimensions

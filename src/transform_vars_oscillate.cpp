@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_oscillate.c
+ * @file transform_vars_oscillate.cpp
  * @brief Implementation of oscillating the decision values.
  * @author ??
  * @author Paul Dufosse

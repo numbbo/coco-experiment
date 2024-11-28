@@ -1,5 +1,5 @@
 /**
- * @file  suite_cons_bbob_problems.c
+ * @file  suite_cons_bbob_problems.cpp
  * @brief Implementation of the problems in the constrained BBOB suite.
  *
  * This suite contains 54 constrained functions in continuous domain

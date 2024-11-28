@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_cauchy_noise.c
+ * @file transform_obj_cauchy_noise.cpp
  * @brief Implementation of the Cauchy noise model
  */
 #include "coco.h"

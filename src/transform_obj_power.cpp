@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_power.c
+ * @file transform_obj_power.cpp
  * @brief Implementation of raising the objective value to the power of a given exponent.
  */
 

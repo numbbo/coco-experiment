@@ -1,5 +1,5 @@
 /**
- * @file suite_bbob_mixint.c
+ * @file suite_bbob_mixint.cpp
  * @brief Implementation of a suite with mixed-integer bbob problems. The functions are the same
  * as those in the bbob suite with 24 functions, but the large-scale implementations of the
  * functions are used instead of the original ones for dimensions over 40. Additionally, the

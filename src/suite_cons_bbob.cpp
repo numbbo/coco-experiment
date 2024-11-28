@@ -1,5 +1,5 @@
 /**
- * @file  suite_cons_bbob.c
+ * @file  suite_cons_bbob.cpp
  * @brief Implementation of the constrained bbob suite containing
  *        54 constrained problems in 6 dimensions. See comments in
  *        "suite_cons_bbob_problems.cpp" for more details.

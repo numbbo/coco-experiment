@@ -1,5 +1,5 @@
 /**
- * @file transform_obj_norm_by_dim.c
+ * @file transform_obj_norm_by_dim.cpp
  * @brief Implementation of normalizing the raw fitness functions by the dimensions
  * Mostly used to in the large-scale testsuite
  */

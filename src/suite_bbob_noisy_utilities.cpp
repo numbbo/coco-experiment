@@ -1,5 +1,5 @@
 /**
- * @file suite_noisy_utilities.c
+ * @file suite_noisy_utilities.cpp
  * @brief Implementation of some functions (mostly handling instances) used by the bi-objective suites.
  * These are used throughout the COCO code base but should not be used by any external code.
  */

@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_permutation.c
+ * @file transform_vars_permutation.cpp
  * @brief Implementation of permuting the decision values.
  */
 

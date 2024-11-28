@@ -1,5 +1,5 @@
 /**
- * @file logger_bbob_old.c
+ * @file logger_bbob_old.cpp
  * @brief Old implementation of the bbob logger.
  *
  * Logs the performance of a single-objective optimizer on noisy or noiseless problems.

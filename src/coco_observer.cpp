@@ -1,5 +1,5 @@
 /**
- * @file coco_observer.c
+ * @file coco_observer.cpp
  * @brief Definitions of functions regarding COCO observers.
  */
 
@@ -736,7 +736,7 @@ coco_observer_t *coco_observer(char const* observer_name, char const* observer_o
   if (0 == strcmp(observer_name, "toy")) {
     observer_toy(observer, observer_options, &additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob")) {
-    observer_bbob(observer, observer_options, &additional_option_keys);
+    observer_bbob(observer, observer_options, additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-old")) {
     observer_bbob_old(observer, observer_options, &additional_option_keys);
   } else if (0 == strcmp(observer_name, "sbox-cost")) {
@@ -746,17 +746,17 @@ coco_observer_t *coco_observer(char const* observer_name, char const* observer_o
   } else if (0 == strcmp(observer_name, "bbob-biobj-ext")) {
     observer_biobj(observer, observer_options, &additional_option_keys);
   } else if (0 == strncmp(observer_name, "bbob-constrained", 16)) {
-    observer_bbob(observer, observer_options, &additional_option_keys);
+    observer_bbob(observer, observer_options, additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-largescale")) {
-    observer_bbob(observer, observer_options, &additional_option_keys);
+    observer_bbob(observer, observer_options, additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-mixint")) {
-    observer_bbob(observer, observer_options, &additional_option_keys);
+    observer_bbob(observer, observer_options, additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-biobj-mixint")) {
     observer_biobj(observer, observer_options, &additional_option_keys);
   } else if (0 == strcmp(observer_name, "rw")) {
-    observer_rw(observer, observer_options, &additional_option_keys);
+    observer_rw(observer, observer_options, additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-noisy")) {
-    observer_bbob(observer, observer_options, &additional_option_keys);
+    observer_bbob(observer, observer_options, additional_option_keys);
   } else {
     coco_observer_free(observer);
     coco_warning("coco_observer(): Unknown observer %s!", observer_name);

@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_round_step.c
+ * @file transform_vars_round_step.cpp
  * @brief Implementation of rounding the variables for the step-ellipsoid function
  * TODO: should this be a helper function instead?
  */

@@ -1,5 +1,5 @@
 /**
- * @file coco_suite.c
+ * @file coco_suite.cpp
  * @brief Definitions of functions regarding COCO suites.
  *
  * When a new suite is added, the functions coco_suite_intialize,

@@ -1,5 +1,5 @@
 /**
- * @file suite_biobj_ext.c
+ * @file suite_biobj_ext.cpp
  * @brief Implementation of the extended biobjective bbob-biobj-ext suite containing 92 functions and 6 dimensions.
  *
  * The bbob-biobj-ext suite is created by combining two single-objective problems from the bbob suite.

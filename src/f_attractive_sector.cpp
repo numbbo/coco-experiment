@@ -1,5 +1,5 @@
 /**
- * @file f_attractive_sector.c
+ * @file f_attractive_sector.cpp
  * @brief Implementation of the attractive sector function and problem.
  */
 

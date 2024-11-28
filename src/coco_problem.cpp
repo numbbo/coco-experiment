@@ -1,5 +1,5 @@
 /**
- * @file coco_problem.c
+ * @file coco_problem.cpp
  * @brief Definitions of functions regarding COCO problems.
  */
 

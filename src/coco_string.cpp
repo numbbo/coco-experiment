@@ -1,5 +1,5 @@
-/**
- * @file coco_string.c
+/**p
+ * @file coco_string.cpp
  * @brief Definitions of functions that manipulate strings.
  */
 

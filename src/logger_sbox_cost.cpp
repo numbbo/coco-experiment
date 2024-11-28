@@ -1,5 +1,5 @@
 /**
- * @file logger_sbox_cost.c
+ * @file logger_sbox_cost.cpp
  * @brief Implementation of the sbox_cost logger.
  *
  * Logs the performance of a single-objective optimizer on noisy or noiseless

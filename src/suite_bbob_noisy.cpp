@@ -1,5 +1,5 @@
 /**
- * @file suite_bbob_noisy.c
+ * @file suite_bbob_noisy.cpp
  * @brief Implementation of the bbob suite containing 24 noiseless single-objective functions in 6
  * dimensions.
  */

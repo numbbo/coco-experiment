@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_scale.c
+ * @file transform_vars_scale.cpp
  * @brief Implementation of scaling decision values by a given factor.
  */
 

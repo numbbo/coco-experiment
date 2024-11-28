@@ -1,5 +1,5 @@
 /**
- * @file transform_vars_blockrotation.c
+ * @file transform_vars_blockrotation.cpp
  * @brief Implementation of performing a block-rotation transformation on
  * decision values.
  *

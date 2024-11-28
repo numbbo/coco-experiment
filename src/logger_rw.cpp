@@ -1,5 +1,5 @@
 /**
- * @file logger_rw.c
+ * @file logger_rw.cpp
  * @brief Implementation of the real-world logger.
  *
  * Can be used to log all (or just those that are better than the preceding) solutions with information

@@ -1,5 +1,5 @@
 /**
- * @file coco_archive.c
+ * @file coco_archive.cpp
  * @brief Definitions of functions regarding COCO archives.
  *
  * COCO archives are used to do some pre-processing on the bi-objective archive files. Namely, through a
