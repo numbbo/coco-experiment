@@ -68,7 +68,7 @@ static const char *suite_sbox_cost_get_instances_by_year(const int year) {
  * @brief Creates and returns a SBOX-COST problem without needing the actual
  * SBOX-COST suite.
  */
-static coco_problem_t *coco_get_sbox_cost_problem(const size_t function,
+static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
                                                   const size_t dimension,
                                                   const size_t instance) {
   coco_problem_t *problem = NULL;
@@ -190,7 +190,7 @@ static coco_problem_t *coco_get_sbox_cost_problem(const size_t function,
         problem_name_template);
   } else {
     coco_error(
-        "coco_get_sbox_cost_problem(): cannot retrieve problem f%lu instance "
+        "coco_get_bbob_boxed_problem(): cannot retrieve problem f%lu instance "
         "%lu in %luD",
         (unsigned long)function, (unsigned long)instance,
         (unsigned long)dimension);
@@ -222,7 +222,7 @@ static coco_problem_t *suite_sbox_cost_get_problem(coco_suite_t *suite,
   const size_t dimension = suite->dimensions[dimension_idx];
   const size_t instance = suite->instances[instance_idx];
 
-  problem = coco_get_sbox_cost_problem(function, dimension, instance);
+  problem = coco_get_bbob_boxed_problem(function, dimension, instance);
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;
