@@ -42,7 +42,6 @@ jobs:
   merge-java-examples:
     runs-on: ubuntu-latest
     needs: [java-example]
-    if: success() || failure()
     steps:
       - name: Merge Artifacts
         uses: actions/upload-artifact/merge@v4

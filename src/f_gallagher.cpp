@@ -254,7 +254,7 @@ static coco_problem_t* f_gallagher_bbob_problem_allocate(const size_t function, 
 
   /* SBOX-COST wants optima in [-5, 5], the other suites in [-4, 4]. */
   double scale_factor = 0.8;
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     scale_factor = 1.0;
   }
 

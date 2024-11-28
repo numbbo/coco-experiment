@@ -123,7 +123,7 @@ static coco_problem_t* f_bent_cigar_generalized_permblockdiag_bbob_problem_alloc
   nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   xopt = coco_allocate_vector(dimension);
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt, rseed + 1000000, dimension);
   } else {
     bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);

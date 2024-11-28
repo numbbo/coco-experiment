@@ -42,7 +42,7 @@ static coco_suite_t* coco_suite_intialize(char const* suite_name) {
     suite = suite_toy_initialize();
   } else if (strcmp(suite_name, "bbob") == 0) {
     suite = suite_bbob_initialize();
-  } else if (strcmp(suite_name, "sbox-cost") == 0) {
+  } else if (strcmp(suite_name, "bbob-boxed") == 0) {
     suite = suite_sbox_cost_initialize();
   } else if ((strcmp(suite_name, "bbob-biobj") == 0) || (strcmp(suite_name, "bbob-biobj-ext") == 0)) {
     suite = suite_biobj_initialize(suite_name);
@@ -75,7 +75,7 @@ static char const* coco_suite_get_instances_by_year(coco_suite_t const* suite,
   char const* year_string;
   if (strcmp(suite->suite_name, "bbob") == 0) {
     year_string = suite_bbob_get_instances_by_year(year);
-  } else if (strcmp(suite->suite_name, "sbox-cost") == 0) {
+  } else if (strcmp(suite->suite_name, "bbob-box") == 0) {
     year_string = suite_sbox_cost_get_instances_by_year(year);
   } else if ((strcmp(suite->suite_name, "bbob-biobj") == 0) || (strcmp(suite->suite_name, "bbob-biobj-ext") == 0)) {
     year_string = suite_biobj_get_instances_by_year(year);
@@ -122,7 +122,7 @@ static coco_problem_t* coco_suite_get_problem_from_indices(coco_suite_t* suite, 
         suite_toy_get_problem(suite, function_idx, dimension_idx, instance_idx);
   } else if (strcmp(suite->suite_name, "bbob") == 0) {
     problem = suite_bbob_get_problem(suite, function_idx, dimension_idx, instance_idx);
-  } else if (strcmp(suite->suite_name, "sbox-cost") == 0) {
+  } else if (strcmp(suite->suite_name, "bbob-boxed") == 0) {
     problem = suite_sbox_cost_get_problem(suite, function_idx, dimension_idx,
                                           instance_idx);
   } else if ((strcmp(suite->suite_name, "bbob-biobj") == 0) || (strcmp(suite->suite_name, "bbob-biobj-ext") == 0)) {

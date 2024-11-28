@@ -151,6 +151,7 @@ def git_version(format="pep440"):
         offset = int(offset)
         major, minor, release = version.split(".")
         is_prerelease = False
+        is_rc = "rc" in release
         for suffix in ["a", "b", "rc"]:
             if suffix in release:
                 release = release[:release.index(suffix)]
@@ -162,9 +163,9 @@ def git_version(format="pep440"):
             return f"{major}.{minor}.{int(release) + 1}-dev{offset}+{hash}"
         elif format == "rust":
             # Rust expects release candidates to be tagged -rcX not rcX...
-            if "rc" in release:
-                release = release.replace("rc", "-rc")
-            return f"{major}.{minor}.{int(release) + 1}-dev.{offset}+{hash}"
+            if is_rc:
+                release = f"{release+1}-rc"
+            return f"{major}.{minor}.{release}-dev.{offset}+{hash}"
         else:
             raise(f"Unknown version format '{format}'.")
 

@@ -81,7 +81,7 @@ static coco_problem_t* f_rosenbrock_bbob_problem_allocate(const size_t function,
 
   minus_one = coco_allocate_vector(dimension);
   xopt = coco_allocate_vector(dimension);
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt, rseed, dimension);
   } else {
     bbob2009_compute_xopt(xopt, rseed, dimension);
@@ -217,7 +217,7 @@ static coco_problem_t* f_rosenbrock_permblockdiag_bbob_problem_allocate(const si
   factor = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
   minus_one = coco_allocate_vector(dimension);
   xopt = coco_allocate_vector(dimension);
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt, rseed, dimension);
   } else {
     bbob2009_compute_xopt(xopt, rseed, dimension);

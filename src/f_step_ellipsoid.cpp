@@ -154,7 +154,7 @@ static coco_problem_t* f_step_ellipsoid_bbob_problem_allocate(const size_t funct
   double penalty_scale = f_step_ellipsoid_args->penalty_scale;
   data->fopt = bbob2009_compute_fopt(function, instance);
   data->penalty_scale = penalty_scale;
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(data->xopt, rseed, dimension);
   } else {
     bbob2009_compute_xopt(data->xopt, rseed, dimension);
@@ -269,7 +269,7 @@ static coco_problem_t* f_step_ellipsoid_permblockdiag_bbob_problem_allocate(cons
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt, rseed, dimension);
   } else {
     bbob2009_compute_xopt(xopt, rseed, dimension);

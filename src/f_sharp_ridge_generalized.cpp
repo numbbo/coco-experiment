@@ -143,7 +143,7 @@ static coco_problem_t* f_sharp_ridge_generalized_permblockdiag_bbob_problem_allo
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt, rseed, dimension);
   } else {
     bbob2009_compute_xopt(xopt, rseed, dimension);

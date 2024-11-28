@@ -1,0 +1,58 @@
+name: tag-release
+
+on:
+  push:
+    # Pattern matched against refs/tags
+    tags:        
+      - 'v*' # This includes only tags starting with v
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+   
+jobs:
+  source-build:
+    uses: ./.github/workflows/source_build.yml
+
+  python-wheels:
+    needs: source-build
+    uses: ./.github/workflows/test_python.yml
+    with:
+      build_only: "true"
+
+  release-python:
+    needs: python-wheels
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    # Dedicated environments with protections for publishing are strongly recommended.
+    environment:
+      name: release
+      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
+      # url: https://pypi.org/p/YOURPROJECT
+    steps:
+      - name: Download Python source package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-python-sdist
+          path: ./dist/
+      - name: Download Python source package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-python-wheels
+          path: ./dist/          
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Download remaining source packages
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist/
+          pattern: dist-*
+          merge-multiple: true    
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./dist/**
+

@@ -91,7 +91,7 @@ static coco_problem_t* f_schaffers_bbob_problem_allocate(const size_t function, 
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt, rseed, dimension);
   } else {
     bbob2009_compute_xopt(xopt, rseed, dimension);
@@ -168,7 +168,7 @@ static coco_problem_t* f_schaffers_permblockdiag_bbob_problem_allocate(const siz
 
   xopt = coco_allocate_vector(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "SBOX-COST suite problem") >= 0) {
+  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt, rseed, dimension);
   } else {
     bbob2009_compute_xopt(xopt, rseed, dimension);

@@ -33,9 +33,9 @@ NUM_OF_INDEPENDENT_RESTARTS = 1e9; % max. number of independent algorithm
 % bbob-constrained   48 constrained noiseless single-objective functions
 % bbob-mixint        24 unconstrained noiseless single-objective functions with mixed-integer variables
 % bbob-biobj-mixint  92 unconstrained noiseless bi-objective functions with mixed-integer variables
-% sbox-cost*         24 bound-constrained noiseless single-objective functions
+% bbob-boxed*         24 bound-constrained noiseless single-objective functions
 %
-% Suites with a star are partly implemented but not yet fully supported.
+% Suites with a star are partly implemented but may not yet be fully supported.
 %
 suite_name = 'bbob';
 observer_name = 'bbob';

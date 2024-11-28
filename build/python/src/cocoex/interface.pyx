@@ -11,21 +11,21 @@ np.import_array()
 
 known_suite_names = ["bbob",
                      "bbob-biobj", "bbob-biobj-ext",
+                     "bbob-boxed",
                      "bbob-constrained",
                      "bbob-largescale",
                      "bbob-mixint", "bbob-biobj-mixint",
                      "bbob-noisy",
-                     "sbox-cost"
                      ]
 known_suites = known_suite_names  # provide the expected name too
 _known_suite_names = ["bbob",
                       "bbob-biobj", "bbob-biobj-ext",
+                      "bbob-boxed",
                       "bbob-constrained",
                       "bbob-constrained-active-only", "bbob-constrained-no-disguise",
                       "bbob-largescale",
                       "bbob-mixint", "bbob-biobj-mixint",
                       "bbob-noisy",
-                      "sbox-cost"
                       ]
 
 __all__ = ['Observer', 'Problem', 'Suite', 'known_suite_names', 'known_suites']
