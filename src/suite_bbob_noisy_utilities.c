@@ -92,9 +92,9 @@ double coco_boundary_handling(coco_problem_t *problem, const double *x) {
     lower_bound = problem->smallest_values_of_interest[dimension];
     upper_bound = problem->largest_values_of_interest[dimension];
     if (x[dimension] > upper_bound) {
-      penalty += x[dimension] - upper_bound;
+      penalty += (x[dimension] - upper_bound) * (x[dimension] - upper_bound);
     } else if (x[dimension] < lower_bound) {
-      penalty += fabs(x[dimension] - lower_bound);
+      penalty += (x[dimension] - lower_bound) * (x[dimension] - lower_bound);
     }
   }
   return 100.0 * penalty;
