@@ -56,7 +56,10 @@ static coco_suite_t *suite_sbox_cost_initialize(void) {
 static const char *suite_sbox_cost_get_instances_by_year(const int year) {
   if (year == 2023) {
     return "1-5,101-110";
-  } else {
+  } if (year == 0000) {
+    return "1-15";
+  } 
+  else {
     coco_error(
         "suite_bbob_boxed_get_instances_by_year(): year %d not defined for "
         "suite_bbob_boxed",
