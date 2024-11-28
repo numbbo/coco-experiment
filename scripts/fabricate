@@ -310,7 +310,7 @@ if not args.skip_octave:
 
     matlab_files = list(MATLAB_DIR.glob("coco*.m"))
     matlab_files.append(MATLAB_DIR / "cons.m")
-    matlab_files.append(MATLAB_DIR / "cocoCall.c")
+    matlab_files.append(MATLAB_DIR / "cocoCall.cpp")
     matlab_files.append(MATLAB_DIR / "exampleexperiment.m")
     matlab_files.append(MATLAB_DIR / "my_fmincon.m")
     matlab_files.append(MATLAB_DIR / "my_optimizer.m")

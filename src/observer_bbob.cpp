@@ -6,7 +6,7 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-static coco_problem_t* logger_bbob(coco_observer_t *observer, coco_problem_t* problem);
+static coco_problem_t* logger_bbob(coco_observer_t* observer, coco_problem_t* problem);
 static void logger_bbob_free(void* logger);
 static void logger_bbob_signal_restart(coco_problem_t* problem);
 static void logger_bbob_data_nullify_observer(void* logger_data);
@@ -34,7 +34,7 @@ typedef struct {
  */
 static void observer_bbob_data_free(void* stuff) {
 
-  observer_bbob_data_t *data = (observer_bbob_data_t *)stuff;
+  observer_bbob_data_t* data = (observer_bbob_data_t* )stuff;
   coco_problem_t* problem;
 
   coco_debug("Started observer_bbob_data_free()");
@@ -70,13 +70,13 @@ static void observer_bbob_data_free(void* stuff) {
  */
 static void observer_bbob(coco_observer_t *observer, char const* options, coco_option_keys_t** option_keys) {
 
-  observer_bbob_data_t *observer_data;
+  observer_bbob_data_t* observer_data;
   /* Sets the valid keys for bbob observer options
    * IMPORTANT: This list should be up-to-date with the code and the documentation */
   char const* known_keys[] = {"prefix"};
   *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char* ), known_keys);
 
-  observer_data = (observer_bbob_data_t *)coco_allocate_memory(sizeof(*observer_data));
+  observer_data = (observer_bbob_data_t* )coco_allocate_memory(sizeof(*observer_data));
   observer_data->observed_problem = nullptr;
   observer_data->prefix = coco_allocate_string(COCO_PATH_MAX + 1);
 
