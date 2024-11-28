@@ -740,7 +740,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
   } else if (0 == strcmp(observer_name, "bbob-old")) {
     observer_bbob_old(observer, observer_options, &additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-boxed")) {
-    observer_sbox_cost(observer, observer_options, &additional_option_keys);
+    observer_bbob(observer, observer_options, &additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-biobj")) {
     observer_biobj(observer, observer_options, &additional_option_keys);
   } else if (0 == strcmp(observer_name, "bbob-biobj-ext")) {
