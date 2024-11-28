@@ -16,13 +16,11 @@
 
 void coco_error(char const* message, ...) {
   va_list args;
-
-  char buffer[500];
-  int n;
+  char buffer[500];  
 
   mexPrintf("COCO FATAL ERROR: ");
   va_start(args, message);
-  n = vsprintf(buffer, message, args);
+  vsprintf(buffer, message, args);
   va_end(args);
   mexPrintf(buffer);
 
@@ -32,14 +30,12 @@ void coco_error(char const* message, ...) {
 
 void coco_warning(char const* message, ...) {
   va_list args;
-
-  char buffer[500];
-  int n;
+  char buffer[500];  
 
   if (coco_log_level >= COCO_WARNING) {
     mexPrintf("COCO WARNING: ");
     va_start(args, message);
-    n = vsprintf(buffer, message, args);
+    vsprintf(buffer, message, args);
     va_end(args);
     mexPrintf(buffer);
 
@@ -49,14 +45,12 @@ void coco_warning(char const* message, ...) {
 
 void coco_info(char const* message, ...) {
   va_list args;
-
-  char buffer[500];
-  int n;
+  char buffer[500];  
 
   if (coco_log_level >= COCO_INFO) {
     mexPrintf("COCO INFO: ");
     va_start(args, message);
-    n = vsprintf(buffer, message, args);
+    vsprintf(buffer, message, args);
     va_end(args);
     mexPrintf(buffer);
     mexPrintf("\n");
@@ -69,13 +63,11 @@ void coco_info(char const* message, ...) {
  */
 void coco_info_partial(char const* message, ...) {
   va_list args;
-
-  char buffer[500];
-  int n;
+  char buffer[500];  
 
   if (coco_log_level >= COCO_INFO) {
     va_start(args, message);
-    n = vsprintf(buffer, message, args);
+    vsprintf(buffer, message, args);
     va_end(args);
     mexPrintf(buffer);
   }
@@ -83,14 +75,12 @@ void coco_info_partial(char const* message, ...) {
 
 void coco_debug(char const* message, ...) {
   va_list args;
-
-  char buffer[500];
-  int n;
+  char buffer[500];  
 
   if (coco_log_level >= COCO_DEBUG) {
     mexPrintf("COCO DEBUG: ");
     va_start(args, message);
-    n = vsprintf(buffer, message, args);
+    vsprintf(buffer, message, args);
     va_end(args);
     mexPrintf(buffer);
     mexPrintf("\n");
