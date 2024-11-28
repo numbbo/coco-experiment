@@ -22,7 +22,7 @@
 %                   supported:
 %                   "year: YEAR", where YEAR is the year of the BBOB workshop,
 %                                 includes the instances (to be) used in that
-%                                 year's workshop;
+%                                 years workshop;
 %                   "instances: VALUES", where VALUES are instance numbers from
 %                                 1 on written as a comma-separated list or a
 %                                 range m-n.
@@ -42,4 +42,21 @@
 %                                 range of instance indices (starting from 1) to
 %                                 keep in the suite.
 function suite = cocoSuite(suite_name, suite_instance, suite_options)
-suite = cocoCall('cocoSuite', suite_name, suite_instance, suite_options);
+
+known_suite_names = {
+    "bbob";
+    "bbob-biobj";
+    "bbob-biobj-ext";
+    "bbob-boxed";
+    "bbob-constrained";
+    "bbob-largescale";
+    "bbob-mixint";
+    "bbob-biobj-mixint";
+    "bbob-noisy"
+};
+
+if  any(strcmp(known_suite_names , suite_name))
+    suite = cocoCall('cocoSuite', suite_name, suite_instance, suite_options);
+else
+    error "Unknown suite"
+end
