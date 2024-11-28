@@ -24,6 +24,7 @@ from .interface import Suite as _Suite
 from .interface import known_suite_names
 from .utilities import ExperimentRepeater
 from .utilities import BatchScheduler
+from .bare_problem import BareProblem
 from .interface import log_level # noqa: F401
 from ._version import __version__ # noqa: F401
 
@@ -34,7 +35,8 @@ __all__ = [
     'known_suite_names', 
     'ExperimentRepeater', 
     'BatchScheduler',
-    'default_observers'
+    'default_observers',
+    'BareProblem'
 ]
 
 

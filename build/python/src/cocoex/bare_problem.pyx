@@ -31,7 +31,7 @@ cdef extern coco_problem_t *coco_get_bbob_problem(size_t function, size_t
 cdef extern double coco_problem_get_best_value(coco_problem_t *p)
 
 
-cdef class BenchmarkFunction:
+cdef class BareProblem:
     """A bare benchmark function from one of the available suites.
 
     Examples
@@ -41,9 +41,9 @@ cdef class BenchmarkFunction:
 
     Create a 13 dimensional sphere function
 
-    >>> fn = BenchmarkFunction("bbob", 1, 13, 1)
+    >>> fn = BareProblem("bbob", 1, 13, 1)
     >>> fn
-    BenchmarkFunction('bbob', 1, 13, 1)
+    BareProblem('bbob', 1, 13, 1)
 
     We can also get a short mnemonic name for the function
 
@@ -58,19 +58,19 @@ cdef class BenchmarkFunction:
     """
 
     cdef coco_problem_t *_problem
-    cdef readonly char* suite
+    cdef readonly char* suite_name
     cdef readonly char* id
     cdef readonly int function
     cdef readonly int dimension
     cdef readonly int instance
 
-    def __init__(self, suite: str, function: int, dimension: int, instance: int):
+    def __init__(self, suite_name: str, function: int, dimension: int, instance: int):
         """
-        Create a bare benchmark function from one of the COCO suites.
+        Create a bare benchmark problem from one of the COCO suites.
 
         Parameters
         ----------
-        suite
+        suite_name
             Name of benchmark suite ("bbob" only currently)
 
         function
@@ -86,24 +86,24 @@ cdef class BenchmarkFunction:
         Raises
         ------
         NoSuchSuiteException
-           If the `suite` is not known or not yet supported
+           If the `suite_name` is not known or not yet supported
 
         NoSuchProblemException
           If no problem with the given `function`, `dimension` and `instance` exists in
-          the given `suite`.
+          the given `suite_name`.
         """
-        self.suite = suite
+        self.suite_name = suite_name
         self.function = function
         self.dimension = dimension
         self.instance = instance
         self._problem = NULL
-        if suite == "bbob":
+        if suite_name == "bbob":
             self._problem = coco_get_bbob_problem(function, dimension, instance)
             if self._problem == NULL:
                 # FIXME: Possibly extend Exception to include dimension and instance?
-                raise NoSuchProblemException(suite, function)
+                raise NoSuchProblemException(suite_name, function)
         else:
-            raise NoSuchSuiteException(suite)
+            raise NoSuchSuiteException(suite_name)
 
         self.id = coco_problem_get_id(self._problem)
 
@@ -134,7 +134,7 @@ cdef class BenchmarkFunction:
         return self.id
 
     def __repr__(self):
-        return f"BenchmarkFunction('{self.suite}', {self.function}, {self.dimension}, {self.instance})"
+        return f"BareProblem('{self.suite_name}', {self.function}, {self.dimension}, {self.instance})"
 
     def __call__(self, x):
         cdef double[::1] xi
@@ -164,5 +164,3 @@ cdef class BenchmarkFunction:
         else:
           return None
 
-
-__all__ = ["BenchmarkFunction"]
