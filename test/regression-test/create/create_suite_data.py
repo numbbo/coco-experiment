@@ -32,6 +32,8 @@ def solution_array(dimension, number=10):
     return (0.1 * (np.random.randn(number) / (np.abs(np.random.randn(number)) + 1e-6)) *
         np.random.randn(number, dimension).T).T
 
+def _to_float_tuple(x):
+    return tuple(float(xi) for xi in x)
 
 def generate_test_data_for_suite(suite_name, filename, solution_array=solution_array):
     """write regression test data into file.
@@ -48,10 +50,10 @@ def generate_test_data_for_suite(suite_name, filename, solution_array=solution_a
     for i, f in enumerate(suite):
         for j, x in enumerate(solution_array(f.dimension)):
             fval = f(x)
-            res = (fval if f.number_of_objectives == 1 else list(fval),
-                   list(f.constraint(x) if f.number_of_constraints > 0 else []))
+            res = (float(fval) if f.number_of_objectives == 1 else _to_float_tuple(fval),
+                   _to_float_tuple(f.constraint(x)) if f.number_of_constraints > 0 else [])
             if is_finite(res) and is_smaller_than(res, 1e22):
-                xfc_dict[i, j, tuple(x)] = res  # tuple, because keys must be immutable
+                xfc_dict[i, j, _to_float_tuple(x)] = res  # tuple, because keys must be immutable
             else:
                 print("rejected: ", f.name, i, x, res)
 
