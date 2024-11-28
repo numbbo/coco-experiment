@@ -44,7 +44,7 @@ static coco_suite_t *suite_sbox_cost_initialize(void) {
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
-  suite = coco_suite_allocate("sbox-cost", 24, num_dimensions, dimensions, "year: 2023", 1);
+  suite = coco_suite_allocate("bbob-boxed", 24, num_dimensions, dimensions, "year: 2023", 1);
 
   return suite;
 }
@@ -57,8 +57,8 @@ static const char *suite_sbox_cost_get_instances_by_year(const int year) {
     return "1-5,101-110";
   } else {
     coco_error(
-        "suite_sbox_cost_get_instances_by_year(): year %d not defined for "
-        "suite_sbox_cost",
+        "suite_bbob_boxed_get_instances_by_year(): year %d not defined for "
+        "suite_bbob_boxed",
         year);
     return NULL;
   }
@@ -73,9 +73,9 @@ static coco_problem_t *coco_get_sbox_cost_problem(const size_t function,
                                                   const size_t instance) {
   coco_problem_t *problem = NULL;
 
-  const char *problem_id_template = "sbox-cost_f%03lu_i%02lu_d%02lu";
+  const char *problem_id_template = "bbob-boxed_f%03lu_i%02lu_d%02lu";
   const char *problem_name_template =
-      "SBOX-COST suite problem f%lu instance %lu in %luD";
+      "bbob-boxed suite problem f%lu instance %lu in %luD";
 
   const long rseed = (long)(function + 10000 * instance);
   const long rseed_3 = (long)(3 + 10000 * instance);
