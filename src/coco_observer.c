@@ -496,7 +496,6 @@ void coco_observer_free(coco_observer_t *observer) {
 #include "logger_biobj.c"
 #include "logger_rw.c"
 #include "logger_toy.c"
-#include "observer_sbox_cost.c"
 
 /**
  * Currently, four observers are supported:
