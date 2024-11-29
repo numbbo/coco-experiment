@@ -23,6 +23,7 @@
  */
 
 #include <string>
+#include <format>
 #include <filesystem>
 
 //#include <cstdio>
@@ -172,35 +173,40 @@ static bool logger_bbob_start_new_line(coco_observer_t* observer, size_t current
 template <typename VECTOR>
 static void logger_bbob_output(FILE* data_file, logger_bbob_data_t* logger, VECTOR x, double current_value,
                                double best_value, const double* constraints) {
-  /* This function contains many hard-coded values (10.9, 22, 5.4) that could be read through
-   * observer options */
-  size_t i;
-
-  fprintf(data_file, "%lu %lu %+10.9e %+10.9e ", (unsigned long)logger->num_func_evaluations,
-          (unsigned long)logger->num_cons_evaluations, best_value - logger->optimal_value, current_value);
+  // This function contains many hard-coded values (10.9, 22, 5.4) that could be read through
+  // observer options
+  std::string s = std::format("{:d} {:d} {:10.9e} {:10.9e}", logger->num_func_evaluations,
+          logger->num_cons_evaluations, best_value - logger->optimal_value, current_value);
+//  fprintf(data_file, "%lu %lu %+10.9e %+10.9e ", (unsigned long)logger->num_func_evaluations,
+//          (unsigned long)logger->num_cons_evaluations, best_value - logger->optimal_value, current_value);
 
   if ((logger->number_of_constraints > 0) && (constraints)) {
-    for (i = 0; i < logger->number_of_constraints; ++i) {
-      /* print 01234567890123..., may happen in the last line of .tdat */
-      fprintf(data_file, "%d", constraints ? logger_bbob_single_digit_constraint(constraints[i]) : (int)(i % 10));
+    for (size_t i = 0; i < logger->number_of_constraints; ++i) {
+      // print 01234567890123..., may happen in the last line of .tdat
+      // fprintf(data_file, "%d", constraints ? logger_bbob_single_digit_constraint(constraints[i]) : (int)(i % 10));
+      s += std::format("{:d}", constraints ? logger_bbob_single_digit_constraint(constraints[i]) : (int)(i % 10));
     }
   } else {
-    fprintf(data_file, "%+10.9e", best_value);
+//    fprintf(data_file, "%+10.9e", best_value);
+    s += std::format("{:+10.9e}", best_value);
   }
 
   if (logger->number_of_variables < 22) {
-    for (i = 0; i < logger->number_of_variables; i++) {
+    for (size_t i = 0; i < logger->number_of_variables; i++) {
       if ((i < logger->number_of_integer_variables) && (logger->log_discrete_as_int))
-        fprintf(data_file, " %d", coco_double_to_int(x[i]));
+//        fprintf(data_file, " %d", coco_double_to_int(x[i]));
+        s += std::format(" {:d}", coco_double_to_int(x[i]));
       else
-        fprintf(data_file, " %+5.4e", x[i]);
+//        fprintf(data_file, " %+5.4e", x[i]);
+        s += std::format(" {:+5.4e}", x[i]);
     }
   }
-  fprintf(data_file, "\n");
+//  fprintf(data_file, "\n");
+  s += "\n";
 
-  /* Flush output so that impatient users can see progress.
-   * Otherwise it can take a long time until the output appears.
-   */
+  // Flush output so that impatient users can see progress.
+  // Otherwise it can take a long time until the output appears.
+  fprintf(data_file, "%s", s.c_str());   // actual write; TODO: change to stream interface
   fflush(data_file);
 }
 
