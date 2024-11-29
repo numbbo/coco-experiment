@@ -28,11 +28,13 @@ from .bare_problem import BareProblem
 from .interface import log_level # noqa: F401
 from ._version import __version__ # noqa: F401
 
+known_suites = known_suite_names  # provide the expected name too
 
 __all__ = [
     'Observer',
     'Suite',
-    'known_suite_names', 
+    'known_suite_names',
+    'known_suites',  # just an alias
     'ExperimentRepeater', 
     'BatchScheduler',
     'default_observers',

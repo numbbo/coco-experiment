@@ -17,7 +17,6 @@ known_suite_names = ["bbob",
                      "bbob-mixint", "bbob-biobj-mixint",
                      "bbob-noisy",
                      ]
-known_suites = known_suite_names  # provide the expected name too
 _known_suite_names = ["bbob",
                       "bbob-biobj", "bbob-biobj-ext",
                       "bbob-boxed",
@@ -116,9 +115,12 @@ cdef class Suite:
     def __cinit__(self, suite_name, suite_instance, suite_options):
         cdef np.npy_intp shape[1]  # probably completely useless
         if suite_name not in known_suite_names:
-            raise ValueError("{0} is an unknown suite. "
-                             "Known suites are \n{1}".format(
-                                suite_name, str(known_suite_names).replace(',', ',\n')))
+            raise ValueError("'{0}' is an unknown suite. "
+                "Known suites are \n{1}\n"
+                "If the desired suite is implemented but not listed, execute"
+                "\n`cocoex.known_suites.append('{0}')` and try again."
+                " If the suite is not implemented, this may crash Python."
+                .format(suite_name, str(known_suite_names).replace(',', ',\n ')))
         self._name = _bstring(suite_name)
         self._instance = _bstring(suite_instance if suite_instance is not None else "")
         self._options = _bstring(suite_options if suite_options is not None else "")
