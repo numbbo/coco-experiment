@@ -1,15 +1,10 @@
-<h1 align="center">
-    <table border="0">
-  <td>COmparing Continuous Optimisers (COCO) experiments
-  </td>
-  <td>
-    <img src="https://raw.githubusercontent.com/numbbo/coco-experiment/main/logo/coco-ex-300.webp" width="300">
-</td>
-</table>
-</h1>
+# COmparing Continuous Optimisers (COCO) experiments
+
+<img src="https://raw.githubusercontent.com/numbbo/coco-experiment/main/logo/coco-ex-300.webp" width="200px" align="right">
 
 [![build](https://img.shields.io/github/actions/workflow/status/numbbo/coco-experiment/build.yml?branch=main)][buildaction]
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2594848.svg)][paper]
+
 
 > [!IMPORTANT]
 >
