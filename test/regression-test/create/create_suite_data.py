@@ -52,7 +52,7 @@ def generate_test_data_for_suite(suite_name, filename, solution_array=solution_a
             fval = f(x)
             res = (float(fval) if f.number_of_objectives == 1 else _to_float_tuple(fval),
                    _to_float_tuple(f.constraint(x)) if f.number_of_constraints > 0 else [])
-            if is_finite(res) and is_smaller_than(res, 1e22):
+            if 'nois' in suite_name or (is_finite(res) and is_smaller_than(res, 1e22)):
                 xfc_dict[i, j, _to_float_tuple(x)] = res  # tuple, because keys must be immutable
             else:
                 print("rejected: ", f.name, i, x, res)
