@@ -82,7 +82,7 @@ static char const* suite_bbob_get_instances_by_year(const int year) {
  *
  * Useful for other suites as well (see for example suite_biobj.c).
  */
-coco_problem_t* coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
+extern "C" coco_problem_t* coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
   coco_problem_t* problem = nullptr;
 
   char const* problem_id_template = "bbob_f%03lu_i%02lu_d%02lu";

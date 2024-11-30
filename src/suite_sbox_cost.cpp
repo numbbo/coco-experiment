@@ -1,7 +1,8 @@
 /** @file suite_sbox_cost.cpp
  *
- * @brief Implementation of the SBOX-COST suite, containing the 24 noiseless
- * single-objective functions in 6 dimensions from the original BBOB suite.
+ * @brief Implementation of the bbob-boxed (aka SBOX-COST) suite, containing 
+ * the 24 noiseless single-objective functions in 6 dimensions from the 
+ * original BBOB suite.
  *
  * FIXME: Drop f9, f19, f20 and f24 which have optima that are always close to
  *   the origin?
@@ -36,7 +37,7 @@ static coco_suite_t* coco_suite_allocate(char const* suite_name, const size_t nu
                                          char const* default_instances, const int known_optima);
 
 /**
- * @brief Sets the dimensions and default instances for the SBOX-COST suite.
+ * @brief Sets the dimensions and default instances for the bbob-boxed suite.
  */
 static coco_suite_t* suite_sbox_cost_initialize(void) {
 
@@ -55,7 +56,10 @@ static coco_suite_t* suite_sbox_cost_initialize(void) {
 static char const* suite_sbox_cost_get_instances_by_year(const int year) {
   if (year == 2023) {
     return "1-5,101-110";
-  } else {
+  } if (year == 0000) {
+    return "1-15";
+  } 
+  else {
     coco_error(
         "suite_bbob_boxed_get_instances_by_year(): year %d not defined for "
         "suite_bbob_boxed",
@@ -65,8 +69,8 @@ static char const* suite_sbox_cost_get_instances_by_year(const int year) {
 }
 
 /**
- * @brief Creates and returns a SBOX-COST problem without needing the actual
- * SBOX-COST suite.
+ * @brief Creates and returns a bbob-boxed problem without needing the actual
+ * bbob-boxed suite.
  */
 static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
                                                   const size_t dimension,

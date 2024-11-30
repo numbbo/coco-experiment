@@ -62,15 +62,17 @@ def regression_test_a_suite(suite_name, filename):
     suite = cocoex.Suite(suite_name, "year: 0000", "") # choose "default" year for test
     failed_test_counter = 0
     passed_test_counter = 0
-    for key in sorted(xfc_dict):
+    for i, key in enumerate(sorted(xfc_dict)):
         f, x = suite[key[0]], key[-1]
         fval = f(x)
-        try:
-            assert is_equal(fval, xfc_dict[key][0])
+        if is_equal(fval, xfc_dict[key][0]):
             passed_test_counter += 1
-        except AssertionError:
-            print(f.name, "id,x =", key, "stored f(x),con(x) =",
-                  xfc_dict[key], "computed f(x) =", fval)
+        else:
+            print('{}:{} failed f_act=f_ref+Df = {} + {}, outside [-5,5]:{}'
+                    .format(i, f.name, xfc_dict[key][0], fval - xfc_dict[key][0],
+                    sum(np.abs(x) > 5)))
+            # print(f.name, "id,x =", key, "stored f(x),con(x) =",
+            #     xfc_dict[key], "computed f(x) =", fval)
             failed_test_counter += 1
         if f.number_of_constraints > 0:
             try:
@@ -78,7 +80,7 @@ def regression_test_a_suite(suite_name, filename):
             except AssertionError:
                 print(f.name, "index,x =", key, "stored f,con =",
                       xfc_dict[key], "computed con =", f.constraint(x))
-                failed_test_counter += 1
+                failed_test_counter += 1e6
     if failed_test_counter > 0:
         raise AssertionError("{} assertions failed, {} test passed".format(failed_test_counter, passed_test_counter))
     if verbose:

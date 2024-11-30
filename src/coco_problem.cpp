@@ -473,7 +473,7 @@ double coco_problem_get_best_observed_fvalue1(const coco_problem_t* problem) {
 /**
  * @brief Returns the optimal function value of the problem
  */
-double coco_problem_get_best_value(const coco_problem_t* problem) {
+extern "C" double coco_problem_get_best_value(const coco_problem_t* problem) {
   assert(problem);
   assert(problem->best_value);
   return problem->best_value[0];

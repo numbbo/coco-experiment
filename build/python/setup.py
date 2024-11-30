@@ -1,14 +1,39 @@
+import platform
 import numpy as np
 from setuptools import Extension, setup
+
+
+is_arm = "arm" in platform.machine().lower() or "aarch64" in platform.machine().lower()
+is_macos = platform.system() == "Darwin"
+is_windows = platform.system() == 'Windows'
+
+extra_cflags = []
+
+# FIXME: This is a fragile hack!
+if is_windows:
+    extra_cflags.append("/std:c++20")
+else:
+    extra_cflags.append("-std=c++20")
+
+# macOS on arm64 uses fused multiply adds which changes the results of evaluating
+# a benchmark function enough to make our tests fail. Disable FMA for now.
+if is_macos and is_arm:
+    extra_cflags.append("-ffp-contract=off")
+
 
 extensions = []
 extensions.append(Extension(name="cocoex.interface",
                             sources=["src/cocoex/coco.cpp", "src/cocoex/interface.pyx"],
                             define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-                            include_dirs=[np.get_include()]))
-extensions.append(Extension(name="cocoex.function",
-                            sources=["src/cocoex/coco.cpp", "src/cocoex/function.pyx"],
+                            include_dirs=[np.get_include()],
+                            extra_compile_args=extra_cflags
+                            ))
+
+extensions.append(Extension(name="cocoex.bare_problem",
+                            sources=["src/cocoex/coco.cpp", "src/cocoex/bare_problem.pyx"],
                             define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-                            include_dirs=[np.get_include()]))
+                            include_dirs=[np.get_include()],
+                            extra_compile_args=extra_cflags
+                            ))
 
 setup(ext_modules=extensions)

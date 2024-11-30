@@ -23,8 +23,7 @@ jobs:
           - [ubuntu-20.04, manylinux_x86_64]
           - [ubuntu-20.04, musllinux_x86_64]
           - [macos-14, macosx_arm64]
-          - [windows-2019, win_amd64]
-          - [windows-2019, win32]
+          - [windows-2019, win_amd64]          
         python:
           - ["cp39", "3.9"]
           - ["cp310", "3.10"]
@@ -32,21 +31,13 @@ jobs:
           - ["cp312", "3.12"]
           - ["pp39", "pp"]
         exclude:
-          # Don't build PyPy 32-bit windows
-          - buildplat: [windows-2019, win32]
-            python: ["pp39", "pp"]
           - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
             python: ["pp39", "pp"]
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
         working-directory: ${{github.workspace}}
-    steps:
-    - name: Setup MSVC (32-bit)
-      if: ${{ matrix.buildplat[1] == 'win32' }}
-      uses: bus1/cabuild/action/msdevshell@e22aba57d6e74891d059d66501b6b5aed8123c4d  # v1
-      with:
-        architecture: 'x86'
+    steps:    
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
@@ -77,18 +68,10 @@ jobs:
       fail-fast: false
       matrix:
         buildplat:
-          - [ubuntu-20.04, manylinux_x86_64]
-          - [ubuntu-20.04, musllinux_x86_64]
+          - [ubuntu-20.04, manylinux_x86_64]          
           - [macos-14, macosx_arm64]
           - [windows-2019, win_amd64]
-          - [windows-2019, win32]
         python: ["3.9", "3.10", "3.11", "3.12"]
-        exclude:
-          # Don't build PyPy 32-bit windows
-          - buildplat: [windows-2019, win32]
-            python: "3.9"
-          - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
-            python: "3.9"
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
@@ -102,13 +85,16 @@ jobs:
       with:
         name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
         path: wheels
+    - name: List available wheels
+      run: ls -l wheels/
     - uses: actions/setup-python@v5
       with:
         python-version: ${{matrix.python}}
     - name: Setup Python
       run: python -m pip install --upgrade pip wheel
     - name: Install cocoex 
-      run: python -m pip install --find-links wheels/ coco-experiment
+      shell: bash
+      run: python -m pip install wheels/coco_experiment*.whl
     - name: Run cocoex test
       shell: bash
       run: |
@@ -123,18 +109,10 @@ jobs:
       fail-fast: false
       matrix:
         buildplat:
-          - [ubuntu-20.04, manylinux_x86_64]
-          - [ubuntu-20.04, musllinux_x86_64]
+          - [ubuntu-20.04, manylinux_x86_64]          
           - [macos-14, macosx_arm64]
-          - [windows-2019, win_amd64]
-          - [windows-2019, win32]
+          - [windows-2019, win_amd64]          
         python: ["3.9", "3.10", "3.11", "3.12"]
-        exclude:
-          # Don't build PyPy 32-bit windows
-          - buildplat: [windows-2019, win32]
-            python: "3.9"
-          - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
-            python: "3.9"
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
@@ -151,7 +129,10 @@ jobs:
     - name: Setup Python
       run: python -m pip install --upgrade pip wheel
     - name: Install cocoex and cocopp
-      run: python -m pip install --find-links wheels/ coco-experiment cocopp
+      shell: bash
+      run: |
+        python -m pip install wheels/coco_experiment*.whl
+        python -m pip install cocopp
     - name: Install scipy for example experiment
       run: python -m pip install scipy
     - name: Run example experiment
