@@ -1,10 +1,11 @@
 <h1 align="center">
     <table border="0">
-  <td>COmparing Continuous Optimisers (COCO) experiments
-  </td>
   <td>
     <img src="https://raw.githubusercontent.com/numbbo/coco-experiment/main/logo/coco-ex-300.webp" width="300">
-</td>
+  </td>
+  <td>
+      COmparing Continuous Optimisers (COCO) experiments
+  </td>
 </table>
 </h1>
 
