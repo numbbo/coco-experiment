@@ -4,7 +4,7 @@
     <img src="https://raw.githubusercontent.com/numbbo/coco-experiment/main/logo/coco-ex-300.webp" width="300">
   </td>
   <td>
-      COmparing Continuous Optimisers (COCO) experiments
+      <A href="https://numbbo.it">COmparing Continuous Optimisers (COCO)</A> <A href="https://numbbo.github.io/coco-doc/apidocs/cocoex">experiment</A>
   </td>
 </table>
 </h1>
