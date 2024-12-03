@@ -6,13 +6,13 @@ on:
       build_only:
         description: "only run wheel builds job"
         required: false
-        default: 'false'
+        default: "false"
         type: string
 
 jobs:
   python-wheels-build:
     # This strategy is taken straight from the numpy wheels.yaml CI job
-    # 
+    #
     # Since we depend on numpy, there's no reason to try and build a binary cocoex wheel
     # on platform that don't have a compiled numpy available.
     strategy:
@@ -23,44 +23,47 @@ jobs:
           - [ubuntu-20.04, manylinux_x86_64]
           - [ubuntu-20.04, musllinux_x86_64]
           - [macos-14, macosx_arm64]
-          - [windows-2019, win_amd64]          
+          - [windows-2019, win_amd64]
         python:
           - ["cp39", "3.9"]
           - ["cp310", "3.10"]
           - ["cp311", "3.11"]
           - ["cp312", "3.12"]
+          #- ["cp313", "3.13"]
           - ["pp39", "pp"]
         exclude:
-          - buildplat: [ ubuntu-20.04, musllinux_x86_64 ]
+          - buildplat: [ubuntu-20.04, musllinux_x86_64]
             python: ["pp39", "pp"]
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
         working-directory: ${{github.workspace}}
-    steps:    
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
-    - name: Download Python source package
-      uses: actions/download-artifact@v4
-      with:
-        name: dist-python-sdist
-    - name: Install cibuildwheel
-      run: python -m pip install cibuildwheel==2.16.2
-    - name: Build cocoex wheel
-      shell: bash
-      run: python -m cibuildwheel --output-dir dist/ coco_experiment-*.tar.gz
-      env:
-        CIBW_PRERELEASE_PYTHONS: True
-        CIBW_BUILD: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
-        CIBW_BUILD_VERBOSITY: 2
-    - name: Archive Python wheels
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-python-wheels-${{ matrix.python[1] }}-${{ matrix.buildplat[1] }}
-        path: dist/coco_experiment*.whl
-  
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Download Python source package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-python-sdist
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.16.2
+      - name: Build cocoex wheel
+        shell: bash
+        run: python -m cibuildwheel --output-dir dist/ coco_experiment-*.tar.gz
+        env:
+          CIBW_PRERELEASE_PYTHONS: True
+          # Required for MSVC builds on Windows, otherwise meson picks up mingw64.
+          CIBW_CONFIG_SETTINGS_WINDOWS: "setup-args=--vsenv"
+          CIBW_BUILD: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }}
+          CIBW_BUILD_VERBOSITY: 1
+      - name: Archive Python wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-python-wheels-${{ matrix.python[1] }}-${{ matrix.buildplat[1] }}
+          path: dist/coco_experiment*.whl
+
   python-wheels-test:
     needs: python-wheels-build
     if: ${{ inputs.build_only == 'false' }}
@@ -68,7 +71,7 @@ jobs:
       fail-fast: false
       matrix:
         buildplat:
-          - [ubuntu-20.04, manylinux_x86_64]          
+          - [ubuntu-20.04, manylinux_x86_64]
           - [macos-14, macosx_arm64]
           - [windows-2019, win_amd64]
         python: ["3.9", "3.10", "3.11", "3.12"]
@@ -77,33 +80,31 @@ jobs:
       run:
         working-directory: ${{github.workspace}}
     steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist-python-sdist
-        path: dist
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
-        path: wheels
-    - name: List available wheels
-      run: ls -l wheels/
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{matrix.python}}
-    - name: Setup Python
-      run: python -m pip install --upgrade pip wheel
-    - name: Install cocoex 
-      shell: bash
-      run: python -m pip install wheels/coco_experiment*.whl
-    - name: Run cocoex test
-      shell: bash
-      run: |
-        tar xf dist/coco_experiment-*.tar.gz --strip-components=1
-        python -m pip install pytest pytest-cov
-        pytest --cov=cocoex test/
-        python -m pip install doctest
-        python -c "import doctest, cocoex; doctest.testmod(cocoex)"
-  
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-python-sdist
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          path: wheels
+      - name: List available wheels
+        run: ls -l wheels/
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python}}
+      - name: Setup Python
+        run: python -m pip install --upgrade pip wheel
+      - name: Install cocoex
+        shell: bash
+        run: python -m pip install wheels/coco_experiment*.whl
+      - name: Run cocoex test
+        shell: bash
+        run: |
+          tar xf dist/coco_experiment-*.tar.gz --strip-components=1
+          python -m pip install pytest pytest-cov
+          pytest --cov=cocoex test/
+          python scripts/run-doctest.py
   python-wheels-example:
     needs: python-wheels-build
     if: ${{ inputs.build_only == 'false' }}
@@ -111,34 +112,34 @@ jobs:
       fail-fast: false
       matrix:
         buildplat:
-          - [ubuntu-20.04, manylinux_x86_64]          
+          - [ubuntu-20.04, manylinux_x86_64]
           - [macos-14, macosx_arm64]
-          - [windows-2019, win_amd64]          
+          - [windows-2019, win_amd64]
         python: ["3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
         working-directory: ${{github.workspace}}
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
-        path: wheels
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{matrix.python}}
-    - name: Setup Python
-      run: python -m pip install --upgrade pip wheel
-    - name: Install cocoex and cocopp
-      shell: bash
-      run: |
-        python -m pip install wheels/coco_experiment*.whl
-        python -m pip install cocopp
-    - name: Install scipy for example experiment
-      run: python -m pip install scipy
-    - name: Run example experiment
-      run: python build/python/example/example_experiment2.py
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          path: wheels
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{matrix.python}}
+      - name: Setup Python
+        run: python -m pip install --upgrade pip wheel
+      - name: Install cocoex and cocopp
+        shell: bash
+        run: |
+          python -m pip install wheels/coco_experiment*.whl
+          python -m pip install cocopp
+      - name: Install scipy for example experiment
+        run: python -m pip install scipy
+      - name: Run example experiment
+        run: python build/python/example/example_experiment2.py
 
   merge-python-wheels:
     runs-on: ubuntu-latest
@@ -156,19 +157,19 @@ jobs:
     runs-on: "ubuntu-latest"
     if: ${{ inputs.build_only == 'false' }}
     steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: dist-python-sdist
-        path: dist
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-    - name: Setup Python
-      run: python -m pip install --upgrade pip wheel
-    - name: Lint with Ruff
-      shell: bash
-      continue-on-error: true
-      run: |
-        pip install ruff
-        tar xf dist/coco_experiment*.tar.gz --strip-components=1
-        ruff check --output-format=github .
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-python-sdist
+          path: dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Setup Python
+        run: python -m pip install --upgrade pip wheel
+      - name: Lint with Ruff
+        shell: bash
+        continue-on-error: true
+        run: |
+          pip install ruff
+          tar xf dist/coco_experiment*.tar.gz --strip-components=1
+          ruff check --output-format=github .
