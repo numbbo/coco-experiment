@@ -6,59 +6,60 @@ jobs:
   source-build:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
-        cache: "pip"
-    - name: Setup Python
-      run: python -m pip install --upgrade -r scripts/requirements.txt
-    - name: Fabricate COCO
-      run: python scripts/fabricate
-    - name: Run core unit tests
-      working-directory: ${{github.workspace}}/test/unit-test/
-      run: |
-        cmake -B build .
-        cmake --build build
-        ctest --test-dir build
-    - name: Run core integration tests
-      working-directory: ${{github.workspace}}/test/integration-test/
-      run: |
-        cmake -B build .
-        cmake --build build
-        ctest --test-dir build
-    - name: Build coco-experiment Python package
-      run: python -m build -s -o dist build/python
-    - name: Archive C source package
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-c
-        path: dist/cocoex-c-*.zip
-    - name: Archive Java source package
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-java
-        path: dist/cocoex-java-*.zip
-    - name: Archive Matlab source package
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-matlab
-        path: dist/cocoex-matlab-*.zip
-    - name: Archive Octave source package
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-octave
-        path: dist/cocoex-octave-*.zip
-    - name: Archive Rust source package
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-rust
-        path: dist/cocoex-rust-*.zip
-    - name: Archive cocoex Python source package
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-python-sdist
-        path: |
-          dist/coco_experiment*.tar.gz
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: Setup Python
+        run: python -m pip install --upgrade -r scripts/requirements.txt
+      - name: Fabricate COCO
+        run: python scripts/fabricate
+      - name: Run core unit tests
+        working-directory: ${{github.workspace}}/test/unit-test/
+        run: |
+          cmake -B build .
+          cmake --build build
+          ctest --test-dir build
+      - name: Run core integration tests
+        working-directory: ${{github.workspace}}/test/integration-test/
+        run: |
+          cmake -B build .
+          cmake --build build
+          ctest --test-dir build
+      - name: Build coco-experiment Python package
+        working-directory: ${{github.workspace}}/build/python
+        run: python -m hatchling build -t sdist -d ../../dist/
+      - name: Archive C source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-c
+          path: dist/cocoex-c-*.zip
+      - name: Archive Java source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-java
+          path: dist/cocoex-java-*.zip
+      - name: Archive Matlab source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-matlab
+          path: dist/cocoex-matlab-*.zip
+      - name: Archive Octave source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-octave
+          path: dist/cocoex-octave-*.zip
+      - name: Archive Rust source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-rust
+          path: dist/cocoex-rust-*.zip
+      - name: Archive cocoex Python source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-python-sdist
+          path: |
+            dist/coco_experiment*.tar.gz
