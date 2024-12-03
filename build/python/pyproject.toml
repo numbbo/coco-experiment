@@ -1,52 +1,47 @@
 [build-system]
-requires = [
-  "setuptools >= 67.0",
-  "cython     ~= 3.0",
-  "wheel",
-  "numpy"
-]
-build-backend = "setuptools.build_meta"
+requires = ["meson-python", "Cython >= 3.0.6", "wheel", "numpy"]
+build-backend = 'mesonpy'
 
 [project]
 name = "coco-experiment"
 authors = [
-  {name="Asma Atamna"},
-  {name="Dimo Brockhoff"},
-  {name="Lorenzo Consoli"},
-  {name="Ouassim Ait ElHara"},
-  {name="Paul Dufossé"},
-  {name="Nikolaus Hansen"},
-  {name="Leopold Luley"},
-  {name="Olaf Mersmann"},
-  {name="Duc Manh Nguyen"},
-  {name="Phillipe R. Sampaio"},
-  {name="Marc Schoenauer"},
-  {name="Dejan Tušar"},
-  {name="Tea Tušar"},
-  {name="Konstantinos Varelas"},
+    { name = "Asma Atamna" },
+    { name = "Dimo Brockhoff" },
+    { name = "Lorenzo Consoli" },
+    { name = "Ouassim Ait ElHara" },
+    { name = "Paul Dufossé" },
+    { name = "Nikolaus Hansen" },
+    { name = "Leopold Luley" },
+    { name = "Olaf Mersmann" },
+    { name = "Duc Manh Nguyen" },
+    { name = "Phillipe R. Sampaio" },
+    { name = "Marc Schoenauer" },
+    { name = "Dejan Tušar" },
+    { name = "Tea Tušar" },
+    { name = "Konstantinos Varelas" },
 ]
 description = 'Benchmarking framework for all types of black-box optimization algorithms.'
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "BSD-3-Clause"}
+license = { text = "BSD-3-Clause" }
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "License :: OSI Approved :: BSD License",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
 ]
-dependencies = [ 
-  "numpy >= 1.24.0",
-]
+dependencies = ["numpy >= 1.24.0"]
 dynamic = ["version"]
 
-[tool.setuptools.dynamic]
-version = {attr = "cocoex._version.__version__"}
+[project.urls]
+Homepage = "https://github.com/numbbo/coco-experiment"
+Documentation = "https://numbbo.github.io/coco-doc/apidocs/cocoex/"
+Issues = "https://github.com/numbbo/coco-experiment/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -55,7 +50,24 @@ where = ["src"]
 log_cli = true
 addopts = "--doctest-modules"
 
-[project.urls]
-Homepage = "https://github.com/numbbo/coco-experiment"
-Documentation = "https://numbbo.github.io/coco-doc/apidocs/cocoex/"
-Issues = "https://github.com/numbbo/coco-experiment/issues"
+[tool.cibuildwheel]
+build-frontend = "build"
+manylinux-x86_64-image = "manylinux_2_28"
+
+[tool.hatch.build]
+include = ["/src/data/*.csv"]
+
+[tool.hatch.build.targets.sdist]
+ignore-vcs = true
+include = [
+    "/src/cocoex/*.py",
+    "/src/cocoex/*.pyx",
+    "/src/cocoex/coco.h",
+    "/src/cocoex/coco.c",
+    "/test",
+    "/scripts",
+    "/meson.build",
+]
+
+[tool.hatch.version]
+path = "src/cocoex/_version.py"
