@@ -35,12 +35,13 @@ scipy = cocoex.utilities.forgiving_import('scipy')  # solvers to benchmark
 cma = cocoex.utilities.forgiving_import('cma')  # solvers to benchmark
 
 ### input: define suite and solver (see also "input" below where fmin is called)
-suite_name = "bbob"
+suite_name = "bbob"  # filter for preliminary quick tests:
+suite_filter = ""    # "dimensions: 2,3,5,10,20 instance_indices:1-5"
 # fmin = scipy.optimize.fmin  # optimizer to be benchmarked
+# fmin = scipy.optimize.fmin_slsqp
 fmin = cocoex.solvers.random_search
 # fmin = cma.fmin2
 # fmin = cma.fmin_lq_surr2
-# fmin = scipy.optimize.fmin_slsqp
 
 ### reading in parameters
 if __name__ == '__main__':
@@ -55,13 +56,15 @@ if __name__ == '__main__':
         raise
 
 ### prepare
-suite = cocoex.Suite(suite_name, "", "")  # see https://numbbo.github.io/coco-doc/C/#suite-parameters
+suite = cocoex.Suite(suite_name, "", suite_filter)  # see https://numbbo.github.io/coco-doc/C/#suite-parameters
 output_folder = '{}_of_{}_{}D_on_{}{}'.format(
         fmin.__name__, fmin.__module__ or '', int(budget_multiplier+0.499), suite_name,
         ('_batch{:0' + str(len(str(number_of_batches-1))) + '}of{}').format(
             batch_to_execute, number_of_batches) if number_of_batches > 1 else '')
 observer = cocoex.Observer(suite_name, "result_folder: " + output_folder)  # see https://numbbo.github.io/coco-doc/C/#observer-parameters
-repeater = cocoex.ExperimentRepeater(budget_multiplier)  # x dimension
+repeater = cocoex.ExperimentRepeater(budget_multiplier,  # x dimension
+                            min_successes=0.75 * int(suite_filter.split('-')[1])
+                            if "indices:1-" in suite_filter else 11)
 batcher = cocoex.BatchScheduler(number_of_batches, batch_to_execute)
 minimal_print = cocoex.utilities.MiniPrint()
 timings = collections.defaultdict(list)  # key is the dimension
@@ -90,7 +93,7 @@ while not repeater.done():  # while budget is left and successes are few
             final_condition = None
         elif fmin == scipy.optimize.fmin:
             res = fmin(problem, repeater.initial_solution_proposal(problem),
-                    disp=False, full_output=True)
+                    disp=False, full_output=True)  # TODO: use values from adapt-Nelder
             xopt = res[0]
             final_condition = res[4]  # store this output to scrutinize later
         elif fmin == scipy.optimize.fmin_slsqp:
@@ -98,7 +101,7 @@ while not repeater.done():  # while budget is left and successes are few
                           acc=1e-11, full_output=True, iprint = -1)
             xopt = res[0]
             final_condition = res[3:]
-        elif fmin == scipy.optimize.fmin_cobyla:  # on bbob-constrained suite
+        elif fmin == scipy.optimize.fmin_cobyla and suite_name == "bbob-constrained":
             xopt = fmin(problem, repeater.initial_solution_proposal(problem),
                  lambda x: -problem.constraint(x),
                  maxfun=max((1000, problem.dimension * budget_multiplier)),
@@ -107,12 +110,12 @@ while not repeater.done():  # while budget is left and successes are few
         elif fmin in (cma.fmin2, cma.fmin_lq_surr2):
             if fmin == cma.fmin_lq_surr2 and problem.dimension == 40:
                 continue  # takes prohibitively long!?
-            options = {'maxfevals': problem.dimension * budget_multiplier,
+            options = {'maxfevals': 8 * problem.dimension * budget_multiplier,
                        'termination_callback': lambda es: problem.final_target_hit,
                        'conditioncov_alleviate': 2 * [False] if fmin == cma.fmin_lq_surr2 else None,
                        'verbose': -9 }
             xopt, es = fmin(problem, problem.initial_solution_proposal, 2,
-                            options, restarts=9)
+                            options, restarts={'maxfevals': problem.dimension * budget_multiplier})
             final_condition = es.stop()
         else:
             raise ValueError('case for fmin={} not found'.format(fmin))
