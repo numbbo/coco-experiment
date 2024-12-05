@@ -658,15 +658,17 @@ class ExperimentRepeater:
     >>> assert len(repeater.evaluations((1, 2))) == 0
 
     """
-    def __init__(self, budget_multiplier, min_successes=11):
-        """``min_successes=11`` for instances 1-5 provokes at least three
+    def __init__(self, budget_multiplier, min_successes=None):
+        """``min_successes=11`` is default and provokes at least three
 
-        sweeps, hence 15 trials, given the `budget_multiplier` is large
-        enough and the algorithm terminates early enough before the budget
-        is exhausted. 3 x 1-5 is the instance-setup from BBOB 2009, however
-        the choice of the initial solution still slightly differs.
+        sweeps when the suite has (only) 5 instance and the
+        `budget_multiplier` is large enough such that the algorithm
+        terminates the second sweep before the overall budget is exhausted.
+        This would emulate the 3 x 1-5 instance-setup from BBOB 2009,
+        however the choice of the initial solution still slightly differs.
         """
         self.params = {k: v for k, v in locals().items() if k != 'self'}
+        self.min_successes = 11 if min_successes is None else min_successes
         self.max_sweeps = 1e4  # should not be necessary
         self._dimension_offset = 0
         '''budget = (dimension + offset) * budget_multiplier'''
@@ -803,7 +805,7 @@ class ExperimentRepeater:
                     ) * self.budget_from_dimension(problem)
     def succeeded(self, problem):
         """return `True` iff problem had at least `min_success` successes"""
-        return sum(self.successes(problem)) >= self.params['min_successes']
+        return sum(self.successes(problem)) >= self.min_successes
     def message_sweep(self):
         """return status message and '' when nothing was tracked yet"""
         if not len(self._data):
@@ -821,7 +823,7 @@ class ExperimentRepeater:
                     's' if len(self._data) != 1 else '',
                     sum(s > 0 for s in successes),
                     sum(succeeded),
-                    self.params['min_successes'],
+                    self.min_successes,
                     sum(b and not s for (s, b) in
                         zip(succeeded, self.all(self.budget_exhausted).values()))))
     def done(self, problem=None, message=True):
