@@ -101,6 +101,8 @@ jobs:
         tar xf dist/coco_experiment-*.tar.gz --strip-components=1
         python -m pip install pytest pytest-cov
         pytest --cov=cocoex test/
+        python -m pip install doctest
+        python -c "import doctest, cocoex; doctest.testmod(cocoex)"
   
   python-wheels-example:
     needs: python-wheels-build
