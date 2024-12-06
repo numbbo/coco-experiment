@@ -103,7 +103,7 @@ jobs:
         run: |
           tar xf dist/coco_experiment-*.tar.gz --strip-components=1
           python -m pip install pytest pytest-cov
-          pytest --cov=cocoex test/
+          pytest --cov=cocoex tests/
           python scripts/run-doctest.py
   python-wheels-example:
     needs: python-wheels-build

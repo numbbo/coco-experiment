@@ -290,9 +290,9 @@ if not args.skip_python:
                'build/python/src/cocoex/coco.h',
               args.release)
     copy_file('src/bbob2009_testcases.txt',
-              'build/python/test/bbob2009_testcases.txt')
+              'build/python/tests/bbob2009_testcases.txt')
     copy_file('src/bbob2009_testcases2.txt',
-              'build/python/test/bbob2009_testcases2.txt')
+              'build/python/tests/bbob2009_testcases2.txt')
 
 if not args.skip_matlab:
     write_version_file("build/matlab/VERSION", COCO_VERSION)
