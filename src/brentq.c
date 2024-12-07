@@ -42,14 +42,14 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "brentq.h"
+
 #include <math.h>
 
-typedef double (*callback_type)(double, void *);
-
-static double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter,
+double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter,
                      void *func_data);
 
-static double brentinv(callback_type f, double y, void *func_data);
+double brentinv(callback_type f, double y, void *func_data);
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 

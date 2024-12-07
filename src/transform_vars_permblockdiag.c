@@ -1,13 +1,15 @@
 /**
  * @file transform_vars_permblockdiag.c
  */
+#include "transform_vars_permblockdiag.h"
 
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "transform_vars_permutation_helpers.c"
-#include "transform_vars_blockrotation_helpers.c"
+#include "coco_utilities.h"
+#include "coco_problem.h"
+#include "transform_vars_permutation_helpers.h"
+#include "transform_vars_blockrotation_helpers.h"
 
 /**
  * @brief Data type for transform_vars_permblockdiag.
@@ -23,7 +25,7 @@ typedef struct {
   size_t *first_non_zero_map; /* maps a row to the index of its first non zero element */
 } transform_vars_permblockdiag_t;
 
-static void transform_vars_permblockdiag_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_permblockdiag_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i, j, current_blocksize, first_non_zero_ind;
   transform_vars_permblockdiag_t *data;
   coco_problem_t *inner_problem;
@@ -49,7 +51,7 @@ static void transform_vars_permblockdiag_evaluate(coco_problem_t *problem, const
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
-static void transform_vars_permblockdiag_free(void *thing) {
+void transform_vars_permblockdiag_free(void *thing) {
   transform_vars_permblockdiag_t *data = (transform_vars_permblockdiag_t *)thing;
   coco_free_memory(data->B);
   coco_free_memory(data->P1);
@@ -65,21 +67,20 @@ static void transform_vars_permblockdiag_free(void *thing) {
  *
  * The matrix M is stored in row-major format.
  */
-static coco_problem_t *transform_vars_permblockdiag(coco_problem_t *inner_problem, const double *const *B,
+coco_problem_t *transform_vars_permblockdiag(coco_problem_t *inner_problem, const double *const *B,
                                                     const size_t *P1, const size_t *P2,
                                                     const size_t number_of_variables, const size_t *block_sizes,
                                                     const size_t nb_blocks) {
   coco_problem_t *problem;
   transform_vars_permblockdiag_t *data;
   size_t entries_in_M, idx_blocksize, next_bs_change, current_blocksize;
-  int i;
   entries_in_M = 0;
   assert(number_of_variables > 0); /*tmp*/
-  for (i = 0; i < nb_blocks; i++) {
+  for (size_t i = 0; i < nb_blocks; i++) {
     entries_in_M += block_sizes[i] * block_sizes[i];
   }
   data = (transform_vars_permblockdiag_t *)coco_allocate_memory(sizeof(*data));
-  data->B = ls_copy_block_matrix(B, number_of_variables, block_sizes, nb_blocks);
+  data->B = coco_copy_block_matrix(B, number_of_variables, block_sizes, nb_blocks);
   data->x = coco_allocate_vector(inner_problem->number_of_variables);
   data->P1 = coco_duplicate_size_t_vector(P1, inner_problem->number_of_variables);
   data->P2 = coco_duplicate_size_t_vector(P2, inner_problem->number_of_variables);
@@ -90,7 +91,7 @@ static coco_problem_t *transform_vars_permblockdiag(coco_problem_t *inner_proble
 
   idx_blocksize = 0;
   next_bs_change = block_sizes[idx_blocksize];
-  for (i = 0; i < number_of_variables; i++) {
+  for (size_t i = 0; i < number_of_variables; i++) {
     if (i >= next_bs_change) {
       idx_blocksize++;
       next_bs_change += block_sizes[idx_blocksize];

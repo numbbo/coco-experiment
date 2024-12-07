@@ -4,24 +4,27 @@
  * in the bbob-biobj-ext suite with 92 functions, but the large-scale implementations of the
  * functions are used instead of the original ones for dimensions over 40.
  */
+#include "suite_biobj_mixint.h"
 
-#include "coco.h"
-#include "mo_utilities.c"
-#include "suite_biobj_utilities.c"
-#include "suite_largescale.c"
-#include "transform_vars_discretize.c"
-#include "transform_obj_scale.c"
-#include "suite_bbob_mixint.c"
+#include <assert.h>
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+#include "mo_utilities.h"
+#include "suite_biobj_utilities.h"
+#include "suite_largescale.h"
+#include "transform_vars_discretize.h"
+#include "transform_obj_scale.h"
+#include "suite_bbob.h"
+#include "suite_bbob_mixint.h"
+
+coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,
                                          const char *default_instances, const int known_optima);
-static void suite_biobj_new_inst_free(void *stuff);
+void suite_biobj_new_inst_free(void *stuff);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj-mixint suite.
  */
-static coco_suite_t *suite_biobj_mixint_initialize(void) {
+coco_suite_t *suite_biobj_mixint_initialize(void) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {5, 10, 20, 40, 80, 160};
@@ -38,7 +41,7 @@ static coco_suite_t *suite_biobj_mixint_initialize(void) {
  *
  * @note The instances of the bi-objective suites generally do not changes with years.
  */
-static const char *suite_biobj_mixint_get_instances_by_year(const int year) {
+const char *suite_biobj_mixint_get_instances_by_year(const int year) {
 
   (void)year; /* To get rid of compiler warnings */
   return "1-15";
@@ -62,7 +65,7 @@ static const char *suite_biobj_mixint_get_instances_by_year(const int year) {
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, const size_t dimension,
+coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, const size_t dimension,
                                                      const size_t instance,
                                                      const coco_get_problem_function_t coco_get_problem_function,
                                                      suite_biobj_new_inst_t **new_inst_data,
@@ -170,7 +173,7 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, cons
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
+coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                       const size_t dimension_idx, const size_t instance_idx) {
 
   coco_problem_t *problem = NULL;

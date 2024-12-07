@@ -4,22 +4,22 @@
  * dimensions.
  */
 
-#include "coco_problem.c"
-#include "f_bueche_rastrigin.c"
-#include "f_ellipsoid.c"
-#include "f_linear_slope.c"
-#include "f_rastrigin.c"
-#include "f_rosenbrock.c"
-#include "f_sphere.c"
+#include "coco_problem.h"
+#include "f_bueche_rastrigin.h"
+#include "f_ellipsoid.h"
+#include "f_linear_slope.h"
+#include "f_rastrigin.h"
+#include "f_rosenbrock.h"
+#include "f_sphere.h"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,
                                          const char *default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the toy suite.
  */
-static coco_suite_t *suite_toy_initialize(void) {
+coco_suite_t *suite_toy_initialize(void) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20};
@@ -39,7 +39,7 @@ static coco_suite_t *suite_toy_initialize(void) {
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
+coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
                                              const size_t instance_idx) {
 
   coco_problem_t *problem = NULL;

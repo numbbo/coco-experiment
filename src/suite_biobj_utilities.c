@@ -9,9 +9,19 @@
  * manually added to suite_biobj_instances, otherwise they will be computed each time the suite constructor
  * is invoked with these instances.
  */
+#include "suite_biobj_utilities.h"
 
-#include "coco.h"
-#include "suite_biobj_best_values_hyp.c"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+
+#include "coco_platform.h"
+#include "mo_utilities.h"
+#include "suite_bbob.h"
+#include "suite_biobj_best_values_hyp.h"
+#include "suite_biobj_utilities.h"
+
 
 /**
  * @brief The array of triples biobj_instance - problem1_instance - problem2_instance connecting bi-objective
@@ -19,27 +29,14 @@
  *
  * It should be updated with new instances when/if they are chosen.
  */
-static const size_t suite_biobj_instances[][3] = {{1, 2, 4},    {2, 3, 5},    {3, 7, 8},    {4, 9, 10},   {5, 11, 12},
+const size_t suite_biobj_instances[][3] = {{1, 2, 4},    {2, 3, 5},    {3, 7, 8},    {4, 9, 10},   {5, 11, 12},
                                                   {6, 13, 14},  {7, 15, 16},  {8, 17, 18},  {9, 19, 21},  {10, 21, 22},
                                                   {11, 23, 24}, {12, 25, 26}, {13, 27, 28}, {14, 29, 30}, {15, 31, 34}};
 
 /**
- * @brief A structure containing information about the new instances.
- */
-typedef struct {
-
-  size_t **new_instances; /**< @brief A matrix of new instances (equal in form to suite_biobj_instances)
-                                that needs to be used only when an instance that is not in
-                                suite_biobj_instances is being invoked. */
-
-  size_t max_new_instances; /**< @brief The maximal number of new instances. */
-
-} suite_biobj_new_inst_t;
-
-/**
  * @brief  Frees the memory of the given suite_biobj_new_inst_t object.
  */
-static void suite_biobj_new_inst_free(void *stuff) {
+void suite_biobj_new_inst_free(void *stuff) {
 
   suite_biobj_new_inst_t *data;
   size_t i;
@@ -63,7 +60,7 @@ static void suite_biobj_new_inst_free(void *stuff) {
  * @brief  Performs a few checks and returns whether the two given problem instances should break the search
  * for new instances in suite_biobj_get_new_instance().
  */
-static int suite_biobj_check_inst_consistency(const size_t dimension, size_t function1, size_t instance1,
+int suite_biobj_check_inst_consistency(const size_t dimension, size_t function1, size_t instance1,
                                               size_t function2, size_t instance2) {
   coco_problem_t *problem = NULL;
   coco_problem_t *problem1, *problem2;
@@ -123,7 +120,7 @@ static int suite_biobj_check_inst_consistency(const size_t dimension, size_t fun
  * points apart enough in the decision space. When the instance has been found, it is output through
  * coco_warning, so that the user can see it and eventually manually add it to suite_biobj_instances.
  */
-static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data, const size_t instance,
+size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data, const size_t instance,
                                            const size_t instance1, const size_t *bbob_functions,
                                            const size_t num_bbob_functions, const size_t *sel_bbob_functions,
                                            const size_t num_sel_bbob_functions, const size_t *dimensions,
@@ -237,7 +234,7 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_inst_t *new_inst_data
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_t dimension, const size_t instance,
+coco_problem_t *coco_get_biobj_problem(const size_t function, const size_t dimension, const size_t instance,
                                               const coco_get_problem_function_t coco_get_problem_function,
                                               suite_biobj_new_inst_t **new_inst_data, const size_t num_new_instances,
                                               const size_t *dimensions, const size_t num_dimensions) {
@@ -483,7 +480,7 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
  * If a suite does not have known optima or it has known optima but the key is not found,
  * the default value is used.
  */
-static void suite_biobj_get_best_hyp_value(const int known_optima, const char *key, double *value) {
+void suite_biobj_get_best_hyp_value(const int known_optima, const char *key, double *value) {
 
   static const double default_value = 1.0;
   size_t i, count;

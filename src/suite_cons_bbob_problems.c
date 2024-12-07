@@ -78,27 +78,31 @@
  * stacked together to form the constrained function.
  *
  */
+#include "suite_cons_bbob_problems.h"
 
 #include <math.h>
+#include <assert.h>
 
-#include "coco.h"
-#include "coco_utilities.c"
-#include "coco_random.c"
-#include "c_linear.c"
-#include "f_different_powers.c"
-#include "f_discus.c"
-#include "f_ellipsoid.c"
-#include "f_linear_slope.c"
-#include "f_rastrigin.c"
-#include "f_sphere.c"
-
-#include "transform_vars_composed.c"
+#include "c_linear.h"
+#include "coco_random.h"
+#include "coco_utilities.h"
+#include "f_bent_cigar.h"
+#include "f_different_powers.h"
+#include "f_discus.h"
+#include "f_ellipsoid.h"
+#include "f_linear_slope.h"
+#include "f_rastrigin.h"
+#include "f_sphere.h"
+#include "transform_vars_asymmetric.h"
+#include "transform_vars_composed.h"
+#include "transform_vars_oscillate.h"
+#include "transform_vars_shift.h"
 
 /**
  * @brief Calculates the objective function type based on the value
  *        of "function"
  */
-static size_t obj_function_type(const size_t function) {
+size_t obj_function_type(const size_t function) {
 
   size_t problems_per_obj_function_type = 6;
   return (size_t)ceil((double)function / (double)problems_per_obj_function_type);
@@ -108,7 +112,7 @@ static size_t obj_function_type(const size_t function) {
  * @brief Returns the number of linear constraints associated to the
  *        value of "function"
  */
-static size_t nb_of_linear_constraints(const size_t function, const size_t dimension) {
+size_t nb_of_linear_constraints(const size_t function, const size_t dimension) {
 
   int problems_per_obj_function_type = 6;
   int p;
@@ -136,7 +140,7 @@ static size_t nb_of_linear_constraints(const size_t function, const size_t dimen
  *
  *
  */
-static void feasible_direction_set_length(double *feasible_direction, const double *xopt, size_t dimension,
+void feasible_direction_set_length(double *feasible_direction, const double *xopt, size_t dimension,
                                           long rseed) {
   const long seed_offset = 412;    /* was sampled uniform in 0-999 */
   const double feas_shrink = 0.75; /* scale randomly between 0.75 and 1.0 */
@@ -164,7 +168,7 @@ static void feasible_direction_set_length(double *feasible_direction, const doub
  * @brief Objective function: sphere
  *        Constraint(s): linear
  */
-static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance,
                                                                     const size_t number_of_linear_constraints,
                                                                     const long rseed, double *feasible_direction,
@@ -232,7 +236,7 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
  * @brief Objective function: ellipsoid
  *        Constraint(s): linear
  */
-static coco_problem_t *
+coco_problem_t *
 f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                 const size_t number_of_linear_constraints, const long rseed,
                                                 double *feasible_direction, const double *xopt,
@@ -307,7 +311,7 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
  * @brief Objective function: rotated ellipsoid
  *        Constraint(s): linear
  */
-static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
+coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
@@ -380,7 +384,7 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
  * @brief Objective function: linear slope
  *        Constraint(s): linear
  */
-static coco_problem_t *
+coco_problem_t *
 f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                    const size_t number_of_linear_constraints, const long rseed,
                                                    double *feasible_direction, const double *xopt,
@@ -452,7 +456,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
  * @brief Objective function: discus
  *        Constraint(s): linear
  */
-static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance,
                                                                     const size_t number_of_linear_constraints,
                                                                     const long rseed, double *feasible_direction,
@@ -527,7 +531,7 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
  * @brief Objective function: bent cigar
  *        Constraint(s): linear
  */
-static coco_problem_t *
+coco_problem_t *
 f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                  const size_t number_of_linear_constraints, const long rseed,
                                                  double *feasible_direction, const double *xopt,
@@ -601,7 +605,7 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
  * @brief Objective function: different powers
  *        Constraint(s): linear
  */
-static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
+coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
@@ -671,7 +675,7 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
  * @brief Objective function: rastrigin
  *        Constraint(s): linear
  */
-static coco_problem_t *
+coco_problem_t *
 f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                 const size_t number_of_linear_constraints, const long rseed,
                                                 double *feasible_direction, const double *xopt,
@@ -746,7 +750,7 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
  * @brief Objective function: rastrigin
  *        Constraint(s): linear
  */
-static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
+coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {

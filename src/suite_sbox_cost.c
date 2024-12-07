@@ -10,36 +10,36 @@
 
 #include "coco.h"
 
-#include "f_attractive_sector.c"
-#include "f_bent_cigar.c"
-#include "f_bueche_rastrigin.c"
-#include "f_different_powers.c"
-#include "f_discus.c"
-#include "f_ellipsoid.c"
-#include "f_gallagher.c"
-#include "f_griewank_rosenbrock.c"
-#include "f_katsuura.c"
-#include "f_linear_slope.c"
-#include "f_lunacek_bi_rastrigin.c"
-#include "f_rastrigin.c"
-#include "f_rosenbrock.c"
-#include "f_schaffers.c"
-#include "f_schwefel.c"
-#include "f_sharp_ridge.c"
-#include "f_sphere.c"
-#include "f_step_ellipsoid.c"
-#include "f_weierstrass.c"
+#include "f_attractive_sector.h"
+#include "f_bent_cigar.h"
+#include "f_bueche_rastrigin.h"
+#include "f_different_powers.h"
+#include "f_discus.h"
+#include "f_ellipsoid.h"
+#include "f_gallagher.h"
+#include "f_griewank_rosenbrock.h"
+#include "f_katsuura.h"
+#include "f_linear_slope.h"
+#include "f_lunacek_bi_rastrigin.h"
+#include "f_rastrigin.h"
+#include "f_rosenbrock.h"
+#include "f_schaffers.h"
+#include "f_schwefel.h"
+#include "f_sharp_ridge.h"
+#include "f_sphere.h"
+#include "f_step_ellipsoid.h"
+#include "f_weierstrass.h"
 
-#include "transform_vars_enforce_box.c"
+#include "transform_vars_enforce_box.h"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,
                                          const char *default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-boxed suite.
  */
-static coco_suite_t *suite_sbox_cost_initialize(void) {
+coco_suite_t *suite_sbox_cost_initialize(void) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
@@ -53,7 +53,7 @@ static coco_suite_t *suite_sbox_cost_initialize(void) {
 /**
  * @brief Sets the instances associated with years for the SBOX-COST suite.
  */
-static const char *suite_sbox_cost_get_instances_by_year(const int year) {
+const char *suite_sbox_cost_get_instances_by_year(const int year) {
   if (year == 2023) {
     return "1-5,101-110";
   } if (year == 0000) {
@@ -72,7 +72,7 @@ static const char *suite_sbox_cost_get_instances_by_year(const int year) {
  * @brief Creates and returns a bbob-boxed problem without needing the actual
  * bbob-boxed suite.
  */
-static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
+coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
                                                   const size_t dimension,
                                                   const size_t instance) {
   coco_problem_t *problem = NULL;
@@ -215,7 +215,7 @@ static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_sbox_cost_get_problem(coco_suite_t *suite,
+coco_problem_t *suite_sbox_cost_get_problem(coco_suite_t *suite,
                                                    const size_t function_idx,
                                                    const size_t dimension_idx,
                                                    const size_t instance_idx) {

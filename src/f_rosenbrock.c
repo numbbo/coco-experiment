@@ -6,21 +6,21 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_blockrotation.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_scale.c"
-#include "transform_vars_shift.c"
+#include "coco_problem.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_affine.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_scale.h"
+#include "transform_vars_shift.h"
 
 /**
  * @brief Implements the Rosenbrock function without connections to any COCO
  * structures.
  */
-static double f_rosenbrock_raw(const double *x,
+double f_rosenbrock_raw(const double *x,
                                const size_t number_of_variables) {
 
   size_t i = 0;
@@ -46,7 +46,7 @@ static double f_rosenbrock_raw(const double *x,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x,
+void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x,
                                   double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_rosenbrock_raw(x, problem->number_of_variables);
@@ -56,7 +56,7 @@ static void f_rosenbrock_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Allocates the basic Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
+coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars("Rosenbrock function", f_rosenbrock_evaluate, NULL,
                                                                number_of_variables, -5.0, 5.0, 1.0);
@@ -70,7 +70,7 @@ static coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                           const size_t instance, const long rseed,
                                                           const char *problem_id_template,
                                                           const char *problem_name_template) {
@@ -124,7 +124,7 @@ static coco_problem_t *f_rosenbrock_bbob_problem_allocate(const size_t function,
 /**
  * @brief Creates the BBOB rotated Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                   const size_t instance, const long rseed,
                                                                   const char *problem_id_template,
                                                                   const char *problem_name_template) {
@@ -185,7 +185,7 @@ static coco_problem_t *f_rosenbrock_rotated_bbob_problem_allocate(const size_t f
 /**
  * @brief Creates the BBOB permuted block-rotated Rosenbrock problem.
  */
-static coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_rosenbrock_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                         const size_t instance, const long rseed,
                                                                         const char *problem_id_template,
                                                                         const char *problem_name_template) {

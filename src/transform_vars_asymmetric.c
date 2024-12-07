@@ -5,35 +5,20 @@
  * @author Paul Dufosse
  * @note Edited to fulfill needs from the constrained test bed.
  */
+#include "transform_vars_asymmetric.h"
 
 #include <math.h>
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "brentq.c"
-
-/**
- * @brief Data type for transform_vars_asymmetric.
- */
-typedef struct {
-  double *x;
-  double beta;
-} transform_vars_asymmetric_data_t;
-
-/**
- * @brief Data type for univariate function tasy_uv.
- */
-typedef struct {
-  double beta;
-  size_t i;
-  size_t n;
-} tasy_data;
+#include "coco_utilities.h"
+#include "coco_problem.h"
+#include "brentq.h"
 
 /**
  * @brief Univariate asymmetric non-linear transformation.
  */
-static double tasy_uv(double xi, tasy_data *d) {
+double tasy_uv(double xi, tasy_data *d) {
   double yi;
   double exponent;
   if (xi > 0.0) {
@@ -48,7 +33,7 @@ static double tasy_uv(double xi, tasy_data *d) {
 /**
  * @brief Inverse of asymmetric non-linear transformation tasy_uv obtained with brentq.
  */
-static double tasy_uv_inv(double yi, tasy_data *d) {
+double tasy_uv_inv(double yi, tasy_data *d) {
   double xi;
   xi = brentinv((callback_type)&tasy_uv, yi, d);
   return xi;
@@ -57,7 +42,7 @@ static double tasy_uv_inv(double yi, tasy_data *d) {
 /**
  * @brief Multivariate, coordinate-wise, asymmetric non-linear transformation.
  */
-static void tasy(transform_vars_asymmetric_data_t *data, const double *x, size_t number_of_variables) {
+void tasy(transform_vars_asymmetric_data_t *data, const double *x, size_t number_of_variables) {
   size_t i;
   tasy_data *d;
   d = coco_allocate_memory(sizeof(*d));
@@ -75,7 +60,7 @@ static void tasy(transform_vars_asymmetric_data_t *data, const double *x, size_t
 /**
  * @brief Evaluates the transformed function.
  */
-static void transform_vars_asymmetric_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_asymmetric_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
 
   double *cons_values;
   int is_feasible;
@@ -107,7 +92,7 @@ static void transform_vars_asymmetric_evaluate_function(coco_problem_t *problem,
 /**
  * @brief Evaluates the transformed constraint.
  */
-static void transform_vars_asymmetric_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
+void transform_vars_asymmetric_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
                                                           int update_counter) {
   size_t i;
   double exponent;
@@ -139,7 +124,7 @@ static void transform_vars_asymmetric_evaluate_constraint(coco_problem_t *proble
   inner_problem->evaluate_constraint(inner_problem, data->x, y, update_counter);
 }
 
-static void transform_vars_asymmetric_free(void *thing) {
+void transform_vars_asymmetric_free(void *thing) {
   transform_vars_asymmetric_data_t *data = (transform_vars_asymmetric_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -147,7 +132,7 @@ static void transform_vars_asymmetric_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_asymmetric(coco_problem_t *inner_problem, const double beta) {
+coco_problem_t *transform_vars_asymmetric(coco_problem_t *inner_problem, const double beta) {
   transform_vars_asymmetric_data_t *data;
   coco_problem_t *problem;
 
@@ -178,12 +163,12 @@ static coco_problem_t *transform_vars_asymmetric(coco_problem_t *inner_problem, 
  *        xopt is needed because transform_vars_shift is not yet called
  *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
  */
-static void transform_inv_initial_asymmetric(coco_problem_t *problem, const double *xopt) {
+void transform_inv_initial_asymmetric(coco_problem_t *problem, const double *xopt) {
   size_t i;
   size_t j;
   int is_in_bounds;
-  double di;
-  double xi;
+  double di = 0.0;
+  double xi = 0.0;
   double *sol = NULL;
   double halving_factor = .5;
 
@@ -200,7 +185,6 @@ static void transform_inv_initial_asymmetric(coco_problem_t *problem, const doub
 
   j = 0;
   while (1) {
-
     for (i = 0; i < problem->number_of_variables; ++i) {
       d->i = i;
       di = tasy_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), d);

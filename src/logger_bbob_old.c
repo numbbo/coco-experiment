@@ -9,41 +9,42 @@
  * - The "tdat" files ...
  * - The "rdat" files ...
  */
+#include "logger_bbob_old.h"
 
 /* TODO: Document this file in doxygen style! */
-
-#include <stdio.h>
 #include <assert.h>
-#include <limits.h>
-#include <float.h>
-#include <math.h>
 #include <errno.h>
+#include <float.h>
+#include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "coco.h"
+#include "coco_utilities.h"
+#include "coco_problem.h"
+#include "coco_platform.h"
+#include "coco_string.h"
+#include "observer_bbob_old.h"
 
-#include "coco_utilities.c"
-#include "coco_problem.c"
-#include "coco_string.c"
-#include "observer_bbob_old.c"
-
-static const double fvalue_logged_for_infinite = 3e21; /* value used for logging try */
-static const double fvalue_logged_for_nan = 2e21;
+const double fvalue_logged_for_infinite = 3e21; /* value used for logging try */
+const double fvalue_logged_for_nan = 2e21;
 /* static const double fvalue_logged_for_infeasible = 1e21;  only in first evaluation */
-static const double weight_constraints =
+const double weight_constraints =
     1e0; /* factor used in logged indicator (f-f*)^+ + sum_i g_i^+ in front of the sum */
 
 /*static const size_t bbob_old_nbpts_nbevals = 20; Wassim: tentative, are now observer options with these default
  * values*/
 /*static const size_t bbob_old_nbpts_fval = 5;*/
-static size_t bbob_old_current_dim = 0;
-static size_t bbob_old_current_funId = 0;
-static size_t bbob_old_infoFile_firstInstance = 0;
+size_t bbob_old_current_dim = 0;
+size_t bbob_old_current_funId = 0;
+size_t bbob_old_infoFile_firstInstance = 0;
 char *bbob_old_infoFile_firstInstance_char;
 /* a possible solution: have a list of dims that are already in the file, if the ones we're about to log
  * is != bbob_old_current_dim and the funId is currend_funId, create a new .info file with as suffix the
  * number of the first instance */
-static const int bbob_old_number_of_dimensions = 6;
-static size_t bbob_old_dimensions_in_current_infoFile[6] = {0, 0, 0,
+const int bbob_old_number_of_dimensions = 6;
+size_t bbob_old_dimensions_in_current_infoFile[6] = {0, 0, 0,
                                                             0, 0, 0}; /* TODO should use dimensions from the suite */
 
 /* The current_... mechanism fails if several problems are open.
@@ -54,45 +55,9 @@ static size_t bbob_old_dimensions_in_current_infoFile[6] = {0, 0, 0,
  * file is generated.
  * TODO: Shouldn't the new way of handling observers already fix this?
  */
-static int bbob_old_logger_is_open = 0; /* this could become lock-list of .info files */
+int bbob_old_logger_is_open = 0; /* this could become lock-list of .info files */
 
 /* TODO: add possibility of adding a prefix to the index files (easy to do through observer options) */
-
-/**
- * @brief The bbob_old logger data type.
- */
-typedef struct {
-  coco_observer_t *observer;
-  int is_initialized;
-  /*char *path;// relative path to the data folder. //Wassim: now fetched from the observer */
-  /*const char *alg_name; the alg name, for now, temporarily the same as the path. Wassim: Now in the observer */
-  FILE *index_file; /* index file */
-  FILE *fdata_file; /* function value aligned data file */
-  FILE *tdata_file; /* number of function evaluations aligned data file */
-  FILE *rdata_file; /* restart info data file */
-  size_t number_of_evaluations;
-  size_t number_of_evaluations_constraints;
-  double best_fvalue;
-  double last_fvalue;
-  short written_last_eval; /* allows writing the data of the final fun eval in the .tdat file if not already written by
-                              the t_trigger*/
-  double *best_solution;
-  /* The following are to only pass data as a parameter in the free function. The
-   * interface should probably be the same for all free functions so passing the
-   * problem as a second parameter is not an option even though we need info
-   * form it.*/
-  size_t function_id; /*TODO: consider changing name*/
-  size_t instance_id;
-  size_t number_of_variables;
-  size_t number_of_integer_variables;
-  int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
-  double optimal_fvalue;
-  char *suite_name;
-
-  coco_observer_log_targets_t *targets;     /**< @brief Triggers based on target values. */
-  coco_observer_evaluations_t *evaluations; /**< @brief Triggers based on the number of evaluations. */
-
-} logger_bbob_old_data_t;
 
 /**
  * @brief Discretized constraint value, ~8 + log10(c), in a single digit.
@@ -104,7 +69,7 @@ typedef struct {
  * 1e-1..1    -> 8
  *   >1       -> 9
  */
-static int single_digit_constraint_value(const double c) {
+int single_digit_constraint_value(const double c) {
   const double limits[9] = {0, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1};
   int i;
 
@@ -131,7 +96,7 @@ static int single_digit_constraint_value(const double c) {
     "x1 | "
     "x2...\n";
  */
-static const char *bbob_old_file_header_str = "%% "
+const char *bbob_old_file_header_str = "%% "
                                               "f evaluations | "
                                               "g evaluations | "
                                               "best noise-free fitness - Fopt (%13.12e) + sum g_i+ | "
@@ -140,13 +105,13 @@ static const char *bbob_old_file_header_str = "%% "
                                               "x1 | "
                                               "x2...\n";
 
-static const char *logger_name = "bbob_old";
-static const char *data_format = "bbob-new2"; /* back to 5 columns, 5-th column writes single digit constraint values */
+const char *logger_name = "bbob_old";
+const char *data_format = "bbob-new2"; /* back to 5 columns, 5-th column writes single digit constraint values */
 
 /**
  * adds a formated line to a data file
  */
-static void logger_bbob_old_write_data(FILE *target_file, size_t number_of_f_evaluations,
+void logger_bbob_old_write_data(FILE *target_file, size_t number_of_f_evaluations,
                                        size_t number_of_cons_evaluations, double fvalue, double best_fvalue,
                                        double best_value, const double *x, size_t number_of_variables,
                                        size_t number_of_integer_variables, const double *constraints,
@@ -185,7 +150,7 @@ static void logger_bbob_old_write_data(FILE *target_file, size_t number_of_f_eva
 /**
  * Error when trying to create the file "path"
  */
-static void logger_bbob_old_error_io(FILE *path, int errnum) {
+void logger_bbob_old_error_io(FILE *path, int errnum) {
   const char *error_format = "Error opening file: %s\n ";
   coco_error(error_format, strerror(errnum), path);
 }
@@ -200,7 +165,7 @@ static void logger_bbob_old_error_io(FILE *path, int errnum) {
  ".dat");
  */
 
-static void logger_bbob_old_open_dataFile(FILE **target_file, const char *path, const char *dataFile_path,
+void logger_bbob_old_open_dataFile(FILE **target_file, const char *path, const char *dataFile_path,
                                           const char *file_extension) {
   char file_path[COCO_PATH_MAX + 2] = {0};
   char relative_filePath[COCO_PATH_MAX + 2] = {0};
@@ -218,7 +183,7 @@ static void logger_bbob_old_open_dataFile(FILE **target_file, const char *path, 
 }
 
 /*
-static void logger_bbob_old_open_dataFile(FILE **target_file,
+void logger_bbob_old_open_dataFile(FILE **target_file,
                                           const char *path,
                                           const char *dataFile_path,
                                           const char *file_extension) {
@@ -243,7 +208,7 @@ static void logger_bbob_old_open_dataFile(FILE **target_file,
  * Creates the index file fileName_prefix+problem_id+file_extension in
  * folder_path
  */
-static void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const char *folder_path,
+void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const char *folder_path,
                                           const char *indexFile_prefix, const char *function_id,
                                           const char *dataFile_path, const char *suite_name) {
   /* to add the instance number TODO: this should be done outside to avoid redoing this for the .*dat files */
@@ -351,7 +316,7 @@ static void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const 
  * Generates the different files and folder needed by the logger to store the
  * data if these don't already exist
  */
-static void logger_bbob_old_initialize(logger_bbob_old_data_t *logger, coco_problem_t *inner_problem) {
+void logger_bbob_old_initialize(logger_bbob_old_data_t *logger, coco_problem_t *inner_problem) {
   /*
    Creates/opens the data and index files
    */
@@ -406,7 +371,7 @@ static void logger_bbob_old_initialize(logger_bbob_old_data_t *logger, coco_prob
 /**
  * Layer added to the transformed-problem evaluate_function by the logger
  */
-static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   double y_logged, max_fvalue, sum_cons;
   double *cons = NULL;
@@ -502,7 +467,7 @@ static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, d
  * TODO: make sure it is called at the end of each run or move the
  * writing into files to another function
  */
-static void logger_bbob_old_free(void *stuff) {
+void logger_bbob_old_free(void *stuff) {
   /* TODO: do all the "non simply freeing" stuff in another function
    * that can have problem as input
    */
@@ -564,7 +529,7 @@ static void logger_bbob_old_free(void *stuff) {
   bbob_old_logger_is_open = 0;
 }
 
-static coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t *inner_problem) {
+coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t *inner_problem) {
   logger_bbob_old_data_t *logger_data;
   coco_problem_t *problem;
 

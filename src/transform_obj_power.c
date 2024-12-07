@@ -7,7 +7,7 @@
 #include <math.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_problem.h"
 
 /**
  * @brief Data type for transform_obj_power.
@@ -19,7 +19,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_obj_power_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_obj_power_evaluate(coco_problem_t *problem, const double *x, double *y) {
   transform_obj_power_data_t *data;
   size_t i;
 
@@ -40,7 +40,7 @@ static void transform_obj_power_evaluate(coco_problem_t *problem, const double *
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_power(coco_problem_t *inner_problem, const double exponent) {
+coco_problem_t *transform_obj_power(coco_problem_t *inner_problem, const double exponent) {
   transform_obj_power_data_t *data;
   coco_problem_t *problem;
 

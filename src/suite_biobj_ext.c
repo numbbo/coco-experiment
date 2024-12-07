@@ -19,10 +19,13 @@
  *
  * @note This file is based on the original suite_bbob_biobj.c and extends it by 37 functions in 6 dimensions.
  */
+#include "suite_biobj_ext.h"
 
-#include "coco.h"
-#include "mo_utilities.c"
-#include "suite_bbob.c"
+#include <assert.h>
+#include <stdlib.h>
+
+#include "mo_utilities.h"
+#include "suite_bbob.h"
 
 /**
  * @brief The array of triples biobj_instance - problem1_instance - problem2_instance connecting bi-objective
@@ -30,34 +33,21 @@
  *
  * It should be updated with new instances when they are chosen.
  */
-static const size_t suite_biobj_ext_instances[][3] = {
+const size_t suite_biobj_ext_instances[][3] = {
     {1, 2, 4},   {2, 3, 5},    {3, 7, 8},    {4, 9, 10},   {5, 11, 12},  {6, 13, 14},  {7, 15, 16}, {8, 17, 18},
     {9, 19, 21}, {10, 21, 22}, {11, 23, 24}, {12, 25, 26}, {13, 27, 28}, {14, 29, 30}, {15, 31, 34}};
 
-/**
- * @brief The bbob-biobj-ext suite data type.
- */
-typedef struct {
-
-  size_t **new_instances; /**< @brief A matrix of new instances (equal in form to suite_biobj_ext_instances)
-                                that needs to be used only when an instance that is not in
-                                suite_biobj_ext_instances is being invoked. */
-
-  size_t max_new_instances; /**< @brief The maximal number of new instances. */
-
-} suite_biobj_ext_t;
-
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,
                                          const char *default_instances, const int known_optima);
-static void suite_biobj_ext_free(void *stuff);
-static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t instance, const size_t instance1,
+void suite_biobj_ext_free(void *stuff);
+size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t instance, const size_t instance1,
                                                const size_t num_bbob_functions, const size_t *bbob_functions);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj-ext suite.
  */
-static coco_suite_t *suite_biobj_ext_initialize(void) {
+coco_suite_t *suite_biobj_ext_initialize(void) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
@@ -72,7 +62,7 @@ static coco_suite_t *suite_biobj_ext_initialize(void) {
 /**
  * @brief Sets the instances associated with years for the bbob-biobj-ext suite.
  */
-static const char *suite_biobj_ext_get_instances_by_year(const int year) {
+const char *suite_biobj_ext_get_instances_by_year(const int year) {
 
   if (year == 0000) { /* default/test case */
     return "1-10";
@@ -106,7 +96,7 @@ static const char *suite_biobj_ext_get_instances_by_year(const int year) {
  * @return The problem that corresponds to the given parameters.
  * @note Copied from suite_bbob_biobj.c and extended.
  */
-static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const size_t function_idx,
+coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                    const size_t dimension_idx, const size_t instance_idx) {
 
   const size_t num_bbob_functions = 10;
@@ -345,7 +335,7 @@ static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const si
  * instances given should break the search for new instances in
  * suite_biobj_ext_get_new_instance(...).
  */
-static int check_consistency_of_instances(const size_t dimension, size_t function1, size_t instance1, size_t function2,
+int check_consistency_of_instances(const size_t dimension, size_t function1, size_t instance1, size_t function2,
                                           size_t instance2) {
   coco_problem_t *problem = NULL;
   coco_problem_t *problem1, *problem2;
@@ -407,7 +397,7 @@ static int check_consistency_of_instances(const size_t dimension, size_t functio
  *
  * @note Copied from suite_bbob_biobj.c.
  */
-static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t instance, const size_t instance1,
+size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t instance, const size_t instance1,
                                                const size_t num_bbob_functions, const size_t *bbob_functions) {
   size_t instance2 = 0;
   size_t num_tries = 0;
@@ -503,7 +493,7 @@ static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t
  * @brief  Frees the memory of the given bi-objective suite.
  * @note   Copied from suite_bbob_biobj.c.
  */
-static void suite_biobj_ext_free(void *stuff) {
+void suite_biobj_ext_free(void *stuff) {
 
   suite_biobj_ext_t *data;
   size_t i;

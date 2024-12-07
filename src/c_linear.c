@@ -3,6 +3,7 @@
  * @brief Implements the linear constraints for the suite of
  *        constrained problems.
  */
+#include "c_linear.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,8 +12,8 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_internal.h"
-#include "coco_problem.c"
+#include "coco_utilities.h"
+#include "coco_problem.h"
 /**
  * @brief Data type for the linear constraints.
  */
@@ -23,27 +24,27 @@ typedef struct {
   double gradient_norm;
 } linear_constraint_data_t;
 
-static void c_sum_variables_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter);
+void c_sum_variables_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter);
 
-static void c_linear_single_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter);
+void c_linear_single_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter);
 
-static coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const double *feasible_point);
+coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const double *feasible_point);
 
-static void c_linear_gradient_free(void *thing);
+void c_linear_gradient_free(void *thing);
 
-static coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables);
+coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables);
 
-static coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const double *gradient,
+coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const double *gradient,
                                           const double x_shift_factor);
 
-static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                   const size_t instance, const size_t constraint_number,
                                                                   const double factor1, const char *problem_id_template,
                                                                   const char *problem_name_template, double *gradient,
                                                                   double x_shift_factor,
                                                                   const double *feasible_direction);
 
-static coco_problem_t *
+coco_problem_t *
 c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                     const size_t number_of_active_constraints, const char *problem_id_template,
                                     const char *problem_name_template, const double *feasible_direction);
@@ -52,7 +53,7 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
  * @brief Evaluates the linear constraint with all-ones gradient at
  *        the point 'x' and stores the result into 'y'.
  */
-static void c_sum_variables_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter) {
+void c_sum_variables_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter) {
 
   size_t i;
 
@@ -71,7 +72,7 @@ static void c_sum_variables_evaluate(coco_problem_t *self, const double *x, doub
  * @brief Evaluates the linear constraint at the point 'x' and stores
  *        the result in 'y'.
  */
-static void c_linear_single_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter) {
+void c_linear_single_evaluate(coco_problem_t *self, const double *x, double *y, int update_counter) {
 
   size_t i;
   double factor;
@@ -98,7 +99,7 @@ static void c_linear_single_evaluate(coco_problem_t *self, const double *x, doub
  *        the constraint in "problem" and records it as the
  *        initial feasible solution to this coco_problem.
  */
-static coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const double *feasible_direction) {
+coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const double *feasible_direction) {
 
   size_t i;
   linear_constraint_data_t *data;
@@ -129,7 +130,7 @@ static coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const
 /**
  * @brief Frees the data object.
  */
-static void c_linear_gradient_free(void *thing) {
+void c_linear_gradient_free(void *thing) {
 
   linear_constraint_data_t *data = (linear_constraint_data_t *)thing;
   coco_free_memory(data->gradient);
@@ -139,7 +140,7 @@ static void c_linear_gradient_free(void *thing) {
 /**
  * @brief Allocates a linear constraint coco_problem_t with all-ones gradient.
  */
-static coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables) {
+coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables) {
 
   size_t i;
   coco_problem_t *problem = coco_problem_allocate(number_of_variables, 0, 1);
@@ -161,7 +162,7 @@ static coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables
  *        as argument and with the feasible domain extended by
  *        shift_factor.
  */
-static coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const double *gradient,
+coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const double *gradient,
                                           const double shift_factor) {
 
   linear_constraint_data_t *data;
@@ -190,7 +191,7 @@ static coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const d
  * c_linear_single_cons_bbob_problem_allocate() into one single
  * coco_problem_t object.
  */
-static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                   const size_t instance, const size_t constraint_number,
                                                                   const double factor1, const char *problem_id_template,
                                                                   const char *problem_name_template, double *gradient,
@@ -267,7 +268,7 @@ static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t f
  *        constraint gradients, add current gradient if weight is != 0.
  *
  */
-static void con_update_linear_combination(double *linear_combination, const coco_problem_t *problem, double weight) {
+void con_update_linear_combination(double *linear_combination, const coco_problem_t *problem, double weight) {
   size_t i;
   linear_constraint_data_t *data;
 
@@ -306,7 +307,7 @@ static void con_update_linear_combination(double *linear_combination, const coco
  * coco_problem_t objects are then stacked together into one single
  * coco_problem_t object that is returned by the function.
  */
-static coco_problem_t *
+coco_problem_t *
 c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                     const size_t number_of_active_constraints, const char *problem_id_template,
                                     const char *problem_name_template, const double *feasible_direction) {

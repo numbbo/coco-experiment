@@ -2,32 +2,26 @@
  * @file f_sharp_ridge_generalized.c
  * @brief Implementation of the generalized sharp ridge function and problem.
  */
+#include "f_sharp_ridge_generalized.h"
 
 #include <assert.h>
 #include <math.h>
 
-#include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_blockrotation.c"
-#include "transform_vars_conditioning.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_shift.c"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_affine.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_conditioning.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_shift.h"
 
-/**
- * @brief Data type for the versatile_data_t
- */
-typedef struct {
-  size_t proportion_of_linear_dims;
-} f_sharp_ridge_generalized_versatile_data_t;
+
 
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
-static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *problem) {
+void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *problem) {
 
   f_sharp_ridge_generalized_versatile_data_t *versatile_data =
       (f_sharp_ridge_generalized_versatile_data_t *)problem->versatile_data;
@@ -41,7 +35,7 @@ static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *proble
  * @brief Implements the generalized sharp ridge function without connections to
  * any COCO structures.
  */
-static double
+double
 f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
                               f_sharp_ridge_generalized_versatile_data_t *f_sharp_ridge_generalized_versatile_data) {
 
@@ -77,7 +71,7 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem,
+void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem,
                                                const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_sharp_ridge_generalized_raw(x, problem->number_of_variables,
@@ -88,7 +82,7 @@ static void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem,
 /**
  * @brief Allocates the basic sharp ridge problem.
  */
-static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
+coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
                                                           size_t proportion_of_linear_dims) {
   /* Wassim: proportion_of_linear_dims should probably be allowed to be non-integer */
   coco_problem_t *problem = coco_problem_allocate_from_scalars(
@@ -112,7 +106,7 @@ static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of
  * @brief Creates the BBOB permuted block-rotated generalized sharp ridge
  * problem
  */
-static coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
+coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const char *problem_id_template, const char *problem_name_template) {
   double *xopt, fopt;

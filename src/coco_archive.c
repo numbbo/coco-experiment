@@ -5,19 +5,21 @@
  * COCO archives are used to do some pre-processing on the bi-objective archive files. Namely, through a
  * wrapper written in Python, these functions are used to merge archives and compute their hypervolumes.
  */
+#include "coco_archive.h"
+
+#include <assert.h>
 
 #include "coco.h"
-#include "coco_utilities.c"
-#include "mo_utilities.c"
-#include "mo_avl_tree.c"
+#include "coco_utilities.h"
+#include "mo_utilities.h"
+#include "mo_avl_tree.h"
 
 /**
  * @brief The COCO archive structure.
  *
  * The archive structure is used for pre-processing archives of non-dominated solutions.
  */
-struct coco_archive_s {
-
+typedef struct coco_archive_s {
   avl_tree_t *tree; /**< @brief The AVL tree with non-dominated solutions. */
   double *ideal;    /**< @brief The ideal point. */
   double *nadir;    /**< @brief The nadir point. */
@@ -32,7 +34,7 @@ struct coco_archive_s {
   avl_node_t *extreme1;          /**< @brief Pointer to the first extreme solution. */
   avl_node_t *extreme2;          /**< @brief Pointer to the second extreme solution. */
   int extremes_already_returned; /**< @brief Whether the extreme solutions have already been returned. */
-};
+} coco_archive_t;
 
 /**
  * @brief The type for the node's item in the AVL tree used by the archive.
@@ -40,7 +42,7 @@ struct coco_archive_s {
  * Contains information on the rounded normalized objective values (normalized_y), which are used for
  * computing the indicators and the text, which is used for output.
  */
-typedef struct {
+typedef struct coco_archive_avl_item_s {
   double *normalized_y; /**< @brief The values of normalized objectives of this solution. */
   char *text;           /**< @brief The text describing the solution (the whole line of the archive). */
 } coco_archive_avl_item_t;
@@ -48,7 +50,7 @@ typedef struct {
 /**
  * @brief Creates and returns the information on the solution in the form of a node's item in the AVL tree.
  */
-static coco_archive_avl_item_t *coco_archive_node_item_create(const double *y, const double *ideal, const double *nadir,
+coco_archive_avl_item_t *coco_archive_node_item_create(const double *y, const double *ideal, const double *nadir,
                                                               const size_t num_obj, const char *text) {
 
   /* Allocate memory to hold the data structure coco_archive_avl_item_t */
@@ -64,7 +66,7 @@ static coco_archive_avl_item_t *coco_archive_node_item_create(const double *y, c
 /**
  * @brief Frees the data of the given coco_archive_avl_item_t.
  */
-static void coco_archive_node_item_free(coco_archive_avl_item_t *item, void *userdata) {
+void coco_archive_node_item_free(coco_archive_avl_item_t *item, void *userdata) {
   coco_free_memory(item->normalized_y);
   coco_free_memory(item->text);
   coco_free_memory(item);
@@ -74,7 +76,7 @@ static void coco_archive_node_item_free(coco_archive_avl_item_t *item, void *use
 /**
  * @brief Defines the ordering of AVL tree nodes based on the value of the last objective.
  */
-static int coco_archive_compare_by_last_objective(const coco_archive_avl_item_t *item1,
+int coco_archive_compare_by_last_objective(const coco_archive_avl_item_t *item1,
                                                   const coco_archive_avl_item_t *item2, void *userdata) {
   (void)userdata; /* To silence the compiler */
   if (coco_double_almost_equal(item1->normalized_y[1], item2->normalized_y[1], mo_precision))
@@ -88,7 +90,7 @@ static int coco_archive_compare_by_last_objective(const coco_archive_avl_item_t 
 /**
  * @brief Allocates memory for the archive and initializes its fields.
  */
-static coco_archive_t *coco_archive_allocate(void) {
+coco_archive_t *coco_archive_allocate(void) {
 
   /* Allocate memory to hold the data structure coco_archive_t */
   coco_archive_t *archive = (coco_archive_t *)coco_allocate_memory(sizeof(*archive));
@@ -241,7 +243,7 @@ int coco_archive_add_solution(coco_archive_t *archive, const double y1, const do
 /**
  * @brief Updates the archive fields returned by the getters.
  */
-static void coco_archive_update(coco_archive_t *archive) {
+void coco_archive_update(coco_archive_t *archive) {
 
   double hyp;
 

@@ -2,12 +2,13 @@
  * @file transform_vars_permutation.c
  * @brief Implementation of permuting the decision values.
  */
+#include "transform_vars_permutation.h"
 
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "transform_vars_permutation_helpers.c"
+#include "coco_utilities.h"
+#include "transform_vars_permutation_helpers.h"
 
 /**
  * @brief Data type for transform_vars_permutation.
@@ -17,7 +18,7 @@ typedef struct {
   size_t *P; /**< @brief the permutation matrices*/
 } transform_vars_permutation_t;
 
-static void transform_vars_permutation_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_permutation_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_permutation_t *data;
   coco_problem_t *inner_problem;
@@ -32,13 +33,13 @@ static void transform_vars_permutation_evaluate(coco_problem_t *problem, const d
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
-static void transform_vars_permutation_free(void *thing) {
+void transform_vars_permutation_free(void *thing) {
   transform_vars_permutation_t *data = (transform_vars_permutation_t *)thing;
   coco_free_memory(data->x);
   coco_free_memory(data->P);
 }
 
-static coco_problem_t *transform_vars_permutation(coco_problem_t *inner_problem, const size_t *P,
+coco_problem_t *transform_vars_permutation(coco_problem_t *inner_problem, const size_t *P,
                                                   const size_t number_of_variables) {
   coco_problem_t *problem;
   transform_vars_permutation_t *data;
@@ -55,7 +56,7 @@ static coco_problem_t *transform_vars_permutation(coco_problem_t *inner_problem,
   return problem;
 }
 
-static void transform_vars_inverse_permutation_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_inverse_permutation_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_permutation_t *data;
   coco_problem_t *inner_problem;
@@ -70,7 +71,7 @@ static void transform_vars_inverse_permutation_evaluate(coco_problem_t *problem,
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
-static coco_problem_t *transform_vars_inverse_permutation(coco_problem_t *inner_problem, const size_t *P,
+coco_problem_t *transform_vars_inverse_permutation(coco_problem_t *inner_problem, const size_t *P,
                                                           const size_t number_of_variables) {
   coco_problem_t *problem;
   transform_vars_permutation_t *data;

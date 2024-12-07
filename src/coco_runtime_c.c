@@ -11,7 +11,7 @@
 #include <stdarg.h>
 
 #include "coco.h"
-#include "coco_utilities.c"
+#include "coco_utilities.h"
 
 void coco_error(const char *message, ...) {
   va_list args;

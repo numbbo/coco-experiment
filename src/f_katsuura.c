@@ -2,26 +2,30 @@
  * @file f_katsuura.c
  * @brief Implementation of the Katsuura function and problem.
  */
+#include "f_katsuura.h"
 
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "coco_utilities.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_penalize.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_shift.c"
+#include "coco_problem.h"
+#include "coco_utilities.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_penalize.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_affine.h"
+#include "transform_vars_shift.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_conditioning.h"
 
 /**
  * @brief Implements the Katsuura function without connections to any COCO
  * structures.
  */
-static double f_katsuura_raw(const double *x,
+double f_katsuura_raw(const double *x,
                              const size_t number_of_variables) {
 
   size_t i, j;
@@ -53,7 +57,7 @@ static double f_katsuura_raw(const double *x,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_katsuura_evaluate(coco_problem_t *problem, const double *x,
+void f_katsuura_evaluate(coco_problem_t *problem, const double *x,
                                 double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_katsuura_raw(x, problem->number_of_variables);
@@ -63,7 +67,7 @@ static void f_katsuura_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Allocates the basic Katsuura problem.
  */
-static coco_problem_t *f_katsuura_allocate(const size_t number_of_variables) {
+coco_problem_t *f_katsuura_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars("Katsuura function", f_katsuura_evaluate, NULL,
                                                                number_of_variables, -5.0, 5.0, 0.0);
@@ -77,7 +81,7 @@ static coco_problem_t *f_katsuura_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB Katsuura problem.
  */
-static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                         const size_t instance, const long rseed,
                                                         const char *problem_id_template,
                                                         const char *problem_name_template) {
@@ -140,7 +144,7 @@ static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, c
 /**
  * @brief Creates the BBOB permuted block-rotated Katsuura problem.
  */
-static coco_problem_t *f_katsuura_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_katsuura_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                       const size_t instance, const long rseed,
                                                                       const char *problem_id_template,
                                                                       const char *problem_name_template) {

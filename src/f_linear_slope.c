@@ -2,22 +2,24 @@
  * @file f_linear_slope.c
  * @brief Implementation of the linear slope function and problem.
  */
+#include "f_linear_slope.h"
 
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_shift.c"
+#include "coco_string.h"
+#include "coco_utilities.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_shift.h"
 
 /**
  * @brief Implements the linear slope function without connections to any COCO
  * structures.
  */
-static double f_linear_slope_raw(const double *x, const size_t number_of_variables, const double *best_parameter) {
+double f_linear_slope_raw(const double *x, const size_t number_of_variables, const double *best_parameter) {
 
   static const double alpha = 100.0;
   size_t i;
@@ -50,7 +52,7 @@ static double f_linear_slope_raw(const double *x, const size_t number_of_variabl
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_linear_slope_evaluate(coco_problem_t *problem, const double *x,
+void f_linear_slope_evaluate(coco_problem_t *problem, const double *x,
                                     double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_linear_slope_raw(x, problem->number_of_variables,
@@ -61,7 +63,7 @@ static void f_linear_slope_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Evaluates the gradient of the linear slope function.
  */
-static void f_linear_slope_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+void f_linear_slope_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
 
   static const double alpha = 100.0;
   double base, exponent, si;
@@ -83,7 +85,7 @@ static void f_linear_slope_evaluate_gradient(coco_problem_t *problem, const doub
 /**
  * @brief Allocates the basic linear slope problem.
  */
-static coco_problem_t *f_linear_slope_allocate(const size_t number_of_variables,
+coco_problem_t *f_linear_slope_allocate(const size_t number_of_variables,
                                                const double *best_parameter) {
 
   size_t i;
@@ -110,7 +112,7 @@ static coco_problem_t *f_linear_slope_allocate(const size_t number_of_variables,
 /**
  * @brief Creates the BBOB linear slope problem.
  */
-static coco_problem_t *f_linear_slope_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_linear_slope_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                             const size_t instance, const long rseed,
                                                             const char *problem_id_template,
                                                             const char *problem_name_template) {

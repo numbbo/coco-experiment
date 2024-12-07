@@ -2,11 +2,12 @@
  * @file transform_vars_scale.c
  * @brief Implementation of scaling decision values by a given factor.
  */
+#include "transform_vars_scale.h"
 
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_utilities.h"
 
 /**
  * @brief Data type for transform_vars_scale.
@@ -19,7 +20,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_scale_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_scale_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_scale_data_t *data;
   coco_problem_t *inner_problem;
@@ -45,7 +46,7 @@ static void transform_vars_scale_evaluate(coco_problem_t *problem, const double 
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_scale_free(void *thing) {
+void transform_vars_scale_free(void *thing) {
   transform_vars_scale_data_t *data = (transform_vars_scale_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -53,7 +54,7 @@ static void transform_vars_scale_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_scale(coco_problem_t *inner_problem, const double factor) {
+coco_problem_t *transform_vars_scale(coco_problem_t *inner_problem, const double factor) {
   transform_vars_scale_data_t *data;
   coco_problem_t *problem;
   size_t i;

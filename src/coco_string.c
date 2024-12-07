@@ -7,18 +7,21 @@
 #include <stddef.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
+#include <assert.h>
+#include <stdio.h>
 
 #include "coco.h"
 
-static size_t *coco_allocate_vector_size_t(const size_t number_of_elements);
-static char *coco_allocate_string(const size_t number_of_elements);
+size_t *coco_allocate_vector_size_t(const size_t number_of_elements);
+char *coco_allocate_string(const size_t number_of_elements);
 
 /**
  * @brief Creates a duplicate copy of string and returns a pointer to it.
  *
  * The caller is responsible for freeing the allocated memory using coco_free_memory().
  */
-static char *coco_strdup(const char *string) {
+char *coco_strdup(const char *string) {
   size_t len;
   char *duplicate;
   if (string == NULL)
@@ -39,7 +42,7 @@ static char *coco_strdup(const char *string) {
 /**
  * @brief Formatted string duplication, with va_list arguments.
  */
-static char *coco_vstrdupf(const char *str, va_list args) {
+char *coco_vstrdupf(const char *str, va_list args) {
   static char buf[COCO_VSTRDUPF_BUFLEN];
   long written;
   /* apparently args can only be used once, therefore
@@ -85,7 +88,7 @@ char *coco_strdupf(const char *str, ...) {
  *
  * The caller is responsible for freeing the allocated memory using coco_free_memory().
  */
-static char *coco_strconcat(const char *s1, const char *s2) {
+char *coco_strconcat(const char *s1, const char *s2) {
   size_t len1 = strlen(s1);
   size_t len2 = strlen(s2);
   char *s = (char *)coco_allocate_memory(len1 + len2 + 1);
@@ -100,7 +103,7 @@ static char *coco_strconcat(const char *s1, const char *s2) {
  *
  * @note If there is an equivalent standard C function, this can/should be removed.
  */
-static long coco_strfind(const char *base, const char *seq) {
+long coco_strfind(const char *base, const char *seq) {
   const size_t strlen_seq = strlen(seq);
   const size_t last_first_idx = strlen(base) - strlen(seq);
   size_t i, j;
@@ -137,7 +140,7 @@ static long coco_strfind(const char *base, const char *seq) {
  *  coco_free_memory(result);
  *
  */
-static char **coco_string_split(const char *string, const char delimiter) {
+char **coco_string_split(const char *string, const char delimiter) {
 
   char **result;
   char *str_copy, *ptr, *token;
@@ -188,7 +191,7 @@ static char **coco_string_split(const char *string, const char delimiter) {
  *
  * The caller is responsible for freeing the allocated memory using coco_free_memory().
  */
-static char *coco_remove_from_string(const char *string, const char *from, const char *to) {
+char *coco_remove_from_string(const char *string, const char *from, const char *to) {
 
   char *result, *start, *stop;
 
@@ -226,7 +229,7 @@ static char *coco_remove_from_string(const char *string, const char *from, const
  * A maximum of max_count values is returned. If there is a problem with one of the ranges, the parsing stops
  * and the current result is returned. The memory of the returned object needs to be freed by the caller.
  */
-static size_t *coco_string_parse_ranges(const char *string, const size_t min, const size_t max, const char *name,
+size_t *coco_string_parse_ranges(const char *string, const size_t min, const size_t max, const char *name,
                                         const size_t max_count) {
 
   char *ptr, *dash = NULL;
@@ -432,7 +435,7 @@ static size_t *coco_string_parse_ranges(const char *string, const size_t min, co
  * If the string contains any leading spaces, the contents are shifted so that if it was dynamically
  * allocated, it can be still freed on the returned pointer.
  */
-static char *coco_string_trim(char *string) {
+char *coco_string_trim(char *string) {
   size_t i, len = 0;
   int all_whitespaces = 1;
   char *frontp = string;

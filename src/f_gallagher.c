@@ -2,35 +2,37 @@
  * @file f_gallagher.c
  * @brief Implementation of the Gallagher function and problem.
  */
+#include "f_gallagher.h"
 
+#include <stdlib.h>
 #include <assert.h>
 #include <math.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "coco_utilities.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_blockrotation.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_permutation_helpers.c"
-#include "transform_vars_scale.c"
-#include "transform_obj_norm_by_dim.c"
+#include "coco_utilities.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_permutation_helpers.h"
+#include "transform_vars_scale.h"
+#include "transform_vars_shift.h"
+#include "transform_obj_norm_by_dim.h"
 
-#include "transform_vars_conditioning.c"
-#include "transform_obj_oscillate.c"
-#include "transform_obj_power.c"
-#include "transform_obj_penalize.c"
+#include "transform_vars_conditioning.h"
+#include "transform_obj_oscillate.h"
+#include "transform_obj_power.h"
+#include "transform_obj_penalize.h"
 
-#include "f_sphere.c"
-#include "transform_vars_gallagher_blockrotation.c"
+#include "f_sphere.h"
+#include "transform_vars_gallagher_blockrotation.h"
 /**
  * @brief A random permutation type for the Gallagher problem.
  *
  * Needed to create a random permutation that is compatible with the old code.
  */
-typedef struct {
+typedef struct f_gallagher_permutation_s {
   double value;
   size_t index;
 } f_gallagher_permutation_t;
@@ -38,7 +40,7 @@ typedef struct {
 /**
  * @brief Data type for the Gallagher problem.
  */
-typedef struct {
+typedef struct f_gallagher_data_s {
   long rseed;
   double *xopt;
   double **rotation, **x_local, **arr_scales;
@@ -51,7 +53,7 @@ typedef struct {
 /**
  * Comparison function used for sorting.
  */
-static int f_gallagher_compare_doubles(const void *a, const void *b) {
+int f_gallagher_compare_doubles(const void *a, const void *b) {
   double temp = (*(f_gallagher_permutation_t *)a).value - (*(f_gallagher_permutation_t *)b).value;
   if (temp > 0)
     return 1;
@@ -65,7 +67,7 @@ static int f_gallagher_compare_doubles(const void *a, const void *b) {
  * @brief Implements the Gallagher function without connections to any COCO
  * structures.
  */
-static double f_gallagher_raw(const double *x, const size_t number_of_variables,
+double f_gallagher_raw(const double *x, const size_t number_of_variables,
                               f_gallagher_data_t *data) {
   size_t i, j; /* Loop over dim */
   double *tmx;
@@ -129,7 +131,7 @@ static double f_gallagher_raw(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_gallagher_evaluate(coco_problem_t *problem, const double *x,
+void f_gallagher_evaluate(coco_problem_t *problem, const double *x,
                                  double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_gallagher_raw(x, problem->number_of_variables, (f_gallagher_data_t *)problem->data);
@@ -139,7 +141,7 @@ static void f_gallagher_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Frees the Gallagher data object.
  */
-static void f_gallagher_free(coco_problem_t *problem) {
+void f_gallagher_free(coco_problem_t *problem) {
   f_gallagher_data_t *data;
   data = (f_gallagher_data_t *)problem->data;
   coco_free_memory(data->xopt);
@@ -156,7 +158,7 @@ static void f_gallagher_free(coco_problem_t *problem) {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_t *f_gallagher_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_gallagher_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                          const size_t instance, const long rseed, const void *args,
                                                          const char *problem_id_template,
                                                          const char *problem_name_template) {
@@ -302,7 +304,7 @@ static coco_problem_t *f_gallagher_bbob_problem_allocate(const size_t function, 
 /**
  * @brief Uses the core function to evaluate the sub problem.
  */
-static void f_gallagher_sub_evaluate_core(coco_problem_t *problem_i,
+void f_gallagher_sub_evaluate_core(coco_problem_t *problem_i,
                                           const double *x, double *y) {
 
   assert(problem_i->number_of_objectives == 1);
@@ -313,7 +315,7 @@ static void f_gallagher_sub_evaluate_core(coco_problem_t *problem_i,
 /**
  * @brief Allocates the basic gallagher sub problem.
  */
-static coco_problem_t *
+coco_problem_t *
 f_gallagher_sub_problem_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem_i =
@@ -345,7 +347,7 @@ f_gallagher_sub_problem_allocate(const size_t number_of_variables) {
  * @brief Implements the gallagher function without connections to any COCO
  * structures. Wassim: core to not conflict with raw for now
  */
-static double f_gallagher_core(const double *x, size_t number_of_variables,
+double f_gallagher_core(const double *x, size_t number_of_variables,
                                f_gallagher_versatile_data_t *versatile_data) {
 
   coco_problem_t *problem_i;
@@ -382,7 +384,7 @@ static double f_gallagher_core(const double *x, size_t number_of_variables,
 /**
  * @brief Uses the core function to evaluate the COCO problem.
  */
-static void f_gallagher_evaluate_core(coco_problem_t *problem, const double *x,
+void f_gallagher_evaluate_core(coco_problem_t *problem, const double *x,
                                       double *y) {
 
   assert(problem->number_of_objectives == 1);
@@ -396,7 +398,7 @@ static void f_gallagher_evaluate_core(coco_problem_t *problem, const double *x,
 /**
  * @brief Allocates the basic gallagher problem.
  */
-static coco_problem_t *
+coco_problem_t *
 f_gallagher_problem_allocate(const size_t number_of_variables,
                              size_t number_of_peaks) {
 
@@ -430,7 +432,7 @@ f_gallagher_problem_allocate(const size_t number_of_variables,
   return problem;
 }
 
-static coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                        const size_t instance, const long rseed,
                                                                        size_t number_of_peaks,
                                                                        const char *problem_id_template,

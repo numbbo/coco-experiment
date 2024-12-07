@@ -2,12 +2,13 @@
  * @file transform_vars_x_hat.c
  * @brief Implementation of multiplying the decision values by the vector 1+-.
  */
+#include "transform_vars_x_hat.h"
 
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
+#include "coco_utilities.h"
+#include "suite_bbob_legacy_code.h"
 
 /**
  * @brief Data type for transform_vars_x_hat.
@@ -21,7 +22,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_x_hat_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_x_hat_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_x_hat_data_t *data;
   coco_problem_t *inner_problem;
@@ -51,7 +52,7 @@ static void transform_vars_x_hat_evaluate(coco_problem_t *problem, const double 
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_x_hat_free(void *thing) {
+void transform_vars_x_hat_free(void *thing) {
   transform_vars_x_hat_data_t *data = (transform_vars_x_hat_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -59,7 +60,7 @@ static void transform_vars_x_hat_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_x_hat(coco_problem_t *inner_problem, const long seed) {
+coco_problem_t *transform_vars_x_hat(coco_problem_t *inner_problem, const long seed) {
   transform_vars_x_hat_data_t *data;
   coco_problem_t *problem;
   size_t i;

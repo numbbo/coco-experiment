@@ -2,24 +2,21 @@
  * @file transform_vars_blockrotation_helpers.c
  * @brief implements functions needed by transform_vars_blockrotation.c
  */
+#include "transform_vars_blockrotation_helpers.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
-#include "coco.h"
 
-#include "coco_random.c" /*tmp*/
-#include "coco_utilities.c"
-#include "suite_bbob_legacy_code.c" /*tmp*/
-
-#include <time.h> /*tmp*/
-
-/* TODO: Document this file in doxygen style! */
+#include "coco_random.h" /*tmp*/
+#include "coco_utilities.h"
+#include "suite_bbob_legacy_code.h" /*tmp*/
 
 /**
  * @brief Returns block size for block rotation matrices.
  *
  */
-static size_t coco_rotation_matrix_block_size(size_t const dimension) {
+size_t coco_rotation_matrix_block_size(size_t const dimension) {
   const double BLOCK_SIZE_RELATIVE = 1;      /* for block rotations, relative to dimension */
   const size_t MAX_BLOCK_SIZE_ABSOLUTE = 40; /* for block rotations */
 
@@ -33,7 +30,7 @@ static size_t coco_rotation_matrix_block_size(size_t const dimension) {
  * to double arrays.
  * each row contains only the block_sizes[i] possibly non-zero elements
  */
-static double **coco_allocate_blockmatrix(const size_t n, const size_t *block_sizes, const size_t nb_blocks) {
+double **coco_allocate_blockmatrix(const size_t n, const size_t *block_sizes, const size_t nb_blocks) {
   double **matrix = NULL;
   size_t current_blocksize;
   size_t next_bs_change;
@@ -66,7 +63,7 @@ static double **coco_allocate_blockmatrix(const size_t n, const size_t *block_si
  * @brief frees a block diagonal matrix (same as a matrix but in case of change, easier to update separately from
  * free_matrix)
  */
-static void coco_free_block_matrix(double **matrix, const size_t n) {
+void coco_free_block_matrix(double **matrix, const size_t n) {
   size_t i;
   for (i = 0; i < n; ++i) {
     if (matrix[i] != NULL) {
@@ -81,7 +78,7 @@ static void coco_free_block_matrix(double **matrix, const size_t n) {
  * @brief Compute a ${DIM}x${DIM} block-diagonal matrix based on ${seed} and block_sizes and stores it in ${B}.
  * B is a 2D vector with DIM lines and each line has blocksize(line) elements (the zeros are not stored)
  */
-static void coco_compute_blockrotation(double **B, long seed, COCO_UNUSED size_t n, size_t *block_sizes,
+void coco_compute_blockrotation(double **B, long seed, COCO_UNUSED size_t n, size_t *block_sizes,
                                        size_t nb_blocks) {
   double **current_block;
   size_t i, j;
@@ -116,7 +113,7 @@ static void coco_compute_blockrotation(double **B, long seed, COCO_UNUSED size_t
 /**
  * @brief makes a copy of a block_matrix
  */
-static double **coco_copy_block_matrix(const double *const *B, const size_t dimension, const size_t *block_sizes,
+double **coco_copy_block_matrix(const double *const *B, const size_t dimension, const size_t *block_sizes,
                                        const size_t nb_blocks) {
   double **dest;
   size_t i, j, idx_blocksize, current_blocksize, next_bs_change;
@@ -141,7 +138,7 @@ static double **coco_copy_block_matrix(const double *const *B, const size_t dime
 /**
  * @brief returns the list of block_sizes and sets nb_blocks to its correct value
  */
-static size_t *coco_get_block_sizes(size_t *nb_blocks, size_t dimension, const char *suite_name) {
+size_t *coco_get_block_sizes(size_t *nb_blocks, size_t dimension, const char *suite_name) {
   size_t *block_sizes;
   size_t block_size;
   size_t i;

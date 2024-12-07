@@ -21,7 +21,7 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_problem.h"
 
 /**
  * @brief Data type for transform_vars_discretize.
@@ -33,7 +33,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformed objective function.
  */
-static void transform_vars_discretize_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_discretize_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_discretize_data_t *data;
   coco_problem_t *inner_problem;
@@ -77,7 +77,7 @@ static void transform_vars_discretize_evaluate_function(coco_problem_t *problem,
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_discretize_free(void *thing) {
+void transform_vars_discretize_free(void *thing) {
   transform_vars_discretize_data_t *data = (transform_vars_discretize_data_t *)thing;
   coco_free_memory(data->offset);
 }
@@ -85,7 +85,7 @@ static void transform_vars_discretize_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem,
+coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem,
                                                  const double *smallest_values_of_interest,
                                                  const double *largest_values_of_interest,
                                                  const size_t number_of_integer_variables) {

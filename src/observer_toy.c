@@ -2,24 +2,19 @@
  * @file observer_toy.c
  * @brief Implementation of the toy observer.
  */
+#include "observer_toy.h"
 
-#include "coco.h"
-#include "coco_utilities.c"
+#include <assert.h>
+#include <string.h>
 
-static coco_problem_t *logger_toy(coco_observer_t *observer, coco_problem_t *problem);
-static void logger_toy_free(void *logger);
-
-/**
- * @brief The toy observer data type.
- */
-typedef struct {
-  FILE *log_file; /**< @brief File used for logging. */
-} observer_toy_data_t;
+#include "logger_toy.h"
+#include "coco_utilities.h"
+#include "coco_platform.h"
 
 /**
  * @brief Frees memory of the toy observer data structure.
  */
-static void observer_toy_free(void *stuff) {
+void observer_toy_free(void *stuff) {
 
   observer_toy_data_t *data;
 
@@ -38,7 +33,7 @@ static void observer_toy_free(void *stuff) {
  * Possible options:
  * - file_name: string (name of the output file; default value is "first_hitting_times.dat")
  */
-static void observer_toy(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
+void observer_toy(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
 
   observer_toy_data_t *observer_data;
   char *string_value;

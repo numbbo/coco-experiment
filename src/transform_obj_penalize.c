@@ -7,7 +7,7 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_problem.h"
 
 /**
  * @brief Data type for transform_obj_penalize.
@@ -19,7 +19,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_obj_penalize_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_obj_penalize_evaluate(coco_problem_t *problem, const double *x, double *y) {
   transform_obj_penalize_data_t *data = (transform_obj_penalize_data_t *)coco_problem_transformed_get_data(problem);
   const double *lower_bounds = problem->smallest_values_of_interest;
   const double *upper_bounds = problem->largest_values_of_interest;
@@ -53,7 +53,7 @@ static void transform_obj_penalize_evaluate(coco_problem_t *problem, const doubl
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_penalize(coco_problem_t *inner_problem, const double factor) {
+coco_problem_t *transform_obj_penalize(coco_problem_t *inner_problem, const double factor) {
   coco_problem_t *problem;
   transform_obj_penalize_data_t *data;
   assert(inner_problem != NULL);

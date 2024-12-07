@@ -2,8 +2,13 @@
  * @file transform_obj_cauchy_noise.c
  * @brief Implementation of the Cauchy noise model
  */
+
+#include "transform_obj_cauchy_noise.h"
+
 #include "coco.h"
-#include "suite_bbob_noisy_utilities.c"
+#include "coco_problem.h"
+
+#include "suite_bbob_noisy_utilities.h"
 
 /**
  @brief Data type for transform_obj_cauchy_noise
@@ -16,7 +21,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformed objective function by applying cauchy additive noise.
  */
-static void transform_obj_cauchy_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+void transform_obj_cauchy_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
   transform_obj_cauchy_noise_data_t *data;
   data = (transform_obj_cauchy_noise_data_t *)coco_problem_transformed_get_data(problem);
@@ -40,7 +45,7 @@ static void transform_obj_cauchy_noise_evaluate_function(coco_problem_t *problem
 /**
  * @brief Allocates a noisy problem with cauchy noise.
  */
-static coco_problem_t *transform_obj_cauchy_noise(coco_problem_t *inner_problem, const double alpha, const double p) {
+coco_problem_t *transform_obj_cauchy_noise(coco_problem_t *inner_problem, const double alpha, const double p) {
   coco_problem_t *problem;
   transform_obj_cauchy_noise_data_t *data;
   data = (transform_obj_cauchy_noise_data_t *)coco_allocate_memory(sizeof(*data));

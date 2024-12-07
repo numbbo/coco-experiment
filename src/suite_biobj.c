@@ -18,20 +18,22 @@
  * @note See file suite_biobj_utilities.c for the implementation of the bi-objective problems and the handling
  * of new instances.
  */
+#include "suite_biobj.h"
 
-#include "coco.h"
-#include "mo_utilities.c"
-#include "suite_biobj_utilities.c"
-#include "suite_bbob.c"
+#include <string.h>
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+#include "mo_utilities.h"
+#include "suite_biobj_utilities.h"
+#include "suite_bbob.h"
+
+coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,
                                          const char *default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj suites.
  */
-static coco_suite_t *suite_biobj_initialize(const char *suite_name) {
+coco_suite_t *suite_biobj_initialize(const char *suite_name) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
@@ -56,7 +58,7 @@ static coco_suite_t *suite_biobj_initialize(const char *suite_name) {
  *
  * @note The instances of the bi-objective suites generally do not changes with years.
  */
-static const char *suite_biobj_get_instances_by_year(const int year) {
+const char *suite_biobj_get_instances_by_year(const int year) {
 
   if ((year == 2016) || (year == 0000)) { /* test case */
     return "1-10";
@@ -73,7 +75,7 @@ static const char *suite_biobj_get_instances_by_year(const int year) {
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_biobj_get_problem(coco_suite_t *suite, const size_t function_idx,
+coco_problem_t *suite_biobj_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                const size_t dimension_idx, const size_t instance_idx) {
 
   coco_problem_t *problem = NULL;

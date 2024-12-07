@@ -1,0 +1,104 @@
+cmake_minimum_required(VERSION 3.19)
+project(
+  cocoex
+  DESCRIPTION "COCO experiment framework"
+  LANGUAGES C)
+
+find_library(MATH_LIBRARY m)
+
+add_library(cocoex STATIC
+  brentq.c
+  f_discus_generalized.c
+  logger_biobj.c
+  suite_biobj_mixint.c
+  transform_vars_blockrotation_helpers.c
+  c_linear.c
+  f_ellipsoid.c
+  logger_rw.c
+  suite_biobj_utilities.c
+  transform_vars_brs.c
+  coco_archive.c
+  f_gallagher.c
+  logger_toy.c
+  suite_cons_bbob.c
+  transform_vars_composed.c
+  coco_observer.c
+  f_griewank_rosenbrock.c
+  mo_avl_tree.c
+  suite_cons_bbob_problems.c
+  transform_vars_conditioning.c
+  coco_platform.c
+  f_katsuura.c
+  mo_utilities.c
+  suite_largescale.c
+  transform_vars_discretize.c
+  coco_problem.c
+  f_linear_slope.c
+  observer_bbob.c
+  suite_sbox_cost.c
+  transform_vars_enforce_box.c
+  coco_random.c
+  f_lunacek_bi_rastrigin.c
+  observer_bbob_old.c
+  suite_toy.c
+  transform_vars_gallagher_blockrotation.c
+  coco_runtime_c.c
+  f_rastrigin.c
+  observer_biobj.c
+  transform_obj_cauchy_noise.c
+  transform_vars_oscillate.c
+  f_rosenbrock.c
+  observer_rw.c
+  transform_obj_gaussian_noise.c
+  transform_vars_permblockdiag.c
+  coco_string.c
+  f_schaffers.c
+  observer_toy.c
+  transform_obj_norm_by_dim.c
+  transform_vars_permutation.c
+  coco_suite.c
+  f_schwefel.c
+  suite_bbob.c
+  transform_obj_oscillate.c
+  transform_vars_permutation_helpers.c
+  coco_utilities.c
+  f_schwefel_generalized.c
+  suite_bbob_legacy_code.c
+  transform_obj_penalize.c
+  transform_vars_scale.c
+  coco_version.c
+  f_sharp_ridge.c
+  suite_bbob_mixint.c
+  transform_obj_power.c
+  transform_vars_shift.c
+  f_attractive_sector.c
+  f_sharp_ridge_generalized.c
+  suite_bbob_noisy.c
+  transform_obj_scale.c
+  transform_vars_x_hat.c
+  f_bent_cigar.c
+  f_sphere.c
+  suite_bbob_noisy_utilities.c
+  transform_obj_shift.c
+  transform_vars_x_hat_generic.c
+  f_bent_cigar_generalized.c
+  f_step_ellipsoid.c
+  suite_biobj_best_values_hyp.c
+  transform_obj_uniform_noise.c
+  transform_vars_z_hat.c
+  f_bueche_rastrigin.c
+  f_weierstrass.c
+  suite_biobj.c
+  transform_vars_affine.c
+  f_different_powers.c
+  logger_bbob.c
+  suite_biobj_ext.c
+  transform_vars_asymmetric.c
+  f_discus.c
+  logger_bbob_old.c
+  suite_biobj_mixint_best_values_hyp.c
+  transform_vars_blockrotation.c)
+target_include_directories(cocoex PUBLIC .)
+if(MATH_LIBRARY)
+  target_link_libraries(cocoex PUBLIC ${MATH_LIBRARY})
+endif()

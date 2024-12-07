@@ -2,32 +2,24 @@
  * @file f_bent_cigar_generalized.c
  * @brief Implementation of the generalized bent cigar function and problem.
  */
+#include "f_bent_cigar_generalized.h"
 
 #include <assert.h>
 #include <stdio.h>
 
-#include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_asymmetric.c"
-#include "transform_vars_blockrotation.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_shift.c"
-
-/**
- * @brief Data type for the versatile_data_t
- */
-typedef struct {
-  size_t proportion_long_axes_denom;
-} f_bent_cigar_generalized_versatile_data_t;
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_affine.h"
+#include "transform_vars_asymmetric.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_shift.h"
 
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
-static void
+void
 f_bent_cigar_generalized_versatile_data_free(coco_problem_t *problem) {
 
   f_bent_cigar_generalized_versatile_data_t *versatile_data =
@@ -42,7 +34,7 @@ f_bent_cigar_generalized_versatile_data_free(coco_problem_t *problem) {
  * @brief Implements the generalized bent cigar function without connections to
  * any COCO structures.
  */
-static double
+double
 f_bent_cigar_generalized_raw(const double *x, const size_t number_of_variables,
                              f_bent_cigar_generalized_versatile_data_t *f_bent_cigar_generalized_versatile_data) {
 
@@ -70,7 +62,7 @@ f_bent_cigar_generalized_raw(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the generalized raw function to evaluate the COCO problem.
  */
-static void f_bent_cigar_generalized_evaluate(coco_problem_t *problem,
+void f_bent_cigar_generalized_evaluate(coco_problem_t *problem,
                                               const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_bent_cigar_generalized_raw(x, problem->number_of_variables,
@@ -81,7 +73,7 @@ static void f_bent_cigar_generalized_evaluate(coco_problem_t *problem,
 /**
  * @brief Allocates the basic generalized bent cigar problem.
  */
-static coco_problem_t *f_bent_cigar_generalized_allocate(const size_t number_of_variables,
+coco_problem_t *f_bent_cigar_generalized_allocate(const size_t number_of_variables,
                                                          size_t proportion_long_axes_denom) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars(
@@ -103,7 +95,7 @@ static coco_problem_t *f_bent_cigar_generalized_allocate(const size_t number_of_
  * @brief Creates the BBOB generalized permuted block-rotated bent cigar
  * problem.
  */
-static coco_problem_t *f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(
+coco_problem_t *f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const char *problem_id_template, const char *problem_name_template) {
   double *xopt, fopt;

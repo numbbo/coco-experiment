@@ -4,19 +4,22 @@
  *        54 constrained problems in 6 dimensions. See comments in
  *        "suite_cons_bbob_problems.c" for more details.
  */
+#include "suite_cons_bbob.h"
+
+#include <string.h>
 
 #include "coco.h"
-#include "suite_cons_bbob_problems.c"
-#include "transform_obj_scale.c"
+#include "suite_cons_bbob_problems.h"
+#include "transform_obj_scale.h"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,
                                          const char *default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob suite.
  */
-static coco_suite_t *suite_cons_bbob_initialize(const char *suite_name) {
+coco_suite_t *suite_cons_bbob_initialize(const char *suite_name) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
@@ -32,7 +35,7 @@ static coco_suite_t *suite_cons_bbob_initialize(const char *suite_name) {
  * @brief Sets the instances associated with years for the constrained
  *        bbob suite.
  */
-static const char *suite_cons_bbob_get_instances_by_year(const int year) {
+const char *suite_cons_bbob_get_instances_by_year(const int year) {
 
   if ((year >= 2022) || (year == 0)) {
     return "1-15";
@@ -47,7 +50,7 @@ static const char *suite_cons_bbob_get_instances_by_year(const int year) {
 /**
  * @brief Creates and returns a constrained BBOB problem.
  */
-static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const size_t function, const size_t dimension,
+coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const size_t function, const size_t dimension,
                                                   const size_t instance) {
 
   size_t number_of_linear_constraints;
@@ -167,7 +170,7 @@ static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const 
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
+coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                    const size_t dimension_idx, const size_t instance_idx) {
 
   coco_problem_t *problem = NULL;

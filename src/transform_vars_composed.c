@@ -3,14 +3,16 @@
  * @brief Implementation of inverse transformation composed by tasy and tosz.
  * @author Paul Dufosse
  */
+#include "transform_vars_composed.h"
 
-#include "transform_vars_asymmetric.c"
-#include "transform_vars_oscillate.c"
+#include "brentq.h"
+#include "transform_vars_asymmetric.h"
+#include "transform_vars_oscillate.h"
 
 /**
  * @brief Inverse of composed non-linear transformation tcomp_uv obtained with brentq.
  */
-static double tcomp_uv_inv(double yi, tasy_data *dasy, tosz_data *dosz) {
+double tcomp_uv_inv(double yi, tasy_data *dasy, tosz_data *dosz) {
   double xi;
   xi = brentinv((callback_type)&tasy_uv, yi, dasy);
   xi = brentinv((callback_type)&tosz_uv, xi, dosz);
@@ -25,11 +27,11 @@ static double tcomp_uv_inv(double yi, tasy_data *dasy, tosz_data *dosz) {
  *        xopt is needed because transform_vars_shift is not yet called
  *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
  */
-static void transform_inv_initial_composed(coco_problem_t *problem, const double *xopt) {
+void transform_inv_initial_composed(coco_problem_t *problem, const double *xopt) {
   size_t i;
   size_t j;
   int is_in_bounds;
-  double di;
+  double di = 0.0;
   double xi;
   double *sol = NULL;
   double halving_factor = .5;

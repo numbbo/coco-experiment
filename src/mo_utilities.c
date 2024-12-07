@@ -2,9 +2,12 @@
  * @file mo_utilities.c
  * @brief Definitions of miscellaneous functions used for multi-objective problems.
  */
+#include "mo_utilities.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
+
 #include "coco.h"
 
 /**
@@ -15,19 +18,19 @@
  *
  * @note mo_precision needs to be smaller than mo_discretization
  */
-static const double mo_precision = 1e-13;
+const double mo_precision = 1e-13;
 
 /**
  * @brief Discretization interval used for rounding normalized multi-objective solutions.
  *
  * @note mo_discretization needs to be larger than mo_precision
  */
-static const double mo_discretization = 5 * 1e-13;
+const double mo_discretization = 5 * 1e-13;
 
 /**
  * @brief Computes and returns the Euclidean norm of two dim-dimensional points first and second.
  */
-static double mo_get_norm(const double *first, const double *second, const size_t dim) {
+double mo_get_norm(const double *first, const double *second, const size_t dim) {
 
   size_t i;
   double norm = 0;
@@ -45,7 +48,7 @@ static double mo_get_norm(const double *first, const double *second, const size_
  * If the solution seems to be better than the extremes it is corrected (2 objectives are assumed).
  * The caller is responsible for freeing the allocated memory using coco_free_memory().
  */
-static double *mo_normalize(const double *y, const double *ideal, const double *nadir, const size_t num_obj) {
+double *mo_normalize(const double *y, const double *ideal, const double *nadir, const size_t num_obj) {
 
   size_t i;
   double *normalized_y = coco_allocate_vector(num_obj);
@@ -83,7 +86,7 @@ static double *mo_normalize(const double *y, const double *ideal, const double *
  * -1 if normalized_y2 dominates normalized_y1 <br>
  * -2 if normalized_y1 is identical to normalized_y2
  */
-static int mo_get_dominance(const double *normalized_y1, const double *normalized_y2, const size_t num_obj) {
+int mo_get_dominance(const double *normalized_y1, const double *normalized_y2, const size_t num_obj) {
 
   size_t i;
   int flag1 = 0;
@@ -113,7 +116,7 @@ static int mo_get_dominance(const double *normalized_y1, const double *normalize
 /**
  * @brief Checks whether the normalized solution is within [0, 1]^num_obj.
  */
-static int mo_is_within_ROI(const double *normalized_y, const size_t num_obj) {
+int mo_is_within_ROI(const double *normalized_y, const size_t num_obj) {
 
   size_t i;
   int within = 1;
@@ -134,7 +137,7 @@ static int mo_is_within_ROI(const double *normalized_y, const size_t num_obj) {
  *
  *  @note Assumes num_obj = 2 and normalized_y >= 0
  */
-static double mo_get_distance_to_ROI(const double *normalized_y, const size_t num_obj) {
+double mo_get_distance_to_ROI(const double *normalized_y, const size_t num_obj) {
 
   double diff_0, diff_1;
 

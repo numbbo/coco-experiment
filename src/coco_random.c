@@ -30,7 +30,7 @@ struct coco_random_state_s {
  * This generator is nice because it is reasonably small and directly generates double values. The chosen
  * lags (607 and 273) lead to a generator with a period in excess of 2^607-1.
  */
-static void coco_random_generate(coco_random_state_t *state) {
+void coco_random_generate(coco_random_state_t *state) {
   size_t i;
   for (i = 0; i < COCO_SHORT_LAG; ++i) {
     double t = state->x[i] + state->x[i + (COCO_LONG_LAG - COCO_SHORT_LAG)];

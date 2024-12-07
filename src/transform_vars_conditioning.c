@@ -7,7 +7,7 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_problem.h"
 
 /**
  * @brief Data type for transform_vars_conditioning.
@@ -20,7 +20,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_conditioning_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_conditioning_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_conditioning_data_t *data;
   coco_problem_t *inner_problem;
@@ -46,7 +46,7 @@ static void transform_vars_conditioning_evaluate(coco_problem_t *problem, const 
 /**
  * @brief Evaluates the gradient of the transformed function.
  */
-static void transform_vars_conditioning_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_conditioning_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_conditioning_data_t *data;
   coco_problem_t *inner_problem;
@@ -77,7 +77,7 @@ static void transform_vars_conditioning_evaluate_gradient(coco_problem_t *proble
   coco_free_memory(gradient);
 }
 
-static void transform_vars_conditioning_free(void *thing) {
+void transform_vars_conditioning_free(void *thing) {
   transform_vars_conditioning_data_t *data = (transform_vars_conditioning_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -85,7 +85,7 @@ static void transform_vars_conditioning_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_conditioning(coco_problem_t *inner_problem, const double alpha) {
+coco_problem_t *transform_vars_conditioning(coco_problem_t *inner_problem, const double alpha) {
   transform_vars_conditioning_data_t *data;
   coco_problem_t *problem;
 

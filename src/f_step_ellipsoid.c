@@ -11,36 +11,45 @@
  * TODO: It would be nice to have a generic step ellipsoid function to
  * complement this one.
  */
+
+#include "f_step_ellipsoid.h"
+
 #include <assert.h>
 #include <stdio.h>
 
-#include "coco.h"
-#include "coco_problem.c"
-#include "coco_utilities.c"
-#include "suite_bbob_legacy_code.c"
-
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_penalize.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_blockrotation.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_round_step.c"
-#include "transform_obj_norm_by_dim.c"
-
+#include "coco_utilities.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_penalize.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_conditioning.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_shift.h"
 /**
  * @brief Data type for the step ellipsoid problem.
  */
-typedef struct {
+typedef struct f_step_ellipsoid_data_s {
   double *x, *xx;
   double *xopt, fopt, penalty_scale;
   double **rot1, **rot2;
 } f_step_ellipsoid_data_t;
 
 /**
+ * @brief Data type to be used in problem->versatile_data
+ */
+typedef struct f_step_ellipsoid_versatile_data_s {
+  double zhat_1; /**< @brief contains the value of \hat{z}_1 that is used to compute the fintess */
+} f_step_ellipsoid_versatile_data_t;
+
+coco_problem_t *transform_vars_round_step(coco_problem_t *inner_problem, const double alpha);
+
+/**
  * @brief Implements the step ellipsoid function without connections to any COCO
  * structures.
  */
-static double f_step_ellipsoid_raw(const double *x, const size_t number_of_variables,
+double f_step_ellipsoid_raw(const double *x, const size_t number_of_variables,
                                    const f_step_ellipsoid_data_t *data) {
 
   static const double condition = 100;
@@ -101,7 +110,7 @@ static double f_step_ellipsoid_raw(const double *x, const size_t number_of_varia
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_step_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
+void f_step_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
                                       double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_step_ellipsoid_raw(x, problem->number_of_variables, (f_step_ellipsoid_data_t *)problem->data);
@@ -111,7 +120,7 @@ static void f_step_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Frees the step ellipsoid data object.
  */
-static void f_step_ellipsoid_free(coco_problem_t *problem) {
+void f_step_ellipsoid_free(coco_problem_t *problem) {
   f_step_ellipsoid_data_t *data;
   data = (f_step_ellipsoid_data_t *)problem->data;
   coco_free_memory(data->x);
@@ -130,7 +139,7 @@ static void f_step_ellipsoid_free(coco_problem_t *problem) {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_t *f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                               const size_t instance, const long rseed, const void *args,
                                                               const char *problem_id_template,
                                                               const char *problem_name_template) {
@@ -184,7 +193,7 @@ static coco_problem_t *f_step_ellipsoid_bbob_problem_allocate(const size_t funct
  * @brief Implements the step ellipsoid function without connections to any COCO
  * structures.
  */
-static double f_step_ellipsoid_core(const double *x, const size_t number_of_variables,
+double f_step_ellipsoid_core(const double *x, const size_t number_of_variables,
                                     f_step_ellipsoid_versatile_data_t *f_step_ellipsoid_versatile_data) {
 
   static const double condition = 100;
@@ -205,7 +214,7 @@ static double f_step_ellipsoid_core(const double *x, const size_t number_of_vari
 /**
  * @brief Uses the raw function to evaluate the ls COCO problem.
  */
-static void f_step_ellipsoid_permblock_evaluate(coco_problem_t *problem,
+void f_step_ellipsoid_permblock_evaluate(coco_problem_t *problem,
                                                 const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_step_ellipsoid_core(x, problem->number_of_variables,
@@ -216,7 +225,7 @@ static void f_step_ellipsoid_permblock_evaluate(coco_problem_t *problem,
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
-static void f_step_ellipsoid_versatile_data_free(coco_problem_t *problem) {
+void f_step_ellipsoid_versatile_data_free(coco_problem_t *problem) {
   coco_free_memory((f_step_ellipsoid_versatile_data_t *)problem->versatile_data);
   problem->versatile_data = NULL;
   problem->problem_free_function = NULL;
@@ -228,7 +237,7 @@ static void f_step_ellipsoid_versatile_data_free(coco_problem_t *problem) {
  * an additional coordinate is added that will contain the value of \hat{z}_1 but that is ignored by functions other
  * that f_step_ellipsoid_core and transform_vars_round_step. The latter sets it.
  */
-static coco_problem_t *f_step_ellipsoid_allocate(const size_t number_of_variables) {
+coco_problem_t *f_step_ellipsoid_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars(
       "step ellipsoid function", f_step_ellipsoid_permblock_evaluate, NULL, number_of_variables, -5.0, 5.0, 0.0);
@@ -251,7 +260,7 @@ static coco_problem_t *f_step_ellipsoid_allocate(const size_t number_of_variable
  * Wassim: TODO: make the zhat1 value default to x1 when no transformation is
  * applied and the data type defined here
  */
-static coco_problem_t *f_step_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function,
+coco_problem_t *f_step_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function,
                                                                             const size_t dimension,
                                                                             const size_t instance, const long rseed,
                                                                             const char *problem_id_template,
@@ -338,5 +347,75 @@ static coco_problem_t *f_step_ellipsoid_permblockdiag_bbob_problem_allocate(cons
   coco_free_memory(block_sizes2);
   coco_free_memory(xopt);
 
+  return problem;
+}
+
+/**
+ * @brief Data type for transform_vars_round_step.
+ */
+typedef struct {
+  double alpha;
+  double *rounded_x;
+} transform_vars_round_step_data_t;
+
+/**
+ * @brief Evaluates the transformation.
+ */
+void transform_vars_round_step_evaluate(coco_problem_t *problem, const double *x, double *y) {
+  size_t i;
+  transform_vars_round_step_data_t *data;
+  coco_problem_t *inner_problem;
+
+  data = (transform_vars_round_step_data_t *)coco_problem_transformed_get_data(problem);
+  inner_problem = coco_problem_transformed_get_inner_problem(problem);
+  /* multiplication by d to counter-balance the normalization by d*/
+  ((f_step_ellipsoid_versatile_data_t *)problem->versatile_data)->zhat_1 =
+      fabs(x[0]) *
+      (double)inner_problem
+          ->number_of_variables; /* TODO: Discuss: consider not pre-imptively multiplying by dim to not change the
+                                    outcome of the max in the core function even though we might want to keep it as it
+                                    is since otherwise, the sum part of the max may take over as dim increases */
+  for (i = 0; i < inner_problem->number_of_variables; ++i) {
+    if (fabs(x[i]) > 0.5) {
+      data->rounded_x[i] = coco_double_round(x[i]);
+    } else {
+      data->rounded_x[i] = coco_double_round(data->alpha * x[i]) / data->alpha;
+    }
+  }
+  coco_evaluate_function(inner_problem, data->rounded_x, y);
+  assert(y[0] + 1e-13 >= problem->best_value[0]);
+}
+
+/**
+ * @brief Frees the data object.
+ */
+void transform_vars_round_step_free(void *thing) {
+  transform_vars_round_step_data_t *data = (transform_vars_round_step_data_t *)thing;
+  coco_free_memory(data->rounded_x);
+}
+
+/**
+ * @brief Creates the transformation.
+ */
+coco_problem_t *transform_vars_round_step(coco_problem_t *inner_problem, const double alpha) {
+  transform_vars_round_step_data_t *data;
+  coco_problem_t *problem;
+  size_t i;
+
+  data = (transform_vars_round_step_data_t *)coco_allocate_memory(sizeof(*data));
+  data->rounded_x = coco_allocate_vector(inner_problem->number_of_variables + 1);
+  data->alpha = alpha;
+
+  problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_round_step_free,
+                                              "transform_vars_round_step");
+  problem->evaluate_function = transform_vars_round_step_evaluate;
+  /* Compute best parameter */
+  for (i = 0; i < problem->number_of_variables; i++) {
+    if (fabs(problem->best_parameter[i]) > 0.5) {
+      problem->best_parameter[i] = coco_double_round(problem->best_parameter[i]);
+    } else {
+      problem->best_parameter[i] = coco_double_round(data->alpha * problem->best_parameter[i]) / data->alpha;
+    }
+  }
   return problem;
 }

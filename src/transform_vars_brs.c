@@ -7,7 +7,7 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_problem.h"
 
 /**
  * @brief Data type for transform_vars_brs.
@@ -19,7 +19,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_brs_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_brs_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   double factor;
   transform_vars_brs_data_t *data;
@@ -55,7 +55,7 @@ static void transform_vars_brs_evaluate(coco_problem_t *problem, const double *x
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_brs_free(void *thing) {
+void transform_vars_brs_free(void *thing) {
   transform_vars_brs_data_t *data = (transform_vars_brs_data_t *)thing;
   coco_free_memory(data->x);
 }
@@ -63,7 +63,7 @@ static void transform_vars_brs_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_brs(coco_problem_t *inner_problem) {
+coco_problem_t *transform_vars_brs(coco_problem_t *inner_problem) {
   transform_vars_brs_data_t *data;
   coco_problem_t *problem;
 

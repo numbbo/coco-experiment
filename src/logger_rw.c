@@ -10,50 +10,24 @@
  * @note This logger can be used with single- and multi-objective problems, but in the multi-objective
  * case, all solutions are always logged.
  */
+#include "logger_rw.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
-#include "coco.h"
-#include "coco_internal.h"
-
-#include "coco_utilities.c"
-#include "coco_problem.c"
-#include "coco_string.c"
-#include "observer_rw.c"
-
-/**
- * @brief The rw logger data type.
- *
- * @note Some fields from the observers (coco_observer as well as observer_rw) need to be copied here
- * because the observers can be deleted before the logger is finalized and we need these fields for
- * finalization.
- */
-typedef struct {
-  FILE *out_file;              /**< @brief File for logging. */
-  size_t num_func_evaluations; /**< @brief The number of function evaluations performed so far. */
-  size_t num_cons_evaluations; /**< @brief The number of evaluations of constraints performed so far. */
-
-  double best_value;    /**< @brief The best-so-far value. */
-  double current_value; /**< @brief The current value. */
-
-  int log_vars;        /**< @brief Whether to log the decision values. */
-  int log_cons;        /**< @brief Whether to log the constraints. */
-  int log_only_better; /**< @brief Whether to log only solutions that are better than previous ones. */
-  int log_time;        /**< @brief Whether to log evaluation time. */
-
-  int precision_x;         /**< @brief Precision for outputting decision values. */
-  int precision_f;         /**< @brief Precision for outputting objective values. */
-  int precision_g;         /**< @brief Precision for outputting constraint values. */
-  int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
-} logger_rw_data_t;
+#include "coco_utilities.h"
+#include "coco_problem.h"
+#include "coco_string.h"
+#include "coco_platform.h"
+#include "observer_rw.h"
 
 /**
  * @brief Evaluates the function and constraints and outputs the information according to the
  * observer options.
  */
-static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void logger_rw_evaluate(coco_problem_t *problem, const double *x, double *y) {
 
   logger_rw_data_t *logger;
   coco_problem_t *inner_problem;
@@ -123,7 +97,7 @@ static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double 
 /**
  * @brief Frees the memory of the given rw logger.
  */
-static void logger_rw_free(void *stuff) {
+void logger_rw_free(void *stuff) {
 
   logger_rw_data_t *logger;
 
@@ -145,7 +119,7 @@ static void logger_rw_free(void *stuff) {
  * is finalized.
  * - This reduces function calls.
  */
-static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inner_problem) {
+coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inner_problem) {
 
   coco_problem_t *problem;
   logger_rw_data_t *logger_data;

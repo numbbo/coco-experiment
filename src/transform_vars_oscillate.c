@@ -5,33 +5,17 @@
  * @author Paul Dufosse
  * @note Edited to fulfill needs from the constrained test bed.
  */
+#include "transform_vars_oscillate.h"
 
 #include <math.h>
 #include <assert.h>
 
-#include "coco.h"
-#include "coco_problem.c"
-#include "brentq.c"
-
-/**
- * @brief Data type for transform_vars_oscillate.
- */
-typedef struct {
-  double alpha;
-  double *oscillated_x;
-} transform_vars_oscillate_data_t;
-
-/**
- * @brief Data type for univariate function tosz_uv
- */
-typedef struct {
-  double alpha;
-} tosz_data;
+#include "brentq.h"
 
 /**
  * @brief Univariate oscillating non-linear transformation.
  */
-static double tosz_uv(double xi, tosz_data *d) {
+double tosz_uv(double xi, tosz_data *d) {
   double yi;
   double tmp, base;
   if (xi > 0.0) {
@@ -51,7 +35,7 @@ static double tosz_uv(double xi, tosz_data *d) {
 /**
  * @brief Inverse of oscillating non-linear transformation tosz_uv obtained with brentq.
  */
-static double tosz_uv_inv(double yi, tosz_data *d) {
+double tosz_uv_inv(double yi, tosz_data *d) {
   double xi;
   xi = brentinv((callback_type)&tosz_uv, yi, d);
   return xi;
@@ -60,7 +44,7 @@ static double tosz_uv_inv(double yi, tosz_data *d) {
 /**
  * @brief Multivariate, coordinate-wise, oscillating non-linear transformation.
  */
-static void tosz(transform_vars_oscillate_data_t *data, const double *x, size_t number_of_variables) {
+void tosz(transform_vars_oscillate_data_t *data, const double *x, size_t number_of_variables) {
   size_t i;
   tosz_data *d;
   d = coco_allocate_memory(sizeof(*d));
@@ -76,7 +60,7 @@ static void tosz(transform_vars_oscillate_data_t *data, const double *x, size_t 
 /**
  * @brief Evaluates the transformed objective functions.
  */
-static void transform_vars_oscillate_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_oscillate_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   double *cons_values;
   int is_feasible;
   transform_vars_oscillate_data_t *data;
@@ -108,7 +92,7 @@ static void transform_vars_oscillate_evaluate_function(coco_problem_t *problem, 
 /**
  * @brief Evaluates the transformed constraints.
  */
-static void transform_vars_oscillate_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
+void transform_vars_oscillate_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
                                                          int update_counter) {
   static const double alpha = 0.1;
   double tmp, base, *oscillated_x;
@@ -144,7 +128,7 @@ static void transform_vars_oscillate_evaluate_constraint(coco_problem_t *problem
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_oscillate_free(void *thing) {
+void transform_vars_oscillate_free(void *thing) {
   transform_vars_oscillate_data_t *data = (transform_vars_oscillate_data_t *)thing;
   coco_free_memory(data->oscillated_x);
 }
@@ -152,7 +136,7 @@ static void transform_vars_oscillate_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_oscillate(coco_problem_t *inner_problem) {
+coco_problem_t *transform_vars_oscillate(coco_problem_t *inner_problem) {
   transform_vars_oscillate_data_t *data;
   coco_problem_t *problem;
   data = (transform_vars_oscillate_data_t *)coco_allocate_memory(sizeof(*data));
@@ -179,7 +163,7 @@ static coco_problem_t *transform_vars_oscillate(coco_problem_t *inner_problem) {
  *        xopt is needed because transform_vars_shift is not yet called
  *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
  */
-static void transform_inv_initial_oscillate(coco_problem_t *problem, const double *xopt) {
+void transform_inv_initial_oscillate(coco_problem_t *problem, const double *xopt) {
   size_t i;
   size_t j;
   int is_in_bounds;

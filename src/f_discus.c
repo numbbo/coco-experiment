@@ -2,22 +2,24 @@
  * @file f_discus.c
  * @brief Implementation of the discus function and problem.
  */
+#include "f_discus.h"
 
 #include <assert.h>
 
-#include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_oscillate.c"
-#include "transform_vars_shift.c"
+#include "coco_string.h"
+#include "coco_utilities.h"
+#include "coco_problem.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_affine.h"
+#include "transform_vars_oscillate.h"
+#include "transform_vars_shift.h"
 
 /**
  * @brief Implements the discus function without connections to any COCO
  * structures.
  */
-static double f_discus_raw(const double *x, const size_t number_of_variables) {
+double f_discus_raw(const double *x, const size_t number_of_variables) {
 
   static const double condition = 1.0e6;
   size_t i;
@@ -37,7 +39,7 @@ static double f_discus_raw(const double *x, const size_t number_of_variables) {
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_discus_evaluate(coco_problem_t *problem, const double *x,
+void f_discus_evaluate(coco_problem_t *problem, const double *x,
                               double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_discus_raw(x, problem->number_of_variables);
@@ -47,7 +49,7 @@ static void f_discus_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Evaluates the gradient of the discus function.
  */
-static void f_discus_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+void f_discus_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
 
   static const double condition = 1.0e6;
   size_t i;
@@ -60,7 +62,7 @@ static void f_discus_evaluate_gradient(coco_problem_t *problem, const double *x,
 /**
  * @brief Allocates the basic discus problem.
  */
-static coco_problem_t *f_discus_allocate(const size_t number_of_variables) {
+coco_problem_t *f_discus_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars("discus function", f_discus_evaluate, NULL,
                                                                number_of_variables, -5.0, 5.0, 0.0);
@@ -75,7 +77,7 @@ static coco_problem_t *f_discus_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB discus problem.
  */
-static coco_problem_t *f_discus_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_discus_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                       const size_t instance, const long rseed,
                                                       const char *problem_id_template,
                                                       const char *problem_name_template) {
@@ -121,7 +123,7 @@ static coco_problem_t *f_discus_bbob_problem_allocate(const size_t function, con
 /**
  * @brief Creates the discus problem for the constrained BBOB suite.
  */
-static coco_problem_t *f_discus_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_discus_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                            const size_t instance, const long rseed,
                                                            const char *problem_id_template,
                                                            const char *problem_name_template) {

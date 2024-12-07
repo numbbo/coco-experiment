@@ -11,11 +11,13 @@
  * see https://github.com/numbbo/coco/issues/814#issuecomment-303724400
  */
 
-#include <assert.h>
+#include "transform_vars_affine.h"
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_utilities.h"
+#include "coco_problem.h"
 
+#include <assert.h>
 /**
  * @brief Data type for transform_vars_affine.
  */
@@ -26,7 +28,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformed objective function.
  */
-static void transform_vars_affine_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_affine_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   size_t i, j;
   double *cons_values;
   int is_feasible;
@@ -65,7 +67,7 @@ static void transform_vars_affine_evaluate_function(coco_problem_t *problem, con
 /**
  * @brief Evaluates the transformed constraint.
  */
-static void transform_vars_affine_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
+void transform_vars_affine_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
                                                       int update_counter) {
   size_t i, j;
   transform_vars_affine_data_t *data;
@@ -93,7 +95,7 @@ static void transform_vars_affine_evaluate_constraint(coco_problem_t *problem, c
 /**
  * @brief Evaluates the gradient of the transformed function.
  */
-static void transform_vars_affine_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_affine_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
   size_t i, j;
   transform_vars_affine_data_t *data;
   coco_problem_t *inner_problem;
@@ -144,7 +146,7 @@ static void transform_vars_affine_evaluate_gradient(coco_problem_t *problem, con
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_affine_free(void *thing) {
+void transform_vars_affine_free(void *thing) {
   transform_vars_affine_data_t *data = (transform_vars_affine_data_t *)thing;
   coco_free_memory(data->M);
   coco_free_memory(data->b);
@@ -154,7 +156,7 @@ static void transform_vars_affine_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_affine(coco_problem_t *inner_problem, const double *M, const double *b,
+coco_problem_t *transform_vars_affine(coco_problem_t *inner_problem, const double *M, const double *b,
                                              const size_t number_of_variables) {
   /*
    * TODOs:

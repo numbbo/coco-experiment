@@ -8,21 +8,21 @@
 #include <stdio.h>
 
 #include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_conditioning.c"
-#include "transform_vars_scale.c"
-#include "transform_vars_shift.c"
-#include "transform_vars_x_hat.c"
-#include "transform_vars_z_hat.c"
+#include "coco_problem.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_affine.h"
+#include "transform_vars_conditioning.h"
+#include "transform_vars_scale.h"
+#include "transform_vars_shift.h"
+#include "transform_vars_x_hat.h"
+#include "transform_vars_z_hat.h"
 
 /**
  * @brief Implements the Schwefel function without connections to any COCO
  * structures.
  */
-static double f_schwefel_raw(const double *x,
+double f_schwefel_raw(const double *x,
                              const size_t number_of_variables) {
 
   size_t i = 0;
@@ -53,7 +53,7 @@ static double f_schwefel_raw(const double *x,
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_schwefel_evaluate(coco_problem_t *problem, const double *x,
+void f_schwefel_evaluate(coco_problem_t *problem, const double *x,
                                 double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_schwefel_raw(x, problem->number_of_variables);
@@ -63,7 +63,7 @@ static void f_schwefel_evaluate(coco_problem_t *problem, const double *x,
 /**
  * @brief Allocates the basic Schwefel problem.
  */
-static coco_problem_t *f_schwefel_allocate(const size_t number_of_variables) {
+coco_problem_t *f_schwefel_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars("Schwefel function", f_schwefel_evaluate, NULL,
                                                                number_of_variables, -5.0, 5.0, 420.96874633);
@@ -77,7 +77,7 @@ static coco_problem_t *f_schwefel_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB Schwefel problem.
  */
-static coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                         const size_t instance, const long rseed,
                                                         const char *problem_id_template,
                                                         const char *problem_name_template) {

@@ -2,11 +2,14 @@
  * @file transform_vars_z_hat.c
  * @brief Implementation of the z^hat transformation of decision values for the BBOB Schwefel problem.
  */
+#include "transform_vars_z_hat.h"
 
 #include <assert.h>
+#include <string.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_utilities.h"
+#include "coco_problem.h"
 
 /**
  * @brief Data type for transform_vars_z_hat.
@@ -20,7 +23,7 @@ typedef struct {
 /**
  * @brief Evaluates the transformation.
  */
-static void transform_vars_z_hat_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_z_hat_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   transform_vars_z_hat_data_t *data;
   coco_problem_t *inner_problem;
@@ -45,7 +48,7 @@ static void transform_vars_z_hat_evaluate(coco_problem_t *problem, const double 
 /**
  * @brief Frees the data object.
  */
-static void transform_vars_z_hat_free(void *thing) {
+void transform_vars_z_hat_free(void *thing) {
   transform_vars_z_hat_data_t *data = (transform_vars_z_hat_data_t *)thing;
   coco_free_memory(data->xopt);
   coco_free_memory(data->z);
@@ -54,7 +57,7 @@ static void transform_vars_z_hat_free(void *thing) {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_z_hat(coco_problem_t *inner_problem, const double *xopt) {
+coco_problem_t *transform_vars_z_hat(coco_problem_t *inner_problem, const double *xopt) {
   transform_vars_z_hat_data_t *data;
   coco_problem_t *problem;
   data = (transform_vars_z_hat_data_t *)coco_allocate_memory(sizeof(*data));

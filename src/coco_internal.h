@@ -255,9 +255,11 @@ struct coco_suite_s {
   coco_data_free_function_t data_free_function; /**< @brief The function for freeing this suite. */
 };
 
-static void bbob_evaluate_gradient(coco_problem_t *problem, const double *x, double *y);
-
 /***********************************************************************************************************/
+
+#include "coco_utilities.h"
+#include "coco_string.h"
+#include "suite_bbob_legacy_code.h"
 
 #ifdef __cplusplus
 }

@@ -6,17 +6,17 @@
 
 #include "coco.h"
 #include "coco_internal.h"
-#include "coco_random.c"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
+#include "coco_random.h"
+#include "coco_problem.h"
+#include "suite_bbob_legacy_code.h"
 
 /***********************************************************************************************************/
 /**
  * @name Methods and global variables needed to perform random sampling
  */
 /**{@*/
-static long RANDSEED = 30;  /** < @brief Random seed for sampling Uniform noise*/
-static long RANDNSEED = 30; /** < @brief Random seed for sampling Gaussian noise*/
+long RANDSEED = 30;  /** < @brief Random seed for sampling Uniform noise*/
+long RANDNSEED = 30; /** < @brief Random seed for sampling Gaussian noise*/
 
 /**
  * @brief Increases the normal random seed by one unit

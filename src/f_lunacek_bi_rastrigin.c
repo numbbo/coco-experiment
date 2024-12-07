@@ -2,23 +2,26 @@
  * @file f_lunacek_bi_rastrigin.c
  * @brief Implementation of the Lunacek bi-Rastrigin function and problem.
  */
+#include "f_lunacek_bi_rastrigin.h"
 
 #include <assert.h>
 #include <math.h>
 
-#include "coco.h"
-#include "coco_problem.c"
-#include "f_sphere.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_scale.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_x_hat_generic.c"
+#include "f_sphere.h"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_penalize.h"
+#include "transform_obj_scale.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_conditioning.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_shift.h"
 
 /**
  * @brief Data type for the Lunacek bi-Rastrigin problem.
  */
-typedef struct {
+typedef struct f_lunacek_bi_rastrigin_data_s {
   double *x_hat, *z;
   double *xopt, fopt;
   double **rot1, **rot2;
@@ -30,7 +33,7 @@ typedef struct {
  * @brief Implements the Lunacek bi-Rastrigin function without connections to
  * any COCO structures.
  */
-static double f_lunacek_bi_rastrigin_raw(const double *x, const size_t number_of_variables,
+double f_lunacek_bi_rastrigin_raw(const double *x, const size_t number_of_variables,
                                          f_lunacek_bi_rastrigin_data_t *data) {
   double result;
   static const double condition = 100.;
@@ -94,7 +97,7 @@ static double f_lunacek_bi_rastrigin_raw(const double *x, const size_t number_of
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_lunacek_bi_rastrigin_evaluate(coco_problem_t *problem,
+void f_lunacek_bi_rastrigin_evaluate(coco_problem_t *problem,
                                             const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_lunacek_bi_rastrigin_raw(x, problem->number_of_variables, (f_lunacek_bi_rastrigin_data_t *)problem->data);
@@ -104,7 +107,7 @@ static void f_lunacek_bi_rastrigin_evaluate(coco_problem_t *problem,
 /**
  * @brief Frees the Lunacek bi-Rastrigin data object.
  */
-static void f_lunacek_bi_rastrigin_free(coco_problem_t *problem) {
+void f_lunacek_bi_rastrigin_free(coco_problem_t *problem) {
   f_lunacek_bi_rastrigin_data_t *data;
   data = (f_lunacek_bi_rastrigin_data_t *)problem->data;
   coco_free_memory(data->x_hat);
@@ -125,7 +128,7 @@ static void f_lunacek_bi_rastrigin_free(coco_problem_t *problem) {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance, const long rseed,
                                                                     const char *problem_id_template,
                                                                     const char *problem_name_template) {
@@ -192,7 +195,7 @@ static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t
 /**
  * @brief allows to free the versatile_data part of the problem.
  */
-static void
+void
 f_lunacek_bi_rastrigin_versatile_data_free(coco_problem_t *problem) {
 
   f_lunacek_bi_rastrigin_versatile_data_t *versatile_data =
@@ -215,7 +218,7 @@ f_lunacek_bi_rastrigin_versatile_data_free(coco_problem_t *problem) {
 /**
  * @brief Uses the core function to evaluate the sub problem.
  */
-static void f_lunacek_bi_rastrigin_sub_evaluate_core(coco_problem_t *problem,
+void f_lunacek_bi_rastrigin_sub_evaluate_core(coco_problem_t *problem,
                                                      const double *x,
                                                      double *y) {
 
@@ -226,7 +229,7 @@ static void f_lunacek_bi_rastrigin_sub_evaluate_core(coco_problem_t *problem,
 /**
  * @brief Allocates the basic lunacek_bi_rastrigin sub problem.
  */
-static coco_problem_t *
+coco_problem_t *
 f_lunacek_bi_rastrigin_sub_problem_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem_i =
@@ -244,7 +247,7 @@ f_lunacek_bi_rastrigin_sub_problem_allocate(const size_t number_of_variables) {
  * @brief Implements the lunacek_bi_rastrigin function without connections to
  * any COCO structures. Wassim: core to not conflict with raw for now
  */
-static double
+double
 f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
                             f_lunacek_bi_rastrigin_versatile_data_t *f_lunacek_bi_rastrigin_versatile_data) {
 
@@ -276,7 +279,7 @@ f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
 /**
  * @brief Uses the core function to evaluate the COCO problem.
  */
-static void f_lunacek_bi_rastrigin_evaluate_core(coco_problem_t *problem,
+void f_lunacek_bi_rastrigin_evaluate_core(coco_problem_t *problem,
                                                  const double *x, double *y) {
 
   assert(problem->number_of_objectives == 1);
@@ -288,7 +291,7 @@ static void f_lunacek_bi_rastrigin_evaluate_core(coco_problem_t *problem,
 /**
  * @brief Allocates the basic lunacek_bi_rastrigin problem.
  */
-static coco_problem_t *
+coco_problem_t *
 f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars(
@@ -308,7 +311,7 @@ f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
 /**
  * @brief Creates the BBOB large scale suite Lunacek bi-Rastrigin problem.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(
+coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const char *problem_id_template, const char *problem_name_template) {
   size_t i;

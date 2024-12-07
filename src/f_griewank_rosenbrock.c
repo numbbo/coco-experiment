@@ -2,26 +2,25 @@
  * @file f_griewank_rosenbrock.c
  * @brief Implementation of the Griewank-Rosenbrock function and problem.
  */
+#include "f_griewank_rosenbrock.h"
 
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 
-#include "coco.h"
-#include "coco_problem.c"
-#include "suite_bbob_legacy_code.c"
-#include "transform_obj_norm_by_dim.c"
-#include "transform_obj_shift.c"
-#include "transform_vars_affine.c"
-#include "transform_vars_blockrotation.c"
-#include "transform_vars_permutation.c"
-#include "transform_vars_scale.c"
-#include "transform_vars_shift.c"
+#include "suite_bbob_legacy_code.h"
+#include "transform_obj_norm_by_dim.h"
+#include "transform_obj_shift.h"
+#include "transform_vars_affine.h"
+#include "transform_vars_blockrotation.h"
+#include "transform_vars_permutation.h"
+#include "transform_vars_scale.h"
+#include "transform_vars_shift.h"
 
 /**
  * @brief Data type for the griewank rosenbrock problem
  */
-typedef struct {
+typedef struct f_griewank_rosenbrock_data_s {
   double facftrue;
 } f_griewank_rosenbrock_data_t;
 
@@ -29,7 +28,7 @@ typedef struct {
  * @brief Implements the Griewank-Rosenbrock function without connections to any
  * COCO structures.
  */
-static double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_variables,
+double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_variables,
                                         f_griewank_rosenbrock_data_t *data) {
 
   size_t i = 0;
@@ -55,7 +54,7 @@ static double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_
 /**
  * @brief Uses the raw function to evaluate the COCO problem.
  */
-static void f_griewank_rosenbrock_evaluate(coco_problem_t *problem,
+void f_griewank_rosenbrock_evaluate(coco_problem_t *problem,
                                            const double *x, double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_griewank_rosenbrock_raw(x, problem->number_of_variables, (f_griewank_rosenbrock_data_t *)problem->data);
@@ -65,7 +64,7 @@ static void f_griewank_rosenbrock_evaluate(coco_problem_t *problem,
 /**
  * @brief Allocates the basic Griewank-Rosenbrock problem.
  */
-static coco_problem_t *f_griewank_rosenbrock_allocate(const size_t number_of_variables, double facftrue) {
+coco_problem_t *f_griewank_rosenbrock_allocate(const size_t number_of_variables, double facftrue) {
 
   coco_problem_t *problem = coco_problem_allocate_from_scalars(
       "Griewank Rosenbrock function", f_griewank_rosenbrock_evaluate, NULL, number_of_variables, -5.0, 5.0, 1);
@@ -84,7 +83,7 @@ static coco_problem_t *f_griewank_rosenbrock_allocate(const size_t number_of_var
 /**
  * @brief Creates the BBOB Griewank-Rosenbrock problem.
  */
-static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
+coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                    const size_t instance, const long rseed,
                                                                    const void *args, const char *problem_id_template,
                                                                    const char *problem_name_template) {
@@ -150,7 +149,7 @@ static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t 
 /**
  * @brief Creates the BBOB permuted block-rotated Griewank-Rosenbrock problem.
  */
-static coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
+coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed, const void *args,
     const char *problem_id_template, const char *problem_name_template) {
   double fopt;
@@ -199,7 +198,7 @@ static coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_all
   problem = transform_vars_blockrotation(problem, B_copy, dimension,
                                          block_sizes, nb_blocks);
   problem = transform_vars_permutation(problem, P1, dimension);
-  
+
   /*problem = transform_obj_norm_by_dim(problem);*/ /* Wassim: there is already a normalization by dimension*/
   problem = transform_obj_shift(problem, fopt);
 

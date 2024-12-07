@@ -12,7 +12,7 @@
  * string per line, the first string appearing on the next line after "static const char..." (no comments 
  * allowed in between). Nothing should be placed on the last line (line with };).
  */
-static const char *suite_biobj_best_values_hyp[] = { /* Best values on 29.01.2017 16:30:00, copied from: best values current data, 10.07.2016 */
+const char *suite_biobj_best_values_hyp[] = { /* Best values on 29.01.2017 16:30:00, copied from: best values current data, 10.07.2016 */
   "bbob-biobj_f01_i01_d02 0.833332923849452",
   "bbob-biobj_f01_i01_d03 0.833332590193468",
   "bbob-biobj_f01_i01_d05 0.833332871970114",

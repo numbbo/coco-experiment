@@ -2,89 +2,22 @@
  * @file coco_observer.c
  * @brief Definitions of functions regarding COCO observers.
  */
+#include "coco_observer.h"
 
-#include "coco.h"
-#include "coco_internal.h"
 #include <float.h>
 #include <limits.h>
 #include <math.h>
+#include <string.h>
+#include <assert.h>
 
-/**
- * @brief The type for triggers based on logarithmic target values (targets that
- * are uniformly distributed in the logarithmic space).
- *
- * The target values that trigger logging are at every
- * 10**(exponent/number_of_triggers) from positive infinity down to precision,
- * at 0, and from -precision on with step -10**(exponent/number_of_triggers)
- * until negative infinity.
- */
-typedef struct {
-
-  int exponent;              /**< @brief Value used to compare with the previously hit
-                                target. */
-  double value;              /**< @brief Value of the currently hit target. */
-  size_t number_of_triggers; /**< @brief Number of target triggers between 10**i
-                                and 10**(i+1) for any i. */
-  double precision;          /**< @brief Minimal precision of interest. */
-
-} coco_observer_log_targets_t;
-
-/**
- * @brief The type for triggers based on linear target values (targets that are
- * uniformly distributed in the linear space).
- *
- * The target values that trigger logging are at every precision * integer
- * value.
- */
-typedef struct {
-
-  double value;     /**< @brief Value of the currently hit target. */
-  double precision; /**< @brief Precision of interest. */
-
-} coco_observer_lin_targets_t;
-
-/**
- * @brief The type for triggers based on either logarithmic or linear target
- * values.
- *
- * The linear targets are always used, while the logarithmic ones are used only
- * on problems with known optima.
- */
-typedef struct {
-
-  int use_log_targets;
-  coco_observer_lin_targets_t *lin_targets;
-  coco_observer_log_targets_t *log_targets;
-
-} coco_observer_targets_t;
-
-/**
- * @brief The type for triggers based on numbers of evaluations.
- *
- * The numbers of evaluations that trigger logging are any of the two:
- * - every 10**(exponent1/number_of_triggers) for exponent1 >= 0
- * - every base_evaluation * dimension * (10**exponent2) for exponent2 >= 0
- */
-typedef struct {
-
-  /* First trigger */
-  size_t value1;             /**< @brief The next value for the first trigger. */
-  size_t exponent1;          /**< @brief Exponent used to compute the first trigger. */
-  size_t number_of_triggers; /**< @brief Number of target triggers between 10**i
-                                and 10**(i+1) for any i. */
-
-  /* Second trigger */
-  size_t value2;            /**< @brief The next value for the second trigger. */
-  size_t exponent2;         /**< @brief Exponent used to compute the second trigger. */
-  size_t *base_evaluations; /**< @brief The base evaluation numbers used to
-                               compute the actual evaluation numbers that
-                               trigger logging. */
-  size_t base_count;        /**< @brief The number of base evaluations. */
-  size_t base_index;        /**< @brief The next index of the base evaluations. */
-  size_t dimension;         /**< @brief Dimension used in the calculation of the first
-                               trigger. */
-
-} coco_observer_evaluations_t;
+#include "coco_string.h"
+#include "coco_utilities.h"
+#include "coco_platform.h"
+#include "observer_bbob.h"
+#include "observer_biobj.h"
+#include "observer_bbob_old.h"
+#include "observer_rw.h"
+#include "observer_toy.h"
 
 /**
  * @brief The maximum number of evaluations to trigger logging.
@@ -109,7 +42,7 @@ typedef struct {
  * for each i. If 0, the logarithmic targets will not be used.
  * @param precision Minimal precision of interest.
  */
-static coco_observer_log_targets_t *coco_observer_log_targets(const size_t number_of_targets, const double precision) {
+coco_observer_log_targets_t *coco_observer_log_targets(const size_t number_of_targets, const double precision) {
 
   coco_observer_log_targets_t *log_targets = (coco_observer_log_targets_t *)coco_allocate_memory(sizeof(*log_targets));
   log_targets->exponent = INT_MAX;
@@ -124,7 +57,7 @@ static coco_observer_log_targets_t *coco_observer_log_targets(const size_t numbe
  * @brief Checks whether the given value should trigger logging with logarithmic
  * targets. If so, the internal values are updated.
  */
-static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_targets, const double given_value) {
+int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_targets, const double given_value) {
 
   int activate_trigger = 0;
 
@@ -202,7 +135,7 @@ static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_ta
  *
  * @param precision Minimal precision of interest.
  */
-static coco_observer_lin_targets_t *coco_observer_lin_targets(const double precision) {
+coco_observer_lin_targets_t *coco_observer_lin_targets(const double precision) {
 
   coco_observer_lin_targets_t *lin_targets = (coco_observer_lin_targets_t *)coco_allocate_memory(sizeof(*lin_targets));
   lin_targets->value = DBL_MAX;
@@ -215,7 +148,7 @@ static coco_observer_lin_targets_t *coco_observer_lin_targets(const double preci
  * @brief Checks whether the given value should trigger logging with linear
  * targets. If so, the internal values are updated.
  */
-static int coco_observer_lin_targets_trigger(coco_observer_lin_targets_t *lin_targets, const double given_value) {
+int coco_observer_lin_targets_trigger(coco_observer_lin_targets_t *lin_targets, const double given_value) {
 
   int activate_trigger = 0;
   double target_reached;
@@ -239,7 +172,7 @@ static int coco_observer_lin_targets_trigger(coco_observer_lin_targets_t *lin_ta
  * are used only if the suite has a known optimum. The linear targets are always
  * used.
  */
-static coco_observer_targets_t *coco_observer_targets(const int optima_known, const double lin_precision,
+coco_observer_targets_t *coco_observer_targets(const int optima_known, const double lin_precision,
                                                       const size_t number_of_targets, const double log_precision) {
   coco_observer_targets_t *targets = (coco_observer_targets_t *)coco_allocate_memory(sizeof(*targets));
   targets->use_log_targets = (number_of_targets > 0) && optima_known;
@@ -254,7 +187,7 @@ static coco_observer_targets_t *coco_observer_targets(const int optima_known, co
 /**
  * @brief Computes and returns whether the given value should trigger logging.
  */
-static int coco_observer_targets_trigger(coco_observer_targets_t *targets, const double given_value) {
+int coco_observer_targets_trigger(coco_observer_targets_t *targets, const double given_value) {
 
   int log_trigger = coco_observer_log_targets_trigger(targets->log_targets, given_value);
   int lin_trigger = coco_observer_lin_targets_trigger(targets->lin_targets, given_value);
@@ -264,7 +197,7 @@ static int coco_observer_targets_trigger(coco_observer_targets_t *targets, const
 /**
  * @brief Returns the last triggered target.
  */
-static double coco_observer_targets_get_last_target(coco_observer_targets_t *targets) {
+double coco_observer_targets_get_last_target(coco_observer_targets_t *targets) {
   assert(targets->lin_targets);
   double last_target = ((coco_observer_lin_targets_t *)targets->lin_targets)->value;
 
@@ -281,7 +214,7 @@ static double coco_observer_targets_get_last_target(coco_observer_targets_t *tar
 /**
  * @brief Frees the given targets object.
  */
-static void coco_observer_targets_free(coco_observer_targets_t *targets) {
+void coco_observer_targets_free(coco_observer_targets_t *targets) {
 
   assert(targets != NULL);
   coco_free_memory(targets->lin_targets);
@@ -316,7 +249,7 @@ static void coco_observer_targets_free(coco_observer_targets_t *targets) {
  * dim*1, dim*2, dim*5, 10*dim*1, 10*dim*2, 10*dim*5, 100*dim*1, 100*dim*2,
  * 100*dim*5, ...
  */
-static coco_observer_evaluations_t *coco_observer_evaluations(const char *base_evaluations, const size_t dimension) {
+coco_observer_evaluations_t *coco_observer_evaluations(const char *base_evaluations, const size_t dimension) {
 
   coco_observer_evaluations_t *evaluations = (coco_observer_evaluations_t *)coco_allocate_memory(sizeof(*evaluations));
 
@@ -345,7 +278,7 @@ static coco_observer_evaluations_t *coco_observer_evaluations(const char *base_e
  * The second condition is:
  * evaluation_number == 10**(exponent1/number_of_triggers)
  */
-static int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t *evaluations,
+int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t *evaluations,
                                                    const size_t evaluation_number) {
 
   assert(evaluations != NULL);
@@ -371,7 +304,7 @@ static int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t *
  * evaluation_number == base_evaluation[base_index] * dimension *
  * (10**exponent2)
  */
-static int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t *evaluations,
+int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t *evaluations,
                                                     const size_t evaluation_number) {
 
   assert(evaluations != NULL);
@@ -400,7 +333,7 @@ static int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t 
  * - every 10**(exponent1/number_of_triggers) for exponent1 >= 0
  * - every base_evaluation * dimension * (10**exponent2) for exponent2 >= 0
  */
-static int coco_observer_evaluations_trigger(coco_observer_evaluations_t *evaluations, const size_t evaluation_number) {
+int coco_observer_evaluations_trigger(coco_observer_evaluations_t *evaluations, const size_t evaluation_number) {
 
   /* Both functions need to be called so that both triggers are correctly
    * updated */
@@ -413,7 +346,7 @@ static int coco_observer_evaluations_trigger(coco_observer_evaluations_t *evalua
 /**
  * @brief Frees the given evaluations object.
  */
-static void coco_observer_evaluations_free(coco_observer_evaluations_t *evaluations) {
+void coco_observer_evaluations_free(coco_observer_evaluations_t *evaluations) {
 
   assert(evaluations != NULL);
   coco_free_memory(evaluations->base_evaluations);
@@ -427,7 +360,7 @@ static void coco_observer_evaluations_free(coco_observer_evaluations_t *evaluati
 /**
  * @brief Allocates memory for a coco_observer_t instance.
  */
-static coco_observer_t *coco_observer_allocate(
+coco_observer_t *coco_observer_allocate(
     const char *result_folder, const char *observer_name, const char *algorithm_name, const char *algorithm_info,
     const size_t number_target_triggers, const double log_target_precision, const double lin_target_precision,
     const size_t number_evaluation_triggers, const char *base_evaluation_triggers, const int precision_x,
@@ -491,11 +424,11 @@ void coco_observer_free(coco_observer_t *observer) {
   }
 }
 
-#include "logger_bbob.c"
-#include "logger_bbob_old.c"
-#include "logger_biobj.c"
-#include "logger_rw.c"
-#include "logger_toy.c"
+#include "logger_bbob.h"
+#include "logger_bbob_old.h"
+#include "logger_biobj.h"
+#include "logger_rw.h"
+#include "logger_toy.h"
 
 /**
  * Currently, four observers are supported:
@@ -632,7 +565,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
 
   number_target_triggers = 100;
   if (coco_options_read_size_t(observer_options, "number_target_triggers", &number_target_triggers) != 0) {
-    if (number_target_triggers < 0) {
+    if (number_target_triggers <= 0) {
       coco_warning("coco_observer(): Unsuitable observer option value "
                    "(number_target_triggers: %lu) ignored",
                    number_target_triggers);

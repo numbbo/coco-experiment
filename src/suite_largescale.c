@@ -5,30 +5,36 @@
 
 #include "coco.h"
 
-#include "f_attractive_sector.c"
-#include "f_bent_cigar_generalized.c"
-#include "f_bueche_rastrigin.c"
-#include "f_different_powers.c"
-#include "f_discus_generalized.c"
-#include "f_ellipsoid.c"
-#include "f_griewank_rosenbrock.c"
-#include "f_linear_slope.c"
-#include "f_rastrigin.c"
-#include "f_schaffers.c"
-#include "f_schwefel_generalized.c"
-#include "f_sharp_ridge_generalized.c"
-#include "f_sphere.c"
-#include "f_step_ellipsoid.c"
-#include "f_weierstrass.c"
+#include "f_attractive_sector.h"
+#include "f_bent_cigar.h"
+#include "f_bent_cigar_generalized.h"
+#include "f_bueche_rastrigin.h"
+#include "f_different_powers.h"
+#include "f_discus_generalized.h"
+#include "f_discus_generalized.h"
+#include "f_ellipsoid.h"
+#include "f_gallagher.h"
+#include "f_griewank_rosenbrock.h"
+#include "f_linear_slope.h"
+#include "f_lunacek_bi_rastrigin.h"
+#include "f_rastrigin.h"
+#include "f_rosenbrock.h"
+#include "f_schaffers.h"
+#include "f_schwefel_generalized.h"
+#include "f_sharp_ridge_generalized.h"
+#include "f_sphere.h"
+#include "f_step_ellipsoid.h"
+#include "f_weierstrass.h"
+#include "f_katsuura.h"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
+coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,
                                          const char *default_instances, const int known_optima);
 
 /**
  * @brief Sets the dimensions and default instances for the bbob large-scale suite.
  */
-static coco_suite_t *suite_largescale_initialize(void) {
+coco_suite_t *suite_largescale_initialize(void) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {20, 40, 80, 160, 320, 640};
@@ -41,7 +47,7 @@ static coco_suite_t *suite_largescale_initialize(void) {
 /**
  * @brief Sets the instances associated with years for the bbob large-scale suite.
  */
-static const char *suite_largescale_get_instances_by_year(const int year) {
+const char *suite_largescale_get_instances_by_year(const int year) {
   if (year >= 2016 || year == 0) {
     return "1-15";
   } else if (year >= 2009) {
@@ -55,7 +61,7 @@ static const char *suite_largescale_get_instances_by_year(const int year) {
 /**
  * @brief Creates and returns a large-scale problem without needing the actual large-scale suite.
  */
-static coco_problem_t *coco_get_largescale_problem(const size_t function, const size_t dimension,
+coco_problem_t *coco_get_largescale_problem(const size_t function, const size_t dimension,
                                                    const size_t instance) {
   coco_problem_t *problem = NULL;
 
@@ -161,7 +167,7 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function, const 
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite, const size_t function_idx,
+coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                     const size_t dimension_idx, const size_t instance_idx) {
 
   coco_problem_t *problem = NULL;

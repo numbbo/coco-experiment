@@ -6,12 +6,12 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "coco_problem.c"
+#include "coco_problem.h"
 
 /**
  * @brief Evaluates the transformed objective function.
  */
-static void transform_vars_enforce_box_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
+void transform_vars_enforce_box_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   double *cons_values;
   int is_feasible;
@@ -49,7 +49,7 @@ static void transform_vars_enforce_box_evaluate_function(coco_problem_t *problem
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_enforce_box(coco_problem_t *inner_problem) {
+coco_problem_t *transform_vars_enforce_box(coco_problem_t *inner_problem) {
   coco_problem_t *problem;
 
   problem = coco_problem_transformed_allocate(inner_problem, NULL, NULL, "transform_vars_enforce_box");
