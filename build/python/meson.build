@@ -45,9 +45,9 @@ add_project_arguments(cpp_args, language: 'cpp')
 
 ################################################################################
 ## Find numpy headers
-np_incdir = meson.get_external_property('numpy-include-dir', 'not-given')
-if np_incdir == 'not-given'
-  np_incdir = run_command(
+inc_numpy = meson.get_external_property('numpy-include-dir', 'not-given')
+if inc_numpy == 'not-given'
+  inc_numpy = run_command(
     py3,
     [
       '-c', 'import os; os.chdir(".."); import numpy; print(numpy.get_include())',
@@ -55,8 +55,8 @@ if np_incdir == 'not-given'
     check: true,
   ).stdout().strip()
 endif
-np_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_23_API_VERSION'
-np_dep = declare_dependency(include_directories: np_incdir, compile_args: np_nodepr_api)
+cflags_numpy = '-DNPY_NO_DEPRECATED_API=NPY_1_23_API_VERSION'
+dep_numpy = declare_dependency(include_directories: inc_numpy, compile_args: cflags_numpy)
 
 ################################################################################
 ## Build cocoex module
@@ -71,22 +71,23 @@ python_sources = [
 
 py3.install_sources(python_sources, subdir: 'cocoex')
 
-inc_coco = include_directories('src/cocoex')
+# Static library used by both extensions
+inc_cocoex = include_directories('src/cocoex')
+lib_cocoex = static_library('cocoex', 'src/cocoex/coco.c')
+dep_cocoex = declare_dependency(link_with: lib_cocoex, include_directories: inc_cocoex)
 
 py3.extension_module(
   'interface',
-  ['src/cocoex/interface.pyx', 'src/cocoex/coco.c'],
-  include_directories: [inc_coco],
-  dependencies: np_dep,
+  'src/cocoex/interface.pyx',
+  dependencies: [dep_cocoex, dep_numpy],
   install: true,
   subdir: 'cocoex',
 )
 
 py3.extension_module(
   'bare_problem',
-  ['src/cocoex/bare_problem.pyx', 'src/cocoex/coco.c'],
-  include_directories: [inc_coco],
-  dependencies: np_dep,
+  'src/cocoex/bare_problem.pyx',
+  dependencies: [dep_cocoex, dep_numpy],
   install: true,
   subdir: 'cocoex',
 )
