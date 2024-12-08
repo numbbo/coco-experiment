@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 void con_update_linear_combination(double *linear_combination, const coco_problem_t *problem, double weight);
 coco_problem_t *c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,

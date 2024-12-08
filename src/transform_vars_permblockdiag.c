@@ -73,12 +73,9 @@ coco_problem_t *transform_vars_permblockdiag(coco_problem_t *inner_problem, cons
                                                     const size_t nb_blocks) {
   coco_problem_t *problem;
   transform_vars_permblockdiag_t *data;
-  size_t entries_in_M, idx_blocksize, next_bs_change, current_blocksize;
-  entries_in_M = 0;
+  size_t idx_blocksize, next_bs_change, current_blocksize;
   assert(number_of_variables > 0); /*tmp*/
-  for (size_t i = 0; i < nb_blocks; i++) {
-    entries_in_M += block_sizes[i] * block_sizes[i];
-  }
+
   data = (transform_vars_permblockdiag_t *)coco_allocate_memory(sizeof(*data));
   data->B = coco_copy_block_matrix(B, number_of_variables, block_sizes, nb_blocks);
   data->x = coco_allocate_vector(inner_problem->number_of_variables);

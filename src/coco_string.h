@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 
 #include <stdarg.h>
 

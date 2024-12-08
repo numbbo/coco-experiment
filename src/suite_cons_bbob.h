@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
                                             const size_t instance_idx);

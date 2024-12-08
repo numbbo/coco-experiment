@@ -1,6 +1,6 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
+#include <stdint.h>
 #undef INTERFACE
 double coco_random_normal(coco_random_state_t *state);
 double coco_random_uniform(coco_random_state_t *state);

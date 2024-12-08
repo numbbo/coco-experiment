@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 double coco_boundary_handling(coco_problem_t *problem, const double *x);
 double coco_sample_uniform_noise(void);

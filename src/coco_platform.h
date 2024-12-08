@@ -25,7 +25,6 @@ extern const char *coco_path_separator;
 #define HAVE_GFA 1
 #elif defined(__gnu_linux__) || defined(__linux__)
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <linux/limits.h>
 #define HAVE_STAT 1
 #define COCO_PATH_MAX PATH_MAX
@@ -68,7 +67,6 @@ extern const char *coco_path_separator;
 #elif defined(__MINGW32__) || defined(__MINGW64__)
 #include <dirent.h>
 #else
-#include <dirent.h>
 
 #ifdef __cplusplus
 extern "C" {

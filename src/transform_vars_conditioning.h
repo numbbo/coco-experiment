@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 coco_problem_t *transform_vars_conditioning(coco_problem_t *inner_problem, const double alpha);
 void transform_vars_conditioning_free(void *thing);

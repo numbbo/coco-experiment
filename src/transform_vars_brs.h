@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 coco_problem_t *transform_vars_brs(coco_problem_t *inner_problem);
 void transform_vars_brs_free(void *thing);

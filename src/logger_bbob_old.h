@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #include "coco_observer.h"
 
 #include <stdio.h>

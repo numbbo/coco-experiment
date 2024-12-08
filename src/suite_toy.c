@@ -3,8 +3,9 @@
  * @brief Implementation of a toy suite containing 6 noiseless "basic" single-objective functions in 5
  * dimensions.
  */
+#include "suite_toy.h"
 
-#include "coco.h"
+#include "coco_internal.h"
 #include "f_bueche_rastrigin.h"
 #include "f_ellipsoid.h"
 #include "f_linear_slope.h"

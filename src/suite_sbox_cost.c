@@ -1,14 +1,15 @@
 /** @file suite_sbox_cost.c
  *
- * @brief Implementation of the bbob-boxed (aka SBOX-COST) suite, containing 
- * the 24 noiseless single-objective functions in 6 dimensions from the 
+ * @brief Implementation of the bbob-boxed (aka SBOX-COST) suite, containing
+ * the 24 noiseless single-objective functions in 6 dimensions from the
  * original BBOB suite.
  *
  * FIXME: Drop f9, f19, f20 and f24 which have optima that are always close to
  *   the origin?
  */
+#include "suite_sbox_cost.h"
 
-#include "coco.h"
+#include "coco_internal.h"
 
 #include "f_attractive_sector.h"
 #include "f_bent_cigar.h"
@@ -59,7 +60,7 @@ const char *suite_sbox_cost_get_instances_by_year(const int year) {
     return "1-5,101-110";
   } if (year == 0000) {
     return "1-15";
-  } 
+  }
   else {
     coco_error(
         "suite_bbob_boxed_get_instances_by_year(): year %d not defined for "

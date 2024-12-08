@@ -2,8 +2,9 @@
  * @file suite_largescale.c
  * @brief Implementation of the bbob large-scale suite containing 24 functions in 6 large dimensions.
  */
+#include "suite_largescale.h"
 
-#include "coco.h"
+#include "coco_internal.h"
 
 #include "f_attractive_sector.h"
 #include "f_bent_cigar_generalized.h"

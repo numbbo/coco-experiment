@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 
 /**
  * @brief Data type for univariate function tasy_uv.

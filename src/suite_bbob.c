@@ -3,8 +3,9 @@
  * @brief Implementation of the bbob suite containing 24 noiseless single-objective functions in 6
  * dimensions.
  */
+#include "suite_bbob.h"
 
-#include "coco.h"
+#include "coco_internal.h"
 
 #include "f_attractive_sector.h"
 #include "f_bent_cigar.h"

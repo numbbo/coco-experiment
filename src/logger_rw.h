@@ -3,8 +3,6 @@
 
 #include <stdio.h>
 
-#include "coco_observer.h"
-
 /**
  * @brief The rw logger data type.
  *

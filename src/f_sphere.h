@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 coco_problem_t *f_sphere_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                const long rseed, const char *problem_id_template,

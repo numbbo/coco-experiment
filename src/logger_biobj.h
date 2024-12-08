@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_observer.h"
 
 typedef struct logger_biobj_data_s logger_biobj_data_t;
 

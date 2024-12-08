@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 
 coco_problem_t *transform_vars_affine(coco_problem_t *inner_problem, const double *M, const double *b,
                                       const size_t number_of_variables);

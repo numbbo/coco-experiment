@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 double mo_get_distance_to_ROI(const double *normalized_y, const size_t num_obj);
 int mo_is_within_ROI(const double *normalized_y, const size_t num_obj);

@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 
 double bbob2009_compute_fopt(const size_t function, const size_t instance);
 void sbox_cost_compute_xopt(double *xopt, const long seed, const size_t DIM);

@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 size_t *coco_get_block_sizes(size_t *nb_blocks, size_t dimension, const char *suite_name);
 double **coco_copy_block_matrix(const double *const *B, const size_t dimension, const size_t *block_sizes,

@@ -1,6 +1,6 @@
 #pragma once
 #include "coco.h"
-
+#include "coco_internal.h"
 
 size_t coco_suite_encode_problem_index(const coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
                                        const size_t instance_idx);

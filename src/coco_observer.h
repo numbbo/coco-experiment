@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 
 /**
  * @brief The type for triggers based on logarithmic target values (targets that

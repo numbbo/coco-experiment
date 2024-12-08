@@ -1,6 +1,6 @@
 #pragma once
 #include "coco.h"
-#include "coco_problem.h"
+#include "coco_internal.h"
 
 extern coco_log_level_type_e coco_log_level;
 

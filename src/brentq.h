@@ -1,6 +1,4 @@
 #pragma once
-#include "coco.h"
-#include "coco_internal.h"
 
 typedef double (*callback_type)(double, void *);
 

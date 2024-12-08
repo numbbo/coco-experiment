@@ -229,8 +229,7 @@ struct coco_observer_s {
  * while the instances are defined dynamically. The suite can be filtered - only the chosen functions,
  * dimensions and instances will be taken into account when iterating through the suite.
  */
-struct coco_suite_s {
-
+typedef struct coco_suite_s {
   char *suite_name; /**< @brief Name of the suite. */
 
   size_t number_of_dimensions; /**< @brief Number of dimensions contained in the suite. */
@@ -253,13 +252,8 @@ struct coco_suite_s {
   void *data; /**< @brief Void pointer that can be used to point to data specific to a suite. */
 
   coco_data_free_function_t data_free_function; /**< @brief The function for freeing this suite. */
-};
-
+} coco_suite_t;
 /***********************************************************************************************************/
-
-#include "coco_utilities.h"
-#include "coco_string.h"
-#include "suite_bbob_legacy_code.h"
 
 #ifdef __cplusplus
 }

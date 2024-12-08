@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem, const double *smallest_values_of_interest,
                                           const double *largest_values_of_interest,

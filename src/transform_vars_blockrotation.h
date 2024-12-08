@@ -1,8 +1,6 @@
 #pragma once
 #include "coco.h"
 
-#include "transform_vars_blockrotation_helpers.h"
-
 coco_problem_t *transform_vars_blockrotation(coco_problem_t *inner_problem, const double *const *B,
                                              const size_t number_of_variables, const size_t *block_sizes,
                                              const size_t nb_blocks);

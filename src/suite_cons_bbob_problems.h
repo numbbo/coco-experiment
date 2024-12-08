@@ -1,6 +1,5 @@
 #pragma once
 #include "coco.h"
-#include "coco_internal.h"
 #undef INTERFACE
 coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
