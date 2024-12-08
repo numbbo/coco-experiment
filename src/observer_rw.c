@@ -6,6 +6,8 @@
 
 #include <string.h>
 
+#include "coco.h"
+#include "coco_internal.h"
 #include "coco_utilities.h"
 #include "coco_platform.h"
 #include "logger_rw.h"

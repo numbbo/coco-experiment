@@ -5,8 +5,10 @@
 #include "f_attractive_sector.h"
 
 #include <assert.h>
+#include <stddef.h>
 #include <math.h>
 
+#include "coco.h"
 #include "coco_string.h"
 #include "coco_utilities.h"
 #include "coco_problem.h"

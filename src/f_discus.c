@@ -5,7 +5,10 @@
 #include "f_discus.h"
 
 #include <assert.h>
+#include <math.h>
+#include <stddef.h>
 
+#include "coco.h"
 #include "coco_string.h"
 #include "coco_utilities.h"
 #include "coco_problem.h"

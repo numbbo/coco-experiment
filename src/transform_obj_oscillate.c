@@ -5,11 +5,12 @@
 #include "transform_obj_oscillate.h"
 
 #include <assert.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "coco.h"
+#include "coco_problem.h"
 #include "coco_utilities.h"
-
 
 /**
  * @brief Evaluates the transformation.

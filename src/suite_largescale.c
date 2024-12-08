@@ -6,7 +6,6 @@
 #include "coco.h"
 
 #include "f_attractive_sector.h"
-#include "f_bent_cigar.h"
 #include "f_bent_cigar_generalized.h"
 #include "f_bueche_rastrigin.h"
 #include "f_different_powers.h"
@@ -26,6 +25,7 @@
 #include "f_step_ellipsoid.h"
 #include "f_weierstrass.h"
 #include "f_katsuura.h"
+#include <stddef.h>
 
 coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,

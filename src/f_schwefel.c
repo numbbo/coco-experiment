@@ -9,9 +9,9 @@
 
 #include "coco.h"
 #include "coco_problem.h"
+#include "coco_utilities.h"
 #include "suite_bbob_legacy_code.h"
 #include "transform_obj_shift.h"
-#include "transform_vars_affine.h"
 #include "transform_vars_conditioning.h"
 #include "transform_vars_scale.h"
 #include "transform_vars_shift.h"

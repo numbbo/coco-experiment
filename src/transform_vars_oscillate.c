@@ -7,10 +7,14 @@
  */
 #include "transform_vars_oscillate.h"
 
+#include <stddef.h>
 #include <math.h>
 #include <assert.h>
 
 #include "brentq.h"
+#include "coco.h"
+#include "coco_utilities.h"
+#include "coco_problem.h"
 
 /**
  * @brief Univariate oscillating non-linear transformation.

@@ -9,7 +9,7 @@
 #include <math.h>
 
 #include "coco.h"
-#include <stdio.h>
+#include <stdint.h>
 
 #define COCO_NORMAL_POLAR /* Use polar transformation method */
 

@@ -11,12 +11,18 @@
  */
 #include "suite_biobj_utilities.h"
 
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
+#include "coco.h"
+#include "coco_internal.h"
 #include "coco_platform.h"
+#include "coco_utilities.h"
+#include "coco_problem.h"
+#include "coco_string.h"
 #include "mo_utilities.h"
 #include "suite_bbob.h"
 #include "suite_biobj_best_values_hyp.h"

@@ -8,8 +8,10 @@
 #include "coco_archive.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 #include "coco.h"
+#include "coco_string.h"
 #include "coco_utilities.h"
 #include "mo_utilities.h"
 #include "mo_avl_tree.h"

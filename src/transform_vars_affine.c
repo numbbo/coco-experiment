@@ -18,6 +18,7 @@
 #include "coco_problem.h"
 
 #include <assert.h>
+#include <stddef.h>
 /**
  * @brief Data type for transform_vars_affine.
  */

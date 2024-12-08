@@ -5,9 +5,13 @@
 
 #include "coco_platform.h"
 
+#include <dirent.h>
+#include <math.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <assert.h>
 #include <ctype.h>

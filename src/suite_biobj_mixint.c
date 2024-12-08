@@ -7,8 +7,11 @@
 #include "suite_biobj_mixint.h"
 
 #include <assert.h>
+#include <stddef.h>
 
-#include "mo_utilities.h"
+#include "coco.h"
+#include "coco_internal.h"
+#include "coco_problem.h"
 #include "suite_biobj_utilities.h"
 #include "suite_largescale.h"
 #include "transform_vars_discretize.h"

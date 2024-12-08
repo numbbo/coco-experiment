@@ -7,6 +7,7 @@
  */
 #include "transform_vars_asymmetric.h"
 
+#include <stddef.h>
 #include <math.h>
 #include <assert.h>
 

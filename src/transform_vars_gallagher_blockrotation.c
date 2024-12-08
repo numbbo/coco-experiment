@@ -7,12 +7,12 @@
 #include "transform_vars_gallagher_blockrotation.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 #include "coco.h"
 #include "coco_problem.h"
+#include "coco_utilities.h"
 #include "transform_vars_blockrotation_helpers.h"
-
-
 
 /**
  * @brief Frees the data object.

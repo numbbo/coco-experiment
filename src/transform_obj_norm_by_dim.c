@@ -7,6 +7,7 @@
 #include "transform_obj_norm_by_dim.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 #include "coco.h"
 #include "coco_problem.h"

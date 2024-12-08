@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "coco.h"
+#include "coco_problem.h"
 #include "coco_utilities.h"
 #include "transform_vars_permutation_helpers.h"
 

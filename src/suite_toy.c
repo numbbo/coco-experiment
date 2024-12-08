@@ -4,13 +4,14 @@
  * dimensions.
  */
 
-#include "coco_problem.h"
+#include "coco.h"
 #include "f_bueche_rastrigin.h"
 #include "f_ellipsoid.h"
 #include "f_linear_slope.h"
 #include "f_rastrigin.h"
 #include "f_rosenbrock.h"
 #include "f_sphere.h"
+#include <stddef.h>
 
 coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,

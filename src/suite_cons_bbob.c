@@ -9,6 +9,8 @@
 #include <string.h>
 
 #include "coco.h"
+#include "suite_bbob_legacy_code.h"
+#include "coco_problem.h"
 #include "suite_cons_bbob_problems.h"
 #include "transform_obj_scale.h"
 

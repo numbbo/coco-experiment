@@ -5,8 +5,11 @@
 #include "observer_toy.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
+#include "coco.h"
+#include "coco_internal.h"
 #include "logger_toy.h"
 #include "coco_utilities.h"
 #include "coco_platform.h"

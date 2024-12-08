@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "coco.h"
+#include "coco_observer.h"
 #include "coco_utilities.h"
 #include "coco_problem.h"
 #include "coco_platform.h"

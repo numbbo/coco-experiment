@@ -12,6 +12,8 @@
 
 #include "coco.h"
 #include "coco_problem.h"
+#include "coco_utilities.h"
+#include "coco_string.h"
 #include "transform_vars_blockrotation_helpers.h"
 #include "transform_vars_permutation_helpers.h" /* for coco_duplicate_size_t_vector */
 

@@ -6,8 +6,13 @@
 #include "transform_vars_composed.h"
 
 #include "brentq.h"
+#include "coco.h"
+#include "coco_problem.h"
+#include "coco_utilities.h"
 #include "transform_vars_asymmetric.h"
 #include "transform_vars_oscillate.h"
+#include <stddef.h>
+#include <math.h>
 
 /**
  * @brief Inverse of composed non-linear transformation tcomp_uv obtained with brentq.

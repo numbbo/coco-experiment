@@ -22,8 +22,12 @@
 #include "suite_biobj_ext.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 
+#include "coco.h"
+#include "coco_utilities.h"
+#include "coco_problem.h"
 #include "mo_utilities.h"
 #include "suite_bbob.h"
 

@@ -80,11 +80,14 @@
  */
 #include "suite_cons_bbob_problems.h"
 
+#include <stddef.h>
 #include <math.h>
 #include <assert.h>
 
 #include "c_linear.h"
-#include "coco_random.h"
+#include "coco.h"
+#include "coco_problem.h"
+#include "coco_string.h"
 #include "coco_utilities.h"
 #include "f_bent_cigar.h"
 #include "f_different_powers.h"
@@ -93,6 +96,7 @@
 #include "f_linear_slope.h"
 #include "f_rastrigin.h"
 #include "f_sphere.h"
+#include "suite_bbob_legacy_code.h"
 #include "transform_vars_asymmetric.h"
 #include "transform_vars_composed.h"
 #include "transform_vars_oscillate.h"

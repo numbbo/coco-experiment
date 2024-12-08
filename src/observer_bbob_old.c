@@ -4,7 +4,8 @@
  */
 
 #include "coco.h"
-#include "coco_utilities.h"
+#include "coco_internal.h"
+#include <stddef.h>
 
 coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t *problem);
 void logger_bbob_old_free(void *logger);

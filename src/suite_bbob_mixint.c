@@ -8,7 +8,11 @@
 #include "suite_bbob_mixint.h"
 
 #include <assert.h>
+#include <stddef.h>
 
+#include "coco.h"
+#include "coco_internal.h"
+#include "coco_problem.h"
 #include "suite_bbob.h"
 #include "suite_largescale.h"
 #include "transform_vars_discretize.h"

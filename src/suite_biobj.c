@@ -22,7 +22,7 @@
 
 #include <string.h>
 
-#include "mo_utilities.h"
+#include "coco.h"
 #include "suite_biobj_utilities.h"
 #include "suite_bbob.h"
 

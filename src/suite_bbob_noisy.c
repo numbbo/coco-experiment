@@ -3,6 +3,7 @@
  * @brief Implementation of the bbob suite containing 24 noiseless single-objective functions in 6
  * dimensions.
  */
+#include "coco.h"
 #include "transform_obj_gaussian_noise.h"
 #include "transform_obj_uniform_noise.h"
 #include "transform_obj_cauchy_noise.h"
@@ -15,6 +16,7 @@
 #include "f_schaffers.h"
 #include "f_sphere.h"
 #include "f_step_ellipsoid.h"
+#include <stddef.h>
 
 coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,

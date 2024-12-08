@@ -9,6 +9,7 @@
 
 #include "coco.h"
 #include "coco_problem.h"
+#include "coco_string.h"
 #include "coco_utilities.h"
 #include "suite_bbob_legacy_code.h"
 #include "transform_obj_norm_by_dim.h"
@@ -16,9 +17,11 @@
 #include "transform_vars_affine.h"
 #include "transform_vars_asymmetric.h"
 #include "transform_vars_blockrotation.h"
+#include "transform_vars_blockrotation_helpers.h"
 #include "transform_vars_conditioning.h"
 #include "transform_vars_oscillate.h"
 #include "transform_vars_permutation.h"
+#include "transform_vars_permutation_helpers.h"
 #include "transform_vars_shift.h"
 
 /**

@@ -4,9 +4,11 @@
  */
 
 #include <assert.h>
+#include <stddef.h>
 
 #include "coco.h"
 #include "coco_problem.h"
+#include "coco_utilities.h"
 
 /**
  * @brief Evaluates the transformed objective function.

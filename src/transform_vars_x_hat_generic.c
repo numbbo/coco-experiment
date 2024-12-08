@@ -9,7 +9,8 @@
 #include <assert.h>
 
 #include "coco.h"
-#include "suite_bbob_legacy_code.h"
+#include "coco_internal.h"
+#include "coco_problem.h"
 
 /**
  * @brief Data type for transform_vars_x_hat_generic.

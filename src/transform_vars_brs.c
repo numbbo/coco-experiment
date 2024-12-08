@@ -8,6 +8,7 @@
 
 #include "coco.h"
 #include "coco_problem.h"
+#include "coco_utilities.h"
 
 /**
  * @brief Data type for transform_vars_brs.

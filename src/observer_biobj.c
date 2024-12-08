@@ -6,9 +6,11 @@
 
 #include <string.h>
 
+#include "coco.h"
+#include "coco_internal.h"
 #include "coco_platform.h"
+#include "coco_problem.h"
 #include "coco_utilities.h"
-#include "mo_utilities.h"
 
 coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *problem);
 void logger_biobj_free(void *logger);

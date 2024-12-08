@@ -39,10 +39,14 @@
  */
 #include "logger_biobj.h"
 
+#include <float.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
+#include "coco_observer.h"
+#include "coco.h"
+#include "coco_problem.h"
 #include "coco_utilities.h"
 #include "coco_suite.h"
 #include "coco_platform.h"

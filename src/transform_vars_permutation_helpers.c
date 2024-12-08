@@ -10,7 +10,6 @@
 #include <stdlib.h>
 
 #include "coco.h"
-#include "coco_random.h"
 #include "coco_utilities.h"
 #include "suite_bbob_legacy_code.h" /*tmp*/
 

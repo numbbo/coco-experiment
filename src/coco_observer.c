@@ -10,6 +10,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "coco.h"
+#include "coco_internal.h"
+#include "coco_problem.h"
 #include "coco_string.h"
 #include "coco_utilities.h"
 #include "coco_platform.h"
@@ -423,12 +426,6 @@ void coco_observer_free(coco_observer_t *observer) {
     observer = NULL;
   }
 }
-
-#include "logger_bbob.h"
-#include "logger_bbob_old.h"
-#include "logger_biobj.h"
-#include "logger_rw.h"
-#include "logger_toy.h"
 
 /**
  * Currently, four observers are supported:

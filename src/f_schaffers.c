@@ -9,16 +9,20 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "coco_utilities.h"
+#include "coco.h"
+#include "coco_problem.h"
+#include "coco_string.h"
 #include "suite_bbob_legacy_code.h"
-#include "transform_obj_norm_by_dim.h"
-#include "transform_obj_norm_by_dim.h"
 #include "transform_obj_penalize.h"
 #include "transform_obj_shift.h"
 #include "transform_vars_affine.h"
 #include "transform_vars_asymmetric.h"
 #include "transform_vars_blockrotation.h"
+#include "transform_vars_blockrotation_helpers.h"
 #include "transform_vars_conditioning.h"
 #include "transform_vars_permutation.h"
+#include "transform_vars_permutation_helpers.h"
 #include "transform_vars_shift.h"
 
 /**

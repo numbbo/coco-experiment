@@ -4,11 +4,11 @@
  */
 #include "mo_utilities.h"
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <math.h>
 #include <assert.h>
 
 #include "coco.h"
+#include "coco_utilities.h"
 
 /**
  * @brief Precision used when comparing multi-objective solutions.

@@ -5,9 +5,6 @@
  */
 
 #include "coco.h"
-#include "coco_internal.h"
-#include "coco_random.h"
-#include "coco_problem.h"
 #include "suite_bbob_legacy_code.h"
 
 /***********************************************************************************************************/

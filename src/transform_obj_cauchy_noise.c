@@ -9,6 +9,8 @@
 #include "coco_problem.h"
 
 #include "suite_bbob_noisy_utilities.h"
+#include <math.h>
+#include <stddef.h>
 
 /**
  @brief Data type for transform_obj_cauchy_noise

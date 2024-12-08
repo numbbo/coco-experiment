@@ -8,7 +8,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "coco_random.h" /*tmp*/
+#include "coco.h"
 #include "coco_utilities.h"
 #include "suite_bbob_legacy_code.h" /*tmp*/
 

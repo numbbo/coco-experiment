@@ -4,10 +4,13 @@
  */
 
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 
 #include "coco.h"
 #include "coco_problem.h"
+#include "coco_utilities.h"
+#include "coco_string.h"
 #include "suite_bbob_legacy_code.h"
 #include "transform_obj_shift.h"
 #include "transform_vars_affine.h"

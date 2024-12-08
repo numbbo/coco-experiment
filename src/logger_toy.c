@@ -8,9 +8,12 @@
 #include "logger_toy.h"
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
 
-#include "coco_utilities.h"
-#include "coco_string.h"
+#include "coco.h"
+#include "coco_problem.h"
+#include "coco_observer.h"
 #include "observer_toy.h"
 
 /**

@@ -31,6 +31,7 @@
 #include "f_weierstrass.h"
 
 #include "transform_vars_enforce_box.h"
+#include <stddef.h>
 
 coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
                                          const size_t number_of_dimensions, const size_t *dimensions,

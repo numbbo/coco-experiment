@@ -5,10 +5,13 @@
 #include "coco_problem.h"
 
 #include <float.h>
+#include <math.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdarg.h>
 
+#include "coco.h"
+#include "coco_internal.h"
 #include "coco_string.h"
 #include "coco_utilities.h"
 

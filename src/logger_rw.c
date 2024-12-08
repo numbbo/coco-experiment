@@ -12,11 +12,13 @@
  */
 #include "logger_rw.h"
 
+#include <float.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <time.h>
 
+#include "coco.h"
 #include "coco_utilities.h"
 #include "coco_problem.h"
 #include "coco_string.h"

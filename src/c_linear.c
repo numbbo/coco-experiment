@@ -5,6 +5,7 @@
  */
 #include "c_linear.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
