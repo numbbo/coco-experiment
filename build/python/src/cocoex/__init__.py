@@ -15,6 +15,7 @@ Help on class Suite...
 A more complete example use case can be found in the `example_experiment.py`
 file.
 """
+from . import noiser # noqa: F401
 from . import solvers # noqa: F401
 from . import utilities # noqa: F401
 from . import exceptions # noqa: F401
@@ -38,7 +39,7 @@ __all__ = [
     'ExperimentRepeater', 
     'BatchScheduler',
     'default_observers',
-    'BareProblem'
+    'BareProblem',
 ]
 
 

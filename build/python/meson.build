@@ -65,6 +65,7 @@ python_sources = [
   'src/cocoex/__init__.py',
   'src/cocoex/_version.py',
   'src/cocoex/exceptions.py',
+  'src/cocoex/noiser.py',
   'src/cocoex/solvers.py',
   'src/cocoex/utilities.py',
 ]
