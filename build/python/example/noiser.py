@@ -57,10 +57,17 @@ class NoisifyProblem:
             problem = noiser.NoisifyProblem(problem)
             fmin(problem, problem.initial_solution, disp=False)
 
+    Details: the random number generators can be passed as argument and
+    need to obey the interface of `noiser.rand`. ``rands[0]`` is assumed to
+    be uniform in [0,1], ``rands[1]`` is used to sample the Gaussian noise,
+    ``abs(rands[2])`` is used to sample added noise and ``abs(rands[-1])``
+    is used to sample subtracted noise.
+
     See https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
 
     """
-    def __init__(self, problem, p_add=0.2, p_subtract=0.0, p_epsilon=0, epsilon=1e-4, rands=[rand, randn, randc]):
+    def __init__(self, problem, p_add=0.2, p_subtract=0.0, p_epsilon=0, epsilon=1e-4,
+                 rands=(rand, randn, randc)):
         self._params = {k: v for k, v in locals().items() if k != 'self'}
         self._problem = problem
         if sum(self._params[p] for p in ('p_subtract', 'p_add')) > 1:
@@ -117,13 +124,25 @@ class NoisifyProblem:
         n = 0  # no noise by default
         if self._params['p_epsilon'] > 0 and self.rand1(x, 3) < self._params['p_epsilon']:
             n = self._params['epsilon'] * self.rand2(x)
+        assert np.isfinite(n)
+        if all(self._params[p] <= 0 for p in ('p_add', 'p_subtract')):
+            return n
         r = self.rand1(x, 2)  # a uniform random number
-        for s, p in [(-2, 'p_subtract'), (2, 'p_add')]:
-            if r < self._params[p]:
-                assert self._params[p] > 0, (r, self._params[p])
-                return n + s * 3.141592653589793 / 4 * self.rand3(x, 2)  # self.randn(x, 2) / self.randn(x, 12)
-                return n + s * r / self._params[p] / self.rand1(x)
-            r = 1 - r
+        assert 0 <= r <= 1, r
+        i = 4
+        for s, p, rand in [(1, 'p_add', 2),
+                           (-1, 'p_subtract', -1)]:
+            p = self._params[p]
+            if r < p:
+                assert p > 0, (r, p)
+                nn = self._params['rands'][rand](x, i)
+                if nn < 0:
+                    nn *= -1
+                return n + s * 3.141592653589793 / 2 * nn
+                        # self.randn(x, 2) / self.randn(x, 12)
+                # was: return n + s * 2 * r / self._params[p] / self.rand1(x)
+            r = 1 - r  # prevent sampling another r
+            i += 1
         assert np.isfinite(n)
         return n
 
