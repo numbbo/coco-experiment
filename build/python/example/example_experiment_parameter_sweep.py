@@ -42,7 +42,7 @@ suite_filter = "dimensions: 2,3,5,10,20 instance_indices:1-5"
 fmin = scipy.optimize.fmin  # optimizer to be benchmarked
 fmin = scipy.optimize.fmin_slsqp
 # fmin = cocoex.solvers.random_search
-fmin = cma.fmin2
+# fmin = cma.fmin2
 # fmin = cma.fmin_lq_surr2
 
 ### reading in parameters
@@ -63,7 +63,7 @@ suite = cocoex.Suite(suite_name, "", suite_filter)  # see https://numbbo.github.
 for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
     print(added_noise)
     output_folder = '{}{}_of_{}_{}D_on_{}{}'.format(
-            float(added_noise),
+            float(added_noise),  # folder name must start with a number for cocopp
             fmin.__name__, fmin.__module__ or '', int(budget_multiplier+0.499), suite_name,
             ('_batch{:0' + str(len(str(number_of_batches-1))) + '}of{}').format(
                 batch_to_execute, number_of_batches) if number_of_batches > 1 else '')
@@ -156,7 +156,9 @@ else:
 print("    Data written into {}".format(observer.result_folder))
 
 ### post-process data
-if 11 < 3 and number_of_batches == 1:  # TODO: the result folder is only the last noise level
-    print("    Postprocess with 'python cocopp {} [...]'".format(observer.result_folder))
+if number_of_batches == 1:
+    print("install postprocessing like: pip install git+https://github.com/numbbo/coco-postprocess@parameter-sweep")
+    print("    Postprocessing with 'python cocopp exdata/0*'")
+    import glob
     import cocopp  # post-processing module
-    dsl = cocopp.main(observer.result_folder)  # re-run folders look like "...-001" etc
+    dsl = cocopp.main('--parameter-sweep=on ' + ' '.join(glob.glob('exdata/0*')))  # re-run folders look like "...-001" etc
