@@ -31,6 +31,7 @@ import mkl_bugfix  # set *_NUM_THREADS=1, requires mkl_bugfix.py file from build
 import collections
 import time
 import cocoex  # experimentation module
+import noiser
 
 scipy = cocoex.utilities.forgiving_import('scipy')  # solvers to benchmark
 cma = cocoex.utilities.forgiving_import('cma')  # solvers to benchmark
@@ -83,7 +84,7 @@ for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
             if not batcher.is_in_batch(problem) or repeater.done(problem):
                 continue  # skip problem and bypass repeater.track
             problem.observe_with(observer)  # generate data for cocopp
-            problem = cocoex.NoisifyProblem(problem, p_add=added_noise)
+            problem = noiser.NoisifyProblem(problem, p_add=added_noise)
             time1 = time.time()
             problem(problem.dimension * [0])  # for better comparability
 
