@@ -90,7 +90,7 @@ python test_suites.py
 ```
 and 
 ```sh
-python test_logger.py
+python test_loggers.py
 ```
 
 ### Integration tests
