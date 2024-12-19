@@ -22,7 +22,7 @@ from .interface import Observer as _Observer
 from .interface import Problem as _Problem
 from .interface import Suite as _Suite 
 from .interface import known_suite_names
-# from .noiser import NoisifyProblem
+# from .noiser import Noisifier
 from .utilities import ExperimentRepeater
 from .utilities import BatchScheduler
 from .bare_problem import BareProblem
@@ -40,7 +40,7 @@ __all__ = [
     'BatchScheduler',
     'default_observers',
     'BareProblem',
-    'NoisifyProblem',
+    # 'Noisifier',
 ]
 
 

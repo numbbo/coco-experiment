@@ -21,7 +21,7 @@ def randc(x, i=0):
     """
     return _cauchy(1, _seed(x, i))[0]
 
-class NoisifyProblem:
+class Noisifier:
     """noise wrapper for an observed problem.
 
     The noise is applied with different probabilities for
@@ -54,8 +54,11 @@ class NoisifyProblem:
         ### go
         for problem in suite:  # this loop may take several minutes or more
             problem.observe_with(observer)  # generates the data for cocopp
-            problem = noiser.NoisifyProblem(problem)
+            problem = noiser.Noisifier().noisify(problem)  # a Noisifier
             fmin(problem, problem.initial_solution, disp=False)
+
+    The `problem` is now a `Noisifier` but it still abides by the interface
+    of the original problem.
 
     Details: the random number generators can be passed as argument and
     need to obey the interface of `noiser.rand`. ``rands[0]`` is assumed to
@@ -66,14 +69,19 @@ class NoisifyProblem:
     See https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
 
     """
-    def __init__(self, problem, p_add=0.2, p_subtract=0.0, p_epsilon=0, epsilon=1e-4,
+    def __init__(self, p_add=0.2, p_subtract=0.0, p_epsilon=0, epsilon=1e-4,
                  rands=(rand, randn, randc)):
         self._params = {k: v for k, v in locals().items() if k != 'self'}
-        self._problem = problem
         if sum(self._params[p] for p in ('p_subtract', 'p_add')) > 1:
             warnings.warn("p_subtract={0} + p_add={1} > 1, hence p_add is interpreted"
                           " as ``1-p_subtract``"
                           .format(self._params['p_subtract'], self._params['p_add']))
+
+    def noisify(self, problem):
+        """wrap `problem` with frozen noise"""
+        self._problem = problem
+        return self
+
     @property
     def parameters(self):
         return {k: v for (k, v) in self._params.items() if k.startswith(('p_', 'eps'))}
