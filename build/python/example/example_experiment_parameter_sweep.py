@@ -61,13 +61,19 @@ if __name__ == '__main__':
 suite = cocoex.Suite(suite_name, "", suite_filter)  # see https://numbbo.github.io/coco-doc/C/#suite-parameters
 
 for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
+    noisifier = noiser.Noisifier(p_add=added_noise)
     print('noise parameter = {0}'.format(added_noise))
     output_folder = '{}{}_of_{}_{}D_on_{}{}'.format(
             float(added_noise),  # folder name must start with a number for cocopp
             fmin.__name__, fmin.__module__ or '', int(budget_multiplier+0.499), suite_name,
             ('_batch{:0' + str(len(str(number_of_batches-1))) + '}of{}').format(
                 batch_to_execute, number_of_batches) if number_of_batches > 1 else '')
-    observer = cocoex.Observer(suite_name, "result_folder: " + output_folder)  # see https://numbbo.github.io/coco-doc/C/#observer-parameters
+    observer = cocoex.Observer(suite_name,  # see https://numbbo.github.io/coco-doc/C/#observer-parameters
+        'result_folder: ' + output_folder
+        + ' algorithm_name: ' + fmin.__module__ + '.' + fmin.__name__
+        + ' algorithm_info: "{}"'.format(str(noisifier.parameters).replace("'", ''))
+        # + ' settings: "{}"'.format(str(noisifier.parameters).replace("'", ''))
+        )
     repeater = cocoex.ExperimentRepeater(budget_multiplier,  # x dimension
                                          min_successes=0.75 * int(suite_filter.split('-')[1])
                                             if "indices:1-" in suite_filter else 11)
@@ -84,7 +90,7 @@ for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
             if not batcher.is_in_batch(problem) or repeater.done(problem):
                 continue  # skip problem and bypass repeater.track
             problem.observe_with(observer)  # generate data for cocopp
-            problem = noiser.NoisifyProblem(problem, p_add=added_noise)
+            problem = noisifier.noisify(problem)
             time1 = time.time()
             problem(problem.dimension * [0])  # for better comparability
 
