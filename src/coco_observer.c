@@ -428,7 +428,7 @@ static void coco_observer_evaluations_free(coco_observer_evaluations_t *evaluati
  * @brief Allocates memory for a coco_observer_t instance.
  */
 static coco_observer_t *coco_observer_allocate(
-    const char *result_folder, const char *observer_name, const char *algorithm_name, const char *algorithm_info,
+    const char *result_folder, const char *observer_name, const char *algorithm_name, const char *algorithm_info, const char *settings,
     const size_t number_target_triggers, const double log_target_precision, const double lin_target_precision,
     const size_t number_evaluation_triggers, const char *base_evaluation_triggers, const int precision_x,
     const int precision_f, const int precision_g, const int log_discrete_as_int) {
@@ -440,6 +440,7 @@ static coco_observer_t *coco_observer_allocate(
   observer->observer_name = coco_strdup(observer_name);
   observer->algorithm_name = coco_strdup(algorithm_name);
   observer->algorithm_info = coco_strdup(algorithm_info);
+  observer->settings = coco_strdup(settings);
   observer->number_target_triggers = number_target_triggers;
   observer->log_target_precision = log_target_precision;
   observer->lin_target_precision = lin_target_precision;
@@ -468,6 +469,8 @@ void coco_observer_free(coco_observer_t *observer) {
       coco_free_memory(observer->result_folder);
     if (observer->algorithm_name != NULL)
       coco_free_memory(observer->algorithm_name);
+    if (observer->settings != NULL)
+      coco_free_memory(observer->settings);
     if (observer->algorithm_info != NULL)
       coco_free_memory(observer->algorithm_info);
 
@@ -530,6 +533,8 @@ void coco_observer_free(coco_observer_t *observer) {
  * - "algorithm_info: STRING" stores the description of the algorithm. If it
  * contains spaces, it must be surrounded by double quotes. The default value is
  * "" (no description).
+ * - "settings: STRING" stores a string with settings to be used by the post-
+ * processing. The default value is "" (no settings).
  * - "number_target_triggers: VALUE" defines the number of targets between each
  * 10**i and 10**(i+1) (equally spaced in the logarithmic scale) that trigger
  * logging. The default value is 10.
@@ -565,7 +570,7 @@ void coco_observer_free(coco_observer_t *observer) {
 coco_observer_t *coco_observer(const char *observer_name, const char *observer_options) {
 
   coco_observer_t *observer;
-  char *path, *outer_folder, *result_folder, *algorithm_name, *algorithm_info;
+  char *path, *outer_folder, *result_folder, *algorithm_name, *algorithm_info, *settings;
   int precision_x, precision_f, precision_g, log_discrete_as_int;
 
   size_t number_target_triggers;
@@ -582,6 +587,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
                               "result_folder",
                               "algorithm_name",
                               "algorithm_info",
+                              "settings",
                               "number_target_triggers",
                               "log_target_precision",
                               "lin_target_precision",
@@ -605,6 +611,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
   result_folder = coco_allocate_string(COCO_PATH_MAX + 1);
   algorithm_name = coco_allocate_string(COCO_PATH_MAX + 1);
   algorithm_info = coco_allocate_string(5 * COCO_PATH_MAX);
+  settings = coco_allocate_string(5 * COCO_PATH_MAX);
 
   if (coco_options_read_string(observer_options, "outer_folder", outer_folder) == 0) {
     strcpy(outer_folder, "exdata");
@@ -628,6 +635,10 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
 
   if (coco_options_read_string(observer_options, "algorithm_info", algorithm_info) == 0) {
     strcpy(algorithm_info, "");
+  }
+
+  if (coco_options_read_string(observer_options, "settings", settings) == 0) {
+    strcpy(settings, "");
   }
 
   number_target_triggers = 100;
@@ -716,13 +727,14 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
   }
 
   observer =
-      coco_observer_allocate(path, observer_name, algorithm_name, algorithm_info, number_target_triggers,
+      coco_observer_allocate(path, observer_name, algorithm_name, algorithm_info, settings, number_target_triggers,
                              log_target_precision, lin_target_precision, number_evaluation_triggers,
                              base_evaluation_triggers, precision_x, precision_f, precision_g, log_discrete_as_int);
 
   coco_free_memory(path);
   coco_free_memory(algorithm_name);
   coco_free_memory(algorithm_info);
+  coco_free_memory(settings);
   coco_free_memory(base_evaluation_triggers);
 
   /* Here each observer must have an entry - a call to a specific function that
