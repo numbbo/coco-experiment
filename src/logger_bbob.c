@@ -238,13 +238,15 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *f
   char file_path[COCO_PATH_MAX + 2] = {0};
   FILE **info_file;
   FILE *tmp_file;
+  coco_observer_t *observer;
   observer_bbob_data_t *observer_data;
 
   coco_debug("Started logger_bbob_open_info_file()");
 
   assert(logger != NULL);
   assert(logger->observer != NULL);
-  observer_data = ((observer_bbob_data_t *)((coco_observer_t *)logger->observer)->data);
+  observer = (coco_observer_t *)(logger->observer);
+  observer_data = (observer_bbob_data_t *)(observer->data);
   assert(observer_data != NULL);
 
   strncpy(data_file_path, data_file_name, COCO_PATH_MAX - strlen(data_file_path) - 1);
@@ -269,13 +271,14 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *f
     if (start_new_line) {
       if (add_empty_line)
         fprintf(*info_file, "\n");
+
       fprintf(*info_file,
               "suite = '%s', funcId = %lu, DIM = %lu, Precision = %.3e, algId = '%s', coco_version = '%s', logger = "
               "'%s', data_format = '%s'\n",
               suite_name, (unsigned long)logger->function, (unsigned long)logger->number_of_variables, pow(10, -8),
-              logger->observer->algorithm_name, coco_version, ((coco_observer_t *)logger->observer)->observer_name,
+              observer->algorithm_name, coco_version, observer->observer_name,
               logger_bbob_data_format);
-      fprintf(*info_file, "%% %s\n", logger->observer->algorithm_info);
+      fprintf(*info_file, "%% %s\n", observer->algorithm_info);
       /* data_file_path does not have the extension */
       fprintf(*info_file, "%s.dat", data_file_path);
     }
