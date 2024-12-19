@@ -18,7 +18,7 @@ def regression_test_match_words(old_word, new_word, accuracy=1e-6):
 
     If they don't, checks whether they match as floats with the given accuracy
     """
-    exceptions = {'bbob-old': 'bbob'}
+    exceptions = {'bbob-old': 'bbob', 'bbob_old': 'bbob'}
 
     old_word = old_word.strip('\'')
     new_word = new_word.strip('\'')
