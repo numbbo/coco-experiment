@@ -275,7 +275,7 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *f
               suite_name, (unsigned long)logger->function, (unsigned long)logger->number_of_variables, pow(10, -8),
               logger->observer->algorithm_name, coco_version, ((coco_observer_t *)logger->observer)->observer_name,
               logger_bbob_data_format);
-      fprintf(*info_file, "%%\n");
+      fprintf(*info_file, "%% %s\n", logger->observer->algorithm_info);
       /* data_file_path does not have the extension */
       fprintf(*info_file, "%s.dat", data_file_path);
     }
