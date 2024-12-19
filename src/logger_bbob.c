@@ -273,11 +273,12 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *f
         fprintf(*info_file, "\n");
 
       fprintf(*info_file,
-              "suite = '%s', funcId = %lu, DIM = %lu, Precision = %.3e, algId = '%s', coco_version = '%s', logger = "
-              "'%s', data_format = '%s'\n",
+              "suite = '%s', funcId = %lu, DIM = %lu, Precision = %.3e, "
+              "algId = '%s', coco_version = '%s', logger = '%s', "
+              "data_format = '%s', settings = '%s'\n",
               suite_name, (unsigned long)logger->function, (unsigned long)logger->number_of_variables, pow(10, -8),
               observer->algorithm_name, coco_version, observer->observer_name,
-              logger_bbob_data_format);
+              logger_bbob_data_format, observer->settings);
       fprintf(*info_file, "%% %s\n", observer->algorithm_info);
       /* data_file_path does not have the extension */
       fprintf(*info_file, "%s.dat", data_file_path);

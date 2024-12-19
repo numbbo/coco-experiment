@@ -201,6 +201,7 @@ struct coco_observer_s {
   char *result_folder;  /**< @brief Name of the result folder. */
   char *algorithm_name; /**< @brief Name of the algorithm to be used in logger output. */
   char *algorithm_info; /**< @brief Additional information on the algorithm to be used in logger output. */
+  char *settings;       /**< @brief Additional settings to be used in logger output. */
   size_t number_target_triggers;
   /**< @brief The number of targets between each 10**i and 10**(i+1). */
   double log_target_precision; /**< @brief The minimal precision used for logarithmic targets. */
