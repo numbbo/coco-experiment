@@ -31,7 +31,6 @@ import mkl_bugfix  # set *_NUM_THREADS=1, requires mkl_bugfix.py file from build
 import collections
 import time
 import cocoex  # experimentation module
-import noiser
 
 scipy = cocoex.utilities.forgiving_import('scipy')  # solvers to benchmark
 cma = cocoex.utilities.forgiving_import('cma')  # solvers to benchmark
@@ -61,7 +60,7 @@ if __name__ == '__main__':
 suite = cocoex.Suite(suite_name, "", suite_filter)  # see https://numbbo.github.io/coco-doc/C/#suite-parameters
 
 for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
-    noisifier = noiser.Noisifier(p_add=added_noise)  # default is 0.2
+    noisifier = cocoex.noiser.Noisifier(p_add=added_noise)  # default is 0.2
     print('noise parameter = {0}'.format(added_noise))
     output_folder = '{}{}_of_{}_{}D_on_{}{}'.format(
             float(added_noise),  # folder name must start with a number for cocopp
