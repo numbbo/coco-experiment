@@ -43,7 +43,6 @@ class Noisifier:
     Example::
 
         import cocoex  # experimentation module
-        import noiser  # noise.py needs to be in the Python path
         import scipy  # to define the solver to be benchmarked
 
         ### input
@@ -57,7 +56,7 @@ class Noisifier:
         ### go
         for problem in suite:  # this loop may take several minutes or more
             problem.observe_with(observer)  # generates the data for cocopp
-            problem = noiser.Noisifier().noisify(problem)  # a Noisifier
+            problem = cocoex.noiser.Noisifier().noisify(problem)  # a Noisifier
             fmin(problem, problem.initial_solution, disp=False)
 
     The `problem` is now a `Noisifier` but it still abides by the interface
