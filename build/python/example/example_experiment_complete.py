@@ -61,7 +61,10 @@ output_folder = '{}_of_{}_{}D_on_{}{}'.format(
         fmin.__name__, fmin.__module__ or '', int(budget_multiplier+0.499), suite_name,
         ('_batch{:0' + str(len(str(number_of_batches-1))) + '}of{}').format(
             batch_to_execute, number_of_batches) if number_of_batches > 1 else '')
-observer = cocoex.Observer(suite_name, "result_folder: " + output_folder)  # see https://numbbo.github.io/coco-doc/C/#observer-parameters
+observer = cocoex.Observer(suite_name,
+            # see https://numbbo.github.io/coco-doc/C/#observer-parameters
+            'result_folder: {0}  algorithm_name: {1}'.format(
+                output_folder, fmin.__module__ + '.' + fmin.__name__))
 repeater = cocoex.ExperimentRepeater(budget_multiplier,  # x dimension
                             min_successes=0.75 * int(suite_filter.split('-')[1])
                             if "indices:1-" in suite_filter else 11)
