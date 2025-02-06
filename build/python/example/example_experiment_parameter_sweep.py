@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""A short yet complete example experiment script with restarts and batching.
+"""An example experiment script with restarts and batching sweeping over a noise parameter.
 
 Arguments
 ---------
@@ -21,7 +21,7 @@ To apply the code to a different solver/algorithm, `fmin` must be
 re-assigned or re-defined accordingly, and the below code must be edited at
 the two places marked with "### input" around lines 40 and 80.
 
-See also: https://numbbo.it/getting-started/experiment-python.html
+See also: https://coco-platform.org/getting-started#experiment
 """
 
 __author__ = "Nikolaus Hansen"
@@ -136,7 +136,7 @@ for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
             timings[problem.dimension].append((time.time() - time1) / problem.evaluations)
             repeater.track(problem)  # track evaluations and final_target_hit
             minimal_print(problem)  # show progress
-            final_conditions[problem.id_triple].append(repr(final_condition))
+            final_conditions[problem.id_triple].append(repr([problem.evaluations, final_condition]))
             with open(observer.result_folder + '/final_conditions.pydict', 'wt') as file_:
                 file_.write(str(dict(final_conditions)).replace('],', '],\n'))
 

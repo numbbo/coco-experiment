@@ -20,7 +20,7 @@ like::
                                     else None)
         return res[0]
 
-See also: https://numbbo.it/getting-started/experiment-python.html
+See also: https://coco-platform.org/getting-started#experiment
 """
 
 __author__ = "Nikolaus Hansen"
