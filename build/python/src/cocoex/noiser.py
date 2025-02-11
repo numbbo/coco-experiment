@@ -33,12 +33,12 @@ class Noisifier:
     - adding a value (leading to bad outliers)
     - adding a small `epsilon` normally distributed noise
 
-    The noise is frozen in x and y: whether it's applied and its
-    sampled value depend deterministically on the input x and i.
+    The noise is frozen in x and y: whether the noise is applied to y and
+    its value depend both _deterministically_ on the input x.
 
-    The outlier noise distribution is a Cauchy distribution multiplied by
-    pi/2, which generates values larger than k with a probability awfully
-    close to k**-1 when k >= 10.
+    The outlier noise distribution is a half Cauchy distribution multiplied
+    by pi/2, which generates values larger than k with a probability
+    awfully close to 1/k when k >= 10.
 
     Example::
 
@@ -63,23 +63,41 @@ class Noisifier:
     of the original problem.
 
     Details: the random number generators can be passed as argument and
-    need to obey the interface of `noiser.rand`. ``rands[0]`` is assumed to
-    be uniform in [0,1], ``rands[1]`` is used to sample the Gaussian noise,
-    ``abs(rands[2])`` is used to sample added noise and ``abs(rands[-1])``
-    is used to sample subtracted noise, both of which are assumed to be
-    absolute Cauchy numbers scaled by pi/2 such that P(number > a) equals
-    about 1/a when a >= 5.
+    need to obey the interface of `noiser.rand`. By default, ``rands[0]``
+    is uniform in [0,1] and ``rands[1]`` is Gaussian noise,
+    ``abs(rands[2])`` and ``abs(rands[-1])`` are used to sample added and
+    subtracted noise, respectively. Both are by default the same Cauchy
+    noise generator and the numbers scaled by pi/2 such that P(number > k)
+    equals about 1/k when k >= 5.
 
-    See https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
+    See also https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
 
     """
     def __init__(self, p_add=0.2, p_subtract=0.0, p_epsilon=0, epsilon=1e-4,
                  rands=(rand, randn, randc)):
+        """constructor with 4 optional parameters for the noise model,
+
+        `p_add`: probability for adding a positive heavy tail random value
+        making the solution look worse than it is.
+
+        `p_subtract`: probability for subtracting a positive heavy tail
+        random value making the solution look better than it is.
+
+        `p_epsilon`: probability for adding a Gaussian random value
+
+        `epsilon`: standard deviation of the Gaussian random value
+        """
         self._params = {k: v for k, v in locals().items() if k != 'self'}
         if sum(self._params[p] for p in ('p_subtract', 'p_add')) > 1:
             warnings.warn("p_subtract={0} + p_add={1} > 1, hence p_add is interpreted"
                           " as ``1-p_subtract``"
                           .format(self._params['p_subtract'], self._params['p_add']))
+        if p_add < 0 or p_subtract < 0 or p_epsilon < 0 or epsilon < 0:
+            raise ValueError("parameters cannot be negative but were {0}"
+                             .format(self._params))
+        if p_epsilon > 0 and epsilon == 0:
+            warnings.warn("p_epsilon = {0} > 0 is not effective because epsilon = 0"
+                          .format(p_epsilon))
 
     def noisify(self, problem):
         """wrap `problem` with frozen noise"""
@@ -122,11 +140,14 @@ class Noisifier:
             constraint[i] += self._cnoise([x[i % 2], c])
         return constraint
 
-    def rand1(self, x, fac=1):
+    def rand0(self, x, fac=1):
+        """uniform by default"""
         return self._params['rands'][0](x, fac)
-    def rand2(self, x, fac=1):
+    def rand1(self, x, fac=1):
+        """Gaussian by default"""
         return self._params['rands'][1](x, fac)
-    def rand3(self, x, fac=1):
+    def rand2(self, x, fac=1):
+        """Cauchy by default"""
         return self._params['rands'][2](x, fac)
 
     def _cnoise(self, x):
@@ -135,24 +156,24 @@ class Noisifier:
     def _fnoise(self, x):
         """x-dependent abs Cauchy noise with median pi/2"""
         n = 0  # no noise by default
-        if self._params['p_epsilon'] > 0 and self.rand1(x, 3) < self._params['p_epsilon']:
-            n = self._params['epsilon'] * self.rand2(x)
+        if self._params['p_epsilon'] > 0 and self.rand0(x, 3) < self._params['p_epsilon']:
+            n = self._params['epsilon'] * self.rand1(x)
         assert np.isfinite(n)
         if all(self._params[p] <= 0 for p in ('p_add', 'p_subtract')):
             return n
-        r = self.rand1(x, 2)  # a uniform random number
+        r = self.rand0(x, 2)  # a uniform random number
         assert 0 <= r <= 1, r
         i = 4
-        for s, p, irand in [(1, 'p_add', 2), (-1, 'p_subtract', -1)]:
-            p = self._params[p]
+        for p, fac, irand in [(self._params['p_add'], 1.5707963267948966, 2),
+                              (self._params['p_subtract'], -1.5707963267948966, -1)]:
             if r < p:
                 assert p > 0, (r, p)
                 nn = self._params['rands'][irand](x, i)
                 if nn < 0:
                     nn *= -1
-                return n + s * 3.141592653589793 / 2 * nn
+                return n + fac * nn
                         # self.randn(x, 2) / self.randn(x, 12)
-                # was: return n + s * 2 * r / self._params[p] / self.rand1(x)
+                # was: return n + s * 2 * r / self._params[p] / self.rand0(x)
             r = 1 - r  # prevent sampling another r
             i += 1  # not clear why we need to change i
         assert np.isfinite(n)
