@@ -11,6 +11,7 @@
 
 [![build](https://img.shields.io/github/actions/workflow/status/numbbo/coco-experiment/build.yml?branch=main)][buildaction]
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2594848.svg)][paper]
+[![PyPI Downloads](https://static.pepy.tech/badge/coco-experiment/month)](https://pepy.tech/projects/coco-experiment)
 
 > [!IMPORTANT]
 >
