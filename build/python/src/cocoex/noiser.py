@@ -131,7 +131,12 @@ class Noisifier:
         return getattr(self._problem, name)
 
     def __call__(self, x):
-        return self._fnoise(x) + self._problem(x)
+        fval = self._problem(x)
+        try:  # as quick as hasattr(fval, '__iter__')
+            en = enumerate(fval)  # multiobjective
+        except TypeError:
+            return fval + self._fnoise(x)  # single objective
+        return np.array([f + self._fnoise([x[0] + 1.001 * i, x[1]]) for i, f in en])
 
     def constraint(self, x):
         """return noisy constraint values"""
