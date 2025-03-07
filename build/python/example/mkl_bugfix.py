@@ -14,8 +14,10 @@ def set_num_threads(nt=1, disp=1):
     and https://twitter.com/jeremyphoward/status/1185044752753815552
     """
     import os
-    try: import mkl
-    except ImportError: disp and print("mkl is not installed")
+    try: 
+        import mkl
+    except ImportError:
+        disp and print("mkl is not installed")
     else:
         mkl.set_num_threads(nt)
     nt = str(nt)
