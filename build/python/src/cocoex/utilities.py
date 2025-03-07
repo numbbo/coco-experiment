@@ -647,8 +647,9 @@ class ExperimentRepeater:
     When problem instances are repeated in a single suite, they may be
     *partially* skipped *after* the first full sweep. That is, the
     configuration ``1-5,1-5,1-5`` can also lead to four trials of each
-    instance 1-5, because all instances have been repeated the same number
-    of times.
+    instance 1-5 of some problems when all instances have been repeated the
+    same number of times and have enough successes or the budget is
+    exhaused.
 
     >>> import cocoex  # some not very meaningful testing
     >>> repeater = cocoex.ExperimentRepeater(2)
@@ -658,18 +659,31 @@ class ExperimentRepeater:
     >>> assert len(repeater.evaluations((1, 2))) == 0
 
     """
-    def __init__(self, budget_multiplier, min_successes=None):
-        """``min_successes=11`` is default and provokes at least three
+    min_successes_default = 11
+    max_sweeps_default = 20
+    def __init__(self, budget_multiplier, min_successes=None, max_sweeps=None):
+        """constructor for `ExperimentRepeater`.
 
-        sweeps when the suite has (only) 5 instance and the
-        `budget_multiplier` is large enough such that the algorithm
-        terminates the second sweep before the overall budget is exhausted.
-        This would emulate the 3 x 1-5 instance-setup from BBOB 2009,
-        however the choice of the initial solution still slightly differs.
+        The "timeout" budget is computed as ``budget_multiplier`` times
+        problem dimension.
+
+        ``min_successes=11`` is default and provokes at least three sweeps
+        when the suite has (only) 5 instance and the `budget_multiplier` is
+        large enough such that the algorithm terminates the second sweep
+        before the overall budget is exhausted. This would emulate the 3 x
+        1-5 instance-setup from BBOB 2009, however the choice of the
+        initial solution still slightly differs.
+
+        ``max_sweeps`` is the limit number of repititions for each
+        instance, by default 20. To have a limit is in particular useful
+        when the budget is large but an algorithm terminates very quickly
+        and invariably unsuccessfully.
         """
         self.params = {k: v for k, v in locals().items() if k != 'self'}
-        self.min_successes = 11 if min_successes is None else min_successes
-        self.max_sweeps = 1e4  # should not be necessary
+        self.min_successes = ExperimentRepeater.min_successes_default if (
+                min_successes is None) else min_successes
+        self.max_sweeps = ExperimentRepeater.max_sweeps_default if (
+                max_sweeps is None) else max_sweeps  # useful on F7
         self._dimension_offset = 0
         '''budget = (dimension + offset) * budget_multiplier'''
         self._data = _collections.OrderedDict()
@@ -848,7 +862,7 @@ class ExperimentRepeater:
         it cannot account for problems that have not yet been run once.
 
         Calling ``done()`` increments the sweep counter iff it returns
-        `False`, the default for ``max_sweeps`` is ``1e4``. The attribute
+        `False`, the default for ``max_sweeps`` is ``20``. The attribute
         can be directly reassigned at any time.
 
         See also: `remaining_problems`
@@ -861,11 +875,11 @@ class ExperimentRepeater:
             return True
         if message:  # prints nothing when no data are found
             print(self.message_sweep(), end='')  # indicates "sequence of problems" case
-        self._sweeps += 1  # the sweep number to come
-        done = self._sweeps >= self.max_sweeps or (
+        self._sweeps += 1  # the sweep number to come, needed in remaining_problems()
+        done = self._sweeps > self.max_sweeps or (
                 self._sweeps > 1 and len(self._data) == 0) or (
                 self.n_problem_instances() > 0 and not self.remaining_problems())
-        self._sweeps -= done  # don't increment when done
+        self._sweeps -= done  # revert increment when done is True
         return done
     def remaining_problems(self, suite=None):
         """return `list` of (probably) remaining problem instances to run.
