@@ -70,7 +70,8 @@ class Noisifier:
     noise generator and the numbers scaled by pi/2 such that P(number > k)
     equals about 1/k when k >= 5.
 
-    See also https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
+    See also https://github.com/numbbo/coco-experiment/issues/36 and
+    https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
 
     """
     def __init__(self, p_add=0.2, p_subtract=0.0, p_epsilon=0, epsilon=1e-4,
