@@ -64,6 +64,7 @@ dep_numpy = declare_dependency(include_directories: inc_numpy, compile_args: cfl
 python_sources = [
   'src/cocoex/__init__.py',
   'src/cocoex/_version.py',
+  'src/cocoex/download_example.py',
   'src/cocoex/exceptions.py',
   'src/cocoex/noiser.py',
   'src/cocoex/solvers.py',
