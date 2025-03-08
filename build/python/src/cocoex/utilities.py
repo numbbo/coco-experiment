@@ -742,7 +742,13 @@ class ExperimentRepeater:
             return sum(self.trials(problem))
         return sum(self.all(self.n_trials).values())
     def track(self, problem):
-        """record problem instance evaluations and success (target hit)"""
+        """record problem instance evaluations and success (final target hit).
+
+        Track data to decide (later) whether more experiments or sweeps are
+        needed. `track` requires `problem` to have the attributes
+        ``id_function, dimension, id_instance, evaluations`` and
+        ``final_target_hit``.
+        """
         fun, dim, iinst = self.problem_to_ids(problem)
         if (fun, dim) not in self._data:
             self._data[(fun, dim)] = _collections.defaultdict(list)
