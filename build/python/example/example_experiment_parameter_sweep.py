@@ -74,7 +74,8 @@ for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
                         str(noisifier.parameters).replace("'", '')))
     repeater = cocoex.ExperimentRepeater(budget_multiplier,  # x dimension
                                          min_successes=0.75 * int(suite_filter.split('-')[1])
-                                            if "indices:1-" in suite_filter else 11)
+                                            if "indices:1-" in suite_filter else 11,
+                                         max_sweeps=100)  # possible sweeps over the suite
     batcher = cocoex.BatchScheduler(number_of_batches, batch_to_execute)
     minimal_print = cocoex.utilities.MiniPrint()
     timings = collections.defaultdict(list)  # key is the dimension
@@ -133,7 +134,8 @@ for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
 
             problem(xopt)  # make sure the returned solution is evaluated
 
-            timings[problem.dimension].append((time.time() - time1) / problem.evaluations)
+            if repeater._sweeps == 1:  # time only the first (full) sweep through suite
+                timings[problem.dimension].append((time.time() - time1) / problem.evaluations)
             repeater.track(problem)  # track evaluations and final_target_hit
             minimal_print(problem)  # show progress
             final_conditions[problem.id_triple].append(repr([problem.evaluations, final_condition]))
@@ -141,7 +143,7 @@ for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
                 file_.write(str(dict(final_conditions)).replace('],', '],\n'))
 
 ### final messaging
-print("\nTiming summary:\n"
+print("\nTiming summary of last experiment without repetitions:\n"
       "  dimension  median time [seconds/evaluation]\n"
       "  -------------------------------------")
 for dimension in sorted(timings):

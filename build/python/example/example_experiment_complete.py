@@ -66,8 +66,9 @@ observer = cocoex.Observer(suite_name,
             'result_folder: {0}  algorithm_name: {1}'.format(
                 output_folder, fmin.__module__ + '.' + fmin.__name__))
 repeater = cocoex.ExperimentRepeater(budget_multiplier,  # x dimension
-                            min_successes=0.75 * int(suite_filter.split('-')[1])
-                            if "indices:1-" in suite_filter else 11)
+                                     min_successes=0.75 * int(suite_filter.split('-')[1])
+                                         if "indices:1-" in suite_filter else 11,
+                                     max_sweeps=100)  # possible sweeps over the suite
 batcher = cocoex.BatchScheduler(number_of_batches, batch_to_execute)
 minimal_print = cocoex.utilities.MiniPrint()
 timings = collections.defaultdict(list)  # key is the dimension
@@ -125,7 +126,8 @@ while not repeater.done():  # while budget is left and successes are few
 
         problem(xopt)  # make sure the returned solution is evaluated
 
-        timings[problem.dimension].append((time.time() - time1) / problem.evaluations)
+        if repeater._sweeps == 1:  # time only the first (full) sweep through suite
+            timings[problem.dimension].append((time.time() - time1) / problem.evaluations)
         repeater.track(problem)  # track evaluations and final_target_hit
         minimal_print(problem)  # show progress
         final_conditions[problem.id_triple].append(repr([problem.evaluations, final_condition]))
@@ -133,7 +135,7 @@ while not repeater.done():  # while budget is left and successes are few
             file_.write(str(dict(final_conditions)).replace('],', '],\n'))
 
 ### final messaging
-print("\nTiming summary:\n"
+print("\nTiming summary over all functions without repetitions:\n"
       "  dimension  median time [seconds/evaluation]\n"
       "  -------------------------------------")
 for dimension in sorted(timings):

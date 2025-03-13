@@ -722,6 +722,10 @@ class ExperimentRepeater:
             return [ii for ii in d if not d[ii]]  # list of instance numbers with no data
         return []
     @property
+    def sweep(self):
+        """current sweep/repetition number (starts with 1)"""
+        return self._sweeps
+    @property
     def n_problems(self):
         """current number of tracked problems (different ``(id_function, dimension)``)"""
         return sum(len(self.trials(k)) > 0 for k in self._data)
