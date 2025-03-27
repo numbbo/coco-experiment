@@ -74,12 +74,14 @@ class Noisifier:
     https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
 
     """
-    def __init__(self, p_add=0.2, p_subtract=0.0, p_epsilon=0, epsilon=1e-4,
+    p_add_single_default = 0.2
+    def __init__(self, p_add=None, p_subtract=0.0, p_epsilon=0.0, epsilon=1e-4,
                  rands=(rand, randn, randc)):
         """constructor with 4 optional parameters for the noise model,
 
         `p_add`: probability for adding a positive heavy tail random value
-        making the solution look worse than it is.
+        making the solution look worse than it actually is. The default is
+        0.2 iff ``p_subtract == p_epsilon == 0`` and 0.0 otherwise.
 
         `p_subtract`: probability for subtracting a positive heavy tail
         random value making the solution look better than it is.
@@ -88,6 +90,11 @@ class Noisifier:
 
         `epsilon`: standard deviation of the Gaussian random value
         """
+        if p_add is None:
+            if p_subtract == p_epsilon == 0:
+                p_add = Noisifier.p_add_single_default  # == 0.2
+            else:
+                p_add = 0.0
         self._params = {k: v for k, v in locals().items() if k != 'self'}
         if sum(self._params[p] for p in ('p_subtract', 'p_add')) > 1:
             warnings.warn("p_subtract={0} + p_add={1} > 1, hence p_add is interpreted"
