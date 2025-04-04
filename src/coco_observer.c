@@ -537,12 +537,13 @@ void coco_observer_free(coco_observer_t *observer) {
  * processing. The default value is "" (no settings).
  * - "number_target_triggers: VALUE" defines the number of targets between each
  * 10**i and 10**(i+1) (equally spaced in the logarithmic scale) that trigger
- * logging. The default value is 10.
+ * logging. The default value is 100.
  * - "log_target_precision: VALUE" defines the precision used for logarithmic
  * targets (there are no targets for abs(values) < log_target_precision). The
  * default value is 1e-8.
  * - "lin_target_precision: VALUE" defines the precision used for linear
- * targets. The default value is 1e-5.
+ * targets. The default value is 1e5.
+ * FIXME: This needs to be properly amended in the future!
  * - "number_evaluation_triggers: VALUE" defines the number of evaluations to be
  * logged between each 10**i and 10**(i+1). The default value is 20.
  * - "base_evaluation_triggers: VALUES" defines the base evaluations used to
@@ -661,13 +662,13 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
     }
   }
 
-  lin_target_precision = 1e-5;
+  lin_target_precision = 1e5;
   if (coco_options_read_double(observer_options, "lin_target_precision", &lin_target_precision) != 0) {
     if (lin_target_precision <= 0) {
       coco_warning("coco_observer(): Unsuitable observer option value "
                    "(lin_target_precision: %f) ignored",
                    lin_target_precision);
-      lin_target_precision = 1e-5;
+      lin_target_precision = 1e5;
     }
   }
 
