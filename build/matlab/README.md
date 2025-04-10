@@ -22,7 +22,7 @@ the following is lacking:
 Getting Started
 ---------------
 
-See _Getting Started_ [here](../../../README.md#Getting-Started) for the first steps. Then
+See the Matlab tab of _Getting Started_ [here](https://coco-platform.org/getting-started/#Getting-Started) for the first steps. Then
 
 - Copy (and rename) the folder `code-experiments/build/matlab` to a place (and name)
   of your choice. Modify the [`exampleexperiment.m`](./code-experiments/build/matlab/exampleexperiment.m`) 
