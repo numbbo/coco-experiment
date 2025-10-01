@@ -35,7 +35,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
-dependencies = ["numpy >= 1.24.0"]
+dependencies = [
+    "numpy >= 1.24.0",
+]
 dynamic = ["version"]
 
 [project.urls]
@@ -71,3 +73,8 @@ include = [
 
 [tool.hatch.version]
 path = "src/cocoex/_version.py"
+
+[dependency-groups]
+dev = [
+    "build>=1.2",
+]
