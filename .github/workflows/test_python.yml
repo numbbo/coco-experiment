@@ -66,7 +66,7 @@ jobs:
 
   python-wheels-test:
     needs: python-wheels-build
-    if: ${{ inputs.build_only == 'false' }}
+    # if: ${{ inputs.build_only == 'false' }}
     strategy:
       fail-fast: false
       matrix:
@@ -107,7 +107,7 @@ jobs:
           python scripts/run-doctest.py
   python-wheels-example:
     needs: python-wheels-build
-    if: ${{ inputs.build_only == 'false' }}
+    # if: ${{ inputs.build_only == 'false' }}
     strategy:
       fail-fast: false
       matrix:
