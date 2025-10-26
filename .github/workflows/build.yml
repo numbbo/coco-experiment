@@ -3,13 +3,13 @@ name: build
 on:
   push:
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - "build/*"
       - "src/*"
       - "test/*"
       - "scripts/*"
-      
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -27,27 +27,32 @@ jobs:
       octave: ${{ steps.filter.outputs.octave }}
       rust: ${{ steps.filter.outputs.rust }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v3
-      id: filter
-      with:
-        filters: |
-          python:
-            - "build/python/**"
-            - "src/**"
-            - "test/**"
-          c:
-            - "build/c/**"
-            - "src/**"
-          java:
-            - "build/java/**"
-            - "src/**"
-          octave:
-            - "build/octave/**"
-            - "src/**"
-          rust:
-            - "build/rust/**"
-            - "src/**"
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            python:
+              - ".github/workflows/**"
+              - "build/python/**"
+              - "src/**"
+              - "test/**"
+            c:
+              - ".github/workflows/**"
+              - "build/c/**"
+              - "src/**"
+            java:
+              - ".github/workflows/**"
+              - "build/java/**"
+              - "src/**"
+            octave:
+              - ".github/workflows/**"
+              - "build/octave/**"
+              - "src/**"
+            rust:
+              - ".github/workflows/**"
+              - "build/rust/**"
+              - "src/**"
 
   python-test:
     needs: [source-build, paths-filter]
@@ -58,7 +63,7 @@ jobs:
     needs: [source-build, paths-filter]
     if: needs.paths-filter.outputs.c == 'true'
     uses: ./.github/workflows/test_c.yml
- 
+
   java-test:
     needs: [source-build, paths-filter]
     if: needs.paths-filter.outputs.java == 'true'
@@ -68,9 +73,8 @@ jobs:
     needs: [source-build, paths-filter]
     if: needs.paths-filter.outputs.octave == 'true'
     uses: ./.github/workflows/test_octave.yml
-  
+
   rust-test:
     needs: [source-build, paths-filter]
     if: needs.paths-filter.outputs.rust == 'true'
     uses: ./.github/workflows/test_rust.yml
-
