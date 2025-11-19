@@ -308,13 +308,14 @@ class ProblemNonAnytime:
         The method records the delivered solution (if necessary) and
         prepares the problem to be run on the next budget by calling
         `reset`.
+
+        Whether the evaluation is done is based on the comparison with the best
+        so-far fvalue, which is a hack. When the behavior of the solver is known, it is better to use::
+
+            problem(x)  # depending on whether this is necessary or not
+            problem.reset()
+
         """
-        if self.evaluations < self.p_observed.evaluations:
-            raise ValueError(
-                "Delivered solutions should come from increasing budgets,\n"
-                "however the current budget = {0} is smaller than the "
-                "delivery budget = {1}".format(
-                    self.p_observed.evaluations, self.evaluations))
         # assuming that "same fitness" means the solution was already evaluated
         if self.p_unobserved(x, *args, **kwargs) != self.best_observed_fvalue1:
             # ideally we would decrease the observed evaluation counter,
