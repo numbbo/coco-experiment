@@ -15,7 +15,7 @@
  * This number cannot be set below 4, for some reason.
  * There is an additional base_evaluation_triggers list of evaluation triggers.
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 10
+#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 20
 
 /**
  * @brief Number of triggers per decade of decreasing Df values (20), was: 5, then 100
