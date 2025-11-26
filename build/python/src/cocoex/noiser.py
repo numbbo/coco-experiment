@@ -8,8 +8,12 @@ import json
 import numpy as np  # for checking finite values
 
 _frozen_noise = True
-math_floor = int
 parameters_file = 'noiser_parameters.json'
+'''default file name where to save current parameters of `Noisifier`'''
+save_parameters = True
+'''flag whether `Noisifier.__init__` saves noise parameters in file'''
+
+math_floor = int
 
 def rand(x, i=0):
     """return a uniform random value seeded with ``x[:2]`` and `i`"""
@@ -106,6 +110,8 @@ class Noisifier:
         if p_epsilon > 0 and epsilon == 0:
             warnings.warn("p_epsilon = {0} > 0 is not effective because epsilon = 0"
                           .format(p_epsilon))
+        if save_parameters:
+            self.save_parameters()
 
     def noisify(self, problem):
         """wrap `problem` with frozen noise"""
@@ -116,23 +122,18 @@ class Noisifier:
     def parameters(self):
         return {k: v for (k, v) in self._params.items() if k.startswith(('p_', 'eps'))}
 
-    def _dump_params(self):
-        with open(parameters_file, 'wt') as fp:
+    def save_parameters(self, filename=None):
+        """save parameter `dict` to a `json` file"""
+        if filename is None:
+            filename = parameters_file
+        with open(filename, 'wt') as fp:
             json.dump(self.parameters, fp)
 
-    def _load_params(self, filename=parameters_file, warn_errors=(FileNotFoundError,), ignore_errors=()):
-        try:
-            with open(parameters_file, 'rt') as fp:
-                return json.load(fp)
-        except warn_errors as e:
-            warnings.warn('NoisifyProblem._load_params raised the exception "{0}"'.format(e))
-        except ignore_errors:
-            pass
-        return {}
-
-    def _set_params(self, filename=parameters_file, **kwargs):
+    def _set_params(self, filename=None, **kwargs):
         """set parameters from file `filename`"""
-        self._params.update(self._load_params(filename), **kwargs)
+        if filename is None:
+            filename = parameters_file
+        self._params.update(_read_params(filename), **kwargs)
 
     def __getattr__(self, name):
         """pretend to be a COCO `problem` as passed in `noisify`"""
@@ -191,6 +192,22 @@ class Noisifier:
             i += 1  # not clear why we need to change i
         assert np.isfinite(n)
         return n
+
+
+def _read_params(self, filename=None,
+                 warn_errors=(FileNotFoundError,), ignore_errors=()):
+    """read parameters from a json file and return a parameters `dict`"""
+    if filename is None:
+        filename = parameters_file
+    try:
+        with open(parameters_file, 'rt') as fp:
+            return json.load(fp)
+    except warn_errors as e:
+        warnings.warn('noiser._read_params raised the exception "{0}"'.format(e))
+    except ignore_errors:
+        pass
+    return {}
+
 
 _seed_weights = [1.23468, 2.34579]  # otherwise, coordinate search would be noisefree
 _seeds = collections.deque(maxlen=99)  # for the record only
