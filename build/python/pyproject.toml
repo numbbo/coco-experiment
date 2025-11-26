@@ -50,7 +50,7 @@ where = ["src"]
 
 [tool.pytest]
 log_cli = true
-addopts = "--doctest-modules"
+addopts = ["--doctest-modules"]
 
 [tool.cibuildwheel]
 build-frontend = "build"
