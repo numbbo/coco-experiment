@@ -42,7 +42,7 @@ MU_TEST(test_logger_bbob_triggers) {
 
   /* Using only the logarithmic performance targets (the linear target precision needs to be high) */
   suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
-  observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 100");
+  observer = coco_observer("bbob", "number_target_triggers: 1 number_evaluation_triggers: 10 lin_target_precision: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
   logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);
@@ -93,7 +93,7 @@ MU_TEST(test_logger_bbob_triggers) {
   /* Using the linear performance targets */
   suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
   suite->known_optima = 0;
-  observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 1e-3 log_target_precision: 1e-5");
+  observer = coco_observer("bbob", "number_target_triggers: 1 number_evaluation_triggers: 10 lin_target_precision: 1e-3 log_target_precision: 1e-5");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
   logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);
@@ -144,7 +144,7 @@ MU_TEST(test_logger_bbob_triggers) {
   /* Testing the targets that fall below log_target_precision */
   suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
   suite->known_optima = 1;
-  observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 10 log_target_precision: 1e-5");
+  observer = coco_observer("bbob", "number_target_triggers: 1 number_evaluation_triggers: 10 lin_target_precision: 10 log_target_precision: 1e-5");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
   logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);

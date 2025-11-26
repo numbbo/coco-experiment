@@ -11,8 +11,11 @@
 
 /**
  * @brief Number of triggers per decade of increasing evaluations (10), was: 20
+ * 
+ * This number cannot be set below 4, for some reason.
+ * There is an additional base_evaluation_triggers list of evaluation triggers.
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 20
+#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 10
 
 /**
  * @brief Number of triggers per decade of decreasing Df values (20), was: 5, then 100
@@ -684,7 +687,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
 
   number_evaluation_triggers = OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS;
   if (coco_options_read_size_t(observer_options, "number_evaluation_triggers", &number_evaluation_triggers) != 0) {
-    if (number_evaluation_triggers < 4) {
+    if (number_evaluation_triggers < 4) { /* why? */
       coco_warning("coco_observer(): Unsuitable observer option value "
                    "(number_evaluation_triggers: %lu) ignored",
                    number_evaluation_triggers);
