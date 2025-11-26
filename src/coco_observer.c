@@ -12,7 +12,7 @@
 /**
  * @brief Number of triggers per decade of increasing evaluations (10), was: 20
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 20
+#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 10
 
 /**
  * @brief Number of triggers per decade of decreasing Df values (20), was: 5, then 100
