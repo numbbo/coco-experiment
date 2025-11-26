@@ -48,6 +48,11 @@
 #define LOGGER_BBOB_INFEASIBLE_PENALTY 1e10
 
 /**
+ * Record variable values only when #variables is below this threshold, was: 22
+ */
+#define LOGGER_BBOB_NUMBER_OF_VARIABLES_THRESHOLD 7
+
+/**
  * @brief The bbob logger data type.
  */
 typedef struct {
@@ -186,7 +191,7 @@ static void logger_bbob_output(FILE *data_file, logger_bbob_data_t *logger, cons
     fprintf(data_file, "%+10.9e", best_value);
   }
 
-  if (logger->number_of_variables < 22) {
+  if (logger->number_of_variables < LOGGER_BBOB_NUMBER_OF_VARIABLES_THRESHOLD) {
     for (i = 0; i < logger->number_of_variables; i++) {
       if ((i < logger->number_of_integer_variables) && (logger->log_discrete_as_int))
         fprintf(data_file, " %d", coco_double_to_int(x[i]));
