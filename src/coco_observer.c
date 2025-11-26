@@ -10,6 +10,18 @@
 #include <math.h>
 
 /**
+ * @brief Number of triggers per decade of increasing evaluations (20), was: 20
+ * 
+ * Changing this number currently breaks the test_logger_bbob.c unit-test
+ */
+#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 20
+
+/**
+ * @brief Number of triggers per decade of decreasing Df values (20), was: 5, then 100
+ */
+#define OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS 20
+
+/**
  * @brief The type for triggers based on logarithmic target values (targets that
  * are uniformly distributed in the logarithmic space).
  *
@@ -323,7 +335,7 @@ static coco_observer_evaluations_t *coco_observer_evaluations(const char *base_e
   /* First trigger */
   evaluations->value1 = 1;
   evaluations->exponent1 = 0;
-  evaluations->number_of_triggers = 20;
+  evaluations->number_of_triggers = OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS;
 
   /* Second trigger */
   evaluations->base_evaluations =
@@ -642,13 +654,13 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
     strcpy(settings, "");
   }
 
-  number_target_triggers = 100;
+  number_target_triggers = OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS;
   if (coco_options_read_size_t(observer_options, "number_target_triggers", &number_target_triggers) != 0) {
     if (number_target_triggers < 0) {
       coco_warning("coco_observer(): Unsuitable observer option value "
                    "(number_target_triggers: %lu) ignored",
                    number_target_triggers);
-      number_target_triggers = 100;
+      number_target_triggers = OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS;
     }
   }
 
@@ -672,13 +684,13 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
     }
   }
 
-  number_evaluation_triggers = 20;
+  number_evaluation_triggers = OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS;
   if (coco_options_read_size_t(observer_options, "number_evaluation_triggers", &number_evaluation_triggers) != 0) {
     if (number_evaluation_triggers < 4) {
       coco_warning("coco_observer(): Unsuitable observer option value "
                    "(number_evaluation_triggers: %lu) ignored",
                    number_evaluation_triggers);
-      number_evaluation_triggers = 20;
+      number_evaluation_triggers = OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS;
     }
   }
 
