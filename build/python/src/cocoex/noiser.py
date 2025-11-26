@@ -8,8 +8,12 @@ import json
 import numpy as np  # for checking finite values
 
 _frozen_noise = True
-math_floor = int
 parameters_file = 'noiser_parameters.json'
+'''default file name where to save current parameters of `Noisifier`'''
+save_parameters = False
+'''flag whether `Noisifier.__init__` saves noise parameters in file'''
+
+math_floor = int
 
 def rand(x, i=0):
     """return a uniform random value seeded with ``x[:2]`` and `i`"""
@@ -71,6 +75,10 @@ class Noisifier:
     noise generator and the numbers scaled by pi/2 such that P(number > k)
     equals about 1/k when k >= 5.
 
+    Parameter settings are by default saved to the file indicated by the module
+    global variable `cocoex.noiser.parameters_file` if
+    ``bool(cocoex.noiser.save_parameters) is True``.
+
     A minimal regression test:
 
     >>> import cocoex
@@ -95,7 +103,7 @@ class Noisifier:
     """
     p_add_single_default = 0.2
     def __init__(self, p_add=None, p_subtract=0.0, p_epsilon=0.0, epsilon=1e-4,
-                 rands=(rand, randn, randc)):
+                 rands=(rand, randn, randc), filename=None):
         """constructor with 4 optional parameters for the noise model,
 
         `p_add`: probability for adding a positive heavy tail random value
@@ -108,6 +116,11 @@ class Noisifier:
         `p_epsilon`: probability for adding a Gaussian random value
 
         `epsilon`: standard deviation of the Gaussian random value
+
+        `filename`: for saving parameter setting, if not given use module global
+        variable `cocoex.noiser.parameters_file`, saving depends on the module
+        variable `save_parameters`.
+
         """
         if p_add is None:
             if p_subtract == p_epsilon == 0:
@@ -116,15 +129,17 @@ class Noisifier:
                 p_add = 0.0
         self._params = {k: v for k, v in locals().items() if k != 'self'}
         if sum(self._params[p] for p in ('p_subtract', 'p_add')) > 1:
-            warnings.warn("p_subtract={0} + p_add={1} > 1, hence p_add is interpreted"
-                          " as ``1-p_subtract``"
+            warnings.warn("p_subtract={0} + p_add={1} > 1, hence p_add"  # noqa: UP030
+                          " is interpreted as ``1-p_subtract``"
                           .format(self._params['p_subtract'], self._params['p_add']))
         if p_add < 0 or p_subtract < 0 or p_epsilon < 0 or epsilon < 0:
-            raise ValueError("parameters cannot be negative but were {0}"
-                             .format(self._params))
+            raise ValueError("parameters cannot be negative"  # noqa: UP030, UP032
+                             " but were {0}".format(self._params))
         if p_epsilon > 0 and epsilon == 0:
-            warnings.warn("p_epsilon = {0} > 0 is not effective because epsilon = 0"
-                          .format(p_epsilon))
+            warnings.warn("p_epsilon = {0} > 0 is not effective"  # noqa: UP030, UP032
+                          " because epsilon = 0".format(p_epsilon))
+        if save_parameters:
+            self.save_parameters()
 
     def noisify(self, problem):
         """wrap `problem` with frozen noise"""
@@ -135,23 +150,19 @@ class Noisifier:
     def parameters(self):
         return {k: v for (k, v) in self._params.items() if k.startswith(('p_', 'eps'))}
 
-    def _dump_params(self):
-        with open(parameters_file, 'wt') as fp:
+    def save_parameters(self, filename=None):
+        """save parameter `dict` to a `json` file"""
+        with open(filename or self._params.get('filename')
+                           or parameters_file, 'wt') as fp:
             json.dump(self.parameters, fp)
 
-    def _load_params(self, filename=parameters_file, warn_errors=(FileNotFoundError,), ignore_errors=()):
-        try:
-            with open(parameters_file, 'rt') as fp:
-                return json.load(fp)
-        except warn_errors as e:
-            warnings.warn('NoisifyProblem._load_params raised the exception "{0}"'.format(e))
-        except ignore_errors:
-            pass
-        return {}
+    def _set_params(self, filename=None, **kwargs):
+        """set parameters from file `filename` or filename passed at
 
-    def _set_params(self, filename=parameters_file, **kwargs):
-        """set parameters from file `filename`"""
-        self._params.update(self._load_params(filename), **kwargs)
+        instantiation or `cocoex.noiser.parameters_file`.
+        """
+        self._params.update(_read_params(filename or self._params.get('filename')
+                                                  or parameters_file), **kwargs)
 
     def __getattr__(self, name):
         """pretend to be a COCO `problem` as passed in `noisify`"""
@@ -210,6 +221,20 @@ class Noisifier:
             i += 1  # not clear why we need to change i
         assert np.isfinite(n)
         return n
+
+
+def _read_params(filename=None,
+                 warn_errors=(FileNotFoundError,), ignore_errors=()):
+    """read parameters from a json file and return a parameters `dict`"""
+    try:
+        with open(filename or parameters_file, 'rt') as fp:
+            return json.load(fp)
+    except warn_errors as e:
+        warnings.warn('noiser._read_params raised the exception: ' + str(e))
+    except ignore_errors:
+        pass
+    return {}
+
 
 _seed_weights = [1.23468, 2.34579]  # otherwise, coordinate search would be noisefree
 _seeds = collections.deque(maxlen=99)  # for the record only
