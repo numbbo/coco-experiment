@@ -10,6 +10,7 @@ import numpy as np  # for checking finite values
 _frozen_noise = True
 math_floor = int
 parameters_file = 'noiser_parameters.json'
+write_parameters = True  # dump parameters dict in __init__
 
 def rand(x, i=0):
     """return a uniform random value seeded with ``x[:2]`` and `i`"""
@@ -106,6 +107,8 @@ class Noisifier:
         if p_epsilon > 0 and epsilon == 0:
             warnings.warn("p_epsilon = {0} > 0 is not effective because epsilon = 0"
                           .format(p_epsilon))
+        if write_parameters:
+            self.dump_params()
 
     def noisify(self, problem):
         """wrap `problem` with frozen noise"""
@@ -116,11 +119,15 @@ class Noisifier:
     def parameters(self):
         return {k: v for (k, v) in self._params.items() if k.startswith(('p_', 'eps'))}
 
-    def _dump_params(self):
-        with open(parameters_file, 'wt') as fp:
+    def dump_params(self, filename=None):
+        if filename is None:
+            filename = parameters_file
+        with open(filename, 'wt') as fp:
             json.dump(self.parameters, fp)
 
-    def _load_params(self, filename=parameters_file, warn_errors=(FileNotFoundError,), ignore_errors=()):
+    def load_params(self, filename=None, warn_errors=(FileNotFoundError,), ignore_errors=()):
+        if filename is None:
+            filename = parameters_file
         try:
             with open(parameters_file, 'rt') as fp:
                 return json.load(fp)
