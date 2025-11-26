@@ -12,12 +12,12 @@
 /**
  * @brief Number of triggers per decade of increasing evaluations (10), was: 20
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 10
+#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 20
 
 /**
  * @brief Number of triggers per decade of decreasing Df values (20), was: 5, then 100
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS 20
+#define OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS 100
 
 /**
  * @brief The type for triggers based on logarithmic target values (targets that
