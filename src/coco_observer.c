@@ -10,9 +10,9 @@
 #include <math.h>
 
 /**
- * @brief Number of triggers per decade of increasing evaluations (10), was: 20
+ * @brief Number of triggers per decade of increasing evaluations (20), was: 20
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 10
+#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 20
 
 /**
  * @brief Number of triggers per decade of decreasing Df values (20), was: 5, then 100
@@ -658,7 +658,7 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
       coco_warning("coco_observer(): Unsuitable observer option value "
                    "(number_target_triggers: %lu) ignored",
                    number_target_triggers);
-      number_target_triggers = 100;
+      number_target_triggers = OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS;
     }
   }
 
