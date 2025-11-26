@@ -9,7 +9,7 @@ import numpy as np  # for checking finite values
 
 _frozen_noise = True
 parameters_file = 'noiser_parameters.json'
-'''default file name where to dump current parameters of `Noisifier`'''
+'''default file name where to save current parameters of `Noisifier`'''
 save_parameters = True
 '''flag whether `Noisifier` dumps parameters by default on __init__'''
 
@@ -129,23 +129,11 @@ class Noisifier:
         with open(filename, 'wt') as fp:
             json.dump(self.parameters, fp)
 
-    def load_parameters(self, filename=None,
-                        warn_errors=(FileNotFoundError,), ignore_errors=()):
-        """load parameter values from a file"""
+    def _set_params(self, filename=None, **kwargs):
+        """set parameters from file `filename`"""
         if filename is None:
             filename = parameters_file
-        try:
-            with open(parameters_file, 'rt') as fp:
-                return json.load(fp)
-        except warn_errors as e:
-            warnings.warn('NoisifyProblem._load_params raised the exception "{0}"'.format(e))
-        except ignore_errors:
-            pass
-        return {}
-
-    def _set_params(self, filename=parameters_file, **kwargs):
-        """set parameters from file `filename`"""
-        self._params.update(self._load_params(filename), **kwargs)
+        self._params.update(_read_params(filename), **kwargs)
 
     def __getattr__(self, name):
         """pretend to be a COCO `problem` as passed in `noisify`"""
@@ -204,6 +192,22 @@ class Noisifier:
             i += 1  # not clear why we need to change i
         assert np.isfinite(n)
         return n
+
+
+def _read_params(self, filename=None,
+                    warn_errors=(FileNotFoundError,), ignore_errors=()):
+    """read parameter values from a file and return a parameters `dict`"""
+    if filename is None:
+        filename = parameters_file
+    try:
+        with open(parameters_file, 'rt') as fp:
+            return json.load(fp)
+    except warn_errors as e:
+        warnings.warn('NoisifyProblem._read_params raised the exception "{0}"'.format(e))
+    except ignore_errors:
+        pass
+    return {}
+
 
 _seed_weights = [1.23468, 2.34579]  # otherwise, coordinate search would be noisefree
 _seeds = collections.deque(maxlen=99)  # for the record only
