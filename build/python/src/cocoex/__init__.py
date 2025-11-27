@@ -19,6 +19,7 @@ from . import noiser # noqa: F401
 from . import solvers # noqa: F401
 from . import utilities # noqa: F401
 from . import exceptions # noqa: F401
+# from . import test # noqa: F401  # gives a circular import, why???
 from .interface import Observer as _Observer
 from .interface import Problem as _Problem
 from .interface import Suite as _Suite 
