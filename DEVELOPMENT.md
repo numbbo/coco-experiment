@@ -67,6 +67,10 @@ Run tests using [`ctest`](https://cmake.org/cmake/help/latest/manual/ctest.1.htm
 ```sh
 ctest --test-dir build     
 ```
+or on Windows
+```sh
+ctest --test-dir build -C Debug     
+```
 
 ### Regression tests
 
