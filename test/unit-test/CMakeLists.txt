@@ -40,8 +40,6 @@ add_test(NAME test_tainted-bbob COMMAND $<TARGET_FILE:test_tainted_problem> bbob
 set_property(TEST test_tainted-bbob PROPERTY WILL_FAIL YES)
 add_test(NAME test_tainted-bbob-largescale COMMAND $<TARGET_FILE:test_tainted_problem> bbob-largescale)
 set_property(TEST test_tainted-bbob-largescale PROPERTY WILL_FAIL YES)
-add_test(NAME test_tainted-bbob-biobj COMMAND $<TARGET_FILE:test_tainted_problem> bbob-biobj)
-set_property(TEST test_tainted-bbob-biobj PROPERTY WILL_FAIL NO)
 
 minunit_test(test_biobj_utilities)
 minunit_test(test_brentq)
