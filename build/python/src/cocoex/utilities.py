@@ -269,7 +269,7 @@ class ProblemNonAnytime:
     ``p_unobserved.evaluations >= p_observed.evaluations``.
 
     """
-    inherited_constant_attributes = [
+    inherited_constant_attributes = [  # easier and better solved by defining __getattr__!?
             'dimension',
             'id',
             'index',
@@ -377,7 +377,7 @@ class SameFunction:
     >>> from cocoex.utilities import SameFunction
     >>>
     >>> suite = cocoex.Suite('bbob', '', '')
-    >>> already_seen = SameFunction()
+    >>> already_seen = seen = SameFunction()
     >>> processed = 0
     >>> for problem in suite:
     ...     if already_seen(problem.id) > 5:
