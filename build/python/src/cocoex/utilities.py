@@ -377,7 +377,7 @@ class SameFunction:
     >>> from cocoex.utilities import SameFunction
     >>>
     >>> suite = cocoex.Suite('bbob', '', '')
-    >>> already_seen = SameFunction()
+    >>> already_seen = seen = SameFunction()
     >>> processed = 0
     >>> for problem in suite:
     ...     if already_seen(problem.id) > 5:
