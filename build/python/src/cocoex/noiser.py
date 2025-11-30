@@ -52,11 +52,12 @@ class Noisifier:
         ### prepare
         suite = cocoex.Suite(suite_name, "", "")
         observer = cocoex.Observer(suite_name, "")
+        noisifier = cocoex.noiser.Noisifier()  # wrapper without internal state
 
         ### go
         for problem in suite:  # this loop may take several minutes or more
             problem.observe_with(observer)  # generates the data for cocopp
-            problem = cocoex.noiser.Noisifier().noisify(problem)  # a Noisifier
+            problem = noisifier.noisify(problem)  # wrap problem as noisy
             fmin(problem, problem.initial_solution, disp=False)
 
     The `problem` is now a `Noisifier` but it still abides by the interface
@@ -69,6 +70,24 @@ class Noisifier:
     subtracted noise, respectively. Both are by default the same Cauchy
     noise generator and the numbers scaled by pi/2 such that P(number > k)
     equals about 1/k when k >= 5.
+
+    A minimal regression test:
+
+    >>> import cocoex
+    >>> def eq(x, y):
+    ...     return [cocoex.utilities.about_equal(xi, yi)
+    ...             for xi, yi in zip(x, y)]
+    >>> def fun(x):
+    ...     return 2 * x[0], 3 * x[1]
+
+    >>> n = cocoex.noiser.Noisifier(p_add=.5)
+    >>> f = n.noisify(fun)
+    >>> assert all(eq(f([1, 2]), [2, 41.39010606165791])
+    ...            ), f([1, 2])
+    >>> assert all(eq(f([2, 3, 4]), [11.518074565992698, 9.705537168513859])
+    ...            ), f([2, 3, 4])  # x[2:] have no influence here
+    >>> assert all(eq(f([-1, 2]), [-2, 6])
+    ...            ), f([-1, 2])
 
     See also https://github.com/numbbo/coco-experiment/issues/36 and
     https://github.com/numbbo/coco-experiment/blob/main/build/python/example/example_experiment_complete.py
