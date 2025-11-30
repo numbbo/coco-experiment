@@ -56,11 +56,12 @@ class Noisifier:
         ### prepare
         suite = cocoex.Suite(suite_name, "", "")
         observer = cocoex.Observer(suite_name, "")
+        noisifier = cocoex.noiser.Noisifier()  # wrapper without internal state
 
         ### go
         for problem in suite:  # this loop may take several minutes or more
             problem.observe_with(observer)  # generates the data for cocopp
-            problem = cocoex.noiser.Noisifier().noisify(problem)  # a Noisifier
+            problem = noisifier.noisify(problem)  # wrap problem as noisy
             fmin(problem, problem.initial_solution, disp=False)
 
     The `problem` is now a `Noisifier` but it still abides by the interface
