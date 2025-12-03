@@ -470,6 +470,12 @@ static coco_observer_t *coco_observer_allocate(
   observer->logger_free_function = NULL;
   observer->restart_function = NULL;
   observer->is_active = 1;
+  coco_debug("Function coco_observer_allocate() called with values: result_folder: %s, observer_name: %s, algorithm_name: %s, "
+             "algorithm_info: %s, settings: %s, number_target_triggers: %lu, log_target_precision: %e, lin_target_precision: %e, "
+             "number_evaluation_triggers: %lu, base_evaluation_triggers: %s, precision_x: %d, precision_f: %d, precision_g: %d, "
+             "log_discrete_as_int: %d", result_folder, observer_name, algorithm_name, algorithm_info, settings, (unsigned long)number_target_triggers, 
+             log_target_precision, lin_target_precision, (unsigned long)number_evaluation_triggers, base_evaluation_triggers, precision_x, precision_f, 
+             precision_g, log_discrete_as_int);
   return observer;
 }
 
