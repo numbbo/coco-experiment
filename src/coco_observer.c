@@ -328,14 +328,16 @@ static void coco_observer_targets_free(coco_observer_targets_t *targets) {
  * dim*1, dim*2, dim*5, 10*dim*1, 10*dim*2, 10*dim*5, 100*dim*1, 100*dim*2,
  * 100*dim*5, ...
  */
-static coco_observer_evaluations_t *coco_observer_evaluations(const char *base_evaluations, const size_t dimension) {
+static coco_observer_evaluations_t *coco_observer_evaluations(const size_t number_evaluation_triggers, 
+                                                              const char *base_evaluations, 
+                                                              const size_t dimension) {
 
   coco_observer_evaluations_t *evaluations = (coco_observer_evaluations_t *)coco_allocate_memory(sizeof(*evaluations));
 
   /* First trigger */
   evaluations->value1 = 1;
   evaluations->exponent1 = 0;
-  evaluations->number_of_triggers = OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS;
+  evaluations->number_of_triggers = number_evaluation_triggers;
 
   /* Second trigger */
   evaluations->base_evaluations =
