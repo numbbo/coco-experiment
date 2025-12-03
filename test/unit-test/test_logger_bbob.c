@@ -182,7 +182,7 @@ MU_TEST(test_logger_bbob_last_line) {
   coco_set_log_level("debug");
 
   suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
-  observer = coco_observer("bbob", "number_target_triggers: 100 number_evaluation_triggers: 4 base_evaluation_triggers: 100");
+  observer = coco_observer("bbob", "number_target_triggers: 100 number_evaluation_triggers: 20 base_evaluation_triggers: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
   folder = coco_strdup(observer->result_folder);
@@ -216,6 +216,48 @@ MU_TEST(test_logger_bbob_last_line) {
   filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
     coco_path_separator, "bbobexp_f1_DIM2.tdat");
   mu_check(count_lines_in_file(filename) == 9);
+  coco_free_memory(filename);
+
+  filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
+    coco_path_separator, "bbobexp_f1_DIM2.mdat");
+  mu_check(count_lines_in_file(filename) == 3);
+
+  /* Repeat the check with different trigger values */
+  suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
+  observer = coco_observer("bbob", "number_target_triggers: 20 number_evaluation_triggers: 4 base_evaluation_triggers: 100");
+  /* Use the 2-D sphere function */
+  problem = coco_suite_get_next_problem(suite, observer);
+  folder = coco_strdup(observer->result_folder);
+
+  x[0] = 0; x[1] = 0;
+  coco_evaluate_function(problem, x, y);
+  coco_recommend_solution(problem, x);
+  mu_check(about_equal_value(y[0], 80.88209408));
+
+  x[0] = 0; x[1] = -0.5;
+  coco_evaluate_function(problem, x, y);
+  mu_check(about_equal_value(y[0], 79.97529408));
+
+  x[0] = 0.2; x[1] = -1.1;
+  coco_evaluate_function(problem, x, y);
+  mu_check(about_equal_value(y[0], 79.48601408));
+
+  for (i = 0; i < 5; i++) {
+    x[0] = 0; x[1] = 0;
+    coco_evaluate_function(problem, x, y);
+  }
+
+  coco_observer_free(observer);
+  coco_suite_free(suite);
+
+  filename =
+      coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", coco_path_separator, "bbobexp_f1_DIM2.dat");
+  mu_check(count_lines_in_file(filename) == 5);
+  coco_free_memory(filename);
+
+  filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
+    coco_path_separator, "bbobexp_f1_DIM2.tdat");
+  mu_check(count_lines_in_file(filename) == 5);
   coco_free_memory(filename);
 
   filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
