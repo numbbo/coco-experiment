@@ -179,8 +179,10 @@ MU_TEST(test_logger_bbob_last_line) {
   int i = 0;
   char *filename, *folder;
 
+  coco_set_log_level("debug");
+
   suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
-  observer = coco_observer("bbob", "number_evaluation_triggers: 4 base_evaluation_triggers: 100");
+  observer = coco_observer("bbob", "number_target_triggers: 100 number_evaluation_triggers: 4 base_evaluation_triggers: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
   folder = coco_strdup(observer->result_folder);
