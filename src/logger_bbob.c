@@ -730,8 +730,8 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
   /* Initialize triggers performance and evaluation triggers depending on the observer option */
   logger_data->targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
                                                observer->number_target_triggers, observer->log_target_precision);
-  logger_data->evaluations =
-      coco_observer_evaluations(observer->base_evaluation_triggers, inner_problem->number_of_variables);
+  logger_data->evaluations = coco_observer_evaluations(
+    observer->number_evaluation_triggers, observer->base_evaluation_triggers, inner_problem->number_of_variables);
   logger_data->mdat_targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
                                                     observer->number_target_triggers, observer->log_target_precision);
 

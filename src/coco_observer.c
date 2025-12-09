@@ -328,14 +328,16 @@ static void coco_observer_targets_free(coco_observer_targets_t *targets) {
  * dim*1, dim*2, dim*5, 10*dim*1, 10*dim*2, 10*dim*5, 100*dim*1, 100*dim*2,
  * 100*dim*5, ...
  */
-static coco_observer_evaluations_t *coco_observer_evaluations(const char *base_evaluations, const size_t dimension) {
+static coco_observer_evaluations_t *coco_observer_evaluations(const size_t number_evaluation_triggers, 
+                                                              const char *base_evaluations, 
+                                                              const size_t dimension) {
 
   coco_observer_evaluations_t *evaluations = (coco_observer_evaluations_t *)coco_allocate_memory(sizeof(*evaluations));
 
   /* First trigger */
   evaluations->value1 = 1;
   evaluations->exponent1 = 0;
-  evaluations->number_of_triggers = OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS;
+  evaluations->number_of_triggers = number_evaluation_triggers;
 
   /* Second trigger */
   evaluations->base_evaluations =
@@ -468,6 +470,12 @@ static coco_observer_t *coco_observer_allocate(
   observer->logger_free_function = NULL;
   observer->restart_function = NULL;
   observer->is_active = 1;
+  coco_debug("Function coco_observer_allocate() called with values: result_folder: %s, observer_name: %s, algorithm_name: %s, "
+             "algorithm_info: %s, settings: %s, number_target_triggers: %lu, log_target_precision: %e, lin_target_precision: %e, "
+             "number_evaluation_triggers: %lu, base_evaluation_triggers: %s, precision_x: %d, precision_f: %d, precision_g: %d, "
+             "log_discrete_as_int: %d", result_folder, observer_name, algorithm_name, algorithm_info, settings, (unsigned long)number_target_triggers, 
+             log_target_precision, lin_target_precision, (unsigned long)number_evaluation_triggers, base_evaluation_triggers, precision_x, precision_f, 
+             precision_g, log_discrete_as_int);
   return observer;
 }
 

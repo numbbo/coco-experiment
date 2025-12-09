@@ -202,8 +202,7 @@ MU_TEST(test_coco_observer_evaluations_trigger) {
   int update, found;
 
   coco_observer_evaluations_t *evaluations;
-  evaluations = coco_observer_evaluations("1,2,5", 2);
-  evaluations->number_of_triggers = 20;  /* do not assume that 20 is default */
+  evaluations = coco_observer_evaluations(20, "1,2,5", 2); /* do not assume that 20 is default */
   for (i = 1; i <= 1000; i++) {
     update = coco_observer_evaluations_trigger(evaluations, i);
     found = 0;
