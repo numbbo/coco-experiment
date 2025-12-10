@@ -424,7 +424,7 @@ cdef class Suite:
             % (self.name, self.instance, self.options,
                len(self), '' if len(self) == 1 else 's',
                '' if len(self.dimensions) == 1 else 's',
-               '%d=%d' % (min(self.dimensions), max(self.dimensions)))
+               '%d-%d' % (min(self.dimensions), max(self.dimensions)))
     def __len__(self):
         return len(self._indices)
 
