@@ -65,10 +65,11 @@ observer = cocoex.Observer(suite_name,
             # see https://numbbo.github.io/coco-doc/C/#observer-parameters
             'result_folder: {0}  algorithm_name: {1}'.format(
                 output_folder, fmin.__module__ + '.' + fmin.__name__))
+_ninst = len(suite) / len(suite.dimensions) / len({p.id_function for p in suite})
 repeater = cocoex.ExperimentRepeater(budget_multiplier,  # x dimension
-                                     min_successes=0.75 * int(suite_filter.split('-')[1])
-                                         if "indices:1-" in suite_filter else 11,
-                                     max_sweeps=100)  # possible sweeps over the suite
+                        # always repeat when ninst < 5 and allow for a possible p < 0.015
+                        min_successes=min((4 + _ninst / 5, 11)),
+                        max_sweeps=100)  # possible sweeps over the suite
 batcher = cocoex.BatchScheduler(number_of_batches, batch_to_execute)
 minimal_print = cocoex.utilities.MiniPrint()
 timings = collections.defaultdict(list)  # key is the dimension
