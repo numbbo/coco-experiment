@@ -65,9 +65,10 @@ observer = cocoex.Observer(suite_name,
             # see https://numbbo.github.io/coco-doc/C/#observer-parameters
             'result_folder: {0}  algorithm_name: {1}'.format(
                 output_folder, fmin.__module__ + '.' + fmin.__name__))
+_ninst = len(suite) / len(suite.dimensions) / len(
+                 set(p.id_function for p in suite))
 repeater = cocoex.ExperimentRepeater(budget_multiplier,  # x dimension
-                                     min_successes=0.75 * int(suite_filter.split('-')[1])
-                                         if "indices:1-" in suite_filter else 11,
+                                     min_successes=min((_ninst, 5 + 0.4 * _ninst, 11)),
                                      max_sweeps=100)  # possible sweeps over the suite
 batcher = cocoex.BatchScheduler(number_of_batches, batch_to_execute)
 minimal_print = cocoex.utilities.MiniPrint()
@@ -83,7 +84,7 @@ while not repeater.done():  # while budget is left and successes are few
             continue  # skip problem and bypass repeater.track
         problem.observe_with(observer)  # generate data for cocopp
         time1 = time.time()
-        problem(problem.dimension * [0])  # for better comparability
+        problem(problem.initial_solution)  # for better comparability
 
         ### input: implement/amend the next few lines for another fmin
         if fmin == 'my solver':
