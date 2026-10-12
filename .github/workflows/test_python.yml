@@ -115,13 +115,13 @@ jobs:
           - [ubuntu-22.04, manylinux_x86_64]
           - [macos-14, macosx_arm64]
           - [windows-2022, win_amd64]
-        python: ["3.9", "3.10", "3.11", "3.12"]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.buildplat[0] }}
     defaults:
       run:
         working-directory: ${{github.workspace}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v7
         with:
           name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
