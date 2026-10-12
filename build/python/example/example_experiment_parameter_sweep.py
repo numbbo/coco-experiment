@@ -91,7 +91,7 @@ for added_noise in [0, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4]:
             problem.observe_with(observer)  # generate data for cocopp
             problem = noisifier.noisify(problem)
             time1 = time.time()
-            problem(problem.dimension * [0])  # for better comparability
+            problem(problem.initial_solution)  # for better comparability
 
             ### input: implement/amend the next few lines for another fmin
             if fmin == 'my solver':
