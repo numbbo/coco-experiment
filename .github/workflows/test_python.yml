@@ -40,7 +40,7 @@ jobs:
         working-directory: ${{github.workspace}}
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.10"
       - name: Download Python source package
@@ -90,7 +90,7 @@ jobs:
           path: wheels
       - name: List available wheels
         run: ls -l wheels/
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{matrix.python}}
       - name: Setup Python
@@ -126,7 +126,7 @@ jobs:
         with:
           name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
           path: wheels
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{matrix.python}}
       - name: Setup Python
@@ -161,7 +161,7 @@ jobs:
         with:
           name: dist-python-sdist
           path: dist
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Setup Python
