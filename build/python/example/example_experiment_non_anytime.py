@@ -104,6 +104,7 @@ def main():
         with ProblemNonAnytime(suite, observer, index) as problem:
             problem.print_progress()
             x0 = problem.initial_solution  # initial solution
+            problem(x0)  # improve comparability between algorithms
             for budget in [b * problem.dimension for b in
                            budget_multiplier_list]:  # iterate over budgets
                 x = fmin(problem, x0, solver, budget)

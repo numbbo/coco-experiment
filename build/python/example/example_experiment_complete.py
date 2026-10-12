@@ -84,7 +84,7 @@ while not repeater.done():  # while budget is left and successes are few
             continue  # skip problem and bypass repeater.track
         problem.observe_with(observer)  # generate data for cocopp
         time1 = time.time()
-        problem(problem.dimension * [0])  # for better comparability
+        problem(problem.initial_solution)  # for better comparability
 
         ### input: implement/amend the next few lines for another fmin
         if fmin == 'my solver':
