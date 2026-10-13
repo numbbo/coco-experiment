@@ -22,14 +22,17 @@ jobs:
         buildplat:
           - [ubuntu-22.04, manylinux_x86_64]
           - [ubuntu-22.04, musllinux_x86_64]
-          - [macos-14, macosx_arm64]
           - [windows-2022, win_amd64]
+          - [macos-14, macosx_arm64]
+          - [ubuntu-22.04, musllinux_x86_64]
+          - [ubuntu-22.04, musllinux_x86_64]
         python:
           - ["cp39", "3.9"]
           - ["cp310", "3.10"]
           - ["cp311", "3.11"]
           - ["cp312", "3.12"]
           - ["cp313", "3.13"]
+          - ["cp314", "3.14"]
           - ["pp39", "pp"]
         exclude:
           - buildplat: [ubuntu-22.04, musllinux_x86_64]
