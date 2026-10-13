@@ -1,8 +1,8 @@
 ---
 name: Feature request
 about: Request a feature to improve COCO
-title: '[Feature request] please put your title here'
-labels: 'Feature-request'
+title: ''
+labels: feature request
 assignees: ''
 
 ---
