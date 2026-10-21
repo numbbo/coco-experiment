@@ -12,24 +12,6 @@
 #include "f_rosenbrock.cpp"
 #include "f_sphere.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
-
-/**
- * @brief Sets the dimensions and default instances for the toy suite.
- */
-static coco_suite_t *suite_toy_initialize(void) {
-
-  coco_suite_t *suite;
-  const size_t dimensions[] = {2, 3, 5, 10, 20};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  suite = coco_suite_allocate("toy", 6, num_dimensions, dimensions, "instances: 1", 1);
-
-  return suite;
-}
-
 /**
  * @brief Returns the problem from the toy suite that corresponds to the given parameters.
  *
@@ -42,7 +24,7 @@ static coco_suite_t *suite_toy_initialize(void) {
 static coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
                                              const size_t instance_idx) {
 
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -63,7 +45,7 @@ static coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t f
     problem = f_rosenbrock_allocate(dimension);
   } else {
     coco_error("suite_toy_get_problem(): function %lu does not exist in this suite", (unsigned long)function);
-    return NULL; /* Never reached */
+    return nullptr; /* Never reached */
   }
 
   problem->suite_dep_function = function;
@@ -71,4 +53,30 @@ static coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t f
   problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
 
   return problem;
+}
+
+/**
+ * @brief The toy suite.
+ */
+struct suite_toy_t final : public coco_suite_s {
+  using coco_suite_s::coco_suite_s;
+
+  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
+                              const size_t instance_idx) override {
+    return suite_toy_get_problem(this, function_idx, dimension_idx, instance_idx);
+  }
+};
+
+/**
+ * @brief Sets the dimensions and default instances for the toy suite.
+ */
+static coco_suite_t *suite_toy_initialize(void) {
+
+  coco_suite_t *suite;
+  const size_t dimensions[] = {2, 3, 5, 10, 20};
+  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
+
+  suite = new suite_toy_t("toy", 6, num_dimensions, dimensions, "instances: 1", 1);
+
+  return suite;
 }

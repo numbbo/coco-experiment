@@ -38,7 +38,7 @@ static const double weight_constraints =
 static size_t bbob_old_current_dim = 0;
 static size_t bbob_old_current_funId = 0;
 static size_t bbob_old_infoFile_firstInstance = 0;
-char *bbob_old_infoFile_firstInstance_char;
+static std::string bbob_old_infoFile_firstInstance_char;
 /* a possible solution: have a list of dims that are already in the file, if the ones we're about to log
  * is != bbob_old_current_dim and the funId is currend_funId, create a new .info file with as suffix the
  * number of the first instance */
@@ -61,7 +61,7 @@ static int bbob_old_logger_is_open = 0; /* this could become lock-list of .info 
 /**
  * @brief The bbob_old logger data type.
  */
-typedef struct {
+struct logger_bbob_old_data_t {
   coco_observer_t *observer;
   int is_initialized;
   /*char *path;// relative path to the data folder. //Wassim: now fetched from the observer */
@@ -76,7 +76,7 @@ typedef struct {
   double last_fvalue;
   short written_last_eval; /* allows writing the data of the final fun eval in the .tdat file if not already written by
                               the t_trigger*/
-  double *best_solution;
+  std::vector<double> best_solution;
   /* The following are to only pass data as a parameter in the free function. The
    * interface should probably be the same for all free functions so passing the
    * problem as a second parameter is not an option even though we need info
@@ -87,12 +87,10 @@ typedef struct {
   size_t number_of_integer_variables;
   int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
   double optimal_fvalue;
-  char *suite_name;
 
-  coco_observer_log_targets_t *targets;     /**< @brief Triggers based on target values. */
-  coco_observer_evaluations_t *evaluations; /**< @brief Triggers based on the number of evaluations. */
-
-} logger_bbob_old_data_t;
+  std::unique_ptr<coco_observer_log_targets_t> targets;     /**< @brief Triggers based on target values. */
+  std::unique_ptr<coco_observer_evaluations_t> evaluations; /**< @brief Triggers based on the number of evaluations. */
+};
 
 static logger_bbob_old_data_t *logger_bbob_old_get_data(const coco_problem_t *problem);
 
@@ -202,82 +200,47 @@ static void logger_bbob_old_error_io(FILE *path, int errnum) {
  ".dat");
  */
 
-static void logger_bbob_old_open_dataFile(FILE **target_file, const char *path, const char *dataFile_path,
-                                          const char *file_extension) {
-  char file_path[COCO_PATH_MAX + 2] = {0};
-  char relative_filePath[COCO_PATH_MAX + 2] = {0};
+static void logger_bbob_old_open_dataFile(FILE **target_file, const std::string &path,
+                                          const std::string &dataFile_path, const char *file_extension) {
   int errnum;
-  strncpy(relative_filePath, dataFile_path, COCO_PATH_MAX - strlen(relative_filePath) - 1);
-  strncat(relative_filePath, file_extension, COCO_PATH_MAX - strlen(relative_filePath) - 1);
-  coco_join_path(file_path, sizeof(file_path), path, relative_filePath, NULL);
-  if (*target_file == NULL) {
-    *target_file = fopen(file_path, "a+");
+  const std::string file_path = coco_join_path(path, dataFile_path + file_extension);
+  if (*target_file == nullptr) {
+    *target_file = fopen(file_path.c_str(), "a+");
     errnum = errno;
-    if (*target_file == NULL) {
+    if (*target_file == nullptr) {
       logger_bbob_old_error_io(*target_file, errnum);
     }
   }
 }
 
-/*
-static void logger_bbob_old_open_dataFile(FILE **target_file,
-                                          const char *path,
-                                          const char *dataFile_path,
-                                          const char *file_extension) {
-  char file_path[COCO_PATH_MAX + 2] = { 0 };
-  char relative_filePath[COCO_PATH_MAX + 2] = { 0 };
-  int errnum;
-  strncpy(relative_filePath, dataFile_path,
-  COCO_PATH_MAX - strlen(relative_filePath) - 1);
-  strncat(relative_filePath, file_extension,
-  COCO_PATH_MAX - strlen(relative_filePath) - 1);
-  coco_join_path(file_path, sizeof(file_path), path, relative_filePath, NULL);
-  if (*target_file == NULL) {
-    *target_file = fopen(file_path, "a+");
-    errnum = errno;
-    if (*target_file == NULL) {
-      _bbob_old_logger_error_io(*target_file, errnum);
-    }
-  }
-}*/
-
 /**
  * Creates the index file fileName_prefix+problem_id+file_extension in
  * folder_path
  */
-static void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const char *folder_path,
-                                          const char *indexFile_prefix, const char *function_id,
-                                          const char *dataFile_path, const char *suite_name) {
+static void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const std::string &folder_path,
+                                          const char *indexFile_prefix, const std::string &function_id,
+                                          const std::string &dataFile_path, const char *suite_name) {
   /* to add the instance number TODO: this should be done outside to avoid redoing this for the .*dat files */
-  char used_dataFile_path[COCO_PATH_MAX + 2] = {0};
+  std::string used_dataFile_path = dataFile_path;
   int errnum, newLine = 0; /* newLine is at 1 if we need a new line in the info file */
-  char *function_id_char;  /* TODO: consider adding them to logger */
-  char file_name[COCO_PATH_MAX + 2] = {0};
-  char file_path[COCO_PATH_MAX + 2] = {0};
   FILE **target_file;
   FILE *tmp_file;
-  strncpy(used_dataFile_path, dataFile_path, COCO_PATH_MAX - strlen(used_dataFile_path) - 1);
   if (bbob_old_infoFile_firstInstance == 0) {
     bbob_old_infoFile_firstInstance = logger->instance_id;
   }
-  function_id_char = coco_strdupf("%lu", (unsigned long)logger->function_id);
-  bbob_old_infoFile_firstInstance_char = coco_strdupf("%lu", (unsigned long)bbob_old_infoFile_firstInstance);
+  const std::string function_id_char = coco_string_format("%lu", (unsigned long)logger->function_id);
+  bbob_old_infoFile_firstInstance_char = coco_string_format("%lu", (unsigned long)bbob_old_infoFile_firstInstance);
   target_file = &(logger->index_file);
-  tmp_file = NULL; /* to check whether the file already exists. Don't want to use target_file */
-  strncpy(file_name, indexFile_prefix, COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, "_f", COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, function_id_char, COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, "_i", COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, bbob_old_infoFile_firstInstance_char, COCO_PATH_MAX - strlen(file_name) - 1);
-  strncat(file_name, ".info", COCO_PATH_MAX - strlen(file_name) - 1);
-  coco_join_path(file_path, sizeof(file_path), folder_path, file_name, NULL);
-  if (*target_file == NULL) {
-    tmp_file = fopen(file_path, "r"); /* to check for existence */
+  tmp_file = nullptr; /* to check whether the file already exists. Don't want to use target_file */
+  std::string file_path = coco_join_path(folder_path, std::string(indexFile_prefix) + "_f" + function_id_char + "_i" +
+                                                          bbob_old_infoFile_firstInstance_char + ".info");
+  if (*target_file == nullptr) {
+    tmp_file = fopen(file_path.c_str(), "r"); /* to check for existence */
     if ((tmp_file) && (bbob_old_current_dim == logger->number_of_variables) &&
         (bbob_old_current_funId == logger->function_id)) {
       /* new instance of current funId and current dim */
-      *target_file = fopen(file_path, "a+");
-      if (*target_file == NULL) {
+      *target_file = fopen(file_path.c_str(), "a+");
+      if (*target_file == nullptr) {
         errnum = errno;
         logger_bbob_old_error_io(*target_file, errnum);
       }
@@ -298,14 +261,12 @@ static void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const 
         } else {
           if (i < bbob_old_number_of_dimensions) { /* dimension already present, need to create a new file */
             newLine = 0;
-            file_path[strlen(file_path) - strlen(bbob_old_infoFile_firstInstance_char) - 7] =
-                0; /* truncate the instance part */
+            /* truncate the instance part ("_i" + instance + ".info") */
+            file_path.resize(file_path.size() - bbob_old_infoFile_firstInstance_char.size() - 7);
             bbob_old_infoFile_firstInstance = logger->instance_id;
-            coco_free_memory(bbob_old_infoFile_firstInstance_char);
-            bbob_old_infoFile_firstInstance_char = coco_strdupf("%lu", (unsigned long)bbob_old_infoFile_firstInstance);
-            strncat(file_path, "_i", COCO_PATH_MAX - strlen(file_name) - 1);
-            strncat(file_path, bbob_old_infoFile_firstInstance_char, COCO_PATH_MAX - strlen(file_name) - 1);
-            strncat(file_path, ".info", COCO_PATH_MAX - strlen(file_name) - 1);
+            bbob_old_infoFile_firstInstance_char =
+                coco_string_format("%lu", (unsigned long)bbob_old_infoFile_firstInstance);
+            file_path += "_i" + bbob_old_infoFile_firstInstance_char + ".info";
           } else { /* we have all dimensions */
             newLine = 1;
           }
@@ -320,8 +281,8 @@ static void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const 
           newLine = 1;
         }
       }
-      *target_file = fopen(file_path, "a+"); /* in any case, we append */
-      if (*target_file == NULL) {
+      *target_file = fopen(file_path.c_str(), "a+"); /* in any case, we append */
+      if (*target_file == nullptr) {
         errnum = errno;
         logger_bbob_old_error_io(*target_file, errnum);
       }
@@ -335,18 +296,16 @@ static void logger_bbob_old_openIndexFile(logger_bbob_old_data_t *logger, const 
       fprintf(*target_file,
               "suite = '%s', funcId = %d, DIM = %lu, Precision = %.3e, algId = '%s', coco_version = '%s', logger = "
               "'%s', data_format = '%s'\n",
-              suite_name, (int)strtol(function_id, NULL, 10), (unsigned long)logger->number_of_variables, pow(10, -8),
+              suite_name, (int)strtol(function_id.c_str(), nullptr, 10), (unsigned long)logger->number_of_variables, pow(10, -8),
               logger->observer->algorithm_name.c_str(), coco_version, logger_name, data_format);
 
       fprintf(*target_file, "%%\n");
-      strncat(used_dataFile_path, "_i", COCO_PATH_MAX - strlen(used_dataFile_path) - 1);
-      strncat(used_dataFile_path, bbob_old_infoFile_firstInstance_char, COCO_PATH_MAX - strlen(used_dataFile_path) - 1);
-      fprintf(*target_file, "%s.dat", used_dataFile_path); /* dataFile_path does not have the extension */
+      used_dataFile_path += "_i" + bbob_old_infoFile_firstInstance_char;
+      fprintf(*target_file, "%s.dat", used_dataFile_path.c_str()); /* dataFile_path does not have the extension */
       bbob_old_current_dim = logger->number_of_variables;
       bbob_old_current_funId = logger->function_id;
     }
   }
-  coco_free_memory(function_id_char);
 }
 
 /**
@@ -357,52 +316,41 @@ static void logger_bbob_old_initialize(logger_bbob_old_data_t *logger, coco_prob
   /*
    Creates/opens the data and index files
    */
-  char dataFile_path[COCO_PATH_MAX + 2] = {0}; /* relative path to the .dat file from where the .info file is */
-  char folder_path[COCO_PATH_MAX + 2] = {0};
-  char *tmpc_funId; /* serves to extract the function id as a char *. There should be a better way of doing this! */
-  char *tmpc_dim;   /* serves to extract the dimension as a char *. There should be a better way of doing this! */
+  std::string dataFile_path; /* relative path to the .dat file from where the .info file is */
   char indexFile_prefix[10] =
       "bbobexp"; /* TODO (minor): make the prefix bbobexp a parameter that the user can modify */
 
-  assert(logger != NULL);
-  assert(inner_problem != NULL);
+  assert(logger != nullptr);
+  assert(inner_problem != nullptr);
   assert(!inner_problem->problem_id.empty());
 
-  tmpc_funId = coco_strdupf("%lu", (unsigned long)coco_problem_get_suite_dep_function(inner_problem));
-  tmpc_dim = coco_strdupf("%lu", (unsigned long)inner_problem->number_of_variables);
+  const std::string tmpc_funId =
+      coco_string_format("%lu", (unsigned long)coco_problem_get_suite_dep_function(inner_problem));
+  const std::string tmpc_dim = coco_string_format("%lu", (unsigned long)inner_problem->number_of_variables);
+  const std::string &result_folder = logger->observer->result_folder;
 
   /* prepare paths and names */
-  strncpy(dataFile_path, "data_f", COCO_PATH_MAX);
-  strncat(dataFile_path, tmpc_funId, COCO_PATH_MAX - strlen(dataFile_path) - 1);
-  coco_join_path(folder_path, sizeof(folder_path), logger->observer->result_folder.c_str(), dataFile_path, NULL);
-  coco_create_directory(folder_path);
-  strncat(dataFile_path, "/bbobexp_f", COCO_PATH_MAX - strlen(dataFile_path) - 1);
-  strncat(dataFile_path, tmpc_funId, COCO_PATH_MAX - strlen(dataFile_path) - 1);
-  strncat(dataFile_path, "_DIM", COCO_PATH_MAX - strlen(dataFile_path) - 1);
-  strncat(dataFile_path, tmpc_dim, COCO_PATH_MAX - strlen(dataFile_path) - 1);
+  coco_create_directory(coco_join_path(result_folder, "data_f" + tmpc_funId));
+  dataFile_path = "data_f" + tmpc_funId + "/bbobexp_f" + tmpc_funId + "_DIM" + tmpc_dim;
 
   /* index/info file */
   assert(coco_problem_get_suite(inner_problem));
-  logger_bbob_old_openIndexFile(logger, logger->observer->result_folder.c_str(), indexFile_prefix, tmpc_funId, dataFile_path,
+  logger_bbob_old_openIndexFile(logger, result_folder, indexFile_prefix, tmpc_funId, dataFile_path,
                                 coco_problem_get_suite(inner_problem)->suite_name.c_str());
   fprintf(logger->index_file, ", %lu", (unsigned long)coco_problem_get_suite_dep_instance(inner_problem));
   /* data files */
   /* TODO: definitely improvable but works for now */
-  strncat(dataFile_path, "_i", COCO_PATH_MAX - strlen(dataFile_path) - 1);
-  strncat(dataFile_path, bbob_old_infoFile_firstInstance_char, COCO_PATH_MAX - strlen(dataFile_path) - 1);
+  dataFile_path += "_i" + bbob_old_infoFile_firstInstance_char;
 
-  logger_bbob_old_open_dataFile(&(logger->fdata_file), logger->observer->result_folder.c_str(), dataFile_path, ".dat");
+  logger_bbob_old_open_dataFile(&(logger->fdata_file), result_folder, dataFile_path, ".dat");
   fprintf(logger->fdata_file, bbob_old_file_header_str, logger->optimal_fvalue);
 
-  logger_bbob_old_open_dataFile(&(logger->tdata_file), logger->observer->result_folder.c_str(), dataFile_path, ".tdat");
+  logger_bbob_old_open_dataFile(&(logger->tdata_file), result_folder, dataFile_path, ".tdat");
   fprintf(logger->tdata_file, bbob_old_file_header_str, logger->optimal_fvalue);
 
-  logger_bbob_old_open_dataFile(&(logger->rdata_file), logger->observer->result_folder.c_str(), dataFile_path, ".rdat");
+  logger_bbob_old_open_dataFile(&(logger->rdata_file), result_folder, dataFile_path, ".rdat");
   fprintf(logger->rdata_file, bbob_old_file_header_str, logger->optimal_fvalue);
   logger->is_initialized = 1;
-  coco_free_memory(tmpc_dim);
-  coco_free_memory(tmpc_funId);
-  coco_free_memory(bbob_old_infoFile_firstInstance_char);
 }
 
 /**
@@ -411,10 +359,9 @@ static void logger_bbob_old_initialize(logger_bbob_old_data_t *logger, coco_prob
 static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, double *y) {
   size_t i;
   double y_logged, max_fvalue, sum_cons;
-  double *cons = NULL;
   logger_bbob_old_data_t *logger = logger_bbob_old_get_data(problem);
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, NULL);
+  const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, nullptr);
 
   if (!logger->is_initialized) {
     logger_bbob_old_initialize(logger, inner_problem);
@@ -441,10 +388,9 @@ static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, d
     assert(y_logged + 1e-13 >= logger->optimal_fvalue);
 
   /* Evaluate the constraints */
-  if (problem->number_of_constraints > 0) {
-    cons = coco_allocate_vector(problem->number_of_constraints);
-    inner_problem->evaluate_constraint(x, cons, 0);
-  }
+  std::vector<double> cons(problem->number_of_constraints);
+  if (problem->number_of_constraints > 0)
+    inner_problem->evaluate_constraint(x, cons.data(), 0);
 
   /* Compute the sum of positive constraint values */
   sum_cons = 0;
@@ -473,27 +419,23 @@ static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, d
      * by a feasible solution and always at evaluation one
      */
     if (logger->number_of_evaluations == 1 ||
-        coco_observer_log_targets_trigger(logger->targets, logger->best_fvalue - logger->optimal_fvalue)) {
+        coco_observer_log_targets_trigger(logger->targets.get(), logger->best_fvalue - logger->optimal_fvalue)) {
       logger_bbob_old_write_data(
           logger->fdata_file, logger->number_of_evaluations, logger->number_of_evaluations_constraints, y_logged,
           logger->best_fvalue, logger->optimal_fvalue, x, problem->number_of_variables,
-          problem->number_of_integer_variables, cons, problem->number_of_constraints, logger->log_discrete_as_int);
+          problem->number_of_integer_variables, cons.data(), problem->number_of_constraints, logger->log_discrete_as_int);
     }
   }
 
   /* Add a line in the .tdat file each time an fevals trigger is reached.*/
-  if (coco_observer_evaluations_trigger(logger->evaluations,
+  if (coco_observer_evaluations_trigger(logger->evaluations.get(),
                                         logger->number_of_evaluations + logger->number_of_evaluations_constraints)) {
     logger_bbob_old_write_data(
         logger->tdata_file, logger->number_of_evaluations, logger->number_of_evaluations_constraints, y_logged,
         logger->best_fvalue, logger->optimal_fvalue, x, problem->number_of_variables,
-        problem->number_of_integer_variables, cons, problem->number_of_constraints, logger->log_discrete_as_int);
+        problem->number_of_integer_variables, cons.data(), problem->number_of_constraints, logger->log_discrete_as_int);
     logger->written_last_eval = 1;
   }
-
-  /* Free allocated memory */
-  if (problem->number_of_constraints > 0)
-    coco_free_memory(cons);
 
 } /* end logger_bbob_old_evaluate */
 
@@ -504,30 +446,28 @@ static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, d
  * TODO: make sure it is called at the end of each run or move the
  * writing into files to another function
  */
-static void logger_bbob_old_free(void *stuff) {
+static void logger_bbob_old_free(logger_bbob_old_data_t *logger) {
   /* TODO: do all the "non simply freeing" stuff in another function
    * that can have problem as input
    */
-  logger_bbob_old_data_t *logger = (logger_bbob_old_data_t *)stuff;
-
-  if (stuff == NULL)
+  if (logger == nullptr)
     return;
 
   if ((coco_log_level >= COCO_DEBUG) && logger && logger->number_of_evaluations > 0) {
     coco_debug("best f=%e after %lu fevals (done observing)\n", logger->best_fvalue,
                (unsigned long)logger->number_of_evaluations);
   }
-  if (logger->index_file != NULL) {
+  if (logger->index_file != nullptr) {
     fprintf(logger->index_file, ":%lu|%.1e", (unsigned long)logger->number_of_evaluations,
             logger->best_fvalue - logger->optimal_fvalue);
     fclose(logger->index_file);
-    logger->index_file = NULL;
+    logger->index_file = nullptr;
   }
-  if (logger->fdata_file != NULL) {
+  if (logger->fdata_file != nullptr) {
     fclose(logger->fdata_file);
-    logger->fdata_file = NULL;
+    logger->fdata_file = nullptr;
   }
-  if (logger->tdata_file != NULL) {
+  if (logger->tdata_file != nullptr) {
     /* TODO: make sure it handles restarts well. i.e., it writes
      * at the end of a single run, not all the runs on a given
      * instance. Maybe start with forcing it to generate a new
@@ -536,31 +476,16 @@ static void logger_bbob_old_free(void *stuff) {
     if (!logger->written_last_eval) {
       logger_bbob_old_write_data(logger->tdata_file, logger->number_of_evaluations,
                                  logger->number_of_evaluations_constraints, logger->best_fvalue, logger->best_fvalue,
-                                 logger->optimal_fvalue, logger->best_solution, logger->number_of_variables,
-                                 logger->number_of_integer_variables, NULL, 0, logger->log_discrete_as_int);
+                                 logger->optimal_fvalue, logger->best_solution.data(), logger->number_of_variables,
+                                 logger->number_of_integer_variables, nullptr, 0, logger->log_discrete_as_int);
     }
     fclose(logger->tdata_file);
-    logger->tdata_file = NULL;
+    logger->tdata_file = nullptr;
   }
 
-  if (logger->rdata_file != NULL) {
+  if (logger->rdata_file != nullptr) {
     fclose(logger->rdata_file);
-    logger->rdata_file = NULL;
-  }
-
-  if (logger->best_solution != NULL) {
-    coco_free_memory(logger->best_solution);
-    logger->best_solution = NULL;
-  }
-
-  if (logger->targets != NULL) {
-    coco_free_memory(logger->targets);
-    logger->targets = NULL;
-  }
-
-  if (logger->evaluations != NULL) {
-    coco_observer_evaluations_free(logger->evaluations);
-    logger->evaluations = NULL;
+    logger->rdata_file = nullptr;
   }
 
   bbob_old_logger_is_open = 0;
@@ -584,7 +509,7 @@ struct logger_bbob_old_t final : public coco_problem_transformed_t {
  * @brief Returns the data of the logger.
  */
 static logger_bbob_old_data_t *logger_bbob_old_get_data(const coco_problem_t *problem) {
-  assert(dynamic_cast<const logger_bbob_old_t *>(problem) != NULL);
+  assert(dynamic_cast<const logger_bbob_old_t *>(problem) != nullptr);
   return &static_cast<logger_bbob_old_t *>(const_cast<coco_problem_t *>(problem))->data;
 }
 
@@ -605,10 +530,10 @@ static coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t
     coco_error("The current bbob_old_logger (observer) must be closed before a new one is opened");
   /* This is the name of the folder which happens to be the algName */
   /*logger->path = coco_strdup(observer->output_folder);*/
-  logger_data->index_file = NULL;
-  logger_data->fdata_file = NULL;
-  logger_data->tdata_file = NULL;
-  logger_data->rdata_file = NULL;
+  logger_data->index_file = nullptr;
+  logger_data->fdata_file = nullptr;
+  logger_data->tdata_file = nullptr;
+  logger_data->rdata_file = nullptr;
   logger_data->number_of_variables = inner_problem->number_of_variables;
   logger_data->number_of_integer_variables = inner_problem->number_of_integer_variables;
   if (inner_problem->best_value.empty()) {
@@ -622,7 +547,7 @@ static coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t
 
   logger_data->number_of_evaluations = 0;
   logger_data->number_of_evaluations_constraints = 0;
-  logger_data->best_solution = coco_allocate_vector(inner_problem->number_of_variables);
+  logger_data->best_solution.resize(inner_problem->number_of_variables);
   /* TODO: the following inits are just to be in the safe side and
    * should eventually be removed. Some fields of the bbob_old_logger struct
    * might be useless
@@ -635,9 +560,11 @@ static coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t
   logger_data->log_discrete_as_int = observer->log_discrete_as_int;
 
   /* Initialize triggers based on target values and number of evaluations */
-  logger_data->targets = coco_observer_log_targets(observer->number_target_triggers, observer->log_target_precision);
-  logger_data->evaluations = coco_observer_evaluations(
-    observer->number_evaluation_triggers, observer->base_evaluation_triggers.c_str(), inner_problem->number_of_variables);
+  logger_data->targets.reset(
+      coco_observer_log_targets(observer->number_target_triggers, observer->log_target_precision));
+  logger_data->evaluations.reset(coco_observer_evaluations(observer->number_evaluation_triggers,
+                                                           observer->base_evaluation_triggers.c_str(),
+                                                           inner_problem->number_of_variables));
 
   bbob_old_logger_is_open = 1;
   return problem;

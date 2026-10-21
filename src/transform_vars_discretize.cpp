@@ -76,10 +76,6 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
 
     if (number_of_constraints > 0)
       coco_error("transform_vars_discretize(): Constraints not supported yet.");
-
-    /* Constraints and gradients are not supported (see the overrides below) */
-    legacy_evaluate_constraint = NULL;
-    legacy_evaluate_gradient = NULL;
   }
 
   /**
@@ -87,7 +83,6 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
    */
   void evaluate_function(const double *x, double *y) override {
     size_t i;
-    double *discretized_x;
     double l, u, inner_l, inner_u, outer_l, outer_u;
     int n;
 
@@ -102,7 +97,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
     }
 
     /* Transform x to fit in the discretized space */
-    discretized_x = coco_duplicate_vector(x, number_of_variables);
+    std::vector<double> discretized_x(x, x + number_of_variables);
     for (i = 0; i < number_of_integer_variables; ++i) {
       outer_l = smallest_values_of_interest[i];
       outer_u = largest_values_of_interest[i];
@@ -121,8 +116,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
       discretized_x[i] = inner_l + (inner_u - inner_l) * (discretized_x[i] - outer_l) / (outer_u - outer_l) - offset[i];
     }
 
-    coco_evaluate_function(inner_problem, discretized_x, y);
-    coco_free_memory(discretized_x);
+    coco_evaluate_function(inner_problem, discretized_x.data(), y);
   }
 
   /** @brief Constraints are not supported yet (TODO?). */

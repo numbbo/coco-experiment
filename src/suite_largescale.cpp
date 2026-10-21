@@ -21,23 +21,6 @@
 #include "f_step_ellipsoid.cpp"
 #include "f_weierstrass.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
-
-/**
- * @brief Sets the dimensions and default instances for the bbob large-scale suite.
- */
-static coco_suite_t *suite_largescale_initialize(void) {
-
-  coco_suite_t *suite;
-  const size_t dimensions[] = {20, 40, 80, 160, 320, 640};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  suite = coco_suite_allocate("bbob-largescale", 24, num_dimensions, dimensions, "instances: 1-15", 1);
-  return suite;
-}
-
 /**
  * @brief Sets the instances associated with years for the bbob large-scale suite.
  */
@@ -48,7 +31,7 @@ static const char *suite_largescale_get_instances_by_year(const int year) {
     return "1-15";
   } else {
     coco_error("suite_largescale_get_instances_by_year(): year %d not defined for suite_largescale", year);
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -57,7 +40,7 @@ static const char *suite_largescale_get_instances_by_year(const int year) {
  */
 static coco_problem_t *coco_get_largescale_problem(const size_t function, const size_t dimension,
                                                    const size_t instance) {
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const char *problem_id_template = "bbob_f%03lu_i%02lu_d%04lu";
   const char *problem_name_template = "BBOB large-scale suite problem f%lu instance %lu in %luD";
@@ -143,10 +126,10 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function, const 
   } else {
     coco_error("coco_get_largescale_problem(): cannot retrieve problem f%lu instance %lu in %luD",
                (unsigned long)function, (unsigned long)instance, (unsigned long)dimension);
-    return NULL; /* Never reached */
+    return nullptr; /* Never reached */
   }
 
-  if (problem == NULL) {
+  if (problem == nullptr) {
     coco_error("coco_get_largescale_problem(): function f%lu not yet implemented  ", function);
   }
   return problem;
@@ -164,7 +147,7 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function, const 
 static coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                     const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -177,4 +160,33 @@ static coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite, const s
   problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
 
   return problem;
+}
+
+/**
+ * @brief The bbob-largescale suite.
+ */
+struct suite_largescale_t final : public coco_suite_s {
+  using coco_suite_s::coco_suite_s;
+
+  const char *get_instances_by_year(const int year) const override {
+    return suite_largescale_get_instances_by_year(year);
+  }
+
+  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
+                              const size_t instance_idx) override {
+    return suite_largescale_get_problem(this, function_idx, dimension_idx, instance_idx);
+  }
+};
+
+/**
+ * @brief Sets the dimensions and default instances for the bbob large-scale suite.
+ */
+static coco_suite_t *suite_largescale_initialize(void) {
+
+  coco_suite_t *suite;
+  const size_t dimensions[] = {20, 40, 80, 160, 320, 640};
+  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
+
+  suite = new suite_largescale_t("bbob-largescale", 24, num_dimensions, dimensions, "instances: 1-15", 1);
+  return suite;
 }

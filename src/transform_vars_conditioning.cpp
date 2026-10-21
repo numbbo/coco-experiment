@@ -51,14 +51,13 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
    */
   void evaluate_gradient(const double *x, double *y) override {
     size_t i;
-    double *gradient;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
       return;
     }
 
-    gradient = coco_allocate_vector(inner_problem->number_of_variables);
+    std::vector<double> gradient(inner_problem->number_of_variables, 0.0);
 
     for (i = 0; i < number_of_variables; ++i) {
       gradient[i] = pow(alpha, 0.5 * (double)(long)i / ((double)(long)number_of_variables - 1.0));
@@ -72,7 +71,6 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
     for (i = 0; i < inner_problem->number_of_variables; ++i)
       y[i] = gradient[i];
 
-    coco_free_memory(gradient);
   }
 };
 

@@ -24,33 +24,6 @@ static double bbob2009_fmax(double a, double b) { return (a > b) ? a : b; }
 static double bbob2009_round(double x) { return floor(x + 0.5); }
 
 /**
- * @brief Allocates a n by m matrix structured as an array of pointers to double arrays.
- */
-static double **bbob2009_allocate_matrix(const size_t n, const size_t m) {
-  double **matrix = NULL;
-  size_t i;
-  matrix = (double **)coco_allocate_memory(sizeof(double *) * n);
-  for (i = 0; i < n; ++i) {
-    matrix[i] = coco_allocate_vector(m);
-  }
-  return matrix;
-}
-
-/**
- * @brief Frees the matrix structured as an array of pointers to double arrays.
- */
-static void bbob2009_free_matrix(double **matrix, const size_t n) {
-  size_t i;
-  for (i = 0; i < n; ++i) {
-    if (matrix[i] != NULL) {
-      coco_free_memory(matrix[i]);
-      matrix[i] = NULL;
-    }
-  }
-  coco_free_memory(matrix);
-}
-
-/**
  * @brief Generates N uniform random numbers using inseed as the seed and stores them in r.
  */
 static void bbob2009_unif(double *r, size_t N, long inseed) {

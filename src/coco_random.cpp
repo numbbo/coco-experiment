@@ -22,6 +22,8 @@
  * @brief A structure containing the state of the COCO random generator.
  */
 struct coco_random_state_s {
+  explicit coco_random_state_s(uint32_t seed);
+
   double x[COCO_LONG_LAG];
   size_t index;
 };
@@ -49,23 +51,21 @@ static void coco_random_generate(coco_random_state_t *state) {
   state->index = 0;
 }
 
-coco_random_state_t *coco_random_new(uint32_t seed) {
-  coco_random_state_t *state = (coco_random_state_t *)coco_allocate_memory(sizeof(*state));
+coco_random_state_s::coco_random_state_s(uint32_t seed) {
   size_t i;
-  /* printf("coco_random_new(): %u\n", seed); */
   /* Expand seed to fill initial state array. */
   for (i = 0; i < COCO_LONG_LAG; ++i) {
     /* Uses uint64_t to silence the compiler ("shift count negative or too big, undefined behavior" warning) */
-    state->x[i] = ((double)seed) / (double)(((uint64_t)1UL << 32) - 1);
+    x[i] = ((double)seed) / (double)(((uint64_t)1UL << 32) - 1);
     /* Advance seed based on simple RNG from TAOCP */
     seed = (uint32_t)1812433253UL * (seed ^ (seed >> 30)) + ((uint32_t)i + 1);
   }
-  state->index = 12;
-  /* coco_random_generate(state); */
-  return state;
+  index = 12;
 }
 
-void coco_random_free(coco_random_state_t *state) { coco_free_memory(state); }
+coco_random_state_t *coco_random_new(uint32_t seed) { return new coco_random_state_t(seed); }
+
+void coco_random_free(coco_random_state_t *state) { delete state; }
 
 double coco_random_uniform(coco_random_state_t *state) {
   /* If we have consumed all random numbers in our archive, it is time to run the actual generator for one

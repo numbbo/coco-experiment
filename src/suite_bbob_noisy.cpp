@@ -16,25 +16,6 @@
 #include "f_sphere.cpp"
 #include "f_step_ellipsoid.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
-
-/**
- * @brief Sets the dimensions and default instances for the bbob suite.
- */
-static coco_suite_t *suite_bbob_noisy_initialize(void) {
-
-  coco_suite_t *suite;
-  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  /* IMPORTANT: Make sure to change the default instance for every new workshop! */
-  suite = coco_suite_allocate("bbob-noisy", 30, num_dimensions, dimensions, "year:2009", 1);
-
-  return suite;
-}
-
 /**
  * @brief Sets the instances associated with years for the bbob suite.
  */
@@ -44,7 +25,7 @@ static const char *suite_bbob_noisy_get_instances_by_year(const int year) {
     return "1-15";
   } else {
     coco_error("suite_bbob_noisy_get_instances_by_year(): year %d not defined for suite bbob-noisy", year);
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -55,8 +36,8 @@ static const char *suite_bbob_noisy_get_instances_by_year(const int year) {
  */
 static coco_problem_t *coco_get_bbob_noisy_problem(const size_t function, const size_t dimension,
                                                    const size_t instance) {
-  coco_problem_t *problem = NULL;
-  coco_problem_t *inner_problem = NULL;
+  coco_problem_t *problem = nullptr;
+  coco_problem_t *inner_problem = nullptr;
 
   const char *problem_id_template = "bbob_noisy_f%lu_i%02lu_d%02lu";
   const char *problem_name_template = "BBOB-NOISY suite problem f%lu instance %lu in %luD";
@@ -310,7 +291,7 @@ static coco_problem_t *coco_get_bbob_noisy_problem(const size_t function, const 
   } else {
     coco_error("coco_get_bbob_noisy_problem(): cannot retrieve problem f%lu instance %lu in %luD",
                (unsigned long)function, (unsigned long)instance, (unsigned long)dimension);
-    return NULL; /* Never reached */
+    return nullptr; /* Never reached */
   }
   return problem;
 }
@@ -327,7 +308,7 @@ static coco_problem_t *coco_get_bbob_noisy_problem(const size_t function, const 
 static coco_problem_t *suite_bbob_noisy_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                     const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -339,4 +320,35 @@ static coco_problem_t *suite_bbob_noisy_get_problem(coco_suite_t *suite, const s
   problem->suite_dep_instance = instance;
   problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
   return problem;
+}
+
+/**
+ * @brief The bbob-noisy suite.
+ */
+struct suite_bbob_noisy_t final : public coco_suite_s {
+  using coco_suite_s::coco_suite_s;
+
+  const char *get_instances_by_year(const int year) const override {
+    return suite_bbob_noisy_get_instances_by_year(year);
+  }
+
+  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
+                              const size_t instance_idx) override {
+    return suite_bbob_noisy_get_problem(this, function_idx, dimension_idx, instance_idx);
+  }
+};
+
+/**
+ * @brief Sets the dimensions and default instances for the bbob suite.
+ */
+static coco_suite_t *suite_bbob_noisy_initialize(void) {
+
+  coco_suite_t *suite;
+  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
+  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
+
+  /* IMPORTANT: Make sure to change the default instance for every new workshop! */
+  suite = new suite_bbob_noisy_t("bbob-noisy", 30, num_dimensions, dimensions, "year:2009", 1);
+
+  return suite;
 }

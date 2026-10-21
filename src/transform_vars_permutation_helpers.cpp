@@ -13,21 +13,16 @@
 
 #include <time.h> /*tmp*/
 
+#include <algorithm>
+
 /* TODO: Document this file in doxygen style! */
 
-static double *perm_random_data; /* global variable used to generate the random permutations */
-
 /**
- * @brief Comparison function used for sorting. In our case, it serves as a random permutation generator
+ * @brief Sorts the indices in P (of length n) by the corresponding values. Used as a random permutation
+ * generator when the values are random. Indices with equal values keep their order.
  */
-static int f_compare_doubles_for_random_permutation(const void *a, const void *b) {
-  double temp = perm_random_data[*(const size_t *)a] - perm_random_data[*(const size_t *)b];
-  if (temp > 0)
-    return 1;
-  else if (temp < 0)
-    return -1;
-  else
-    return 0;
+static void coco_sort_indices_by_values(size_t *P, const double *values, const size_t n) {
+  std::stable_sort(P, P + n, [values](const size_t a, const size_t b) { return values[a] < values[b]; });
 }
 
 /**
@@ -37,28 +32,24 @@ static int f_compare_doubles_for_random_permutation(const void *a, const void *b
 static void coco_compute_random_permutation(size_t *P, long seed, size_t n) {
   size_t i;
 
-  perm_random_data = coco_allocate_vector(n);
-  bbob2009_gauss(perm_random_data, n, seed);
+  std::vector<double> random_data(n);
+  bbob2009_gauss(random_data.data(), n, seed);
   for (i = 0; i < n; i++) {
     P[i] = i;
   }
-  qsort(P, n, sizeof(size_t), f_compare_doubles_for_random_permutation);
-  coco_free_memory(perm_random_data);
+  coco_sort_indices_by_values(P, random_data.data(), n);
 }
 
 /**
  * @brief generates a permutation by sorting a sequence and puts it in P
  */
-static void coco_compute_permutation_from_sequence(size_t *P, double *seq, size_t length) {
+static void coco_compute_permutation_from_sequence(size_t *P, const double *seq, size_t length) {
   size_t i;
 
-  perm_random_data = coco_allocate_vector(length);
   for (i = 0; i < length; i++) {
     P[i] = i;
-    perm_random_data[i] = seq[i];
   }
-  qsort(P, length, sizeof(size_t), f_compare_doubles_for_random_permutation);
-  coco_free_memory(perm_random_data);
+  coco_sort_indices_by_values(P, seq, length);
 }
 
 /**
@@ -68,12 +59,10 @@ static void coco_compute_permutation_from_sequence(size_t *P, double *seq, size_
  */
 static long coco_random_unif_integer(long lower_bound, long upper_bound, long seed) {
   long range, rand_int;
-  double *tmp_uniform;
-  tmp_uniform = coco_allocate_vector(1);
-  bbob2009_unif(tmp_uniform, 1, seed);
+  std::vector<double> tmp_uniform(1);
+  bbob2009_unif(tmp_uniform.data(), 1, seed);
   range = upper_bound - lower_bound + 1;
   rand_int = ((long)(tmp_uniform[0] * (double)range)) + lower_bound;
-  coco_free_memory(tmp_uniform);
   return rand_int;
 }
 
@@ -87,7 +76,6 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
                                                             size_t swap_range) {
   size_t i, idx_swap;
   size_t lower_bound, upper_bound, first_swap_var, second_swap_var, tmp;
-  size_t *idx_order;
 
   if (n <= 40) {
     /* Do an identity permutation for dimensions <= 40 */
@@ -96,19 +84,19 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
     return;
   }
 
-  perm_random_data = coco_allocate_vector(n);
-  bbob2009_unif(perm_random_data, n, seed);
+  std::vector<double> random_data(n);
+  bbob2009_unif(random_data.data(), n, seed);
 
-  idx_order = coco_allocate_vector_size_t(n);
+  std::vector<size_t> idx_order(n);
   for (i = 0; i < n; i++) {
     P[i] = i;
     idx_order[i] = i;
   }
 
   if (swap_range > 0) {
-    /*sort the random data in perm_random_data and arrange idx_order accordingly*/
+    /*sort the random data in random_data and arrange idx_order accordingly*/
     /*did not use coco_compute_random_permutation to only use the seed once*/
-    qsort(idx_order, n, sizeof(size_t), f_compare_doubles_for_random_permutation);
+    coco_sort_indices_by_values(idx_order.data(), random_data.data(), n);
     for (idx_swap = 0; idx_swap < nb_swaps; idx_swap++) {
       first_swap_var = idx_order[idx_swap];
       if (first_swap_var < swap_range) {
@@ -136,25 +124,6 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
     /* generate random permutation instead */
     coco_compute_random_permutation(P, seed, n);
   }
-  coco_free_memory(idx_order);
-  coco_free_memory(perm_random_data);
-}
-
-/**
- * @brief duplicates a size_t vector
- */
-static size_t *coco_duplicate_size_t_vector(const size_t *src, const size_t number_of_elements) {
-  size_t i;
-  size_t *dst;
-
-  assert(src != NULL);
-  assert(number_of_elements > 0);
-
-  dst = coco_allocate_vector_size_t(number_of_elements);
-  for (i = 0; i < number_of_elements; ++i) {
-    dst[i] = src[i];
-  }
-  return dst;
 }
 
 /**
@@ -165,7 +134,7 @@ static size_t coco_get_swap_range(size_t dimension, const char *suite_name) {
     return dimension / 3;
   } else {
     coco_error("coco_get_swap_range(): unknown problem suite");
-    return (size_t)NULL;
+    return (size_t)nullptr;
   }
 }
 
@@ -177,6 +146,6 @@ size_t coco_get_nb_swaps(size_t dimension, const char *suite_name) {
     return dimension;
   } else {
     coco_error("coco_get_nb_swaps(): unknown problem suite");
-    return (size_t)NULL;
+    return (size_t)nullptr;
   }
 }

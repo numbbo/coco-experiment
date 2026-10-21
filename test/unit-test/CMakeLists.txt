@@ -13,6 +13,12 @@ if(COCO_HAVE_FP_CONTRACT_OFF)
   add_compile_options(-ffp-contract=off)
 endif()
 
+## COCO does not use exceptions, see DEVELOPMENT.md
+check_cxx_compiler_flag(-fno-exceptions COCO_HAVE_NO_EXCEPTIONS)
+if(COCO_HAVE_NO_EXCEPTIONS)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
+endif()
+
 include(CTest)
 
 find_library(LIBM m)

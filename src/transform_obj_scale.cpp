@@ -22,7 +22,6 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
   }
 
   void evaluate_function(const double *x, double *y) override {
-    double *cons_values;
     int is_feasible;
     size_t i;
 
@@ -42,9 +41,8 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
       y[i] *= factor;
 
     if (number_of_constraints > 0) {
-      cons_values = coco_allocate_vector(number_of_constraints);
-      is_feasible = coco_is_feasible(this, x, cons_values);
-      coco_free_memory(cons_values);
+      std::vector<double> cons_values(number_of_constraints);
+      is_feasible = coco_is_feasible(this, x, cons_values.data());
       if (is_feasible)
         assert(y[0] + 1e-13 >= best_value[0]);
     } else

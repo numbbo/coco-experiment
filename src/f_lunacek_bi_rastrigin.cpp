@@ -18,13 +18,13 @@
 /**
  * @brief Data type for the Lunacek bi-Rastrigin problem.
  */
-typedef struct {
+struct f_lunacek_bi_rastrigin_data_t {
   std::vector<double> x_hat, z;
   std::vector<double> xopt;
   double fopt;
-  double **rot1, **rot2;
+  coco_matrix_t rot1, rot2;
   long rseed;
-} f_lunacek_bi_rastrigin_data_t;
+};
 
 /**
  * @brief Implements the Lunacek bi-Rastrigin function without connections to
@@ -40,7 +40,7 @@ static double f_lunacek_bi_rastrigin_raw(const double *x, const size_t number_of
   static const double d = 1.;
   const double s = 1. - 0.5 / (sqrt((double)(number_of_variables + 20)) - 4.1);
   const double mu1 = -sqrt((mu0 * mu0 - d) / s);
-  double *tmpvect, sum1 = 0., sum2 = 0., sum3 = 0.;
+  double sum1 = 0., sum2 = 0., sum3 = 0.;
 
   assert(number_of_variables > 1);
 
@@ -62,7 +62,7 @@ static double f_lunacek_bi_rastrigin_raw(const double *x, const size_t number_of
     }
   }
 
-  tmpvect = coco_allocate_vector(number_of_variables);
+  std::vector<double> tmpvect(number_of_variables);
   /* affine transformation */
   for (i = 0; i < number_of_variables; ++i) {
     double c1;
@@ -86,7 +86,6 @@ static double f_lunacek_bi_rastrigin_raw(const double *x, const size_t number_of
   }
   result = coco_double_min(sum1, d * (double)number_of_variables + s * sum2) +
            10. * ((double)number_of_variables - sum3) + 1e4 * penalty;
-  coco_free_memory(tmpvect);
 
   return result;
 }
@@ -103,13 +102,8 @@ struct f_lunacek_bi_rastrigin_t final : public coco_problem_s {
     params.x_hat.resize(dimension);
     params.z.resize(dimension);
     params.xopt.resize(dimension);
-    params.rot1 = bbob2009_allocate_matrix(dimension, dimension);
-    params.rot2 = bbob2009_allocate_matrix(dimension, dimension);
-  }
-
-  ~f_lunacek_bi_rastrigin_t() override {
-    bbob2009_free_matrix(params.rot1, number_of_variables);
-    bbob2009_free_matrix(params.rot2, number_of_variables);
+    params.rot1 = coco_matrix_t(dimension, dimension);
+    params.rot2 = coco_matrix_t(dimension, dimension);
   }
 
   /**
@@ -138,7 +132,7 @@ static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t
 
   const double mu0 = 2.5;
 
-  double fopt, *tmpvect;
+  double fopt;
   size_t i;
 
   data->rseed = rseed;
@@ -149,12 +143,12 @@ static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t
   } else {
     bbob2009_compute_xopt(data->xopt.data(), rseed, dimension);
   }
-  bbob2009_compute_rotation(data->rot1, rseed + 1000000, dimension);
-  bbob2009_compute_rotation(data->rot2, rseed, dimension);
+  bbob2009_compute_rotation(data->rot1.rows(), rseed + 1000000, dimension);
+  bbob2009_compute_rotation(data->rot2.rows(), rseed, dimension);
 
   /* Compute best solution */
-  tmpvect = coco_allocate_vector(dimension);
-  bbob2009_gauss(tmpvect, dimension, rseed);
+  std::vector<double> tmpvect(dimension);
+  bbob2009_gauss(tmpvect.data(), dimension, rseed);
   for (i = 0; i < dimension; ++i) {
     data->xopt[i] = 0.5 * mu0;
     if (tmpvect[i] < 0.0) {
@@ -162,7 +156,6 @@ static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t
     }
     problem->best_parameter[i] = data->xopt[i];
   }
-  coco_free_memory(tmpvect);
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   fopt = bbob2009_compute_fopt(function, instance);
@@ -213,7 +206,7 @@ static coco_problem_t *f_lunacek_bi_rastrigin_sub_problem_allocate(const size_t 
  */
 static double
 f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
-                            f_lunacek_bi_rastrigin_versatile_data_t *f_lunacek_bi_rastrigin_versatile_data) {
+                            f_lunacek_bi_rastrigin_shared_data_t *shared) {
 
   coco_problem_t *problem_sub_mu0, *problem_sub_mu1;
   size_t i;
@@ -221,12 +214,12 @@ f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
   double y0, y1;
   double *x_hat;
 
-  x_hat = f_lunacek_bi_rastrigin_versatile_data->x_hat.data();
+  x_hat = shared->x_hat.data();
 
-  problem_sub_mu0 = f_lunacek_bi_rastrigin_versatile_data->sub_problem_mu0;
+  problem_sub_mu0 = shared->sub_problem_mu0;
   problem_sub_mu0->evaluate_function(x_hat, &y0);
 
-  problem_sub_mu1 = f_lunacek_bi_rastrigin_versatile_data->sub_problem_mu1;
+  problem_sub_mu1 = shared->sub_problem_mu1;
   problem_sub_mu1->evaluate_function(x_hat, &y1);
 
   result += (double)number_of_variables;
@@ -243,16 +236,15 @@ f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
 /**
  * @brief The Lunacek bi-Rastrigin function of the large-scale suite.
  *
- * Shares x_hat with transform_vars_x_hat_generic, which sets it, through versatile_data. Owns the two sub problems.
+ * Shares x_hat with transform_vars_x_hat_generic, which sets it. Owns the two sub problems.
  */
 struct f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
-  f_lunacek_bi_rastrigin_versatile_data_t shared;
+  f_lunacek_bi_rastrigin_shared_data_t shared;
 
   explicit f_lunacek_bi_rastrigin_ls_t(const size_t number_of_variables)
       : coco_problem_s(number_of_variables, 1, 0) {
     coco_problem_init_from_scalars(this, "lunacek_bi_rastrigin function", -5.0, 5.0, 0.0);
     shared.x_hat.resize(number_of_variables);
-    versatile_data = &shared;
     coco_problem_set_id(this, "%s_d%04lu", "lunacek_bi_rastrigin", number_of_variables);
 
     /* Compute the best solution later once the sub-problems are well defined */
@@ -260,9 +252,9 @@ struct f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
   }
 
   ~f_lunacek_bi_rastrigin_ls_t() override {
-    if (shared.sub_problem_mu0 != NULL)
+    if (shared.sub_problem_mu0 != nullptr)
       coco_problem_free(shared.sub_problem_mu0);
-    if (shared.sub_problem_mu1 != NULL)
+    if (shared.sub_problem_mu1 != nullptr)
       coco_problem_free(shared.sub_problem_mu1);
   }
 
@@ -279,7 +271,7 @@ struct f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic lunacek_bi_rastrigin problem.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
+static f_lunacek_bi_rastrigin_ls_t *f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
   return new f_lunacek_bi_rastrigin_ls_t(number_of_variables);
 }
 
@@ -292,76 +284,65 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
   size_t i;
   double fopt;
   double penalty_factor = 1e4;
-  coco_problem_t *problem = NULL, **sub_problem_tmp;
+  coco_problem_t *problem = nullptr, **sub_problem_tmp;
 
-  double **B1, **B2;
-  const double *const *B1_copy;
-  const double *const *B2_copy;
-  size_t *P11, *P12, *P21, *P22;
-  size_t *block_sizes1, *block_sizes2;
   size_t nb_blocks1, nb_blocks2;
   size_t swap_range1, swap_range2;
   size_t nb_swaps1, nb_swaps2;
 
   double condition = 100.0;
   double mu0, mu1, d = 1.0, s;
-  double *mu0_vector, *mu1_vector,
-      *sign_vector; /* Wassim sign vector designate the 1^+_- vector*/
-  double *tmp_normal;
 
   fopt = bbob2009_compute_fopt(function, instance);
   s = 1. - 0.5 / (sqrt((double)(dimension + 20)) - 4.1);
   mu0 = 2.5;
   mu1 = -sqrt((mu0 * mu0 - d) / s);
 
-  block_sizes1 =
-      coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
-  block_sizes2 =
-      coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
+  std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
+  std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
   swap_range1 = coco_get_swap_range(dimension, "bbob-largescale");
   swap_range2 = coco_get_swap_range(dimension, "bbob-largescale");
   nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
   nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
-  B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);
-  B1_copy = (const double *const *)B1;
-  B2_copy = (const double *const *)B2;
-  coco_compute_blockrotation(B1, rseed + 1000000, dimension, block_sizes1,
+  coco_matrix_t B1 = coco_block_matrix(dimension, block_sizes1.data(), nb_blocks1);
+  coco_matrix_t B2 = coco_block_matrix(dimension, block_sizes2.data(), nb_blocks2);
+  coco_compute_blockrotation(B1.rows(), rseed + 1000000, dimension, block_sizes1.data(),
                              nb_blocks1);
-  coco_compute_blockrotation(B2, rseed, dimension, block_sizes2, nb_blocks2);
+  coco_compute_blockrotation(B2.rows(), rseed, dimension, block_sizes2.data(), nb_blocks2);
 
-  P11 = coco_allocate_vector_size_t(dimension);
-  P12 = coco_allocate_vector_size_t(dimension);
-  P21 = coco_allocate_vector_size_t(dimension);
-  P22 = coco_allocate_vector_size_t(dimension);
+  std::vector<size_t> P11(dimension);
+  std::vector<size_t> P12(dimension);
+  std::vector<size_t> P21(dimension);
+  std::vector<size_t> P22(dimension);
   coco_compute_truncated_uniform_swap_permutation(
-      P11, rseed + 3000000, dimension, nb_swaps1, swap_range1);
+      P11.data(), rseed + 3000000, dimension, nb_swaps1, swap_range1);
   coco_compute_truncated_uniform_swap_permutation(
-      P12, rseed + 4000000, dimension, nb_swaps1, swap_range1);
+      P12.data(), rseed + 4000000, dimension, nb_swaps1, swap_range1);
   coco_compute_truncated_uniform_swap_permutation(
-      P21, rseed + 5000000, dimension, nb_swaps2, swap_range2);
+      P21.data(), rseed + 5000000, dimension, nb_swaps2, swap_range2);
   coco_compute_truncated_uniform_swap_permutation(
-      P22, rseed + 6000000, dimension, nb_swaps2, swap_range2);
+      P22.data(), rseed + 6000000, dimension, nb_swaps2, swap_range2);
 
-  problem = f_lunacek_bi_rastrigin_problem_allocate(dimension);
+  f_lunacek_bi_rastrigin_ls_t *raw_problem = f_lunacek_bi_rastrigin_problem_allocate(dimension);
+  problem = raw_problem;
 
-  mu0_vector = coco_allocate_vector(dimension);
-  mu1_vector = coco_allocate_vector(dimension);
+  std::vector<double> mu0_vector(dimension);
+  std::vector<double> mu1_vector(dimension);
   for (i = 0; i < dimension; i++) {
     mu0_vector[i] = mu0;
     mu1_vector[i] = mu1;
   }
   /* allocate sub-problems */
-  ((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu0 =
+  raw_problem->shared.sub_problem_mu0 =
       f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
-  ((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu1 =
+  raw_problem->shared.sub_problem_mu1 =
       f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
 
   /* set sign_vector */
-  tmp_normal = coco_allocate_vector(dimension);
-  bbob2009_gauss(tmp_normal, dimension, rseed);
-  sign_vector = coco_allocate_vector(dimension);
+  std::vector<double> tmp_normal(dimension);
+  bbob2009_gauss(tmp_normal.data(), dimension, rseed);
+  std::vector<double> sign_vector(dimension); /* Wassim sign vector designate the 1^+_- vector*/
   for (i = 0; i < dimension; i++) { /* set sign(x_opt)*/
     if (tmp_normal[i] < 0.0) {      /* Wassim: noraml is used here but unif for Schweffel!!! */
       sign_vector[i] = -1.0;
@@ -372,27 +353,27 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
   }
 
   /* apply transformations to sub-problems */
-  sub_problem_tmp = &((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu0;
-  *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu0_vector, 0);
+  sub_problem_tmp = &raw_problem->shared.sub_problem_mu0;
+  *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu0_vector.data(), 0);
 
-  sub_problem_tmp = &((f_lunacek_bi_rastrigin_versatile_data_t *)problem->versatile_data)->sub_problem_mu1;
-  *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu1_vector, 0);
+  sub_problem_tmp = &raw_problem->shared.sub_problem_mu1;
+  *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu1_vector.data(), 0);
   *sub_problem_tmp = transform_obj_scale(*sub_problem_tmp, s); /* Manh: need to use s */
   *sub_problem_tmp = transform_obj_shift(*sub_problem_tmp, d * (double)dimension);
 
   /* transformations on main problem */
-  problem = transform_vars_permutation(problem, P22, dimension);
-  problem = transform_vars_blockrotation(problem, B1_copy, dimension,
-                                         block_sizes1, nb_blocks1);
-  problem = transform_vars_permutation(problem, P21, dimension);
+  problem = transform_vars_permutation(problem, P22.data(), dimension);
+  problem = transform_vars_blockrotation(problem, B1.rows(), dimension,
+                                         block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(problem, P21.data(), dimension);
   problem = transform_vars_conditioning(problem, condition);
 
-  problem = transform_vars_permutation(problem, P12, dimension);
-  problem = transform_vars_blockrotation(problem, B2_copy, dimension,
-                                         block_sizes2, nb_blocks2);
-  problem = transform_vars_permutation(problem, P11, dimension);
-  problem = transform_vars_shift(problem, mu0_vector, 0);
-  problem = transform_vars_x_hat_generic(problem, sign_vector);
+  problem = transform_vars_permutation(problem, P12.data(), dimension);
+  problem = transform_vars_blockrotation(problem, B2.rows(), dimension,
+                                         block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(problem, P11.data(), dimension);
+  problem = transform_vars_shift(problem, mu0_vector.data(), 0);
+  problem = transform_vars_x_hat_generic(problem, sign_vector.data(), &raw_problem->shared);
 
   problem = transform_obj_norm_by_dim(problem);
   problem = transform_obj_penalize(problem, penalty_factor);
@@ -413,17 +394,5 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
                         dimension);
   coco_problem_set_type(problem, "5-weakly-structured");
 
-  coco_free_memory(tmp_normal);
-  coco_free_block_matrix(B1, dimension);
-  coco_free_block_matrix(B2, dimension);
-  coco_free_memory(P11);
-  coco_free_memory(P12);
-  coco_free_memory(P21);
-  coco_free_memory(P22);
-  coco_free_memory(block_sizes1);
-  coco_free_memory(block_sizes2);
-  coco_free_memory(mu0_vector);
-  coco_free_memory(mu1_vector);
-  coco_free_memory(sign_vector);
   return problem;
 }

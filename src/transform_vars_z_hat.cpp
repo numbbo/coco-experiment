@@ -33,7 +33,7 @@ struct transform_vars_z_hat_t final : public coco_problem_transformed_t {
     COCO INFO: ..., d=2, running: f18.Assertion failed: (about_equal_value(hypervolume, 8.1699208579037619e-05)), function
     test_coco_archive_extreme_solutions, file ./test_coco_archive.cpp, line 123.
     */
-    if (strstr(coco_problem_get_id(inner_problem), "schwefel") == NULL) {
+    if (strstr(coco_problem_get_id(inner_problem), "schwefel") == nullptr) {
       coco_warning("transform_vars_z_hat(): 'best_parameter' not updated, set to NAN.");
       coco_vector_set_to_nan(best_parameter.data(), number_of_variables);
     }

@@ -12,9 +12,6 @@
 #include "transform_vars_discretize.cpp"
 #include "transform_obj_scale.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
 /**
  * @brief Factors used to scale separate functions in order to achieve similar difficulty.
  */
@@ -25,19 +22,6 @@ static double suite_bbob_mixint_scaling_factors[] = {
     1,    10,   1,    10,   1e-1, /* f16 to f20 */
     1,    1,    10,   1e-1        /* f21 to f24 */
 };
-
-/**
- * @brief Sets the dimensions and default instances for the bbob-mixint suite.
- */
-static coco_suite_t *suite_bbob_mixint_initialize(const char *suite_name) {
-
-  coco_suite_t *suite;
-  const size_t dimensions[] = {5, 10, 20, 40, 80, 160};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-  suite = coco_suite_allocate(suite_name, 24, num_dimensions, dimensions, "instances: 1-15", 1);
-
-  return suite;
-}
 
 /**
  * @brief Sets the instances associated with years for the bbob-mixint suites.
@@ -61,13 +45,13 @@ static const char *suite_bbob_mixint_get_instances_by_year(const int year) {
 static coco_problem_t *coco_get_bbob_mixint_problem(const size_t function, const size_t dimension,
                                                     const size_t instance,
                                                     const coco_get_problem_function_t coco_get_problem_function) {
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   /* The cardinality of variables (0 = continuous variables should always come last) */
   const size_t variable_cardinality[] = {2, 4, 8, 16, 0};
 
-  double *smallest_values_of_interest = coco_allocate_vector(dimension);
-  double *largest_values_of_interest = coco_allocate_vector(dimension);
+  std::vector<double> smallest_values_of_interest(dimension);
+  std::vector<double> largest_values_of_interest(dimension);
   std::string inner_problem_id;
 
   size_t i, j;
@@ -77,7 +61,7 @@ static coco_problem_t *coco_get_bbob_mixint_problem(const size_t function, const
     coco_error("coco_get_bbob_mixint_problem(): dimension %lu not supported for suite_bbob_mixint", dimension);
 
   problem = coco_get_problem_function(function, dimension, instance);
-  assert(problem != NULL);
+  assert(problem != nullptr);
 
   /* Set the ROI of the outer problem according to the given cardinality of variables and the ROI of the
    * inner problem to [-4, 4] for variables that will be discretized */
@@ -103,15 +87,12 @@ static coco_problem_t *coco_get_bbob_mixint_problem(const size_t function, const
 
   inner_problem_id = problem->problem_id;
 
-  problem = transform_vars_discretize(problem, smallest_values_of_interest, largest_values_of_interest, num_integer);
+  problem = transform_vars_discretize(problem, smallest_values_of_interest.data(), largest_values_of_interest.data(), num_integer);
 
   problem = transform_obj_scale(problem, suite_bbob_mixint_scaling_factors[function - 1]);
 
   coco_problem_set_id(problem, "bbob-mixint_f%03lu_i%02lu_d%02lu", function, instance, dimension);
   coco_problem_set_name(problem, "mixint(%s)", inner_problem_id.c_str());
-
-  coco_free_memory(smallest_values_of_interest);
-  coco_free_memory(largest_values_of_interest);
 
   return problem;
 }
@@ -131,7 +112,7 @@ static coco_problem_t *coco_get_bbob_mixint_problem(const size_t function, const
 static coco_problem_t *suite_bbob_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
                                                      const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
   const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
 
   const size_t function = suite->functions[function_idx];
@@ -148,4 +129,33 @@ static coco_problem_t *suite_bbob_mixint_get_problem(coco_suite_t *suite, const 
   problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
 
   return problem;
+}
+
+/**
+ * @brief The bbob-mixint suite.
+ */
+struct suite_bbob_mixint_t final : public coco_suite_s {
+  using coco_suite_s::coco_suite_s;
+
+  const char *get_instances_by_year(const int year) const override {
+    return suite_bbob_mixint_get_instances_by_year(year);
+  }
+
+  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
+                              const size_t instance_idx) override {
+    return suite_bbob_mixint_get_problem(this, function_idx, dimension_idx, instance_idx);
+  }
+};
+
+/**
+ * @brief Sets the dimensions and default instances for the bbob-mixint suite.
+ */
+static coco_suite_t *suite_bbob_mixint_initialize(const char *suite_name) {
+
+  coco_suite_t *suite;
+  const size_t dimensions[] = {5, 10, 20, 40, 80, 160};
+  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
+  suite = new suite_bbob_mixint_t(suite_name, 24, num_dimensions, dimensions, "instances: 1-15", 1);
+
+  return suite;
 }

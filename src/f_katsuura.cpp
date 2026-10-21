@@ -86,31 +86,31 @@ static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, c
                                                         const size_t instance, const long rseed,
                                                         const char *problem_id_template,
                                                         const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = NULL;
+  double fopt;
+  coco_problem_t *problem = nullptr;
   size_t i, j, k;
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double *current_row, **rot1, **rot2;
+  std::vector<double> M(dimension * dimension);
+  std::vector<double> b(dimension);
+  double *current_row;
 
   const double penalty_factor = 1.0;
 
-  xopt = coco_allocate_vector(dimension);
+  std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt, rseed, dimension);
+    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
   } else {
-    bbob2009_compute_xopt(xopt, rseed, dimension);
+    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
   }
 
-  rot1 = bbob2009_allocate_matrix(dimension, dimension);
-  rot2 = bbob2009_allocate_matrix(dimension, dimension);
-  bbob2009_compute_rotation(rot1, rseed + 1000000, dimension);
-  bbob2009_compute_rotation(rot2, rseed, dimension);
+  coco_matrix_t rot1(dimension, dimension);
+  coco_matrix_t rot2(dimension, dimension);
+  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
+  bbob2009_compute_rotation(rot2.rows(), rseed, dimension);
 
   for (i = 0; i < dimension; ++i) {
     b[i] = 0.0;
-    current_row = M + i * dimension;
+    current_row = M.data() + i * dimension;
     for (j = 0; j < dimension; ++j) {
       current_row[j] = 0.0;
       for (k = 0; k < dimension; ++k) {
@@ -123,12 +123,10 @@ static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, c
   problem = f_katsuura_allocate(dimension);
   problem = transform_obj_shift(
       problem, fopt); /*There is no shift 'fopt' in the definition*/
-  problem = transform_vars_affine(problem, M, b, dimension);
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
+  problem = transform_vars_shift(problem, xopt.data(), 0);
   problem = transform_obj_penalize(problem, penalty_factor);
 
-  bbob2009_free_matrix(rot1, dimension);
-  bbob2009_free_matrix(rot2, dimension);
 
   coco_problem_set_id(problem, problem_id_template, function, instance,
                       dimension);
@@ -136,9 +134,6 @@ static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, c
                         dimension);
   coco_problem_set_type(problem, "5-weakly-structured");
 
-  coco_free_memory(M);
-  coco_free_memory(b);
-  coco_free_memory(xopt);
   return problem;
 }
 
@@ -149,19 +144,13 @@ static coco_problem_t *f_katsuura_permblockdiag_bbob_problem_allocate(const size
                                                                       const size_t instance, const long rseed,
                                                                       const char *problem_id_template,
                                                                       const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = NULL;
-  double **B1;
-  double **B2;
-  const double *const *B1_copy;
-  const double *const *B2_copy;
+  double fopt;
+  coco_problem_t *problem = nullptr;
   const double penalty_factor = 1.0;
-  size_t *P11 = coco_allocate_vector_size_t(dimension);
-  size_t *P12 = coco_allocate_vector_size_t(dimension);
-  size_t *P21 = coco_allocate_vector_size_t(dimension);
-  size_t *P22 = coco_allocate_vector_size_t(dimension);
-  size_t *block_sizes1;
-  size_t *block_sizes2;
+  std::vector<size_t> P11(dimension);
+  std::vector<size_t> P12(dimension);
+  std::vector<size_t> P21(dimension);
+  std::vector<size_t> P22(dimension);
   size_t nb_blocks1;
   size_t nb_blocks2;
   size_t swap_range1;
@@ -169,52 +158,48 @@ static coco_problem_t *f_katsuura_permblockdiag_bbob_problem_allocate(const size
   size_t nb_swaps1;
   size_t nb_swaps2;
 
-  block_sizes1 =
-      coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
-  block_sizes2 =
-      coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
+  std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
+  std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
   swap_range1 = coco_get_swap_range(dimension, "bbob-largescale");
   swap_range2 = coco_get_swap_range(dimension, "bbob-largescale");
   nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
   nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  xopt = coco_allocate_vector(dimension);
+  std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt, rseed, dimension);
+    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
   } else {
-    bbob2009_compute_xopt(xopt, rseed, dimension);
+    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
   }
 
-  B1 = coco_allocate_blockmatrix(dimension, block_sizes1, nb_blocks1);
-  B2 = coco_allocate_blockmatrix(dimension, block_sizes2, nb_blocks2);
-  B1_copy = (const double *const *)B1;
-  B2_copy = (const double *const *)B2;
+  coco_matrix_t B1 = coco_block_matrix(dimension, block_sizes1.data(), nb_blocks1);
+  coco_matrix_t B2 = coco_block_matrix(dimension, block_sizes2.data(), nb_blocks2);
 
-  coco_compute_blockrotation(B1, rseed + 1000000, dimension, block_sizes1,
+  coco_compute_blockrotation(B1.rows(), rseed + 1000000, dimension, block_sizes1.data(),
                              nb_blocks1);
-  coco_compute_blockrotation(B2, rseed, dimension, block_sizes2, nb_blocks2);
+  coco_compute_blockrotation(B2.rows(), rseed, dimension, block_sizes2.data(), nb_blocks2);
 
   coco_compute_truncated_uniform_swap_permutation(
-      P11, rseed + 3000000, dimension, nb_swaps1, swap_range1);
+      P11.data(), rseed + 3000000, dimension, nb_swaps1, swap_range1);
   coco_compute_truncated_uniform_swap_permutation(
-      P12, rseed + 4000000, dimension, nb_swaps1, swap_range1);
+      P12.data(), rseed + 4000000, dimension, nb_swaps1, swap_range1);
   coco_compute_truncated_uniform_swap_permutation(
-      P21, rseed + 5000000, dimension, nb_swaps2, swap_range2);
+      P21.data(), rseed + 5000000, dimension, nb_swaps2, swap_range2);
   coco_compute_truncated_uniform_swap_permutation(
-      P22, rseed + 6000000, dimension, nb_swaps2, swap_range2);
+      P22.data(), rseed + 6000000, dimension, nb_swaps2, swap_range2);
 
   problem = f_katsuura_allocate(dimension);
-  problem = transform_vars_permutation(problem, P22, dimension);
-  problem = transform_vars_blockrotation(problem, B1_copy, dimension,
-                                         block_sizes2, nb_blocks2);
-  problem = transform_vars_permutation(problem, P21, dimension);
+  problem = transform_vars_permutation(problem, P22.data(), dimension);
+  problem = transform_vars_blockrotation(problem, B1.rows(), dimension,
+                                         block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(problem, P21.data(), dimension);
   problem = transform_vars_conditioning(problem, 100.0);
-  problem = transform_vars_permutation(problem, P12, dimension);
-  problem = transform_vars_blockrotation(problem, B2_copy, dimension,
-                                         block_sizes1, nb_blocks1);
-  problem = transform_vars_permutation(problem, P11, dimension);
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_permutation(problem, P12.data(), dimension);
+  problem = transform_vars_blockrotation(problem, B2.rows(), dimension,
+                                         block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(problem, P11.data(), dimension);
+  problem = transform_vars_shift(problem, xopt.data(), 0);
 
   /*problem = transform_obj_norm_by_dim(problem);*/ /* Wassim: does not seem to
                                                        be needed*/
@@ -228,14 +213,5 @@ static coco_problem_t *f_katsuura_permblockdiag_bbob_problem_allocate(const size
                         dimension);
   coco_problem_set_type(problem, "5-weakly-structured");
 
-  coco_free_block_matrix(B1, dimension);
-  coco_free_block_matrix(B2, dimension);
-  coco_free_memory(P11);
-  coco_free_memory(P12);
-  coco_free_memory(P21);
-  coco_free_memory(P22);
-  coco_free_memory(block_sizes1);
-  coco_free_memory(block_sizes2);
-  coco_free_memory(xopt);
   return problem;
 }

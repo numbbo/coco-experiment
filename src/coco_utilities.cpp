@@ -14,6 +14,8 @@
 #include <errno.h>
 #include <limits.h>
 
+#include <algorithm>
+
 #include "coco.h"
 #include "coco_internal.h"
 #include "coco_string.cpp"
@@ -83,39 +85,23 @@ const char *coco_set_log_level(const char *log_level) {
  */
 /**@{*/
 /**
+ * @brief Returns the given path (end of the recursion of the variadic coco_join_path()).
+ */
+static std::string coco_join_path(const std::string &path) { return path; }
+
+/**
  * @brief Creates a platform-dependent path from the given strings.
  *
- * @note The last argument must be NULL.
- * @note The first parameter must be able to accommodate path_max_length characters and the length
- * of the joined path must not exceed path_max_length characters.
- * @note Should work cross-platform.
- *
  * Usage examples:
- * - coco_join_path(base_path, 100, folder1, folder2, folder3, NULL) creates base_path/folder1/folder2/folder3
- * - coco_join_path(base_path, 100, folder1, file_name, NULL) creates base_path/folder1/file_name
- * @param path The base path; it's also where the joined path is stored to.
- * @param path_max_length The maximum length of the path.
- * @param ... Additional strings, must end with NULL
+ * - coco_join_path(base_path, folder1, folder2, folder3) returns base_path/folder1/folder2/folder3
+ * - coco_join_path(base_path, folder1, file_name) returns base_path/folder1/file_name
+ *
+ * No separator is added after an empty base path.
  */
-static void coco_join_path(char *path, const size_t path_max_length, ...) {
-  const size_t path_separator_length = strlen(coco_path_separator);
-  va_list args;
-  char *path_component;
-  size_t path_length = strlen(path);
-
-  va_start(args, path_max_length);
-  while (NULL != (path_component = va_arg(args, char *))) {
-    size_t component_length = strlen(path_component);
-    if (path_length + path_separator_length + component_length >= path_max_length) {
-      coco_error("coco_join_path() failed because the ${path} is too short.");
-      return; /* never reached */
-    }
-    /* Both should be safe because of the above check. */
-    if (strlen(path) > 0)
-      strncat(path, coco_path_separator, path_max_length - strlen(path) - 1);
-    strncat(path, path_component, path_max_length - strlen(path) - 1);
-  }
-  va_end(args);
+template <typename... Components>
+static std::string coco_join_path(const std::string &path, const std::string &component,
+                                  const Components &...components) {
+  return coco_join_path(path.empty() ? component : path + coco_path_separator + component, components...);
 }
 
 /**
@@ -206,124 +192,87 @@ static int coco_mkdir(const char *path) {
  *
  * @return 0 if the created directory has not existed before and 1 otherwise.
  */
-static int coco_create_directory(const char *path) {
-  char *path_copy = NULL;
-  char *tmp, *p;
-  char path_sep = coco_path_separator[0];
-  size_t len = strlen(path);
-
-  int result = 0;
-
-  path_copy = coco_strdup(path);
-  tmp = path_copy;
+static int coco_create_directory(const std::string &path) {
+  const char path_sep = coco_path_separator[0];
+  std::string tmp = path;
+  size_t i;
 
   /* Remove possible trailing (back)slash */
-  if (tmp[len - 1] == path_sep)
-    tmp[len - 1] = 0;
+  if (!tmp.empty() && (tmp.back() == path_sep))
+    tmp.pop_back();
 
   /* Iterate through nested directories (does nothing if directories are not nested) */
-  for (p = tmp; *p; p++) {
-    if (*p == path_sep) {
-      *p = 0;
-      if (strlen(tmp) == 0) {
-        *p = path_sep;
-        continue;
-      }
-      coco_mkdir(tmp);
-      *p = path_sep;
-    }
+  for (i = 1; i < tmp.size(); i++) {
+    if (tmp[i] == path_sep)
+      coco_mkdir(tmp.substr(0, i).c_str());
   }
 
   /* Create the last nested or only directory */
-  result = coco_mkdir(tmp);
-  coco_free_memory(path_copy);
-  return result;
+  return coco_mkdir(tmp.c_str());
 }
 
 /**
- * @brief Creates a unique file name from the given file_name.
+ * @brief Returns a unique file name created from the given file_name.
  *
- * If path/file_name.ext does not yet exit, it is left as is, otherwise it is changed(!) by appending a number
- * to it. If path/file_name.ext already exists, path/filename-0001.ext will be tried. If this one exists as well,
- * path/filename-0002.ext will be tried, and so on. If path/filename-9999.ext exists as well, the function throws
- * an error. Every 1000 trials a warning is issued.
+ * If path/file_name.ext does not yet exit, file_name is returned, otherwise a number is appended to it. If
+ * path/file_name.ext already exists, path/filename-0001.ext will be tried. If this one exists as well,
+ * path/filename-0002.ext will be tried, and so on. If path/filename-9999.ext exists as well, the function
+ * raises an error. Every 1000 trials a warning is issued.
  */
-static void coco_create_unique_filename(const char *path, char **file_name, const char *ext) {
+static std::string coco_create_unique_filename(const std::string &path, const std::string &file_name,
+                                               const char *ext) {
   int counter = 1;
-  char file_path[COCO_PATH_MAX + 2] = {0};
-  char relative_file_path[COCO_PATH_MAX + 2] = {0};
-  char *new_file_name;
 
-  strncpy(relative_file_path, *file_name, COCO_PATH_MAX - strlen(relative_file_path) - 1);
-  strncat(relative_file_path, ext, COCO_PATH_MAX - strlen(relative_file_path) - 1);
-  coco_join_path(file_path, sizeof(file_path), path, relative_file_path, NULL);
-
-  if (!coco_file_exists(file_path))
-    return;
+  if (!coco_file_exists(coco_join_path(path, file_name + ext).c_str()))
+    return file_name;
 
   while (counter < 9999) {
+    const std::string new_file_name = coco_string_format("%s-%04d", file_name.c_str(), counter);
 
-    new_file_name = coco_strdupf("%s-%04d", *file_name, counter);
-
-    memset(relative_file_path, 0, sizeof(path));
-    memset(file_path, 0, sizeof(path));
-    strncpy(relative_file_path, new_file_name, COCO_PATH_MAX - strlen(relative_file_path) - 1);
-    strncat(relative_file_path, ext, COCO_PATH_MAX - strlen(relative_file_path) - 1);
-    coco_join_path(file_path, sizeof(file_path), path, relative_file_path, NULL);
-
-    if (!coco_file_exists(file_path)) {
-      coco_free_memory(*file_name);
-      *file_name = new_file_name;
-      return;
-    }
+    if (!coco_file_exists(coco_join_path(path, new_file_name + ext).c_str()))
+      return new_file_name;
 
     counter++;
     if (counter % 1000 == 0)
-      coco_warning("coco_create_unique_filename(): trying to create a unique file name %s (%d trials)", *file_name,
-                   counter);
-    coco_free_memory(new_file_name);
+      coco_warning("coco_create_unique_filename(): trying to create a unique file name %s (%d trials)",
+                   file_name.c_str(), counter);
   }
 
-  coco_error("coco_create_unique_filename(): could not create a unique file name %s", *file_name);
-  return; /* Never reached */
+  coco_error("coco_create_unique_filename(): could not create a unique file name %s", file_name.c_str());
+  return file_name; /* Never reached */
 }
 
 /**
- * @brief Creates a directory that has not existed before.
+ * @brief Creates a directory that has not existed before and returns its path.
  *
- * If the given path does not yet exit, it is left as is, otherwise it is changed(!) by appending a number
- * to it. If path already exists, path-0001 will be tried. If this one exists as well, path-0002 will be tried,
- * and so on. If path-9999 exists as well, an error is raised. Every 1000 trials a warning is issued.
+ * If the given path does not yet exit, it is used as is, otherwise a number is appended to it. If path
+ * already exists, path-0001 will be tried. If this one exists as well, path-0002 will be tried, and so on.
+ * If path-9999 exists as well, an error is raised. Every 1000 trials a warning is issued.
  */
-static void coco_create_unique_directory(char **path) {
+static std::string coco_create_unique_directory(const std::string &path) {
 
   int counter = 1;
-  char *new_path;
 
-  if (coco_create_directory(*path) == 0) {
+  if (coco_create_directory(path) == 0) {
     /* Directory created */
-    return;
+    return path;
   }
 
   while (counter < 9999) {
-
-    new_path = coco_strdupf("%s-%04d", *path, counter);
+    const std::string new_path = coco_string_format("%s-%04d", path.c_str(), counter);
 
     if (coco_create_directory(new_path) == 0) {
       /* Directory created */
-      coco_free_memory(*path);
-      *path = new_path;
-      return;
-    } else {
-      counter++;
-      if (counter % 1000 == 0)
-        coco_warning("coco_create_unique_directory(): creating a unique directory %s (%d trials)", *path, counter);
-      coco_free_memory(new_path);
+      return new_path;
     }
+    counter++;
+    if (counter % 1000 == 0)
+      coco_warning("coco_create_unique_directory(): creating a unique directory %s (%d trials)", path.c_str(),
+                   counter);
   }
 
-  coco_error("coco_create_unique_directory(): unable to create unique directory %s", *path);
-  return; /* Never reached */
+  coco_error("coco_create_unique_directory(): unable to create unique directory %s", path.c_str());
+  return path; /* Never reached */
 }
 
 /**
@@ -336,18 +285,15 @@ static void coco_create_unique_directory(char **path) {
 int coco_remove_directory(const char *path) {
 #if _MSC_VER
   WIN32_FIND_DATA find_data_file;
-  HANDLE find_handle = NULL;
-  char *buf;
+  HANDLE find_handle = nullptr;
   int r = -1;
   int r2 = -1;
 
-  buf = coco_strdupf("%s\\*.*", path);
   /* Nothing to do if the folder does not exist */
-  if ((find_handle = FindFirstFile(buf, &find_data_file)) == INVALID_HANDLE_VALUE) {
-    coco_free_memory(buf);
+  if ((find_handle = FindFirstFile(coco_string_format("%s\\*.*", path).c_str(), &find_data_file)) ==
+      INVALID_HANDLE_VALUE) {
     return 0;
   }
-  coco_free_memory(buf);
 
   do {
     r = 0;
@@ -355,18 +301,16 @@ int coco_remove_directory(const char *path) {
     /* Skip the names "." and ".." as we don't want to recurse on them */
     if (strcmp(find_data_file.cFileName, ".") != 0 && strcmp(find_data_file.cFileName, "..") != 0) {
       /* Build the new path using the argument path the file/folder name we just found */
-      buf = coco_strdupf("%s\\%s", path, find_data_file.cFileName);
+      const std::string buf = coco_string_format("%s\\%s", path, find_data_file.cFileName);
 
       if (find_data_file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
         /* Buf is a directory, recurse on it */
-        r2 = coco_remove_directory(buf);
+        r2 = coco_remove_directory(buf.c_str());
       } else {
         /* Buf is a file, delete it */
         /* Careful, DeleteFile returns 0 if it fails and nonzero otherwise! */
-        r2 = -(DeleteFile(buf) == 0);
+        r2 = -(DeleteFile(buf.c_str()) == 0);
       }
-
-      coco_free_memory(buf);
     }
 
     r = r2;
@@ -386,7 +330,6 @@ int coco_remove_directory(const char *path) {
   DIR *d = opendir(path);
   int r = -1;
   int r2 = -1;
-  char *buf;
 
   /* Nothing to do if the folder does not exist */
   if (!coco_directory_exists(path))
@@ -404,17 +347,14 @@ int coco_remove_directory(const char *path) {
         continue;
       }
 
-      buf = coco_strdupf("%s/%s", path, p->d_name);
-      if (buf) {
-        if (coco_directory_exists(buf)) {
-          /* Buf is a directory, recurse on it */
-          r2 = coco_remove_directory(buf);
-        } else {
-          /* Buf is a file, delete it */
-          r2 = unlink(buf);
-        }
+      const std::string buf = coco_string_format("%s/%s", path, p->d_name);
+      if (coco_directory_exists(buf.c_str())) {
+        /* Buf is a directory, recurse on it */
+        r2 = coco_remove_directory(buf.c_str());
+      } else {
+        /* Buf is a file, delete it */
+        r2 = unlink(buf.c_str());
       }
-      coco_free_memory(buf);
 
       r = r2;
     }
@@ -466,46 +406,49 @@ double *coco_allocate_vector(const size_t number_of_elements) {
 }
 
 /**
- * @brief Allocates memory for a vector and sets all its elements to value.
+ * @brief A matrix of doubles stored row by row, whose rows may have different lengths.
+ *
+ * rows() returns an array of row pointers, as expected by the functions that work on double ** (such as
+ * bbob2009_compute_rotation()). Block matrices only store the elements of the blocks, so their rows are
+ * shorter than the number of columns. The elements are initialized to 0.
+ *
+ * The matrix can be moved but not copied, since copies would share the row pointers of the original.
  */
-static double *coco_allocate_vector_with_value(const size_t number_of_elements, double value) {
-  const size_t block_size = number_of_elements * sizeof(double);
-  double *vector = (double *)coco_allocate_memory(block_size);
-  size_t i;
+class coco_matrix_t {
+public:
+  coco_matrix_t() = default;
 
-  for (i = 0; i < number_of_elements; i++)
-    vector[i] = value;
+  /** @brief A dense matrix with the given number of rows and columns. */
+  coco_matrix_t(const size_t number_of_rows, const size_t number_of_columns)
+      : coco_matrix_t(std::vector<size_t>(number_of_rows, number_of_columns)) {}
 
-  return vector;
-}
-
-/**
- * @brief Safe memory allocation for a vector with size_t elements that either succeeds or triggers a
- * coco_error.
- */
-static size_t *coco_allocate_vector_size_t(const size_t number_of_elements) {
-  const size_t block_size = number_of_elements * sizeof(size_t);
-  return (size_t *)coco_allocate_memory(block_size);
-}
-
-static char *coco_allocate_string(const size_t number_of_elements) {
-  const size_t block_size = number_of_elements * sizeof(char);
-  return (char *)coco_allocate_memory(block_size);
-}
-
-static double *coco_duplicate_vector(const double *src, const size_t number_of_elements) {
-  size_t i;
-  double *dst;
-
-  assert(src != NULL);
-  assert(number_of_elements > 0);
-
-  dst = coco_allocate_vector(number_of_elements);
-  for (i = 0; i < number_of_elements; ++i) {
-    dst[i] = src[i];
+  /** @brief A matrix whose row i has row_lengths[i] elements. */
+  explicit coco_matrix_t(const std::vector<size_t> &row_lengths) : rows_(row_lengths.size()) {
+    size_t i, offset = 0;
+    for (i = 0; i < row_lengths.size(); ++i)
+      offset += row_lengths[i];
+    values_.resize(offset);
+    for (i = 0, offset = 0; i < row_lengths.size(); ++i) {
+      rows_[i] = values_.data() + offset;
+      offset += row_lengths[i];
+    }
   }
-  return dst;
-}
+
+  coco_matrix_t(const coco_matrix_t &) = delete;
+  coco_matrix_t &operator=(const coco_matrix_t &) = delete;
+  coco_matrix_t(coco_matrix_t &&) = default;
+  coco_matrix_t &operator=(coco_matrix_t &&) = default;
+
+  double **rows() { return rows_.data(); }
+  const double *const *rows() const { return rows_.data(); }
+  double *operator[](const size_t i) { return rows_[i]; }
+  const double *operator[](const size_t i) const { return rows_[i]; }
+  size_t number_of_rows() const { return rows_.size(); }
+
+private:
+  std::vector<double> values_;
+  std::vector<double *> rows_;
+};
 /**@}*/
 
 /***********************************************************************************************************/
@@ -516,233 +459,101 @@ static double *coco_duplicate_vector(const double *src, const size_t number_of_e
 /**@{*/
 
 /**
- * @brief Allocates an option keys structure holding the given number of option keys.
- */
-static coco_option_keys_t *coco_option_keys_allocate(const size_t count, const char **keys) {
-
-  size_t i;
-  coco_option_keys_t *option_keys;
-
-  if ((count == 0) || (keys == NULL))
-    return NULL;
-
-  option_keys = (coco_option_keys_t *)coco_allocate_memory(sizeof(*option_keys));
-
-  option_keys->keys = (char **)coco_allocate_memory(count * sizeof(char *));
-  for (i = 0; i < count; i++) {
-    assert(keys[i]);
-    option_keys->keys[i] = coco_strdup(keys[i]);
-  }
-  option_keys->count = count;
-
-  return option_keys;
-}
-
-/**
- * @brief Frees the given option keys structure.
- */
-static void coco_option_keys_free(coco_option_keys_t *option_keys) {
-
-  size_t i;
-
-  if (option_keys) {
-    for (i = 0; i < option_keys->count; i++) {
-      coco_free_memory(option_keys->keys[i]);
-    }
-    coco_free_memory(option_keys->keys);
-    coco_free_memory(option_keys);
-  }
-}
-
-/**
  * @brief Returns redundant option keys (the ones present in given_option_keys but not in known_option_keys).
  */
-static coco_option_keys_t *coco_option_keys_get_redundant(const coco_option_keys_t *known_option_keys,
-                                                          const coco_option_keys_t *given_option_keys) {
+static coco_option_keys_t coco_option_keys_get_redundant(const coco_option_keys_t &known_option_keys,
+                                                         const coco_option_keys_t &given_option_keys) {
+  coco_option_keys_t redundant_option_keys;
 
-  size_t i, j, count = 0;
-  int found;
-  char **redundant_keys;
-  coco_option_keys_t *redundant_option_keys;
-
-  assert(known_option_keys != NULL);
-  assert(given_option_keys != NULL);
-
-  /* Find the redundant keys */
-  redundant_keys = (char **)coco_allocate_memory(given_option_keys->count * sizeof(char *));
-  for (i = 0; i < given_option_keys->count; i++) {
-    found = 0;
-    for (j = 0; j < known_option_keys->count; j++) {
-      if (strcmp(given_option_keys->keys[i], known_option_keys->keys[j]) == 0) {
-        found = 1;
-        break;
-      }
-    }
-    if (!found) {
-      redundant_keys[count++] = coco_strdup(given_option_keys->keys[i]);
-    }
+  for (const std::string &key : given_option_keys) {
+    if (std::find(known_option_keys.begin(), known_option_keys.end(), key) == known_option_keys.end())
+      redundant_option_keys.push_back(key);
   }
-  redundant_option_keys = coco_option_keys_allocate(count, (const char **)redundant_keys);
-
-  /* Free memory */
-  for (i = 0; i < count; i++) {
-    coco_free_memory(redundant_keys[i]);
-  }
-  coco_free_memory(redundant_keys);
-
   return redundant_option_keys;
 }
 
 /**
- * @brief Adds additional option keys to the given basic option keys (changes the basic keys).
- */
-static void coco_option_keys_add(coco_option_keys_t **basic_option_keys,
-                                 const coco_option_keys_t *additional_option_keys) {
-
-  size_t i, j;
-  size_t new_count;
-  char **new_keys;
-  coco_option_keys_t *new_option_keys;
-
-  assert(*basic_option_keys != NULL);
-  if (additional_option_keys == NULL)
-    return;
-
-  /* Construct the union of both keys */
-  new_count = (*basic_option_keys)->count + additional_option_keys->count;
-  new_keys = (char **)coco_allocate_memory(new_count * sizeof(char *));
-  for (i = 0; i < (*basic_option_keys)->count; i++) {
-    new_keys[i] = coco_strdup((*basic_option_keys)->keys[i]);
-  }
-  for (j = 0; j < additional_option_keys->count; j++) {
-    new_keys[(*basic_option_keys)->count + j] = coco_strdup(additional_option_keys->keys[j]);
-  }
-  new_option_keys = coco_option_keys_allocate(new_count, (const char **)new_keys);
-
-  /* Free the old basic keys */
-  coco_option_keys_free(*basic_option_keys);
-  *basic_option_keys = new_option_keys;
-  for (i = 0; i < new_count; i++) {
-    coco_free_memory(new_keys[i]);
-  }
-  coco_free_memory(new_keys);
-}
-
-/**
- * @brief Creates an instance of option keys from the given string of options containing keys and values
- * separated by colons.
+ * @brief Returns the option keys from the given string of options containing keys and values separated by
+ * colons.
  *
  * @note Relies heavily on the "key: value" format and might fail if the number of colons doesn't match the
  * number of keys. Values that are strings surrounded by quotation marks should work as long as they come
  * in pairs.
  */
-static coco_option_keys_t *coco_option_keys(const char *option_string) {
+static coco_option_keys_t coco_option_keys(const char *option_string) {
 
   size_t i;
-  char **keys;
-  coco_option_keys_t *option_keys = NULL;
-  char *string_to_parse, *key, *string_pointer;
-  char *cleaned_option_string = NULL;
-  const char *replacement_string = "STR";
+  coco_option_keys_t option_keys;
+  std::string cleaned_option_string;
 
   /* Check for empty string */
-  if ((option_string == NULL) || (strlen(option_string) == 0)) {
-    return NULL;
+  if ((option_string == nullptr) || (strlen(option_string) == 0)) {
+    return option_keys;
   }
 
   /* Construct the cleaned_option_string by replacing any string between two quotation marks with "STR" */
-  keys = coco_string_split(option_string, '\"');
-  if (keys) {
-    for (i = 0; *(keys + i); i++) {
-      if (i == 0)
-        cleaned_option_string = coco_strdupf(*(keys + i));
-      else {
-        string_pointer = cleaned_option_string;
-        if (i % 2 == 0) {
-          /* This is outside of a pair of quotation marks */
-          cleaned_option_string = coco_strconcat(string_pointer, *(keys + i));
-        } else {
-          /* This is inside of a pair of quotation marks */
-          cleaned_option_string = coco_strconcat(string_pointer, replacement_string);
-        }
-        coco_free_memory(string_pointer);
-      }
-    }
+  const std::vector<std::string> parts = coco_string_split(option_string, '\"');
+  for (i = 0; i < parts.size(); i++) {
+    /* Even parts are outside of a pair of quotation marks */
+    cleaned_option_string += (i % 2 == 0) ? parts[i] : "STR";
   }
-  /* Free the keys */
-  for (i = 0; *(keys + i); i++) {
-    coco_free_memory(*(keys + i));
-  }
-  coco_free_memory(keys);
 
   /* Split the options w.r.t ':' */
-  keys = coco_string_split(cleaned_option_string, ':');
+  const std::vector<std::string> keys = coco_string_split(cleaned_option_string, ':');
 
-  if (keys) {
-    /* Keys now contain something like this: "values_of_previous_key this_key" except for the first, which
-     * contains only the key and the last, which contains only the previous values */
-    for (i = 0; *(keys + i); i++) {
-      string_to_parse = coco_strdup(*(keys + i));
+  /* Keys now contain something like this: "values_of_previous_key this_key" except for the first, which
+   * contains only the key and the last, which contains only the previous values */
+  for (i = 0; i < keys.size(); i++) {
+    /* Remove any leading and trailing spaces */
+    const std::string string_to_parse = coco_string_trim(keys[i]);
 
-      /* Remove any leading and trailing spaces */
-      string_to_parse = coco_string_trim(string_to_parse);
+    /* Stop if this is the last substring (contains a value and no key) */
+    if ((i > 0) && (i + 1 == keys.size()))
+      break;
 
-      /* Stop if this is the last substring (contains a value and no key) */
-      if ((i > 0) && (*(keys + i + 1) == NULL)) {
-        coco_free_memory(string_to_parse);
-        break;
-      }
-
-      /* Disregard everything before the last space */
-      key = strrchr(string_to_parse, ' ');
-      if ((key == NULL) || (i == 0)) {
-        /* No spaces left (or this is the first key), everything is the key */
-        key = string_to_parse;
-      } else {
-        /* Move to the start of the key (one char after the space) */
-        key++;
-      }
-
-      /* Put the key in keys */
-      coco_free_memory(*(keys + i));
-      *(keys + i) = coco_strdup(key);
-      coco_free_memory(string_to_parse);
-    }
-
-    option_keys = coco_option_keys_allocate(i, (const char **)keys);
-
-    /* Free the keys */
-    for (i = 0; *(keys + i); i++) {
-      coco_free_memory(*(keys + i));
-    }
-    coco_free_memory(keys);
+    /* Disregard everything before the last space (unless this is the first key) */
+    const size_t space = string_to_parse.rfind(' ');
+    if ((space == std::string::npos) || (i == 0))
+      option_keys.push_back(string_to_parse);
+    else
+      option_keys.push_back(string_to_parse.substr(space + 1));
   }
-
-  coco_free_memory(cleaned_option_string);
 
   return option_keys;
 }
 
 /**
- * @brief Creates and returns a string containing the info_string and all keys from option_keys.
+ * @brief Returns a string containing the info_string and all keys from option_keys (or an empty string if
+ * there are no keys).
  *
  * Can be used to output information about the given option_keys.
  */
-static char *coco_option_keys_get_output_string(const coco_option_keys_t *option_keys, const char *info_string) {
-  size_t i;
-  char *string = NULL, *new_string;
+static std::string coco_option_keys_get_output_string(const coco_option_keys_t &option_keys,
+                                                      const char *info_string) {
+  std::string string;
 
-  if ((option_keys != NULL) && (option_keys->count > 0)) {
-
-    string = coco_strdup(info_string);
-    for (i = 0; i < option_keys->count; i++) {
-      new_string = coco_strdupf("%s %s\n", string, option_keys->keys[i]);
-      coco_free_memory(string);
-      string = new_string;
+  if (!option_keys.empty()) {
+    string = info_string;
+    for (const std::string &key : option_keys) {
+      string += " " + key + "\n";
     }
   }
-
   return string;
+}
+
+/**
+ * @brief Warns about the keys in options that are not among the known_keys.
+ */
+static void coco_option_keys_warn_redundant(const char *options, const coco_option_keys_t &known_option_keys,
+                                            const char *redundant_info, const char *valid_info) {
+  const coco_option_keys_t redundant_option_keys =
+      coco_option_keys_get_redundant(known_option_keys, coco_option_keys(options));
+
+  if (!redundant_option_keys.empty()) {
+    /* Warn the user that some of given options are being ignored and output the valid options */
+    coco_warning("%s%s", coco_option_keys_get_output_string(redundant_option_keys, redundant_info).c_str(),
+                 coco_option_keys_get_output_string(known_option_keys, valid_info).c_str());
+  }
 }
 
 /**
@@ -817,6 +628,27 @@ static int coco_options_read_double(const char *options, const char *name, doubl
 }
 
 /**
+ * @brief Returns the position of the value of the option with the given name in options (or -1 if the
+ * option is not found).
+ */
+static long coco_options_find_value(const char *options, const char *name) {
+
+  long i1, i2;
+
+  if ((!options) || (strlen(options) == 0))
+    return -1;
+
+  i1 = coco_strfind(options, name);
+  if (i1 < 0)
+    return -1;
+  i2 = i1 + coco_strfind(&options[i1], ":") + 1;
+
+  if (i2 <= i1)
+    return -1;
+  return i2;
+}
+
+/**
  * @brief Reads a string from options using the form "name1: value1 name2: value2".
  *
  * Formatting requirements:
@@ -824,33 +656,37 @@ static int coco_options_read_double(const char *options, const char *name, doubl
  * - the value corresponding to the given name needs to be a string - either a single word or multiple words
  * in double quotes
  *
- * @return The number of successful assignments.
+ * @return The number of successful assignments (0 or 1). The value is left unchanged if nothing was read.
  */
-static int coco_options_read_string(const char *options, const char *name, char *pointer) {
+static int coco_options_read_string(const char *options, const char *name, std::string &value) {
 
-  long i1, i2;
+  const long i = coco_options_find_value(options, name);
+  const char *start, *stop;
 
-  if ((!options) || (strlen(options) == 0))
+  if (i < 0)
     return 0;
 
-  i1 = coco_strfind(options, name);
-  if (i1 < 0)
-    return 0;
-  i2 = i1 + coco_strfind(&options[i1], ":") + 1;
+  /* Remove leading white spaces */
+  start = &options[i];
+  while (isspace((unsigned char)*start))
+    start++;
 
-  /* Remove trailing white spaces */
-  while (isspace((unsigned char)options[i2]))
-    i2++;
-
-  if (i2 <= i1) {
-    return 0;
+  if (*start == '\"') {
+    /* The value starts with a quote: read everything between two quotes */
+    start++;
+    stop = strchr(start, '\"');
+    if (stop == nullptr)
+      stop = start + strlen(start);
+  } else {
+    stop = start;
+    while ((*stop != '\0') && !isspace((unsigned char)*stop))
+      stop++;
   }
 
-  if (options[i2] == '\"') {
-    /* The value starts with a quote: read everything between two quotes into a string */
-    return sscanf(&options[i2], "\"%[^\"]\"", pointer);
-  } else
-    return sscanf(&options[i2], "%s", pointer);
+  if (stop == start)
+    return 0;
+  value.assign(start, stop);
+  return 1;
 }
 
 /**
@@ -863,36 +699,22 @@ static int coco_options_read_string(const char *options, const char *name, char 
  * - values cannot include alphabetic characters
  * - name and value need to be separated by a colon (spaces are optional)
  *
- * @return The number of successful assignments.
+ * @return The number of characters read.
  */
-static int coco_options_read_values(const char *options, const char *name, char *pointer) {
+static size_t coco_options_read_values(const char *options, const char *name, std::string &value) {
 
-  long i1, i2;
-  int i;
+  const long i = coco_options_find_value(options, name);
+  const char *ptr;
 
-  if ((!options) || (strlen(options) == 0))
+  value.clear();
+  if (i < 0)
     return 0;
 
-  i1 = coco_strfind(options, name);
-  if (i1 < 0)
-    return 0;
-  i2 = i1 + coco_strfind(&options[i1], ":") + 1;
-
-  if (i2 <= i1) {
-    return 0;
+  for (ptr = &options[i]; (*ptr != '\0') && !isalpha((unsigned char)*ptr); ptr++) {
+    if (!isspace((unsigned char)*ptr))
+      value += *ptr;
   }
-
-  i = 0;
-  while (!isalpha((unsigned char)options[i2 + i]) && (options[i2 + i] != '\0')) {
-    if (isspace((unsigned char)options[i2 + i])) {
-      i2++;
-    } else {
-      pointer[i] = options[i2 + i];
-      i++;
-    }
-  }
-  pointer[i] = '\0';
-  return i;
+  return value.size();
 }
 /**@}*/
 
@@ -1072,6 +894,7 @@ static int coco_is_feasible(coco_problem_t *problem, const double *x, double *co
 
   size_t i;
   double *cons_values = constraint_values;
+  std::vector<double> buffer;
   int ret_val = 1;
 
   /* Return 0 if the decision vector contains any INFINITY or NaN values */
@@ -1081,10 +904,12 @@ static int coco_is_feasible(coco_problem_t *problem, const double *x, double *co
   if (coco_problem_get_number_of_constraints(problem) <= 0)
     return 1;
 
-  assert(problem != NULL);
+  assert(problem != nullptr);
 
-  if (constraint_values == NULL)
-    cons_values = coco_allocate_vector(problem->number_of_constraints);
+  if (constraint_values == nullptr) {
+    buffer.resize(problem->number_of_constraints);
+    cons_values = buffer.data();
+  }
 
   problem->evaluate_constraint(x, cons_values, 0);
 
@@ -1095,8 +920,6 @@ static int coco_is_feasible(coco_problem_t *problem, const double *x, double *co
     }
   }
 
-  if (constraint_values == NULL)
-    coco_free_memory(cons_values);
   return ret_val;
 }
 
@@ -1111,39 +934,16 @@ static int coco_is_feasible(coco_problem_t *problem, const double *x, double *co
 
 /**
  * @brief Returns the current time as a string.
- *
- * The caller is responsible for freeing the allocated memory using coco_free_memory().
  */
-static char *coco_current_time_get_string(void) {
+static std::string coco_current_time_get_string(void) {
   time_t timer;
-  char *time_string = coco_allocate_string(30);
+  char time_string[30];
   struct tm *tm_info;
   time(&timer);
   tm_info = localtime(&timer);
-  assert(tm_info != NULL);
-  strftime(time_string, 30, "%d.%m.%y %H:%M:%S", tm_info);
+  assert(tm_info != nullptr);
+  strftime(time_string, sizeof(time_string), "%d.%m.%y %H:%M:%S", tm_info);
   return time_string;
-}
-
-/**
- * @brief Returns the number of positive numbers pointed to by numbers (the count stops when the first
- * 0 is encountered of max_count numbers have been read).
- *
- * If there are more than max_count numbers, a coco_error is raised. The name argument is used
- * only to provide more informative output in case of any problems.
- */
-static size_t coco_count_numbers(const size_t *numbers, const size_t max_count, const char *name) {
-
-  size_t count = 0;
-  while ((count < max_count) && (numbers[count] != 0)) {
-    count++;
-  }
-  if (count == max_count) {
-    coco_error("coco_count_numbers(): over %lu numbers in %s", (unsigned long)max_count, name);
-    return 0; /* Never reached*/
-  }
-
-  return count;
 }
 
 /**

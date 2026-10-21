@@ -43,12 +43,12 @@ static double mo_get_norm(const double *first, const double *second, const size_
  * @brief Creates a rounded normalized version of the given solution w.r.t. the given ROI.
  *
  * If the solution seems to be better than the extremes it is corrected (2 objectives are assumed).
- * The caller is responsible for freeing the allocated memory using coco_free_memory().
  */
-static double *mo_normalize(const double *y, const double *ideal, const double *nadir, const size_t num_obj) {
+static std::vector<double> mo_normalize(const double *y, const double *ideal, const double *nadir,
+                                        const size_t num_obj) {
 
   size_t i;
-  double *normalized_y = coco_allocate_vector(num_obj);
+  std::vector<double> normalized_y(num_obj);
 
   for (i = 0; i < num_obj; i++) {
     assert((nadir[i] - ideal[i]) > mo_discretization);

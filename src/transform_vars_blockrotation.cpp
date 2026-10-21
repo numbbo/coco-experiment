@@ -13,13 +13,12 @@
 #include "coco.h"
 #include "coco_problem.cpp"
 #include "transform_vars_blockrotation_helpers.cpp"
-#include "transform_vars_permutation_helpers.cpp" /* for coco_duplicate_size_t_vector */
 
 /**
  * @brief Applies a block-diagonal rotation matrix to the decision values.
  */
 struct transform_vars_blockrotation_t final : public coco_problem_transformed_t {
-  double **B; /**< @brief the block-diagonal matrices*/
+  coco_matrix_t B; /**< @brief the block-diagonal matrices*/
   std::vector<double> Bx;
   const size_t dimension;
   std::vector<size_t> block_size_map;    /**< @brief maps a row to the block-size of the block to
@@ -64,7 +63,6 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
     }
   }
 
-  ~transform_vars_blockrotation_t() override { coco_free_block_matrix(B, dimension); }
 
   /*
    * @brief return i-th row of B in y.
@@ -114,10 +112,10 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
   void test(double precision) {
     size_t i, j;
     size_t number_of_variables = coco_problem_get_dimension(this);
-    double *y = coco_allocate_vector(number_of_variables);
+    std::vector<double> y(number_of_variables);
     for (i = 0; i < number_of_variables; ++i) { /* for each row */
-      get_row(i, y);
-      apply(y, y);
+      get_row(i, y.data());
+      apply(y.data(), y.data());
       for (j = 0; j < number_of_variables; ++j) { /* check result */
         if (!coco_double_almost_equal(y[j], (i == j) ? 1.0 : 0.0, precision)) {
           coco_error("transform_vars_blockrotation_test() with precision %e "
@@ -128,7 +126,6 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
       }
       /* printf("\n"); */
     }
-    coco_free_memory(y);
   }
 };
 
@@ -136,7 +133,7 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
  * @brief Computes y = Bx for the given block-rotation problem.
  */
 static void transform_vars_blockrotation_apply(coco_problem_t *problem, const double *x, double *y) {
-  assert(dynamic_cast<transform_vars_blockrotation_t *>(problem) != NULL);
+  assert(dynamic_cast<transform_vars_blockrotation_t *>(problem) != nullptr);
   static_cast<transform_vars_blockrotation_t *>(problem)->apply(x, y);
 }
 

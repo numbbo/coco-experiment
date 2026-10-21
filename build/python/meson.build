@@ -39,7 +39,8 @@ endif
 ## Configure C++ Compiler (used for the COCO library itself, the Cython
 ## extensions are C)
 cpp = meson.get_compiler('cpp')
-cpp_args = cpp.get_supported_arguments('-Wno-unused-but-set-variable', '-Wno-unused-function', '-ffp-contract=off')
+cpp_args = cpp.get_supported_arguments('-Wno-unused-but-set-variable', '-Wno-unused-function', '-ffp-contract=off',
+                                        '-fno-exceptions')
 add_project_arguments(cpp_args, language: 'cpp')
 
 ################################################################################

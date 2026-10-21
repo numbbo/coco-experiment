@@ -17,64 +17,6 @@ extern "C" {
 
 /***********************************************************************************************************/
 /**
- * @brief The data free function type.
- *
- * This is a template for functions that free the contents of data (used to free the contents of data
- * fields in coco_problem, coco_suite and coco_observer).
- */
-typedef void (*coco_data_free_function_t)(void *data);
-
-/**
- * @brief The problem free function type.
- *
- * This is a template for functions that free the problem structure.
- */
-typedef void (*coco_problem_free_function_t)(coco_problem_t *problem);
-
-/**
- * @brief The evaluate function type.
- *
- * This is a template for functions that perform an evaluation of the problem (to evaluate the problem
- * function, the problems constraints (externally) etc.).
- */
-typedef void (*coco_evaluate_function_t)(coco_problem_t *problem, const double *x, double *y);
-
-/**
- * @brief The evaluate function type with optional counter update.
- *
- * This is used to evaluate the problem constraints internally.
- */
-typedef void (*coco_evaluate_c_function_t)(coco_problem_t *problem, const double *x, double *y, int update_counter);
-
-/**
- * @brief The recommend solutions function type.
- *
- * This is a template for functions that log a recommended solution.
- */
-typedef void (*coco_recommend_function_t)(coco_problem_t *problem, const double *x);
-
-/**
- * @brief The restart function type.
- *
- * This is a template for functions that signal an algorithm restart for the problem.
- */
-typedef void (*coco_restart_function_t)(coco_problem_t *problem);
-
-/**
- * @brief The allocate logger function type.
- *
- * This is a template for functions that allocate a logger (wrap a logger around the given problem and return
- * the wrapped problem).
- */
-typedef coco_problem_t *(*coco_logger_allocate_function_t)(coco_observer_t *observer, coco_problem_t *problem);
-/**
- * @brief The free logger function type.
- *
- * This is a template for functions that free a logger.
- */
-typedef void (*coco_logger_free_function_t)(void *logger);
-
-/**
  * @brief The get problem function type.
  *
  * This is a template for functions that return a problem based on function, dimension and instance.
@@ -83,24 +25,21 @@ typedef coco_problem_t *(*coco_get_problem_function_t)(const size_t function, co
                                                        const size_t instance);
 
 /**
- * @brief The option keys data type.
- *
- * This is a type of a structure used to contain a set of known option keys (used by suites and observers).
+ * @brief The option keys data type (a set of option keys used by suites and observers).
  */
-typedef struct {
-  size_t count; /**< @brief Number of option keys */
-  char **keys;  /**< @brief Pointer to option keys */
-} coco_option_keys_t;
+typedef std::vector<std::string> coco_option_keys_t;
 
 /***********************************************************************************************************/
 
 /**
  * @brief The COCO problem structure.
  *
- * This is one of the main structures in COCO. It contains information about a problem to be optimized. The
- * problems can be wrapped around each other (similar to the onion layers) by means of the data field and
- * the coco_problem_transformed_data_t structure creating some kind of "object inheritance". Even the logger
- * is considered as just another coco_problem instance wrapped around the original problem.
+ * This is one of the main structures in COCO. It contains information about a problem to be optimized.
+ * Concrete problems are subclasses that override the evaluation methods. Problems can be wrapped around each
+ * other (similar to the onion layers) by subclasses of coco_problem_transformed_s. Even the logger is
+ * considered as just another problem wrapped around the original problem.
+ *
+ * The default implementations of the evaluation methods report that the method is not implemented.
  */
 struct coco_problem_s {
 
@@ -127,14 +66,6 @@ struct coco_problem_s {
 
   /** @brief Logs the recommended solution x. */
   virtual void recommend_solution(const double *x);
-
-  /* The functions used by the default implementations of the methods above. They are being replaced by
-   * subclasses overriding the methods and will be removed. */
-  coco_evaluate_function_t legacy_evaluate_function;         /**< @brief The function for evaluating the problem. */
-  coco_evaluate_c_function_t legacy_evaluate_constraint;     /**< @brief The function for evaluating the constraints. */
-  coco_evaluate_function_t legacy_evaluate_gradient;         /**< @brief The function for evaluating the gradient. */
-  coco_recommend_function_t legacy_recommend_solution;       /**< @brief The function for recommending a solution. */
-  coco_problem_free_function_t legacy_problem_free_function; /**< @brief The function for freeing this problem. */
 
   size_t number_of_variables;   /**< @brief Number of variables expected by the function, i.e.
                                 problem dimension */
@@ -178,11 +109,6 @@ struct coco_problem_s {
   size_t suite_dep_index;    /**< @brief Suite-depending problem index (starting from 0) */
   size_t suite_dep_function; /**< @brief Suite-depending function */
   size_t suite_dep_instance; /**< @brief Suite-depending instance */
-
-  void *data; /**< @brief Pointer to a data instance @see coco_problem_transformed_data_t */
-
-  void *versatile_data; /* Wassim: *< @brief pointer to eventual additional data that need to be accessed all along the
-                           transformations*/
 };
 
 /**
@@ -195,11 +121,12 @@ struct coco_problem_transformed_s : public coco_problem_s {
   coco_problem_transformed_s(coco_problem_t *inner_problem, const char *name_prefix);
   ~coco_problem_transformed_s() override;
 
-  coco_problem_t *inner_problem; /**< @brief The inner problem, owned by this problem */
+  void evaluate_function(const double *x, double *y) override;
+  void evaluate_constraint(const double *x, double *y, int update_counter) override;
+  void evaluate_gradient(const double *x, double *y) override;
+  void recommend_solution(const double *x) override;
 
-  /* The data of transformations that are not yet subclasses of this class */
-  void *legacy_data;                                   /**< @brief Data of the transformation */
-  coco_data_free_function_t legacy_data_free_function; /**< @brief Function to free the contents of legacy_data */
+  coco_problem_t *inner_problem; /**< @brief The inner problem, owned by this problem */
 };
 typedef struct coco_problem_transformed_s coco_problem_transformed_t;
 
@@ -213,21 +140,19 @@ struct coco_problem_stacked_s : public coco_problem_s {
   coco_problem_stacked_s(coco_problem_t *problem1, coco_problem_t *problem2);
   ~coco_problem_stacked_s() override;
 
+  void evaluate_function(const double *x, double *y) override;
+  void evaluate_constraint(const double *x, double *y, int update_counter) override;
+
   coco_problem_t *problem1; /**< @brief The first problem (objective) */
   coco_problem_t *problem2; /**< @brief The second problem (objective or constraints) */
 };
 typedef struct coco_problem_stacked_s coco_problem_stacked_t;
 
 /**
- * @brief The COCO observer structure.
- *
- * An observer observes the whole benchmark process. It is independent of suites and problems. Each time a
- * new problem of the suite is being observed, the observer initializes a new logger (wraps the observed
- * problem with the corresponding logger).
+ * @brief The settings shared by all observers (read from the observer options in coco_observer()).
  */
-struct coco_observer_s {
+struct coco_observer_settings_s {
 
-  int is_active;        /**< @brief Whether the observer is active (the logger will log some output). */
   std::string observer_name;  /**< @brief Name of the observer for identification purposes. */
   std::string result_folder;  /**< @brief Name of the result folder. */
   std::string algorithm_name; /**< @brief Name of the algorithm to be used in logger output. */
@@ -245,12 +170,34 @@ struct coco_observer_s {
   int precision_f;         /**< @brief Output precision for function values. */
   int precision_g;         /**< @brief Output precision for constraint values. */
   int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
-  void *data;              /**< @brief Void pointer that can be used to point to data specific to an observer. */
+};
 
-  coco_data_free_function_t data_free_function;             /**< @brief  The function for freeing this observer. */
-  coco_logger_allocate_function_t logger_allocate_function; /**< @brief  The function for allocating the logger. */
-  coco_logger_free_function_t logger_free_function;         /**< @brief  The function for freeing the logger. */
-  coco_restart_function_t restart_function; /**< @brief  The function for signaling algorithm restart. */
+/**
+ * @brief The COCO observer structure.
+ *
+ * An observer observes the whole benchmark process. It is independent of suites and problems. Each time a
+ * new problem of the suite is being observed, the observer initializes a new logger (wraps the observed
+ * problem with the corresponding logger). Every observer is a subclass that implements add_logger().
+ */
+struct coco_observer_s : public coco_observer_settings_s {
+
+  explicit coco_observer_s(const coco_observer_settings_s &observer_settings)
+      : coco_observer_settings_s(observer_settings), is_active(1) {}
+  virtual ~coco_observer_s() = default;
+
+  coco_observer_s(const coco_observer_s &) = delete;
+  coco_observer_s &operator=(const coco_observer_s &) = delete;
+
+  /** @brief Wraps the given problem with the logger of this observer and returns the wrapped problem. */
+  virtual coco_problem_t *add_logger(coco_problem_t *problem) = 0;
+
+  /**
+   * @brief Signals an algorithm restart on the given (observed) problem. The default implementation reports
+   * that restarts are not supported.
+   */
+  virtual void signal_restart(coco_problem_t *problem);
+
+  int is_active; /**< @brief Whether the observer is active (the logger will log some output). */
 };
 
 /**
@@ -262,6 +209,31 @@ struct coco_observer_s {
  * dimensions and instances will be taken into account when iterating through the suite.
  */
 struct coco_suite_s {
+
+  /**
+   * @brief Sets the functions and dimensions contained in the suite, while the instances are set by
+   * coco_suite_set_instance().
+   */
+  coco_suite_s(const char *suite_name, const size_t number_of_functions, const size_t number_of_dimensions,
+               const size_t *dimensions, const char *default_instances, const int known_optima);
+  /** @brief Frees the current problem (if any). */
+  virtual ~coco_suite_s();
+
+  coco_suite_s(const coco_suite_s &) = delete;
+  coco_suite_s &operator=(const coco_suite_s &) = delete;
+
+  /**
+   * @brief Returns the instances of the suite for the given year. The default implementation reports an
+   * error (the suite has no years defined).
+   */
+  virtual const char *get_instances_by_year(const int year) const;
+
+  /**
+   * @brief Returns the problem with the given function, dimension and instance index. The indices are
+   * guaranteed to correspond to a problem that has not been filtered out.
+   */
+  virtual coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
+                                      const size_t instance_idx) = 0;
 
   std::string suite_name; /**< @brief Name of the suite. */
 
@@ -278,10 +250,6 @@ struct coco_suite_s {
   long current_dimension_idx;      /**< @brief The dimension index of the currently tackled problem. */
   long current_function_idx;       /**< @brief The function index of the currently tackled problem. */
   long current_instance_idx;       /**< @brief The instance index of the currently tackled problem. */
-
-  void *data; /**< @brief Void pointer that can be used to point to data specific to a suite. */
-
-  coco_data_free_function_t data_free_function; /**< @brief The function for freeing this suite. */
 };
 
 static void bbob_evaluate_gradient(coco_problem_t *problem, const double *x, double *y);

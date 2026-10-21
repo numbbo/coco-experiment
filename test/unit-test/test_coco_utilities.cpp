@@ -2,25 +2,13 @@
 
 #include "coco.cpp"
 
-static char *convert_to_string_with_newlines(char **array) {
+static std::string convert_to_string_with_newlines(const std::vector<std::string> &array) {
 
-  size_t i;
-  char *result;
+  std::string result;
 
-  if ((array == NULL) || (*array == NULL))
-    return NULL;
-
-  result = (char *)coco_allocate_memory(1000 * sizeof(char));
-  result[0] = '\0';
-
-  if (array) {
-    for (i = 0; *(array + i); i++) {
-      strcat(result, *(array + i));
-      strcat(result, "\n");
-    }
+  for (const std::string &item : array) {
+    result += item + "\n";
   }
-  strcat(result, "\0");
-
   return result;
 }
 
@@ -93,7 +81,7 @@ static void create_time_string(char **string) {
   }
 
   /* Produce the new string */
-  new_string = coco_strconcat(*string, date_time_string);
+  new_string = coco_strdupf("%s%s", *string, date_time_string);
   coco_free_memory(date_time_string);
   coco_free_memory(*string);
   *string = new_string;
@@ -258,50 +246,20 @@ MU_TEST(test_coco_double_round_up_with_precision) {
  */
 MU_TEST(test_coco_string_split) {
 
-  char **result;
-  char *converted_result;
-  size_t i;
-
-  result = coco_string_split("1-3,5-6,7,-3,15-", ',');
-  converted_result = convert_to_string_with_newlines(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "1-3\n5-6\n7\n-3\n15-\n") == 0);
-  for (i = 0; *(result + i); i++) {
-    coco_free_memory(*(result + i));
-  }
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
-
-  result = coco_string_split(",,,a,,b,c,d,e,,,,,f,", ',');
-  converted_result = convert_to_string_with_newlines(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "a\nb\nc\nd\ne\nf\n") == 0);
-  for (i = 0; *(result + i); i++) {
-    coco_free_memory(*(result + i));
-  }
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string_with_newlines(coco_string_split("1-3,5-6,7,-3,15-", ',')) == "1-3\n5-6\n7\n-3\n15-\n");
+  mu_check(convert_to_string_with_newlines(coco_string_split(",,,a,,b,c,d,e,,,,,f,", ',')) == "a\nb\nc\nd\ne\nf\n");
+  mu_check(coco_string_split("", ',').empty());
+  mu_check(coco_string_split(",,", ',').empty());
 }
 
-static char *convert_to_string(size_t *array) {
+static std::string convert_to_string(const std::vector<size_t> &array) {
 
-  size_t i = 0;
-  char tmp[10];
-  char *result;
+  std::string result;
 
-  if (array == NULL)
-    return NULL;
-
-  result = (char *)coco_allocate_memory(1000 * sizeof(char));
-  result[0] = '\0';
-
-  while (array[i] > 0) {
-    sprintf(tmp, "%lu,", (unsigned long) array[i++]);
-    strcat(result, tmp);
+  for (const size_t number : array) {
+    result += coco_string_format("%lu,", (unsigned long)number);
   }
-  strcat(result, "0");
-
-  return result;
+  return result + "0";
 }
 
 /**
@@ -309,135 +267,58 @@ static char *convert_to_string(size_t *array) {
  */
 MU_TEST(test_coco_string_parse_ranges) {
 
-  size_t *result;
-  char *converted_result;
+  std::vector<size_t> result;
 
-  result = coco_string_parse_ranges("", 1, 2, "", 100);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges(NULL, 1, 2, NULL, 100);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("", 1, 2, "bla", 100);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("bla", 1, 2, "", 100);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("bla", 1, 2, "bla", 100);
-  mu_check(result == NULL);
-  coco_free_memory(result);
+  mu_check(coco_string_parse_ranges("", 1, 2, "", 100).empty());
+  mu_check(coco_string_parse_ranges(NULL, 1, 2, NULL, 100).empty());
+  mu_check(coco_string_parse_ranges("", 1, 2, "bla", 100).empty());
+  mu_check(coco_string_parse_ranges("bla", 1, 2, "", 100).empty());
+  mu_check(coco_string_parse_ranges("bla", 1, 2, "bla", 100).empty());
 
   result = coco_string_parse_ranges("1-3,5-6,7,-3,15-", 1, 20, "name", 100);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "1,2,3,5,6,7,1,2,3,15,16,17,18,19,20,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "1,2,3,5,6,7,1,2,3,15,16,17,18,19,20,0");
 
   result = coco_string_parse_ranges("1-3,5-6", 1, 2, "name", 100);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "1,2,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "1,2,0");
 
   result = coco_string_parse_ranges("1-3,5-6", 0, 20, "name", 100);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "1,2,3,5,6,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "1,2,3,5,6,0");
 
   result = coco_string_parse_ranges("1-", 1, 1200, "name", 1000);
-  mu_check(result[1000] == 0);
-  mu_check(result[999] != 0);
-  coco_free_memory(result);
+  mu_check(result.size() == 1000);
+  mu_check(result[999] == 1000);
 
   result = coco_string_parse_ranges("1-2,1-", 0, 0, "name", 1000);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "1,2,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "1,2,0");
 
   result = coco_string_parse_ranges("1-4,5-8", 2, 7, "name", 1000);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "2,3,4,5,6,7,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "2,3,4,5,6,7,0");
 
-  result = coco_string_parse_ranges("4-1", 1, 20, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("-0", 1, 20, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("-2,8-", 3, 7, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
+  mu_check(coco_string_parse_ranges("4-1", 1, 20, "name", 1000).empty());
+  mu_check(coco_string_parse_ranges("-0", 1, 20, "name", 1000).empty());
+  mu_check(coco_string_parse_ranges("-2,8-", 3, 7, "name", 1000).empty());
 
   result = coco_string_parse_ranges("1-8", 4, 8, "name", 1000);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "4,5,6,7,8,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "4,5,6,7,8,0");
 
   result = coco_string_parse_ranges(",7", 1, 20, "name", 1000);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "7,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "7,0");
 
   result = coco_string_parse_ranges("7,", 1, 20, "name", 1000);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "7,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "7,0");
 
-  result = coco_string_parse_ranges("-7-", 1, 20, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("--7", 1, 20, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("7--", 1, 20, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
+  mu_check(coco_string_parse_ranges("-7-", 1, 20, "name", 1000).empty());
+  mu_check(coco_string_parse_ranges("--7", 1, 20, "name", 1000).empty());
+  mu_check(coco_string_parse_ranges("7--", 1, 20, "name", 1000).empty());
 
   result = coco_string_parse_ranges("7-,-", 5, 8, "name", 1000);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "7,8,5,6,7,8,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "7,8,5,6,7,8,0");
 
   result = coco_string_parse_ranges("7-,,5", 1, 8, "name", 1000);
-  converted_result = convert_to_string(result);
-  mu_check(converted_result);
-  mu_check(strcmp(converted_result, "7,8,5,0") == 0);
-  coco_free_memory(result);
-  coco_free_memory(converted_result);
+  mu_check(convert_to_string(result) == "7,8,5,0");
 
-  result = coco_string_parse_ranges(",,", 1, 20, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
-
-  result = coco_string_parse_ranges("1-8", 5, 2, "name", 1000);
-  mu_check(result == NULL);
-  coco_free_memory(result);
+  mu_check(coco_string_parse_ranges(",,", 1, 20, "name", 1000).empty());
+  mu_check(coco_string_parse_ranges("1-8", 5, 2, "name", 1000).empty());
 }
 
 /**
@@ -445,41 +326,68 @@ MU_TEST(test_coco_string_parse_ranges) {
  */
 MU_TEST(test_coco_option_keys) {
 
-  coco_option_keys_t *option_keys = NULL;
+  coco_option_keys_t option_keys;
+
+  mu_check(coco_option_keys("").empty());
+  mu_check(coco_option_keys(NULL).empty());
 
   option_keys = coco_option_keys("key");
-  mu_check(option_keys->count == 1);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 1);
+  mu_check(option_keys[0] == "key");
 
   option_keys = coco_option_keys("key: ");
-  mu_check(option_keys->count == 1);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 1);
 
   option_keys = coco_option_keys("key1 key2: ");
-  mu_check(option_keys->count == 1);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 1);
 
   option_keys = coco_option_keys("key1: value1 key2");
   /* In this case we would rather have detected two keys, but this should also trigger a warning,
    * which is OK. */
-  mu_check(option_keys->count == 1);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 1);
 
   option_keys = coco_option_keys("key1: value1 key2: value2");
-  mu_check(option_keys->count == 2);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 2);
+  mu_check(option_keys[0] == "key1");
+  mu_check(option_keys[1] == "key2");
 
   option_keys = coco_option_keys("key: \"A multi-word value\"");
-  mu_check(option_keys->count == 1);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 1);
 
   option_keys = coco_option_keys("key: \"A multi-word value with a colon (:)\"");
-  mu_check(option_keys->count == 1);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 1);
 
   option_keys = coco_option_keys("\"key: value\"");
-  mu_check(option_keys->count == 1);
-  coco_option_keys_free(option_keys);
+  mu_check(option_keys.size() == 1);
+
+  option_keys = coco_option_keys_get_redundant({"key1", "key2"}, coco_option_keys("key1: 1 key3: 3 key2: 2"));
+  mu_check(option_keys.size() == 1);
+  mu_check(option_keys[0] == "key3");
+  mu_check(coco_option_keys_get_output_string(option_keys, "Info:\n") == "Info:\n key3\n");
+  mu_check(coco_option_keys_get_output_string(coco_option_keys_t(), "Info:\n").empty());
+}
+
+/**
+ * Tests the functions coco_options_read_string and coco_options_read_values.
+ */
+MU_TEST(test_coco_options_read) {
+
+  std::string value = "default";
+
+  mu_check(coco_options_read_string("name: value other: 2", "name", value) == 1);
+  mu_check(value == "value");
+  mu_check(coco_options_read_string("name: \"multi word value\" other: 2", "name", value) == 1);
+  mu_check(value == "multi word value");
+  value = "default";
+  mu_check(coco_options_read_string("other: 2", "name", value) == 0);
+  mu_check(coco_options_read_string("name:", "name", value) == 0);
+  mu_check(coco_options_read_string(NULL, "name", value) == 0);
+  mu_check(value == "default");
+
+  mu_check(coco_options_read_values("indices: 1, 2-4 other: 3", "indices", value) == 5);
+  mu_check(value == "1,2-4");
+  mu_check(coco_options_read_values("other: 3", "indices", value) == 0);
+  mu_check(value.empty());
 }
 
 /**
@@ -539,9 +447,50 @@ MU_TEST(test_coco_is_orthogonal) {
 }
 
 /**
+ * Tests coco_matrix_t.
+ */
+MU_TEST(test_coco_matrix) {
+  coco_matrix_t dense(2, 3);
+  std::vector<size_t> row_lengths = {1, 3, 2};
+  coco_matrix_t blocks(row_lengths);
+  coco_matrix_t moved;
+  double **rows;
+
+  mu_check(dense.number_of_rows() == 2);
+  mu_check(dense[1][2] == 0.0);
+  dense[1][2] = 5.0;
+  rows = dense.rows();
+  mu_check(rows[1][2] == 5.0);
+  mu_check(rows[1] == rows[0] + 3);
+
+  mu_check(blocks.number_of_rows() == 3);
+  mu_check(blocks[1] == blocks[0] + 1);
+  mu_check(blocks[2] == blocks[1] + 3);
+
+  /* Moving keeps the storage and therefore the row pointers */
+  moved = std::move(dense);
+  mu_check(moved.rows() == rows);
+  mu_check(moved[1][2] == 5.0);
+}
+
+/**
+ * Tests coco_string_format.
+ */
+MU_TEST(test_coco_string_format) {
+  std::string long_string(1000, 'x');
+
+  mu_check(coco_string_format("%s_d%02lu", "sphere", 5ul) == "sphere_d05");
+  mu_check(coco_string_format("%s", "") == "");
+  /* No length limit */
+  mu_check(coco_string_format("%s!", long_string.c_str()).size() == 1001);
+}
+
+/**
  * Run all tests in this file.
  */
 int main(void) {
+  MU_RUN_TEST(test_coco_matrix);
+  MU_RUN_TEST(test_coco_string_format);
   MU_RUN_TEST(test_coco_is_nan);
   MU_RUN_TEST(test_coco_is_inf);
   MU_RUN_TEST(test_coco_set_log_level);
@@ -551,6 +500,7 @@ int main(void) {
   MU_RUN_TEST(test_coco_string_split);
   MU_RUN_TEST(test_coco_option_keys);
   MU_RUN_TEST(test_coco_string_parse_ranges);
+  MU_RUN_TEST(test_coco_options_read);
   MU_RUN_TEST(test_coco_create_remove_directory);
   MU_RUN_TEST(test_coco_is_orthogonal);
 

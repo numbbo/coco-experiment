@@ -44,7 +44,7 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
         penalty += c2 * c2;
       }
     }
-    assert(inner_problem != NULL);
+    assert(inner_problem != nullptr);
     coco_evaluate_function(inner_problem, x, y);
 
     for (i = 0; i < number_of_objectives; ++i) {
@@ -58,6 +58,6 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
  * @brief Creates the transformation.
  */
 static coco_problem_t *transform_obj_penalize(coco_problem_t *inner_problem, const double factor) {
-  assert(inner_problem != NULL);
+  assert(inner_problem != nullptr);
   return new transform_obj_penalize_t(inner_problem, factor);
 }

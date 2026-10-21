@@ -32,11 +32,9 @@ MU_TEST(test_coco_string_trim) {
 			"",
 			NULL };
 	int index;
-	char str[64];
 
 	for (index = 0; sample_strings[index] != NULL; ++index) {
-		strcpy(str, sample_strings[index] );
-		mu_check(strcmp(coco_string_trim(str), result_strings[index]) == 0);
+		mu_check(coco_string_trim(sample_strings[index]) == result_strings[index]);
 	}
 }
 

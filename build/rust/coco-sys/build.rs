@@ -32,5 +32,7 @@ fn main() {
         .warnings(false)
         // Disable floating-point contraction (FMA), see src/coco_fp_contract.h
         .flag_if_supported("-ffp-contract=off")
+        // COCO does not use exceptions
+        .flag_if_supported("-fno-exceptions")
         .compile("coco");
 }

@@ -50,7 +50,7 @@ MU_TEST(test_coco_observer_targets_trigger) {
   update = coco_observer_targets_trigger(targets, -0.100099999);
   mu_check(!update);
 
-  coco_observer_targets_free(targets);
+  delete targets;
 }
 
 /**
@@ -108,7 +108,7 @@ MU_TEST(test_coco_observer_log_targets_trigger) {
   mu_check(update);
   mu_check(about_equal_value(targets->value,  -1000));
 
-  coco_free_memory(targets);
+  delete targets;
 
   targets = coco_observer_log_targets(10, 1e-8);
   update = coco_observer_log_targets_trigger(targets, 1e-9);
@@ -119,12 +119,12 @@ MU_TEST(test_coco_observer_log_targets_trigger) {
   mu_check(update);
   update = coco_observer_log_targets_trigger(targets, -1.2e-7);
   mu_check(update);
-  coco_free_memory(targets);
+  delete targets;
 
   targets = coco_observer_log_targets(10, 1e-8);
   update = coco_observer_log_targets_trigger(targets, -1.2e-7);
   mu_check(update);
-  coco_free_memory(targets);
+  delete targets;
 }
 
 
@@ -133,7 +133,7 @@ MU_TEST(test_coco_observer_log_targets_trigger) {
  */
 MU_TEST(test_coco_observer_lin_targets_trigger) {
 
-  coco_observer_lin_targets_t *targets = coco_observer_lin_targets(1e-3);
+  coco_observer_lin_targets_t *targets = new coco_observer_lin_targets_t(1e-3);
   int update;
 
   update = coco_observer_lin_targets_trigger(targets, 12);
@@ -186,7 +186,7 @@ MU_TEST(test_coco_observer_lin_targets_trigger) {
   update = coco_observer_lin_targets_trigger(targets, -0.0015);
   mu_check(!update);
 
-  coco_free_memory(targets);
+  delete targets;
 }
 
 /**
@@ -219,7 +219,7 @@ MU_TEST(test_coco_observer_evaluations_trigger) {
     mu_check(update == found);
   }
 
-  coco_observer_evaluations_free(evaluations);
+  delete evaluations;
 }
 
 int main(void) {

@@ -13,7 +13,7 @@
 LDFLAGS += -lm
 CCFLAGS = -g -ggdb -std=c99 -pedantic -Wall -Wextra -Wstrict-prototypes -Wshadow -Wno-sign-compare -Wconversion -ffp-contract=off
 CXX ?= g++
-CXXFLAGS = -g -ggdb -std=c++17 -pedantic -Wall -Wextra -Wshadow -Wno-sign-compare -Wconversion -ffp-contract=off
+CXXFLAGS = -g -ggdb -std=c++17 -pedantic -Wall -Wextra -Wshadow -Wno-sign-compare -Wconversion -ffp-contract=off -fno-exceptions
 
 ########################################################################
 ## Toplevel targets

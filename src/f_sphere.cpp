@@ -82,23 +82,23 @@ static coco_problem_t *f_sphere_bbob_problem_allocate(const size_t function, con
                                                       const char *problem_id_template,
                                                       const char *problem_name_template) {
 
-  double *xopt, fopt;
-  coco_problem_t *problem = NULL;
+  double fopt;
+  coco_problem_t *problem = nullptr;
 
-  xopt = coco_allocate_vector(dimension);
+  std::vector<double> xopt(dimension);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt, rseed, dimension);
+    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
   } else {
     if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-      sbox_cost_compute_xopt(xopt, rseed, dimension);
+      sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
     } else {
-      bbob2009_compute_xopt(xopt, rseed, dimension);
+      bbob2009_compute_xopt(xopt.data(), rseed, dimension);
     }
   }
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_sphere_allocate(dimension);
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(problem, xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
   if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
@@ -112,6 +112,5 @@ static coco_problem_t *f_sphere_bbob_problem_allocate(const size_t function, con
                         dimension);
   coco_problem_set_type(problem, "1-separable");
 
-  coco_free_memory(xopt);
   return problem;
 }

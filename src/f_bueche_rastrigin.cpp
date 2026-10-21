@@ -74,18 +74,18 @@ static coco_problem_t *f_bueche_rastrigin_bbob_problem_allocate(const size_t fun
                                                                 const size_t instance, const long rseed,
                                                                 const char *problem_id_template,
                                                                 const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = NULL;
+  double fopt;
+  coco_problem_t *problem = nullptr;
 
   const double penalty_factor = 100.0;
   size_t i;
 
-  xopt = coco_allocate_vector(dimension);
+  std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt, rseed, dimension);
+    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
   } else {
-    bbob2009_compute_xopt(xopt, rseed, dimension);
+    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
   }
 
   /* OME: This step is in the legacy C code but _not_ in the function
@@ -97,7 +97,7 @@ static coco_problem_t *f_bueche_rastrigin_bbob_problem_allocate(const size_t fun
   problem = f_bueche_rastrigin_allocate(dimension);
   problem = transform_vars_brs(problem);
   problem = transform_vars_oscillate(problem);
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(problem, xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
   if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
@@ -112,6 +112,5 @@ static coco_problem_t *f_bueche_rastrigin_bbob_problem_allocate(const size_t fun
                         dimension);
   coco_problem_set_type(problem, "1-separable");
 
-  coco_free_memory(xopt);
   return problem;
 }

@@ -85,32 +85,30 @@ static coco_problem_t *f_bent_cigar_bbob_problem_allocate(const size_t function,
                                                           const char *problem_id_template,
                                                           const char *problem_name_template) {
 
-  double *xopt, fopt;
-  coco_problem_t *problem = NULL;
+  double fopt;
+  coco_problem_t *problem = nullptr;
 
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double **rot1;
+  std::vector<double> M(dimension * dimension);
+  std::vector<double> b(dimension);
 
-  xopt = coco_allocate_vector(dimension);
+  std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt, rseed + 1000000, dimension);
+    sbox_cost_compute_xopt(xopt.data(), rseed + 1000000, dimension);
   } else {
-    bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+    bbob2009_compute_xopt(xopt.data(), rseed + 1000000, dimension);
   }
 
-  rot1 = bbob2009_allocate_matrix(dimension, dimension);
-  bbob2009_compute_rotation(rot1, rseed + 1000000, dimension);
-  bbob2009_copy_rotation_matrix(rot1, M, b, dimension);
-  bbob2009_free_matrix(rot1, dimension);
+  coco_matrix_t rot1(dimension, dimension);
+  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
+  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
 
   problem = f_bent_cigar_allocate(dimension);
   problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M, b, dimension);
+  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
   problem = transform_vars_asymmetric(problem, 0.5);
-  problem = transform_vars_affine(problem, M, b, dimension);
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
+  problem = transform_vars_shift(problem, xopt.data(), 0);
 
   coco_problem_set_id(problem, problem_id_template, function, instance,
                       dimension);
@@ -118,9 +116,6 @@ static coco_problem_t *f_bent_cigar_bbob_problem_allocate(const size_t function,
                         dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
 
-  coco_free_memory(M);
-  coco_free_memory(b);
-  coco_free_memory(xopt);
   return problem;
 }
 
@@ -132,37 +127,32 @@ static coco_problem_t *f_bent_cigar_cons_bbob_problem_allocate(const size_t func
                                                                const char *problem_id_template,
                                                                const char *problem_name_template) {
 
-  double *xopt, fopt;
-  coco_problem_t *problem = NULL;
+  double fopt;
+  coco_problem_t *problem = nullptr;
 
-  double *M = coco_allocate_vector(dimension * dimension);
-  double *b = coco_allocate_vector(dimension);
-  double **rot1;
+  std::vector<double> M(dimension * dimension);
+  std::vector<double> b(dimension);
 
-  xopt = coco_allocate_vector(dimension);
+  std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt, rseed + 1000000, dimension);
+    sbox_cost_compute_xopt(xopt.data(), rseed + 1000000, dimension);
   } else {
-    bbob2009_compute_xopt(xopt, rseed + 1000000, dimension);
+    bbob2009_compute_xopt(xopt.data(), rseed + 1000000, dimension);
   }
 
-  rot1 = bbob2009_allocate_matrix(dimension, dimension);
-  bbob2009_compute_rotation(rot1, rseed + 1000000, dimension);
-  bbob2009_copy_rotation_matrix(rot1, M, b, dimension);
-  bbob2009_free_matrix(rot1, dimension);
+  coco_matrix_t rot1(dimension, dimension);
+  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
+  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
 
   problem = f_bent_cigar_allocate(dimension);
   problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M, b, dimension);
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
+  problem = transform_vars_shift(problem, xopt.data(), 0);
 
   coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
   coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
   coco_problem_set_type(problem, "3-ill-conditioned");
 
-  coco_free_memory(M);
-  coco_free_memory(b);
-  coco_free_memory(xopt);
   return problem;
 }

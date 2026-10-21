@@ -9,26 +9,12 @@
 #include "coco_utilities.cpp"
 
 /** @brief Enum for denoting when the decision variables and constraints are logged. */
-typedef enum { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS } observer_rw_log_e;
-
-/**
- * @brief The real-world observer data type.
- */
-typedef struct {
-  observer_rw_log_e log_vars_mode; /**< @brief When the decision variables are logged. */
-  observer_rw_log_e log_cons_mode; /**< @brief When the constraints are logged. */
-  size_t low_dim_vars;             /**< @brief "Low dimension" for decision variables. */
-  size_t low_dim_cons;             /**< @brief "Low dimension" for constraints. */
-  int log_only_better;             /**< @brief Whether to log only solutions that are better than previous
-                                               ones (only for the single-objective problems). */
-  int log_time;                    /**< @brief Whether to log time. */
-} observer_rw_data_t;
+enum observer_rw_log_e { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS };
 
 static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *problem);
-static void logger_rw_free(void *logger);
 
 /**
- * @brief Initializes the observer for real-world problems.
+ * @brief The observer for real-world problems.
  *
  * Possible options:
  *
@@ -54,54 +40,64 @@ static void logger_rw_free(void *logger);
  * - "log_time: 0/1" determines whether the time needed to evaluate each solution is logged (0) or not (1).
  * The default value is 0.
  */
-static void observer_rw(coco_observer_t *observer, const char *options, coco_option_keys_t **option_keys) {
+struct observer_rw_t final : public coco_observer_s {
 
-  observer_rw_data_t *observer_data;
-  char string_value[COCO_PATH_MAX + 1];
+  observer_rw_t(const coco_observer_settings_s &observer_settings, const char *options,
+                coco_option_keys_t &option_keys)
+      : coco_observer_s(observer_settings), log_vars_mode(LOG_ALWAYS), log_cons_mode(LOG_ALWAYS) {
 
-  /* Sets the valid keys for rw observer options
-   * IMPORTANT: This list should be up-to-date with the code and the documentation */
-  const char *known_keys[] = {"log_variables", "log_constraints", "low_dim_vars",
-                              "low_dim_cons",  "log_only_better", "log_time"};
-  *option_keys = coco_option_keys_allocate(sizeof(known_keys) / sizeof(char *), known_keys);
+    std::string string_value;
 
-  observer_data = (observer_rw_data_t *)coco_allocate_memory(sizeof(*observer_data));
+    /* Sets the valid keys for rw observer options
+     * IMPORTANT: This list should be up-to-date with the code and the documentation */
+    option_keys = {"log_variables", "log_constraints", "low_dim_vars", "low_dim_cons", "log_only_better", "log_time"};
 
-  observer_data->log_vars_mode = LOG_ALWAYS;
-  if (coco_options_read_string(options, "log_variables", string_value) > 0) {
-    if (strcmp(string_value, "none") == 0)
-      observer_data->log_vars_mode = LOG_NEVER;
-    else if (strcmp(string_value, "all") == 0)
-      observer_data->log_vars_mode = LOG_ALWAYS;
-    else if (strcmp(string_value, "low_dim") == 0)
-      observer_data->log_vars_mode = LOG_LOW_DIM;
+    if (coco_options_read_string(options, "log_variables", string_value) > 0) {
+      if (string_value == "none")
+        log_vars_mode = LOG_NEVER;
+      else if (string_value == "all")
+        log_vars_mode = LOG_ALWAYS;
+      else if (string_value == "low_dim")
+        log_vars_mode = LOG_LOW_DIM;
+    }
+
+    if (coco_options_read_string(options, "log_constraints", string_value) > 0) {
+      if (string_value == "none")
+        log_cons_mode = LOG_NEVER;
+      else if (string_value == "all")
+        log_cons_mode = LOG_ALWAYS;
+      else if (string_value == "low_dim")
+        log_cons_mode = LOG_LOW_DIM;
+    }
+
+    if (coco_options_read_size_t(options, "low_dim_vars", &low_dim_vars) == 0)
+      low_dim_vars = 10;
+
+    if (coco_options_read_size_t(options, "low_dim_cons", &low_dim_cons) == 0)
+      low_dim_cons = 10;
+
+    if (coco_options_read_int(options, "log_only_better", &log_only_better) == 0)
+      log_only_better = 0;
+
+    if (coco_options_read_int(options, "log_time", &log_time) == 0)
+      log_time = 0;
   }
 
-  observer_data->log_cons_mode = LOG_ALWAYS;
-  if (coco_options_read_string(options, "log_constraints", string_value) > 0) {
-    if (strcmp(string_value, "none") == 0)
-      observer_data->log_cons_mode = LOG_NEVER;
-    else if (strcmp(string_value, "all") == 0)
-      observer_data->log_cons_mode = LOG_ALWAYS;
-    else if (strcmp(string_value, "low_dim") == 0)
-      observer_data->log_cons_mode = LOG_LOW_DIM;
-  }
+  coco_problem_t *add_logger(coco_problem_t *problem) override { return logger_rw(this, problem); }
 
-  if (coco_options_read_size_t(options, "low_dim_vars", &(observer_data->low_dim_vars)) == 0)
-    observer_data->low_dim_vars = 10;
+  observer_rw_log_e log_vars_mode; /**< @brief When the decision variables are logged. */
+  observer_rw_log_e log_cons_mode; /**< @brief When the constraints are logged. */
+  size_t low_dim_vars;             /**< @brief "Low dimension" for decision variables. */
+  size_t low_dim_cons;             /**< @brief "Low dimension" for constraints. */
+  int log_only_better;             /**< @brief Whether to log only solutions that are better than previous
+                                               ones (only for the single-objective problems). */
+  int log_time;                    /**< @brief Whether to log time. */
+};
 
-  if (coco_options_read_size_t(options, "low_dim_cons", &(observer_data->low_dim_cons)) == 0)
-    observer_data->low_dim_cons = 10;
-
-  if (coco_options_read_int(options, "log_only_better", &(observer_data->log_only_better)) == 0)
-    observer_data->log_only_better = 0;
-
-  if (coco_options_read_int(options, "log_time", &(observer_data->log_time)) == 0)
-    observer_data->log_time = 0;
-
-  observer->logger_allocate_function = logger_rw;
-  observer->logger_free_function = logger_rw_free;
-  observer->restart_function = NULL;
-  observer->data_free_function = NULL;
-  observer->data = observer_data;
+/**
+ * @brief Returns the observer for real-world problems (the given observer must be one).
+ */
+static observer_rw_t *observer_rw_get(coco_observer_t *observer) {
+  assert(dynamic_cast<observer_rw_t *>(observer) != nullptr);
+  return static_cast<observer_rw_t *>(observer);
 }

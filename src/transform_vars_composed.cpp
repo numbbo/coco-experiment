@@ -31,29 +31,26 @@ static void transform_inv_initial_composed(coco_problem_t *problem, const double
   int is_in_bounds;
   double di;
   double xi;
-  double *sol = NULL;
   double halving_factor = .5;
 
-  tasy_data *dasy;
-  tosz_data *dosz;
+  tasy_data dasy;
+  tosz_data dosz;
 
   coco_problem_t *inner_problem;
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
-  sol = coco_allocate_vector(problem->number_of_variables);
-  dasy = (tasy_data *)coco_allocate_memory(sizeof(*dasy));
-  dosz = (tosz_data *)coco_allocate_memory(sizeof(*dosz));
+  std::vector<double> sol(problem->number_of_variables);
 
-  dasy->beta = transform_vars_asymmetric_get(inner_problem)->beta;
-  dasy->n = problem->number_of_variables;
-  dosz->alpha = transform_vars_oscillate_get(problem)->alpha;
+  dasy.beta = transform_vars_asymmetric_get(inner_problem)->beta;
+  dasy.n = problem->number_of_variables;
+  dosz.alpha = transform_vars_oscillate_get(problem)->alpha;
 
   j = 0;
   while (1) {
 
     for (i = 0; i < problem->number_of_variables; ++i) {
-      dasy->i = i;
-      di = tcomp_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), dasy, dosz);
+      dasy.i = i;
+      di = tcomp_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), &dasy, &dosz);
       xi = di + xopt[i];
       is_in_bounds = (int)(-5.0 < xi && xi < 5.0);
       /* Line search for the inverse-transformed feasible initial solution
@@ -71,13 +68,10 @@ static void transform_inv_initial_composed(coco_problem_t *problem, const double
       break;
     }
   }
-  if (!coco_vector_contains_nan(sol, problem->number_of_variables)) {
+  if (!coco_vector_contains_nan(sol.data(), problem->number_of_variables)) {
     for (i = 0; i < problem->number_of_variables; ++i) {
       problem->initial_solution[i] = sol[i];
     }
   }
-  coco_free_memory(dasy);
-  coco_free_memory(dosz);
 
-  coco_free_memory(sol);
 }

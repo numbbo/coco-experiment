@@ -45,6 +45,19 @@ The job of `fabricate` is to bundle the C++ files and place them in all the righ
 `fabricate` also updates the binding metadata to include version information and any other changes that need to be made from one build to the next.
 It is harmless to run `fabricate` too often, but forgetting to run it means you might be using stale sources.
 
+### Coding conventions for the core
+
+The core in `src/` is C++17 that is amalgamated into a single `coco.cpp` and exposes a C interface (`coco.h`).
+
+- **No exceptions.** COCO is compiled with `-fno-exceptions` where the compiler supports it. Report errors with
+  `coco_error()`, `coco_warning()` etc. and avoid library functions that signal errors by throwing
+  (such as `std::vector::at()` or `std::stoi()`).
+- Manage memory with standard containers and RAII instead of `coco_allocate_memory()`/`coco_free_memory()`,
+  which remain part of the C interface.
+- Problems, transformations and loggers are subclasses of `coco_problem_s`. Suites are subclasses of
+  `coco_suite_s` that implement `get_problem()` (and `get_instances_by_year()` if needed). Observers are
+  subclasses of `coco_observer_s` that implement `add_logger()` (and `signal_restart()` if supported).
+
 ### Running unit tests
 
 Change to the unit tests directory

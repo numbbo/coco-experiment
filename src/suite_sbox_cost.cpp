@@ -32,24 +32,6 @@
 
 #include "transform_vars_enforce_box.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
-
-/**
- * @brief Sets the dimensions and default instances for the bbob-boxed suite.
- */
-static coco_suite_t *suite_sbox_cost_initialize(void) {
-
-  coco_suite_t *suite;
-  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  suite = coco_suite_allocate("bbob-boxed", 24, num_dimensions, dimensions, "year: 2023", 1);
-
-  return suite;
-}
-
 /**
  * @brief Sets the instances associated with years for the SBOX-COST suite.
  */
@@ -64,7 +46,7 @@ static const char *suite_sbox_cost_get_instances_by_year(const int year) {
         "suite_bbob_boxed_get_instances_by_year(): year %d not defined for "
         "suite_bbob_boxed",
         year);
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -75,7 +57,7 @@ static const char *suite_sbox_cost_get_instances_by_year(const int year) {
 static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
                                                   const size_t dimension,
                                                   const size_t instance) {
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const char *problem_id_template = "bbob-boxed_f%03lu_i%02lu_d%02lu";
   const char *problem_name_template =
@@ -198,7 +180,7 @@ static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
         "%lu in %luD",
         (unsigned long)function, (unsigned long)instance,
         (unsigned long)dimension);
-    return NULL; /* Never reached */
+    return nullptr; /* Never reached */
   }
 
   problem = transform_vars_enforce_box(problem);
@@ -220,7 +202,7 @@ static coco_problem_t *suite_sbox_cost_get_problem(coco_suite_t *suite,
                                                    const size_t dimension_idx,
                                                    const size_t instance_idx) {
 
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -234,4 +216,34 @@ static coco_problem_t *suite_sbox_cost_get_problem(coco_suite_t *suite,
       suite, function_idx, dimension_idx, instance_idx);
 
   return problem;
+}
+
+/**
+ * @brief The bbob-boxed suite.
+ */
+struct suite_sbox_cost_t final : public coco_suite_s {
+  using coco_suite_s::coco_suite_s;
+
+  const char *get_instances_by_year(const int year) const override {
+    return suite_sbox_cost_get_instances_by_year(year);
+  }
+
+  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
+                              const size_t instance_idx) override {
+    return suite_sbox_cost_get_problem(this, function_idx, dimension_idx, instance_idx);
+  }
+};
+
+/**
+ * @brief Sets the dimensions and default instances for the bbob-boxed suite.
+ */
+static coco_suite_t *suite_sbox_cost_initialize(void) {
+
+  coco_suite_t *suite;
+  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
+  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
+
+  suite = new suite_sbox_cost_t("bbob-boxed", 24, num_dimensions, dimensions, "year: 2023", 1);
+
+  return suite;
 }

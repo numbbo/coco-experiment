@@ -101,10 +101,10 @@ void *coco_allocate_memory(const size_t size) {
   void *data;
   if (size == 0) {
     coco_error("coco_allocate_memory() called with 0 size.");
-    return NULL; /* never reached */
+    return nullptr; /* never reached */
   }
   data = malloc(size);
-  if (data == NULL)
+  if (data == nullptr)
     coco_error("coco_allocate_memory() failed.");
   return data;
 }

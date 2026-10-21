@@ -86,18 +86,18 @@ static coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, c
                                                         const size_t instance, const long rseed,
                                                         const char *problem_id_template,
                                                         const char *problem_name_template) {
-  double *xopt, fopt;
-  coco_problem_t *problem = NULL;
+  double fopt;
+  coco_problem_t *problem = nullptr;
   size_t i;
 
   const double condition = 10.;
 
-  double *tmp1 = coco_allocate_vector(dimension);
-  double *tmp2 = coco_allocate_vector(dimension);
+  std::vector<double> tmp1(dimension);
+  std::vector<double> tmp2(dimension);
 
-  xopt = coco_allocate_vector(dimension);
+  std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_unif(tmp1, dimension, rseed);
+  bbob2009_unif(tmp1.data(), dimension, rseed);
   for (i = 0; i < dimension; ++i) {
     xopt[i] = (tmp1[i] < 0.5 ? -1 : 1) * 0.5 * 4.2096874637;
   }
@@ -109,13 +109,13 @@ static coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, c
 
   problem = f_schwefel_allocate(dimension);
   problem = transform_vars_scale(problem, 100);
-  problem = transform_vars_shift(problem, tmp1, 0);
+  problem = transform_vars_shift(problem, tmp1.data(), 0);
   /* problem = transform_vars_affine(problem, M, b, dimension); */
   problem = transform_vars_conditioning(problem, condition);
-  problem = transform_vars_shift(problem, tmp2, 0);
+  problem = transform_vars_shift(problem, tmp2.data(), 0);
   problem = transform_vars_z_hat(
       problem,
-      xopt); /* only for the correct xopt the best_parameter is not changed */
+      xopt.data()); /* only for the correct xopt the best_parameter is not changed */
   problem = transform_vars_scale(problem, 2);
   problem = transform_vars_x_hat(problem, rseed);
   problem = transform_obj_shift(problem, fopt);
@@ -124,8 +124,5 @@ static coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, c
   coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
   coco_problem_set_type(problem, "5-weakly-structured");
 
-  coco_free_memory(tmp1);
-  coco_free_memory(tmp2);
-  coco_free_memory(xopt);
   return problem;
 }

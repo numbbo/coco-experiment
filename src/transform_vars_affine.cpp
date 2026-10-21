@@ -72,7 +72,6 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective function.
    */
   void evaluate_function(const double *x, double *y) override {
-    double *cons_values;
     int is_feasible;
 
     if (inner_problem->number_of_objectives == 0) {
@@ -89,9 +88,8 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     coco_evaluate_function(inner_problem, transformed_x.data(), y);
 
     if (number_of_constraints > 0) {
-      cons_values = coco_allocate_vector(number_of_constraints);
-      is_feasible = coco_is_feasible(this, x, cons_values);
-      coco_free_memory(cons_values);
+      std::vector<double> cons_values(number_of_constraints);
+      is_feasible = coco_is_feasible(this, x, cons_values.data());
       if (is_feasible)
         assert(y[0] + 1e-13 >= best_value[0]);
     } else
@@ -122,16 +120,13 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
   void evaluate_gradient(const double *x, double *y) override {
     size_t i, j;
     const double *current_row;
-    double *gradient;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
       return;
     }
 
-    gradient = coco_allocate_vector(inner_problem->number_of_variables);
-    for (i = 0; i < inner_problem->number_of_variables; ++i)
-      gradient[i] = 0.0;
+    std::vector<double> gradient(inner_problem->number_of_variables, 0.0);
 
     transform(x);
     bbob_evaluate_gradient(inner_problem, transformed_x.data(), y);
@@ -147,7 +142,6 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     }
     for (i = 0; i < inner_problem->number_of_variables; ++i)
       y[i] = gradient[i];
-    coco_free_memory(gradient);
   }
 };
 

@@ -50,41 +50,41 @@ MU_TEST(test_logger_bbob_triggers) {
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 80.88209408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 1.40209408));
-  target = coco_observer_targets_get_last_target((coco_observer_targets_t *)logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 10));
 
   x[0] = 0; x[1] = -0.5;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.97529408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.49529408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 1));
 
   x[0] = 0; x[1] = -1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.56849408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.08849408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 0.1));
 
   x[0] = 0; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.54713408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.06713408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 0.1));
 
   x[0] = 0.2; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.48601408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.00601408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 0.01));
 
   coco_observer_free(observer);
@@ -101,41 +101,41 @@ MU_TEST(test_logger_bbob_triggers) {
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 80.88209408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 1.40209408));
-  target = coco_observer_targets_get_last_target((coco_observer_targets_t *)logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 1.403));
 
   x[0] = 0; x[1] = -0.5;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.97529408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.49529408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 0.496));
 
   x[0] = 0; x[1] = -1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.56849408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.08849408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 0.089));
 
   x[0] = 0; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.54713408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.06713408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 0.068));
 
   x[0] = 0.2; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.48601408));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.00601408));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 0.007));
 
   coco_observer_free(observer);
@@ -152,9 +152,9 @@ MU_TEST(test_logger_bbob_triggers) {
   x[0] = 0.252; x[1] = -1.156;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.48000128));
-  coco_observer_targets_trigger(logger->targets, logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 1.28 * 1e-6));
-  target = coco_observer_targets_get_last_target(logger->targets);
+  target = coco_observer_targets_get_last_target(logger->targets.get());
   mu_check(about_equal_value(target, 1e-5));
 
   coco_observer_free(observer);

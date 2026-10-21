@@ -16,9 +16,9 @@
 /**
  * @brief Data type for univariate function tosz_uv
  */
-typedef struct {
+struct tosz_data {
   double alpha;
-} tosz_data;
+};
 
 /**
  * @brief Univariate oscillating non-linear transformation.
@@ -78,7 +78,6 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective functions.
    */
   void evaluate_function(const double *x, double *y) override {
-    double *cons_values;
     int is_feasible;
 
     if (inner_problem->number_of_objectives == 0) {
@@ -96,9 +95,8 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
     coco_evaluate_function(inner_problem, oscillated_x.data(), y);
 
     if (number_of_constraints > 0) {
-      cons_values = coco_allocate_vector(number_of_constraints);
-      is_feasible = coco_is_feasible(this, x, cons_values);
-      coco_free_memory(cons_values);
+      std::vector<double> cons_values(number_of_constraints);
+      is_feasible = coco_is_feasible(this, x, cons_values.data());
       if (is_feasible)
         assert(y[0] + 1e-13 >= best_value[0]);
     } else
@@ -150,7 +148,7 @@ static coco_problem_t *transform_vars_oscillate(coco_problem_t *inner_problem) {
  * @brief Returns the oscillating transformation behind the given problem pointer.
  */
 static transform_vars_oscillate_t *transform_vars_oscillate_get(coco_problem_t *problem) {
-  assert(dynamic_cast<transform_vars_oscillate_t *>(problem) != NULL);
+  assert(dynamic_cast<transform_vars_oscillate_t *>(problem) != nullptr);
   return static_cast<transform_vars_oscillate_t *>(problem);
 }
 
@@ -168,21 +166,19 @@ static void transform_inv_initial_oscillate(coco_problem_t *problem, const doubl
   int is_in_bounds;
   double di = 0.0;
   double xi;
-  double *sol = NULL;
   double halving_factor = .5;
 
-  tosz_data *d;
+  tosz_data d;
 
-  sol = coco_allocate_vector(problem->number_of_variables);
-  d = (tosz_data *)coco_allocate_memory(sizeof(*d));
+  std::vector<double> sol(problem->number_of_variables);
 
-  d->alpha = transform_vars_oscillate_get(problem)->alpha;
+  d.alpha = transform_vars_oscillate_get(problem)->alpha;
 
   j = 0;
   while (1) {
 
     for (i = 0; i < problem->number_of_variables; ++i) {
-      di = tosz_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), d);
+      di = tosz_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), &d);
       xi = di + xopt[i];
       is_in_bounds = (int)(-5.0 < xi && xi < 5.0);
       /* Line search for the inverse-transformed feasible initial solution
@@ -200,11 +196,9 @@ static void transform_inv_initial_oscillate(coco_problem_t *problem, const doubl
       break;
     }
   }
-  if (!coco_vector_contains_nan(sol, problem->number_of_variables)) {
+  if (!coco_vector_contains_nan(sol.data(), problem->number_of_variables)) {
     for (i = 0; i < problem->number_of_variables; ++i) {
       problem->initial_solution[i] = sol[i];
     }
   }
-  coco_free_memory(d);
-  coco_free_memory(sol);
 }

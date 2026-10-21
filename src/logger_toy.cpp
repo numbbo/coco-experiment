@@ -19,31 +19,15 @@
 /**
  * @brief The toy logger data type.
  */
-typedef struct {
-  FILE *log_file;                       /**< @brief Pointer to the file already prepared for logging. */
-  coco_observer_log_targets_t *targets; /**< @brief Triggers based on logarithmic target values. */
-  size_t number_of_evaluations;         /**< @brief The number of evaluations performed so far. */
-  int precision_x;                      /**< @brief Precision for outputting decision values. */
-  int precision_f;                      /**< @brief Precision for outputting objective values. */
-} logger_toy_data_t;
+struct logger_toy_data_t {
+  FILE *log_file; /**< @brief Pointer to the file already prepared for logging (owned by the observer). */
+  std::unique_ptr<coco_observer_log_targets_t> targets; /**< @brief Triggers based on logarithmic target values. */
+  size_t number_of_evaluations;                         /**< @brief The number of evaluations performed so far. */
+  int precision_x;                                      /**< @brief Precision for outputting decision values. */
+  int precision_f;                                      /**< @brief Precision for outputting objective values. */
+};
 
 static logger_toy_data_t *logger_toy_get_data(const coco_problem_t *problem);
-
-/**
- * @brief Frees the memory of the given toy logger.
- */
-static void logger_toy_free(void *stuff) {
-
-  logger_toy_data_t *logger;
-
-  assert(stuff != NULL);
-  logger = (logger_toy_data_t *)stuff;
-
-  if (logger->targets != NULL) {
-    coco_free_memory(logger->targets);
-    logger->targets = NULL;
-  }
-}
 
 /**
  * @brief Evaluates the function, increases the number of evaluations and outputs information based on the
@@ -58,7 +42,7 @@ static void logger_toy_evaluate(coco_problem_t *problem, const double *x, double
   logger->number_of_evaluations++;
 
   /* Output the solution when a new target that has been hit */
-  if (coco_observer_log_targets_trigger(logger->targets, y[0])) {
+  if (coco_observer_log_targets_trigger(logger->targets.get(), y[0])) {
     fprintf(logger->log_file, "%lu\t%.*e\t%.*e", (unsigned long)logger->number_of_evaluations, logger->precision_f,
             y[0], logger->precision_f, logger->targets->value);
     for (i = 0; i < problem->number_of_variables; i++) {
@@ -80,8 +64,6 @@ struct logger_toy_t final : public coco_problem_transformed_t {
   logger_toy_t(coco_problem_t *inner_problem, const char *observer_name)
       : coco_problem_transformed_t(inner_problem, observer_name), data() {}
 
-  ~logger_toy_t() override { logger_toy_free(&data); }
-
   void evaluate_function(const double *x, double *y) override { logger_toy_evaluate(this, x, y); }
 };
 
@@ -89,7 +71,7 @@ struct logger_toy_t final : public coco_problem_transformed_t {
  * @brief Returns the data of the toy logger.
  */
 static logger_toy_data_t *logger_toy_get_data(const coco_problem_t *problem) {
-  assert(dynamic_cast<const logger_toy_t *>(problem) != NULL);
+  assert(dynamic_cast<const logger_toy_t *>(problem) != nullptr);
   return &static_cast<logger_toy_t *>(const_cast<coco_problem_t *>(problem))->data;
 }
 
@@ -111,8 +93,9 @@ static coco_problem_t *logger_toy(coco_observer_t *observer, coco_problem_t *inn
   /* Initialize the logger_toy_data_t object instance */
   logger_data = &problem->data;
   logger_data->number_of_evaluations = 0;
-  logger_data->targets = coco_observer_log_targets(observer->number_target_triggers, observer->log_target_precision);
-  logger_data->log_file = ((observer_toy_data_t *)observer->data)->log_file;
+  logger_data->targets.reset(
+      coco_observer_log_targets(observer->number_target_triggers, observer->log_target_precision));
+  logger_data->log_file = observer_toy_get(observer)->log_file;
   logger_data->precision_x = observer->precision_x;
   logger_data->precision_f = observer->precision_f;
 

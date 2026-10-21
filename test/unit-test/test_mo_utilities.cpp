@@ -50,7 +50,7 @@ MU_TEST(test_mo_normalize) {
   double *y = coco_allocate_vector(2);
   double *ideal = coco_allocate_vector(2);
   double *nadir = coco_allocate_vector(2);
-  double *result;
+  std::vector<double> result;
 
   ideal[0] = 100;
   ideal[1] = 0.2;
@@ -59,25 +59,21 @@ MU_TEST(test_mo_normalize) {
 
   result = mo_normalize(ideal, ideal, nadir, 2);
   /* Note that the ideal point gets adjusted to be equal to an extreme point! */
-  mu_check(about_equal_2d(result, 0, 1));
-  coco_free_memory(result);
+  mu_check(about_equal_2d(result.data(), 0, 1));
 
   result = mo_normalize(nadir, ideal, nadir, 2);
-  mu_check(about_equal_2d(result, 1, 1));
-  coco_free_memory(result);
+  mu_check(about_equal_2d(result.data(), 1, 1));
 
   y[0] = 50;
   y[1] = 0.1;
   result = mo_normalize(y, ideal, nadir, 2);
   /* Note that a point better than the ideal point gets adjusted to be equal to an extreme point! */
-  mu_check(about_equal_2d(result, 0, 1));
-  coco_free_memory(result);
+  mu_check(about_equal_2d(result.data(), 0, 1));
 
   y[0] = 180;
   y[1] = 0.21;
   result = mo_normalize(y, ideal, nadir, 2);
-  mu_check(about_equal_2d(result, 0.8, 0.5));
-  coco_free_memory(result);
+  mu_check(about_equal_2d(result.data(), 0.8, 0.5));
 
   coco_free_memory(y);
   coco_free_memory(ideal);

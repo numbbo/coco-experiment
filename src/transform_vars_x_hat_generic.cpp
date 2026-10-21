@@ -12,27 +12,29 @@
 #include "suite_bbob_legacy_code.cpp"
 
 /**
- * @brief Data type for the versatile_data_t
+ * @brief Data that the large-scale Lunacek bi-Rastrigin function shares with transform_vars_x_hat_generic.
  */
-typedef struct f_lunacek_bi_rastrigin_versatile_data_s {
-  coco_problem_t *sub_problem_mu0 = NULL;
-  coco_problem_t *sub_problem_mu1 = NULL;
+struct f_lunacek_bi_rastrigin_shared_data_t {
+  coco_problem_t *sub_problem_mu0 = nullptr;
+  coco_problem_t *sub_problem_mu1 = nullptr;
   std::vector<double> x_hat;
-} f_lunacek_bi_rastrigin_versatile_data_t;
+};
 
 /**
  * @brief Multiplies the decision values by 2 and a given vector of 1 and -1.
  *
- * Also stores the result in x_hat of the versatile data of the Lunacek bi-Rastrigin function.
+ * Also stores the result in x_hat of the data shared with the Lunacek bi-Rastrigin function.
  */
 struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t {
   const std::vector<double> sign_vector;
   std::vector<double> x_hat; /**< @brief The transformed decision values */
+  f_lunacek_bi_rastrigin_shared_data_t *const shared; /**< @brief Owned by the Lunacek bi-Rastrigin function */
 
-  transform_vars_x_hat_generic_t(coco_problem_t *inner_problem, const double *sign_vector)
+  transform_vars_x_hat_generic_t(coco_problem_t *inner_problem, const double *sign_vector,
+                                 f_lunacek_bi_rastrigin_shared_data_t *shared)
       : coco_problem_transformed_t(inner_problem, "transform_vars_x_hat_generic"),
         sign_vector(sign_vector, sign_vector + inner_problem->number_of_variables),
-        x_hat(inner_problem->number_of_variables) {}
+        x_hat(inner_problem->number_of_variables), shared(shared) {}
 
   /**
    * @brief Evaluates the transformation.
@@ -42,7 +44,7 @@ struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t 
 
     for (i = 0; i < number_of_variables; ++i) {
       x_hat[i] = 2.0 * sign_vector[i] * x[i];
-      ((f_lunacek_bi_rastrigin_versatile_data_t *)versatile_data)->x_hat[i] = x_hat[i];
+      shared->x_hat[i] = x_hat[i];
     }
     coco_evaluate_function(inner_problem, x_hat.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
@@ -52,6 +54,7 @@ struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t 
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_x_hat_generic(coco_problem_t *inner_problem, const double *sign_vector) {
-  return new transform_vars_x_hat_generic_t(inner_problem, sign_vector);
+static coco_problem_t *transform_vars_x_hat_generic(coco_problem_t *inner_problem, const double *sign_vector,
+                                                    f_lunacek_bi_rastrigin_shared_data_t *shared) {
+  return new transform_vars_x_hat_generic_t(inner_problem, sign_vector, shared);
 }

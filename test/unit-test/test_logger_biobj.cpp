@@ -54,7 +54,7 @@ MU_TEST(test_logger_biobj_evaluate) {
       mu_check(about_equal_vector(y, y_eval, 2));
 
       logger = logger_biobj_get_data(problem);
-      indicator = (logger_biobj_indicator_t *) (logger->indicators[0]);
+      indicator = logger->indicators[0].get();
 
       /* Checks the hypervolume */
       mu_check(about_equal_value(hypervolume, indicator->current_value));
@@ -91,7 +91,7 @@ MU_TEST(test_logger_biobj_evaluate2) {
   while ((problem = coco_suite_get_next_problem(suite, observer)) != NULL) {
 
     logger = logger_biobj_get_data(problem);
-    indicator = (logger_biobj_indicator_t *) (logger->indicators[0]);
+    indicator = logger->indicators[0].get();
 
     /* Tests the ideal and nadir points */
     mu_check(about_equal_2d(problem->best_value.data(), 2.872000000000000e+001, 6.587000000000001e+001));
@@ -155,7 +155,7 @@ MU_TEST(test_coco_logger_biobj_feed_solution) {
   mu_check(problem != NULL);
 
   logger = logger_biobj_get_data(problem);
-  indicator = (logger_biobj_indicator_t *) (logger->indicators[0]);
+  indicator = logger->indicators[0].get();
 
   indicator->best_value = 9.999545292785900e-01;
 

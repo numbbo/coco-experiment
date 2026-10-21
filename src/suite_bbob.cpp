@@ -27,25 +27,6 @@
 #include "f_step_ellipsoid.cpp"
 #include "f_weierstrass.cpp"
 
-static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t number_of_functions,
-                                         const size_t number_of_dimensions, const size_t *dimensions,
-                                         const char *default_instances, const int known_optima);
-
-/**
- * @brief Sets the dimensions and default instances for the bbob suite.
- */
-static coco_suite_t *suite_bbob_initialize(void) {
-
-  coco_suite_t *suite;
-  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  /* IMPORTANT: Make sure to change the default instance for every new workshop! */
-  suite = coco_suite_allocate("bbob", 24, num_dimensions, dimensions, "year: 2018", 1);
-
-  return suite;
-}
-
 /**
  * @brief Sets the instances associated with years for the bbob suite.
  */
@@ -73,7 +54,7 @@ static const char *suite_bbob_get_instances_by_year(const int year) {
     return "1-5,1-5,1-5";
   } else {
     coco_error("suite_bbob_get_instances_by_year(): year %d not defined for suite_bbob", year);
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -83,7 +64,7 @@ static const char *suite_bbob_get_instances_by_year(const int year) {
  * Useful for other suites as well (see for example suite_biobj.cpp).
  */
 coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const char *problem_id_template = "bbob_f%03lu_i%02lu_d%02lu";
   const char *problem_name_template = "BBOB suite problem f%lu instance %lu in %luD";
@@ -185,7 +166,7 @@ coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimens
   } else {
     coco_error("coco_get_bbob_problem(): cannot retrieve problem f%lu instance %lu in %luD", (unsigned long)function,
                (unsigned long)instance, (unsigned long)dimension);
-    return NULL; /* Never reached */
+    return nullptr; /* Never reached */
   }
 
   return problem;
@@ -203,7 +184,7 @@ coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimens
 static coco_problem_t *suite_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
                                               const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = NULL;
+  coco_problem_t *problem = nullptr;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -216,4 +197,35 @@ static coco_problem_t *suite_bbob_get_problem(coco_suite_t *suite, const size_t 
   problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
 
   return problem;
+}
+
+/**
+ * @brief The bbob suite.
+ */
+struct suite_bbob_t final : public coco_suite_s {
+  using coco_suite_s::coco_suite_s;
+
+  const char *get_instances_by_year(const int year) const override {
+    return suite_bbob_get_instances_by_year(year);
+  }
+
+  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
+                              const size_t instance_idx) override {
+    return suite_bbob_get_problem(this, function_idx, dimension_idx, instance_idx);
+  }
+};
+
+/**
+ * @brief Sets the dimensions and default instances for the bbob suite.
+ */
+static coco_suite_t *suite_bbob_initialize(void) {
+
+  coco_suite_t *suite;
+  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
+  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
+
+  /* IMPORTANT: Make sure to change the default instance for every new workshop! */
+  suite = new suite_bbob_t("bbob", 24, num_dimensions, dimensions, "year: 2018", 1);
+
+  return suite;
 }

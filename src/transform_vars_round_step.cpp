@@ -11,24 +11,26 @@
 #include "coco_utilities.cpp"
 
 /**
- * @brief Data type to be used in problem->versatile_data
+ * @brief Data that the large-scale step ellipsoid function shares with transform_vars_round_step.
  */
-typedef struct {
+struct f_step_ellipsoid_shared_data_t {
   double zhat_1; /**< @brief contains the value of \hat{z}_1 that is used to compute the fintess */
-} f_step_ellipsoid_versatile_data_t;
+};
 
 /**
  * @brief Rounds the decision values for the step-ellipsoid function.
  *
- * Also sets \hat{z}_1 in the versatile data of the step ellipsoid function.
+ * Also sets \hat{z}_1 in the data shared with the step ellipsoid function.
  */
 struct transform_vars_round_step_t final : public coco_problem_transformed_t {
   const double alpha;
   std::vector<double> rounded_x;
+  f_step_ellipsoid_shared_data_t *const shared; /**< @brief Owned by the step ellipsoid function */
 
-  transform_vars_round_step_t(coco_problem_t *inner_problem, const double alpha)
+  transform_vars_round_step_t(coco_problem_t *inner_problem, const double alpha,
+                              f_step_ellipsoid_shared_data_t *shared)
       : coco_problem_transformed_t(inner_problem, "transform_vars_round_step"), alpha(alpha),
-        rounded_x(inner_problem->number_of_variables + 1) {
+        rounded_x(inner_problem->number_of_variables + 1), shared(shared) {
     size_t i;
     /* Compute best parameter */
     for (i = 0; i < number_of_variables; i++) {
@@ -47,7 +49,7 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
     size_t i;
 
     /* multiplication by d to counter-balance the normalization by d*/
-    ((f_step_ellipsoid_versatile_data_t *)versatile_data)->zhat_1 =
+    shared->zhat_1 =
         fabs(x[0]) *
         (double)inner_problem
             ->number_of_variables; /* TODO: Discuss: consider not pre-imptively multiplying by dim to not change the
@@ -68,6 +70,7 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_round_step(coco_problem_t *inner_problem, const double alpha) {
-  return new transform_vars_round_step_t(inner_problem, alpha);
+static coco_problem_t *transform_vars_round_step(coco_problem_t *inner_problem, const double alpha,
+                                                 f_step_ellipsoid_shared_data_t *shared) {
+  return new transform_vars_round_step_t(inner_problem, alpha, shared);
 }
