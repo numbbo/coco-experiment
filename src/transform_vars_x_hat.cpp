@@ -23,9 +23,9 @@ public:
   /**
    * @brief Evaluates the transformation.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
 
-    bbob2009_unif(x_hat.data(), number_of_variables, seed);
+    bbob2009_unif(x_hat, seed);
 
     for (size_t i = 0; i < number_of_variables; ++i) {
       if (x_hat[i] < 0.5) {
@@ -34,14 +34,14 @@ public:
         x_hat[i] = x[i];
       }
     }
-    inner_problem->evaluate_function(x_hat.data(), y);
+    inner_problem->evaluate_function(x_hat, y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /** @brief Flips the same signs again. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     std::vector<double> random_numbers(number_of_variables);
-    bbob2009_unif(random_numbers.data(), number_of_variables, seed);
+    bbob2009_unif(random_numbers, seed);
     for (size_t i = 0; i < number_of_variables; ++i)
       x[i] = random_numbers[i] < 0.5 ? -inner_x[i] : inner_x[i];
     return true;

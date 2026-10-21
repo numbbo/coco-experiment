@@ -26,23 +26,23 @@ public:
   /**
    * @brief Evaluates the transformation.
    */
-  void evaluate_function(const double *x, double *y) override {
-    conditioning.apply(x, conditioned_x.data());
-    inner_problem->evaluate_function(conditioned_x.data(), y);
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
+    conditioning.apply(x, conditioned_x);
+    inner_problem->evaluate_function(conditioned_x, y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the transformed function.
    */
-  void evaluate_gradient(const double *x, double *y) override {
-    conditioning.apply(x, conditioned_x.data());
-    inner_problem->evaluate_gradient(conditioned_x.data(), y);
+  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
+    conditioning.apply(x, conditioned_x);
+    inner_problem->evaluate_gradient(conditioned_x, y);
     conditioning.apply(y, y);
   }
 
   /** @brief Divides by the scaling coefficients. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     conditioning.inverse(inner_x, x);
     return true;
   }

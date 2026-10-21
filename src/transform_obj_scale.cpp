@@ -19,7 +19,7 @@ public:
       best_value[i] *= factor;
   }
 
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     if (number_of_objectives == 0) {
       inner_problem->evaluate_function(x, y);
       return;
@@ -33,7 +33,7 @@ public:
     assert_not_below_best_value(x, y);
   }
 
-  void evaluate_gradient(const double *x, double *y) override {
+  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
 
     inner_problem->evaluate_gradient(x, y);
 
@@ -43,7 +43,9 @@ public:
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
 private:
   const double factor;

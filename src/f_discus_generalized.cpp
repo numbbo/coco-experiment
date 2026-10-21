@@ -21,7 +21,7 @@
 class f_discus_generalized_t final : public coco_problem_s {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(const double *x) const;
+  double raw(std::span<const double> x) const;
 
   f_discus_generalized_t(const size_t number_of_variables, size_t proportion_short_axes_denom)
       : coco_problem_s(number_of_variables, 1, 0) {
@@ -30,13 +30,13 @@ public:
     this->proportion_short_axes_denom = proportion_short_axes_denom;
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
@@ -50,7 +50,7 @@ private:
  * @brief Implements the generalized discus function without connections to any
  * COCO structures.
  */
-double f_discus_generalized_t::raw(const double *x) const {
+double f_discus_generalized_t::raw(std::span<const double> x) const {
 
   static const double condition = 1.0e6;
   double result = 0;
@@ -97,22 +97,20 @@ static coco_problem_ptr_t f_discus_generalized_permblockdiag_bbob_problem_alloca
   size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
   double fopt = bbob2009_compute_fopt(function, instance);
 
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
-  coco_compute_truncated_uniform_swap_permutation(
-      P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(
-      P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes);
+  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, nb_swaps, swap_range);
 
   problem =
       f_discus_generalized_allocate(dimension, proportion_short_axes_denom);
   problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P2);
   problem = transform_vars_blockrotation(std::move(problem), B);
-  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P1);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_shift(std::move(problem), fopt);

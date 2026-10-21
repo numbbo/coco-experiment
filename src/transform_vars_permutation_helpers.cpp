@@ -18,36 +18,36 @@
 /* TODO: Document this file in doxygen style! */
 
 /**
- * @brief Sorts the indices in P (of length n) by the corresponding values. Used as a random permutation
- * generator when the values are random. Indices with equal values keep their order.
+ * @brief Sorts the indices in P by the corresponding values. Used as a random permutation generator when the
+ * values are random. Indices with equal values keep their order.
  */
-static void coco_sort_indices_by_values(size_t *P, const double *values, const size_t n) {
-  std::stable_sort(P, P + n, [values](const size_t a, const size_t b) { return values[a] < values[b]; });
+static void coco_sort_indices_by_values(std::span<size_t> P, std::span<const double> values) {
+  std::stable_sort(P.begin(), P.end(), [values](const size_t a, const size_t b) { return values[a] < values[b]; });
 }
 
 /**
  * @brief generates a random, uniformly sampled, permutation and puts it in P
  * Wassim: move to coco_utilities?
  */
-static void coco_compute_random_permutation(size_t *P, long seed, size_t n) {
+static void coco_compute_random_permutation(std::span<size_t> P, long seed) {
 
-  std::vector<double> random_data(n);
-  bbob2009_gauss(random_data.data(), n, seed);
-  for (size_t i = 0; i < n; i++) {
+  std::vector<double> random_data(P.size());
+  bbob2009_gauss(random_data, seed);
+  for (size_t i = 0; i < P.size(); i++) {
     P[i] = i;
   }
-  coco_sort_indices_by_values(P, random_data.data(), n);
+  coco_sort_indices_by_values(P, random_data);
 }
 
 /**
  * @brief generates a permutation by sorting a sequence and puts it in P
  */
-static void coco_compute_permutation_from_sequence(size_t *P, const double *seq, size_t length) {
-
-  for (size_t i = 0; i < length; i++) {
+static void coco_compute_permutation_from_sequence(std::span<size_t> P, std::span<const double> seq) {
+  assert(P.size() == seq.size());
+  for (size_t i = 0; i < P.size(); i++) {
     P[i] = i;
   }
-  coco_sort_indices_by_values(P, seq, length);
+  coco_sort_indices_by_values(P, seq);
 }
 
 /**
@@ -58,7 +58,7 @@ static void coco_compute_permutation_from_sequence(size_t *P, const double *seq,
 static long coco_random_unif_integer(long lower_bound, long upper_bound, long seed) {
   long range, rand_int;
   std::vector<double> tmp_uniform(1);
-  bbob2009_unif(tmp_uniform.data(), 1, seed);
+  bbob2009_unif(tmp_uniform, seed);
   range = upper_bound - lower_bound + 1;
   rand_int = (static_cast<long>(tmp_uniform[0] * static_cast<double>(range))) + lower_bound;
   return rand_int;
@@ -70,8 +70,9 @@ static long coco_random_unif_integer(long lower_bound, long upper_bound, long se
  * for now so dynamic is implemented (simple since no need for tracking indices
  * if swap_range is 0, a random uniform permutation is generated
  */
-static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed, size_t n, size_t nb_swaps,
+static void coco_compute_truncated_uniform_swap_permutation(std::span<size_t> P, long seed, size_t nb_swaps,
                                                             size_t swap_range) {
+  const size_t n = P.size();
   size_t lower_bound, upper_bound, first_swap_var, second_swap_var, tmp;
 
   if (n <= 40) {
@@ -82,7 +83,7 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
   }
 
   std::vector<double> random_data(n);
-  bbob2009_unif(random_data.data(), n, seed);
+  bbob2009_unif(random_data, seed);
 
   std::vector<size_t> idx_order(n);
   for (size_t i = 0; i < n; i++) {
@@ -93,7 +94,7 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
   if (swap_range > 0) {
     /*sort the random data in random_data and arrange idx_order accordingly*/
     /*did not use coco_compute_random_permutation to only use the seed once*/
-    coco_sort_indices_by_values(idx_order.data(), random_data.data(), n);
+    coco_sort_indices_by_values(idx_order, random_data);
     for (size_t idx_swap = 0; idx_swap < nb_swaps; idx_swap++) {
       first_swap_var = idx_order[idx_swap];
       if (first_swap_var < swap_range) {
@@ -120,7 +121,7 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
     }
   } else {
     /* generate random permutation instead */
-    coco_compute_random_permutation(P, seed, n);
+    coco_compute_random_permutation(P, seed);
   }
 }
 

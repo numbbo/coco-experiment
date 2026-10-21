@@ -28,14 +28,14 @@ public:
   /**
    * @brief Evaluates the transformed function.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     if (inner_problem->get_number_of_objectives() == 0) {
       inner_problem->evaluate_function(x, y);
       return;
     }
 
-    asymmetric.apply(x, asymmetric_x.data());
-    inner_problem->evaluate_function(asymmetric_x.data(), y);
+    asymmetric.apply(x, asymmetric_x);
+    inner_problem->evaluate_function(asymmetric_x, y);
 
     assert_not_below_best_value(x, y);
   }
@@ -43,18 +43,18 @@ public:
   /**
    * @brief Evaluates the transformed constraint.
    */
-  void evaluate_constraint(const double *x, double *y, int update_counter) override {
+  void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) override {
     if (inner_problem->get_number_of_constraints() == 0) {
       inner_problem->evaluate_constraint(x, y, update_counter);
       return;
     }
 
-    asymmetric.apply(x, asymmetric_x.data());
-    inner_problem->evaluate_constraint(asymmetric_x.data(), y, update_counter);
+    asymmetric.apply(x, asymmetric_x);
+    inner_problem->evaluate_constraint(asymmetric_x, y, update_counter);
   }
 
   /** @brief Inverts the transformation numerically. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     asymmetric.inverse(inner_x, x);
     return true;
   }

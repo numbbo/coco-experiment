@@ -23,9 +23,8 @@ public:
   /**
    * @brief Evaluates the transformation.
    */
-  void evaluate_function(const double *x, double *y) override {
-    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest.data(),
-                                                 largest_values_of_interest.data(), number_of_variables);
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
+    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
     inner_problem->evaluate_function(x, y);
 
     for (size_t i = 0; i < number_of_objectives; ++i) {
@@ -35,7 +34,9 @@ public:
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
 private:
   const double factor;

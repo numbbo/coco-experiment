@@ -18,13 +18,13 @@ public:
       : coco_problem_transformed_t(std::move(inner), "transform_obj_oscillate") {
     /* Compute best value */
     /* Maybe not the most efficient solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Evaluates the transformation.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     static const double factor = 0.1;
 
     inner_problem->evaluate_function(x, y);
@@ -43,7 +43,9 @@ public:
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 };
 
 /**

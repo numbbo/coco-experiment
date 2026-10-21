@@ -17,8 +17,8 @@
  * @brief Implements the sharp ridge function without connections to any COCO
  * structures.
  */
-static double f_sharp_ridge_raw(const double *x,
-                                const size_t number_of_variables) {
+static double f_sharp_ridge_raw(std::span<const double> x) {
+  const size_t number_of_variables = x.size();
 
   static const double alpha = 100.0;
   const double d_vars_40 = 1.0; /* generalized: number_of_variables <= 40 ? 1 :
@@ -49,15 +49,15 @@ public:
     set_id("%s_d%02zu", "sharp_ridge", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_sharp_ridge_raw(x, number_of_variables);
+    y[0] = f_sharp_ridge_raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
@@ -83,7 +83,7 @@ static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t funct
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
@@ -96,7 +96,7 @@ static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t funct
   problem = f_sharp_ridge_allocate(dimension);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);

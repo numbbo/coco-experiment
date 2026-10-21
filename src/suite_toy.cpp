@@ -34,7 +34,7 @@ public:
       problem = f_bueche_rastrigin_allocate(dimension);
     } else if (function == 5) {
       double xopt[40] = {5.0};
-      problem = f_linear_slope_allocate(dimension, xopt);
+      problem = f_linear_slope_allocate(dimension, std::span(xopt).first(dimension));
     } else if (function == 6) {
       problem = f_rosenbrock_allocate(dimension);
     } else {

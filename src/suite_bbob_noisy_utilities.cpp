@@ -54,7 +54,7 @@ void coco_reset_seeds() {
 double coco_sample_gaussian_noise() {
   double gaussian_noise_ptr[1] = {0.0};
   increase_random_n_seed();
-  bbob2009_gauss(&gaussian_noise_ptr[0], 1, RANDNSEED);
+  bbob2009_gauss(gaussian_noise_ptr, RANDNSEED);
   double gaussian_noise = gaussian_noise_ptr[0];
   return gaussian_noise;
 }
@@ -67,7 +67,7 @@ double coco_sample_gaussian_noise() {
 double coco_sample_uniform_noise() {
   double noise_vector[1] = {0.0};
   increase_random_seed();
-  bbob2009_unif(&noise_vector[0], 1, RANDSEED);
+  bbob2009_unif(noise_vector, RANDSEED);
   double uniform_noise_term = noise_vector[0];
   return uniform_noise_term;
 }
@@ -82,7 +82,7 @@ double coco_sample_uniform_noise() {
  * @brief Applies a penalty to solution outside the feasible hypercube
  */
 /**@{*/
-double coco_problem_s::boundary_penalty(const double *x) const {
+double coco_problem_s::boundary_penalty(std::span<const double> x) const {
   double penalty, lower_bound, upper_bound;
   penalty = 0.0;
   for (size_t dimension = 0; dimension < number_of_variables; dimension++) {

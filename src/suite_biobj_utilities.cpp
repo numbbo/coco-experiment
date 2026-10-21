@@ -50,10 +50,10 @@ static bool suite_biobj_check_inst_consistency(const size_t dimension, size_t fu
   const coco_problem_t *problem1_view = problem1.get();
   const coco_problem_t *problem2_view = problem2.get();
   const coco_problem_ptr_t problem = coco_problem_stacked_allocate(
-      std::move(problem1), std::move(problem2), smallest_values_of_interest.data(), largest_values_of_interest.data());
+      std::move(problem1), std::move(problem2), smallest_values_of_interest, largest_values_of_interest);
 
   /* Check whether the ideal and nadir points are too close in the objective space */
-  double norm = mo_get_norm(problem->get_best_value().data(), problem->get_nadir_value().data(), 2);
+  double norm = mo_get_norm(problem->get_best_value(), problem->get_nadir_value());
   if (norm < 1e-1) { /* TODO How to set this value in a sensible manner? */
     coco_debug(
         "suite_biobj_check_inst_consistency(): The ideal and nadir points of %s are too close in the objective space",
@@ -64,8 +64,7 @@ static bool suite_biobj_check_inst_consistency(const size_t dimension, size_t fu
   }
 
   /* Check whether the extreme optimal points are too close in the decision space */
-  norm = mo_get_norm(problem1_view->get_best_parameter().data(), problem2_view->get_best_parameter().data(),
-                     problem->get_number_of_variables());
+  norm = mo_get_norm(problem1_view->get_best_parameter(), problem2_view->get_best_parameter());
   if (norm < apart_enough) {
     coco_debug("suite_biobj_check_inst_consistency(): The extreme points of %s are too close in the decision space",
                problem->get_id().c_str());
@@ -392,8 +391,8 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
 
   const std::string problem_type1 = problem1->get_type();
   const std::string problem_type2 = problem2->get_type();
-  problem = coco_problem_stacked_allocate(std::move(problem1), std::move(problem2), smallest_values_of_interest.data(),
-                                          largest_values_of_interest.data());
+  problem = coco_problem_stacked_allocate(std::move(problem1), std::move(problem2), smallest_values_of_interest,
+                                          largest_values_of_interest);
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   problem->set_name("%s", problem->get_id().c_str());

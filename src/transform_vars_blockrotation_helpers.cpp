@@ -28,15 +28,15 @@ static size_t coco_rotation_matrix_block_size(size_t const dimension) {
 }
 
 /**
- * @brief Computes a block-diagonal rotation matrix with nb_blocks blocks of sizes block_sizes, each a random
+ * @brief Computes a block-diagonal rotation matrix with blocks of sizes block_sizes, each a random
  * rotation based on seed.
  */
-static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, const size_t *block_sizes, size_t nb_blocks) {
+static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, std::span<const size_t> block_sizes) {
   size_t current_blocksize, cumsum_prev_block_sizes;
-  coco_block_diagonal_matrix_t B(block_sizes, nb_blocks);
+  coco_block_diagonal_matrix_t B(block_sizes);
 
   cumsum_prev_block_sizes = 0; /* shift in rows to account for the previous blocks */
-  for (size_t idx_block = 0; idx_block < nb_blocks; idx_block++) {
+  for (size_t idx_block = 0; idx_block < block_sizes.size(); idx_block++) {
     current_blocksize = block_sizes[idx_block];
     const coco_matrix_t current_block =
         bbob2009_compute_rotation(seed + static_cast<long>(1000000) * static_cast<long>(idx_block), current_blocksize);

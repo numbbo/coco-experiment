@@ -17,7 +17,8 @@
  * @brief Implements the discus function without connections to any COCO
  * structures.
  */
-static double f_discus_raw(const double *x, const size_t number_of_variables) {
+static double f_discus_raw(std::span<const double> x) {
+  const size_t number_of_variables = x.size();
 
   static const double condition = 1.0e6;
 
@@ -39,22 +40,22 @@ public:
     set_id("%s_d%02zu", "discus", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_discus_raw(x, number_of_variables);
+    y[0] = f_discus_raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the discus function.
    */
-  void evaluate_gradient(const double *x, double *y) override {
+  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
 
     static const double condition = 1.0e6;
 
@@ -87,7 +88,7 @@ static coco_problem_ptr_t f_discus_bbob_problem_allocate(const size_t function, 
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   M = rot1;
@@ -95,7 +96,7 @@ static coco_problem_ptr_t f_discus_bbob_problem_allocate(const size_t function, 
   problem = f_discus_allocate(dimension);
   problem = transform_vars_oscillate(std::move(problem));
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -121,14 +122,14 @@ static coco_problem_ptr_t f_discus_cons_bbob_problem_allocate(const size_t funct
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   M = rot1;
 
   problem = f_discus_allocate(dimension);
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);

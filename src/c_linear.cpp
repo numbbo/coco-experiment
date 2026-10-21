@@ -13,23 +13,23 @@
 #include "coco.h"
 #include "coco_internal.h"
 #include "coco_problem.cpp"
-static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem, const double *feasible_point);
+static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem,
+                                                     std::span<const double> feasible_point);
 
 static coco_problem_ptr_t c_sum_variables_allocate(const size_t number_of_variables);
 
-static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, const double *gradient,
+static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, std::span<const double> gradient,
                                              const double x_shift_factor);
 
-static coco_problem_ptr_t
-c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
-                                           const size_t constraint_number, const double factor1,
-                                           const char *problem_id_template, const char *problem_name_template,
-                                           double *gradient, double x_shift_factor, const double *feasible_direction);
+static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
+    const size_t function, const size_t dimension, const size_t instance, const size_t constraint_number,
+    const double factor1, const char *problem_id_template, const char *problem_name_template,
+    std::span<double> gradient, double x_shift_factor, std::span<const double> feasible_direction);
 
 static coco_problem_ptr_t
 c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                     const size_t number_of_active_constraints, const char *problem_id_template,
-                                    const char *problem_name_template, const double *feasible_direction);
+                                    const char *problem_name_template, std::span<const double> feasible_direction);
 
 /**
  * @brief A linear constraint with all-ones gradient.
@@ -48,7 +48,7 @@ public:
    * @brief Evaluates the linear constraint with all-ones gradient at
    *        the point 'x' and stores the result into 'y'.
    */
-  void evaluate_constraint(const double *x, double *y, int) override {
+  void evaluate_constraint(std::span<const double> x, std::span<double> y, int) override {
     size_t i;
 
     assert(number_of_constraints == 1);
@@ -65,17 +65,17 @@ public:
  */
 class c_linear_t final : public coco_problem_transformed_t {
 public:
-  c_linear_t(coco_problem_ptr_t inner, const double *gradient, const double x_shift_factor, const double gradient_norm)
+  c_linear_t(coco_problem_ptr_t inner, std::span<const double> gradient, const double x_shift_factor,
+             const double gradient_norm)
       : coco_problem_transformed_t(std::move(inner), "gradient_linear_constraint"),
-        gradient(gradient, gradient + inner_problem->get_number_of_variables()),
-        transformed_x(inner_problem->get_number_of_variables()), x_shift_factor(x_shift_factor),
-        gradient_norm(gradient_norm) {}
+        gradient(gradient.begin(), gradient.end()), transformed_x(inner_problem->get_number_of_variables()),
+        x_shift_factor(x_shift_factor), gradient_norm(gradient_norm) {}
 
   /**
    * @brief Evaluates the linear constraint at the point 'x' and stores
    *        the result in 'y'.
    */
-  void evaluate_constraint(const double *x, double *y, int update_counter) override {
+  void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) override {
     size_t i;
     double factor;
 
@@ -83,11 +83,11 @@ public:
     for (i = 0, factor = x_shift_factor / gradient_norm; i < number_of_variables; ++i)
       transformed_x[i] = (gradient[i]) * (x[i] - factor * gradient[i]);
 
-    inner_problem->evaluate_constraint(transformed_x.data(), y, update_counter);
+    inner_problem->evaluate_constraint(transformed_x, y, update_counter);
   }
 
   /** @brief Inverts the transformation of the constraint; not possible if a gradient component is 0. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     const double factor = x_shift_factor / gradient_norm;
     for (size_t i = 0; i < number_of_variables; ++i) {
       if (gradient[i] == 0.0)
@@ -111,10 +111,10 @@ public:
    * linear_combination (a positive combination of the other active constraints' gradients) from the gradient
    * and restores its norm, which does not change the feasibility of the initial solution.
    */
-  void disguise_gradient(const double *linear_combination, const double random_uniform) {
+  void disguise_gradient(std::span<const double> linear_combination, const double random_uniform) {
     const size_t dimension = number_of_variables;
     const double norm = gradient_norm;
-    double fac = coco_vector_scalar_product(linear_combination, gradient.data(), dimension);
+    double fac = coco_vector_scalar_product(linear_combination, gradient);
     if (fac < 0)
       coco_error("scalar product between first constraint and linear combination = %f < 0 should be > 0", fac);
     fac =
@@ -122,10 +122,10 @@ public:
     fac *= (1 + random_uniform) / (2 + 1. / static_cast<double>(dimension)); /* bound to <1 and >1/3 */
     for (size_t i = 0; i < dimension; ++i)
       gradient[i] -= fac * linear_combination[i];
-    fac = coco_vector_norm(gradient.data(), dimension); /* new gradient norm */
-    if (fac == 0)                                       /* make sure that gradient did not become zero */
+    fac = coco_vector_norm(gradient); /* new gradient norm */
+    if (fac == 0)                     /* make sure that gradient did not become zero */
       coco_error("new vector norm = %f == 0, should be > 0", fac);
-    coco_vector_scale(gradient.data(), dimension, norm, fac); /* restore original norm */
+    coco_vector_scale(gradient, norm, fac); /* restore original norm */
   }
 
 private:
@@ -148,7 +148,8 @@ static c_linear_t *c_linear_get(const coco_problem_t *problem) {
  *        the constraint in "problem" and records it as the
  *        initial feasible solution to this coco_problem.
  */
-static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem, const double *feasible_direction) {
+static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem,
+                                                     std::span<const double> feasible_direction) {
 
   c_linear_t *data;
   double constraint_value = 0.0;
@@ -160,7 +161,7 @@ static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem,
   /* Let p be the gradient of the constraint in "problem".
    * Check whether p' * (feasible_direction) <= 0.
    */
-  problem->evaluate_constraint(feasible_direction, &constraint_value, 0);
+  problem->evaluate_constraint(feasible_direction, {&constraint_value, 1}, 0);
 
   /* Flip the constraint in "problem" if feasible_direction
    * is not feasible w.r.t. the constraint in "problem".
@@ -187,10 +188,11 @@ static coco_problem_ptr_t c_sum_variables_allocate(const size_t number_of_variab
  *        as argument and with the feasible domain extended by
  *        shift_factor.
  */
-static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, const double *gradient,
+static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, std::span<const double> gradient,
                                              const double shift_factor) {
 
-  double gradient_norm = coco_vector_norm(gradient, inner_problem->get_number_of_variables());
+  assert(gradient.size() == inner_problem->get_number_of_variables());
+  double gradient_norm = coco_vector_norm(gradient);
 
   if (gradient_norm <= 0)
     coco_error("c_linear_transform(): gradient norm %f<=0 zero", gradient_norm);
@@ -208,9 +210,8 @@ static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, c
  */
 static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t constraint_number,
-    const double factor1, const char *problem_id_template, const char *problem_name_template, double *gradient,
-    const double x_shift_factor, const double *feasible_direction) {
-
+    const double factor1, const char *problem_id_template, const char *problem_name_template,
+    std::span<double> gradient, const double x_shift_factor, std::span<const double> feasible_direction) {
 
   coco_problem_ptr_t problem;
   double factor2;
@@ -236,9 +237,9 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
    * This should be the case of the construction of the first
    * linear constraint only.
    */
-  if (gradient) {
+  if (!gradient.empty()) {
 
-    coco_vector_scale(gradient, dimension, factor1 * factor2, coco_vector_norm(gradient, dimension));
+    coco_vector_scale(gradient, factor1 * factor2, coco_vector_norm(gradient));
     problem = c_linear_transform(std::move(problem), gradient, x_shift_factor);
 
   } else { /* Randomly generate the gradient of the linear constraint */
@@ -252,7 +253,7 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
       gradient_linear_constraint[i] =
           factor1 * random_generator.normal() * factor2 / sqrt(static_cast<double>(dimension));
 
-    problem = c_linear_transform(std::move(problem), gradient_linear_constraint.data(), x_shift_factor);
+    problem = c_linear_transform(std::move(problem), gradient_linear_constraint, x_shift_factor);
   }
 
   /* Guarantee that the vector feasible_point is feasible w.r.t. to
@@ -261,7 +262,7 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
    * coco_problem_t object once the objective function and the constraint(s)
    * are stacked together in coco_problem_stacked_allocate().
    */
-  if (feasible_direction)
+  if (!feasible_direction.empty())
     problem = c_guarantee_feasible_point(std::move(problem), feasible_direction);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -275,7 +276,8 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
  *        constraint gradients, add current gradient if weight is != 0.
  *
  */
-static void con_update_linear_combination(double *linear_combination, const coco_problem_t *problem, double weight) {
+static void con_update_linear_combination(std::span<double> linear_combination, const coco_problem_t *problem,
+                                          double weight) {
   const c_linear_t *data;
 
   data = c_linear_get(problem);
@@ -317,14 +319,14 @@ static void con_update_linear_combination(double *linear_combination, const coco
 static coco_problem_ptr_t
 c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                     const size_t number_of_active_constraints, const char *problem_id_template,
-                                    const char *problem_name_template, const double *feasible_direction) {
+                                    const char *problem_name_template, std::span<const double> feasible_direction) {
 
   const double global_scaling_factor = 100.;
   size_t i, j;
 
   coco_problem_ptr_t problem_c;
   coco_problem_ptr_t problem_c2;
-  double *gradient;
+  std::span<double> gradient;
   c_linear_t *first_constraint_data = nullptr;
   double shift_factor;
   double factor1;
@@ -363,13 +365,13 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
    * its gradient.
    */
   /* set gradient depending on instance number */
-  gradient = instance % number_of_active_constraints ? nullptr : gradient_c1.data();
+  gradient = instance % number_of_active_constraints ? std::span<double>() : std::span<double>(gradient_c1);
   problem_c = c_linear_single_cons_bbob_problem_allocate(function, dimension, instance, 1, factor1, problem_id_template,
                                                          problem_name_template, gradient, 0.0, feasible_direction);
-  if (gradient != nullptr) /* preserve the constraint based on function gradient */
+  if (!gradient.empty()) /* preserve the constraint based on function gradient */
     first_constraint_data = c_linear_get(problem_c.get());
   else
-    con_update_linear_combination(linear_combination.data(), problem_c.get(), random_generator2.uniform());
+    con_update_linear_combination(linear_combination, problem_c.get(), random_generator2.uniform());
 
   /* Instantiate the other linear constraints (if any) and stack them
    * all into problem_c
@@ -383,13 +385,14 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
         random_generator.uniform() + 1e-23 >
             static_cast<double>(inactive_constraints_left) /
                 static_cast<double>(number_of_linear_constraints)) { /* create an active constraint */
-      gradient = (++i - 1 + instance) % number_of_active_constraints ? nullptr : gradient_c1.data();
+      gradient =
+          (++i - 1 + instance) % number_of_active_constraints ? std::span<double>() : std::span<double>(gradient_c1);
       shift_factor = 0.0;
     } else { /* create an inactive (shifted) constraint */
       if (inactive_constraints_left-- <= 0)
         coco_error("c_linear_cons_bbob_problem_allocate(): no inactive left i=%zu j=%zu nb_act=%zu nb_con=%zu", i, j,
                    number_of_active_constraints, number_of_linear_constraints);
-      gradient = nullptr;
+      gradient = {};
       shift_factor = 0.01 + 2.0 * random_generator.uniform();
     }
 
@@ -398,13 +401,13 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
         i <= number_of_active_constraints ? i : number_of_linear_constraints - inactive_constraints_left, factor1,
         problem_id_template, problem_name_template, gradient, shift_factor, feasible_direction);
     if (shift_factor == 0) {  /* active constraint */
-      if (gradient != nullptr) { /* preserve the constraint based on function gradient */
+      if (!gradient.empty()) { /* preserve the constraint based on function gradient */
         if (first_constraint_data)
           coco_warning(
               "c_linear_cons_bbob_problem_allocate(): first_constraint_data already assigned, this is probably a bug");
         first_constraint_data = c_linear_get(problem_c2.get());
       } else
-        con_update_linear_combination(linear_combination.data(), problem_c2.get(), random_generator2.uniform());
+        con_update_linear_combination(linear_combination, problem_c2.get(), random_generator2.uniform());
     }
 
     const std::string problem_type_c2 = problem_c2->get_type();
@@ -424,7 +427,7 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
    * thereby disguising the gradient of the function
    */
   if (number_of_active_constraints > 1 && disguise_gradient)
-    first_constraint_data->disguise_gradient(linear_combination.data(), random_generator2.uniform());
+    first_constraint_data->disguise_gradient(linear_combination, random_generator2.uniform());
 
   return problem_c;
 }

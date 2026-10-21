@@ -33,10 +33,12 @@ class logger_rw_t final : public coco_problem_transformed_t {
 public:
   logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner);
 
-  void evaluate_function(const double *x, double *y) override;
+  void evaluate_function(std::span<const double> x, std::span<double> y) override;
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
 private:
   coco_file_t out_file;          /**< @brief File for logging. */
@@ -58,7 +60,7 @@ private:
  * @brief Evaluates the function and constraints and outputs the information according to the
  * observer options.
  */
-void logger_rw_t::evaluate_function(const double *x, double *y) {
+void logger_rw_t::evaluate_function(std::span<const double> x, std::span<double> y) {
   std::vector<double> constraints(number_of_constraints);
   bool log_this_time = true;
   time_t start, end;
@@ -76,7 +78,7 @@ void logger_rw_t::evaluate_function(const double *x, double *y) {
 
   /* Evaluate the constraints */
   if (number_of_constraints > 0)
-    inner_problem->evaluate_constraint(x, constraints.data(), 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
   num_cons_evaluations = get_evaluations_constraints();
 
   /* Time the evaluations */

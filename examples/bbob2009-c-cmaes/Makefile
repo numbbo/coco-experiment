@@ -1,5 +1,5 @@
 CFLAGS ?= -std=c99 -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=200809L -O0 -g -march=native -ffp-contract=off
-CXXFLAGS ?= -std=c++17 -O0 -g -march=native -ffp-contract=off -fno-exceptions
+CXXFLAGS ?= -std=c++20 -O0 -g -march=native -ffp-contract=off -fno-exceptions
 OBJS := run_bbob.o coco.o cmaes.o
 LIBS := -lm
 

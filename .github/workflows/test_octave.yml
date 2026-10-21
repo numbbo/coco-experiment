@@ -22,8 +22,8 @@ jobs:
         run: unzip cocoex-octave-*.zip
       - name: Build
         working-directory: ${{github.workspace}}/cocoex-octave/
-        # coco.cpp needs C++17, which is not the default of every compiler
-        run: CXXFLAGS="$(mkoctfile -p CXXFLAGS) -std=c++17" mkoctfile --verbose --mex cocoCall.c coco.cpp
+        # coco.cpp needs C++20, which is not the default of every compiler
+        run: CXXFLAGS="$(mkoctfile -p CXXFLAGS) -std=c++20" mkoctfile --verbose --mex cocoCall.c coco.cpp
       - name: Experiment
         working-directory: ${{github.workspace}}/cocoex-octave/
         run: octave --no-gui exampleexperiment.m

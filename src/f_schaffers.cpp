@@ -22,8 +22,8 @@
  * @brief Implements the Schaffer's F7 function without connections to any COCO
  * structures.
  */
-static double f_schaffers_raw(const double *x,
-                              const size_t number_of_variables) {
+static double f_schaffers_raw(std::span<const double> x) {
+  const size_t number_of_variables = x.size();
 
   size_t i = 0;
 
@@ -53,15 +53,15 @@ public:
     set_id("%s_d%02zu", "schaffers", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_schaffers_raw(x, number_of_variables);
+    y[0] = f_schaffers_raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
@@ -89,7 +89,7 @@ static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t functio
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
@@ -107,7 +107,7 @@ static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t functio
   problem = transform_vars_asymmetric(std::move(problem), 0.5);
   M = rot1;
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_penalize(std::move(problem), penalty_scale);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -143,28 +143,28 @@ static coco_problem_ptr_t f_schaffers_permblockdiag_bbob_problem_allocate(const 
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
-  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
-  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2);
 
-  coco_compute_truncated_uniform_swap_permutation(P11.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P21.data(), rseed + 4000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P12.data(), rseed + 5000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P22.data(), rseed + 6000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P11, rseed + 3000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P21, rseed + 4000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P12, rseed + 5000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P22, rseed + 6000000, nb_swaps, swap_range);
 
   problem = f_schaffers_allocate(dimension);
   problem = transform_vars_conditioning(std::move(problem), conditioning);
-  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P21);
   problem = transform_vars_blockrotation(std::move(problem), B2);
-  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P11);
 
   problem = transform_vars_asymmetric(std::move(problem), 0.5);
-  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P22);
   problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P12);
 
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem), fopt);
 

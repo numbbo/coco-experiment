@@ -25,23 +25,24 @@
 class f_attractive_sector_t final : public coco_problem_s {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(const double *x) const;
+  double raw(std::span<const double> x) const;
 
-  f_attractive_sector_t(const size_t number_of_variables, const double *xopt)
+  f_attractive_sector_t(const size_t number_of_variables, std::span<const double> xopt)
       : coco_problem_s(number_of_variables, 1, 0) {
+    assert(xopt.size() == number_of_variables);
     init_from_scalars("attractive sector function", -5.0, 5.0, 0.0);
     set_id("%s_d%02zu", "attractive_sector", number_of_variables);
 
-    this->xopt.assign(xopt, xopt + number_of_variables);
+    this->xopt.assign(xopt.begin(), xopt.end());
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
@@ -55,7 +56,7 @@ private:
  * @brief Implements the attractive sector function without connections to any
  * COCO structures.
  */
-double f_attractive_sector_t::raw(const double *x) const {
+double f_attractive_sector_t::raw(std::span<const double> x) const {
 
   double result = 0.0;
   for (size_t i = 0; i < number_of_variables; ++i) {
@@ -71,7 +72,7 @@ double f_attractive_sector_t::raw(const double *x) const {
 /**
  * @brief Allocates the basic attractive sector problem.
  */
-static coco_problem_ptr_t f_attractive_sector_allocate(const size_t number_of_variables, const double *xopt) {
+static coco_problem_ptr_t f_attractive_sector_allocate(const size_t number_of_variables, std::span<const double> xopt) {
   return std::make_unique<f_attractive_sector_t>(number_of_variables, xopt);
 }
 
@@ -89,7 +90,7 @@ static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   /* Compute affine transformation M from two rotation matrices */
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -101,12 +102,12 @@ static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t
   }
   M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
 
-  problem = f_attractive_sector_allocate(dimension, xopt.data());
+  problem = f_attractive_sector_allocate(dimension, xopt);
   problem = transform_obj_oscillate(std::move(problem));
   problem = transform_obj_power(std::move(problem), 0.9);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
@@ -128,7 +129,7 @@ static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocat
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
   std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
@@ -137,36 +138,32 @@ static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocat
   nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
   nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
-  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2);
 
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P12(dimension);
   std::vector<size_t> P21(dimension);
   std::vector<size_t> P22(dimension);
-  coco_compute_truncated_uniform_swap_permutation(
-      P11.data(), rseed + 2000000, dimension, nb_swaps1, swap_range1);
-  coco_compute_truncated_uniform_swap_permutation(
-      P12.data(), rseed + 3000000, dimension, nb_swaps1, swap_range1);
-  coco_compute_truncated_uniform_swap_permutation(
-      P21.data(), rseed + 4000000, dimension, nb_swaps2, swap_range2);
-  coco_compute_truncated_uniform_swap_permutation(
-      P22.data(), rseed + 5000000, dimension, nb_swaps2, swap_range2);
+  coco_compute_truncated_uniform_swap_permutation(P11, rseed + 2000000, nb_swaps1, swap_range1);
+  coco_compute_truncated_uniform_swap_permutation(P12, rseed + 3000000, nb_swaps1, swap_range1);
+  coco_compute_truncated_uniform_swap_permutation(P21, rseed + 4000000, nb_swaps2, swap_range2);
+  coco_compute_truncated_uniform_swap_permutation(P22, rseed + 5000000, nb_swaps2, swap_range2);
 
-  problem = f_attractive_sector_allocate(dimension, xopt.data());
+  problem = f_attractive_sector_allocate(dimension, xopt);
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_oscillate(std::move(problem));
   problem = transform_obj_power(std::move(problem), 0.9);
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P22);
   problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P21);
   problem = transform_vars_conditioning(std::move(problem), condition);
-  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P12);
   problem = transform_vars_blockrotation(std::move(problem), B2);
-  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P11);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);

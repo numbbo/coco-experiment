@@ -44,10 +44,12 @@ public:
 
   ~logger_bbob_old_t() override;
 
-  void evaluate_function(const double *x, double *y) override;
+  void evaluate_function(std::span<const double> x, std::span<double> y) override;
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
 private:
   /** @brief Generates the files and folders needed by the logger if they don't already exist. */
@@ -137,9 +139,10 @@ static const char *data_format = "bbob-new2"; /* back to 5 columns, 5-th column 
  */
 static void logger_bbob_old_write_data(FILE *target_file, size_t number_of_f_evaluations,
                                        size_t number_of_cons_evaluations, double fvalue, double best_fvalue,
-                                       double best_value, const double *x, size_t number_of_variables,
-                                       size_t number_of_integer_variables, const double *constraints,
-                                       size_t number_of_constraints, const int log_discrete_as_int) {
+                                       double best_value, std::span<const double> x, size_t number_of_integer_variables,
+                                       std::span<const double> constraints, const int log_discrete_as_int) {
+  const size_t number_of_variables = x.size();
+  const size_t number_of_constraints = constraints.size();
   /* for some reason, it's %.0f in the old code instead of the 10.9e
    * in the documentation
    */
@@ -148,9 +151,7 @@ static void logger_bbob_old_write_data(FILE *target_file, size_t number_of_f_eva
 
   if (number_of_constraints > 0)
     for (size_t i = 0; i < number_of_constraints; ++i)
-      fprintf(target_file, "%d",
-              constraints ? single_digit_constraint_value(constraints[i])
-                          : static_cast<int>(i % 10)); /* print 01234567890123..., may happen in last line of .tdat */
+      fprintf(target_file, "%d", single_digit_constraint_value(constraints[i]));
   else
     fprintf(target_file, "%+10.9e", best_fvalue);
 
@@ -325,9 +326,9 @@ void logger_bbob_old_t::initialize() {
 /**
  * Layer added to the transformed-problem evaluate_function by the logger
  */
-void logger_bbob_old_t::evaluate_function(const double *x, double *y) {
+void logger_bbob_old_t::evaluate_function(std::span<const double> x, std::span<double> y) {
   double y_logged, max_fvalue, sum_cons;
-  const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, nullptr);
+  const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, {});
 
   if (!is_initialized) {
     initialize();
@@ -356,7 +357,7 @@ void logger_bbob_old_t::evaluate_function(const double *x, double *y) {
   /* Evaluate the constraints */
   std::vector<double> cons(number_of_constraints);
   if (number_of_constraints > 0)
-    inner_problem->evaluate_constraint(x, cons.data(), 0);
+    inner_problem->evaluate_constraint(x, cons, 0);
 
   /* Compute the sum of positive constraint values */
   sum_cons = 0;
@@ -386,16 +387,15 @@ void logger_bbob_old_t::evaluate_function(const double *x, double *y) {
      */
     if (number_of_evaluations == 1 || targets.trigger(best_fvalue - optimal_fvalue)) {
       logger_bbob_old_write_data(fdata_file, number_of_evaluations, number_of_evaluations_constraints, y_logged,
-                                 best_fvalue, optimal_fvalue, x, number_of_variables, number_of_integer_variables,
-                                 cons.data(), number_of_constraints, log_discrete_as_int);
+                                 best_fvalue, optimal_fvalue, x, number_of_integer_variables, cons,
+                                 log_discrete_as_int);
     }
   }
 
   /* Add a line in the .tdat file each time an fevals trigger is reached.*/
   if (evaluation_triggers.trigger(number_of_evaluations + number_of_evaluations_constraints)) {
     logger_bbob_old_write_data(tdata_file, number_of_evaluations, number_of_evaluations_constraints, y_logged,
-                               best_fvalue, optimal_fvalue, x, number_of_variables, number_of_integer_variables,
-                               cons.data(), number_of_constraints, log_discrete_as_int);
+                               best_fvalue, optimal_fvalue, x, number_of_integer_variables, cons, log_discrete_as_int);
     written_last_eval = 1;
   }
 
@@ -420,8 +420,8 @@ logger_bbob_old_t::~logger_bbob_old_t() {
      */
     if (!written_last_eval) {
       logger_bbob_old_write_data(tdata_file, number_of_evaluations, number_of_evaluations_constraints, best_fvalue,
-                                 best_fvalue, optimal_fvalue, best_solution.data(), number_of_variables,
-                                 number_of_integer_variables, nullptr, 0, log_discrete_as_int);
+                                 best_fvalue, optimal_fvalue, best_solution, number_of_integer_variables, {},
+                                 log_discrete_as_int);
     }
     tdata_file.close();
   }

@@ -20,8 +20,8 @@
  * @brief Implements the different powers function without connections to any
  * COCO structures.
  */
-static double f_different_powers_raw(const double *x,
-                                     const size_t number_of_variables) {
+static double f_different_powers_raw(std::span<const double> x) {
+  const size_t number_of_variables = x.size();
 
   double sum = 0.0;
 
@@ -56,22 +56,22 @@ public:
     set_id("%s_d%02zu", "different_powers", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_different_powers_raw(x, number_of_variables);
+    y[0] = f_different_powers_raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the function "different powers".
    */
-  void evaluate_gradient(const double *x, double *y) override {
+  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
 
     double sum = 0.0;
     double aux;
@@ -113,7 +113,7 @@ static coco_problem_ptr_t f_different_powers_bbob_problem_allocate(const size_t 
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   M = rot1;
@@ -121,7 +121,7 @@ static coco_problem_ptr_t f_different_powers_bbob_problem_allocate(const size_t 
   problem = f_different_powers_allocate(dimension);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
@@ -151,7 +151,7 @@ static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   /* Compute Euclidean norm of xopt */
   /* CAVEAT: this implementation is not ideal for large dimensions */
@@ -172,7 +172,7 @@ static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(
   problem = f_different_powers_allocate(dimension);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
@@ -201,20 +201,18 @@ static coco_problem_ptr_t f_different_powers_permblockdiag_bbob_problem_allocate
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes);
 
-  coco_compute_truncated_uniform_swap_permutation(
-      P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(
-      P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, nb_swaps, swap_range);
 
   problem = f_different_powers_allocate(dimension);
-  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P2);
   problem = transform_vars_blockrotation(std::move(problem), B);
-  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P1);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_shift(std::move(problem), fopt);

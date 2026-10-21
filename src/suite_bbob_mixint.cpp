@@ -82,8 +82,8 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
 
   inner_problem_id = problem->get_id();
 
-  problem = transform_vars_discretize(std::move(problem), smallest_values_of_interest.data(),
-                                      largest_values_of_interest.data(), num_integer);
+  problem = transform_vars_discretize(std::move(problem), smallest_values_of_interest, largest_values_of_interest,
+                                      num_integer);
 
   problem = transform_obj_scale(std::move(problem), suite_bbob_mixint_scaling_factors[function - 1]);
 

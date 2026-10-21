@@ -61,7 +61,7 @@ static int f_gallagher_compare_doubles(const void *a, const void *b) {
 class f_gallagher_t final : public coco_problem_s {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(const double *x);
+  double raw(std::span<const double> x);
 
   /**
    * @brief Creates the Gallagher function of the given instance (random seed) with its peaks, which lie in
@@ -108,7 +108,7 @@ public:
 
     /* Initialize all the data of the inner problem */
     std::vector<double> random_numbers(number_of_peaks * dimension); /* This is large enough for all cases below */
-    bbob2009_unif(random_numbers.data(), number_of_peaks - 1, rseed);
+    bbob2009_unif(std::span(random_numbers).first(number_of_peaks - 1), rseed);
     rperm.resize(number_of_peaks - 1);
     for (size_t i = 0; i < number_of_peaks - 1; ++i) {
       rperm[i].value = random_numbers[i];
@@ -130,7 +130,7 @@ public:
 
     rperm.resize(dimension);
     for (size_t i = 0; i < number_of_peaks; ++i) {
-      bbob2009_unif(random_numbers.data(), dimension, rseed + static_cast<long>(1000 * i));
+      bbob2009_unif(random_numbers, rseed + static_cast<long>(1000 * i));
       for (size_t j = 0; j < dimension; ++j) {
         rperm[j].value = random_numbers[j];
         rperm[j].index = j;
@@ -142,7 +142,7 @@ public:
       }
     }
 
-    bbob2009_unif(random_numbers.data(), dimension * number_of_peaks, rseed);
+    bbob2009_unif(std::span(random_numbers).first(dimension * number_of_peaks), rseed);
 
     /* SBOX-COST wants optima in [-5, 5], the other suites in [-4, 4]. */
     double scale_factor = 0.8;
@@ -164,13 +164,13 @@ public:
     }
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
@@ -190,7 +190,7 @@ private:
  * @brief Implements the Gallagher function without connections to any COCO
  * structures.
  */
-double f_gallagher_t::raw(const double *x) {
+double f_gallagher_t::raw(std::span<const double> x) {
   double a = 0.1;
   double tmp2, f = 0., f_add, tmp, f_pen = 0., f_true = 0.;
 
@@ -207,11 +207,11 @@ double f_gallagher_t::raw(const double *x) {
   f_add = f_pen;
   /* Transformation in search space */
   /* TODO: this should rather be done in f_gallagher */
-  rotation.multiply(x, tmx.data());
+  rotation.multiply(x, tmx);
   /* Computation core*/
   for (size_t i = 0; i < number_of_peaks; ++i) {
-    const double *peak = x_local.row(i);
-    const double *scales = arr_scales.row(i);
+    const std::span<const double> peak = x_local.row(i);
+    const std::span<const double> scales = arr_scales.row(i);
     tmp2 = 0.;
     for (size_t j = 0; j < number_of_variables; ++j) {
       tmp = (tmx[j] - peak[j]);
@@ -280,9 +280,9 @@ public:
   /**
    * @brief Uses the core function to evaluate the sub problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_sphere_raw(x, number_of_variables);
+    y[0] = f_sphere_raw(x);
   }
 };
 
@@ -297,8 +297,8 @@ static coco_problem_ptr_t f_gallagher_sub_problem_allocate(const size_t number_o
  * @brief Implements the gallagher function without connections to any COCO
  * structures. Wassim: core to not conflict with raw for now
  */
-static double f_gallagher_core(const double *x, size_t number_of_variables,
-                               f_gallagher_shared_data_t *shared) {
+static double f_gallagher_core(std::span<const double> x, f_gallagher_shared_data_t *shared) {
+  const size_t number_of_variables = x.size();
 
   coco_problem_t *problem_i;
   double result = 0;
@@ -307,7 +307,7 @@ static double f_gallagher_core(const double *x, size_t number_of_variables,
 
   for (size_t i = 0; i < shared->number_of_peaks; i++) {
     problem_i = shared->sub_problems[i].get();
-    problem_i->evaluate_function(x, &y);
+    problem_i->evaluate_function(x, {&y, 1});
     if (i == 0) {
       w_i = 10;
     } else {
@@ -347,9 +347,9 @@ public:
   /**
    * @brief Uses the core function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_gallagher_core(x, number_of_variables, &shared);
+    y[0] = f_gallagher_core(x, &shared);
     if (!(y[0] + 1e-13 >= best_value[0])) {
       coco_warning("x[0]= %f: %f < %f", x[0], y[0] + 1e-13, best_value[0]);
     }
@@ -368,7 +368,7 @@ public:
    * which move the nadir points of the bi-objective mixed-integer suite away from their reference values.
    */
   void set_optimum_at_first_peak(const std::vector<double> &first_peak_unrotated) {
-    evaluate_function(shared.sub_problems[0]->get_best_parameter().data(), best_value.data());
+    evaluate_function(shared.sub_problems[0]->get_best_parameter(), best_value);
     best_parameter = first_peak_unrotated;
   }
 
@@ -419,8 +419,7 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
 
   std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
 
-
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed, block_sizes.data(), nb_blocks);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed, block_sizes);
 
   std::unique_ptr<f_gallagher_ls_t> gallagher = f_gallagher_problem_allocate(dimension, number_of_peaks);
   shared = &gallagher->shared_data(); /* shortcut */
@@ -430,11 +429,11 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
     alpha_i_vals[i] = pow(1000, 2 * static_cast<double>(i) / (static_cast<double>(number_of_peaks - 2)));
   }
   std::vector<double> tmp_uniform(dimension * number_of_peaks);
-  bbob2009_unif(tmp_uniform.data(), number_of_peaks - 1, rseed);
+  bbob2009_unif(std::span(tmp_uniform).first(number_of_peaks - 1), rseed);
   /* random permutation of the alpha_i's to allow sampling without replacement*/
   std::vector<size_t> P_alpha_i(number_of_peaks - 1);
-  coco_compute_permutation_from_sequence(P_alpha_i.data(), tmp_uniform.data(), number_of_peaks - 1);
-  bbob2009_unif(tmp_uniform.data(), dimension * number_of_peaks, rseed);
+  coco_compute_permutation_from_sequence(P_alpha_i, std::span(tmp_uniform).first(number_of_peaks - 1));
+  bbob2009_unif(std::span(tmp_uniform).first(dimension * number_of_peaks), rseed);
   std::vector<double> tmp_uniform2(dimension);
   std::vector<double> first_peak_unrotated;
   for (size_t peak_index = 0; peak_index < number_of_peaks; peak_index++) {
@@ -451,7 +450,7 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
     const std::vector<double> y_i_unrotated = y_i;
     if (peak_index == 0)
       first_peak_unrotated = y_i_unrotated;
-    B.multiply(y_i_unrotated.data(), y_i.data());
+    B.multiply(y_i_unrotated, y_i);
 
     if (peak_index == 0) {
       alpha_i = first_condition;
@@ -461,16 +460,16 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
 
     /* P_Lambda the permutation */
     std::vector<size_t> P_Lambda(dimension); /* random permutation of the values in C_i */
-    bbob2009_unif(tmp_uniform2.data(), dimension, rseed + static_cast<long>(1000 * peak_index));
-    coco_compute_permutation_from_sequence(P_Lambda.data(), tmp_uniform2.data(), dimension);
+    bbob2009_unif(tmp_uniform2, rseed + static_cast<long>(1000 * peak_index));
+    coco_compute_permutation_from_sequence(P_Lambda, tmp_uniform2);
 
     /* apply var transformations to sub problem*/
     *problem_i = transform_vars_scale(std::move(*problem_i), 1. / sqrt(sqrt(sqrt(alpha_i)))); /* sqrt( alpha^1/4) */
     *problem_i = transform_vars_conditioning(std::move(*problem_i), sqrt(alpha_i));
     /**problem_i = transform_vars_blockrotation(std::move(*problem_i), B_const, dimension,
      * block_sizes, nb_blocks);*/
-    *problem_i = transform_vars_inverse_permutation(std::move(*problem_i), P_Lambda.data(), dimension);
-    *problem_i = transform_vars_shift(std::move(*problem_i), y_i.data(), 0);
+    *problem_i = transform_vars_inverse_permutation(std::move(*problem_i), P_Lambda);
+    *problem_i = transform_vars_shift(std::move(*problem_i), y_i, 0);
   }
 
   gallagher->set_optimum_at_first_peak(first_peak_unrotated);

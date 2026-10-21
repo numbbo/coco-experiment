@@ -10,7 +10,7 @@ project(
     'buildtype=debugoptimized',
     'b_ndebug=if-release',
     'c_std=c17',
-    'cpp_std=c++17',
+    'cpp_std=c++20',
   ],
 )
 

@@ -2,9 +2,9 @@
  * @file transform_functions.cpp
  * @brief Transformations of the decision values as plain function objects.
  *
- * Each transformation computes y = T(x) with apply() and x = T^-1(y) with inverse(). The element-wise ones
- * allow x and y to be the same array. The bbob problem classes apply them explicitly; the transform_vars_*
- * problems wrap them around an inner problem.
+ * Each transformation computes y = T(x) with apply() and x = T^-1(y) with inverse(). x and y have as many
+ * elements as the transformation has variables. The element-wise ones allow x and y to be the same array. The bbob
+ * problem classes apply them explicitly; the transform_vars_* problems wrap them around an inner problem.
  */
 
 #include <math.h>
@@ -56,14 +56,16 @@ static double tasy_uv(const double xi, const double beta, const size_t i, const 
  */
 class vars_shift_t {
 public:
-  explicit vars_shift_t(const double *offset, const size_t n) : offset(offset, offset + n) {}
+  explicit vars_shift_t(std::span<const double> offset) : offset(offset.begin(), offset.end()) {}
 
-  void apply(const double *x, double *y) const {
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == offset.size() && y.size() == offset.size());
     for (size_t i = 0; i < offset.size(); ++i)
       y[i] = x[i] - offset[i];
   }
 
-  void inverse(const double *y, double *x) const {
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == offset.size() && x.size() == offset.size());
     for (size_t i = 0; i < offset.size(); ++i)
       x[i] = y[i] + offset[i];
   }
@@ -82,12 +84,14 @@ public:
       scales[i] = pow(alpha, 0.5 * static_cast<double>(i) / (static_cast<double>(n) - 1.0));
   }
 
-  void apply(const double *x, double *y) const {
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == scales.size() && y.size() == scales.size());
     for (size_t i = 0; i < scales.size(); ++i)
       y[i] = scales[i] * x[i];
   }
 
-  void inverse(const double *y, double *x) const {
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == scales.size() && x.size() == scales.size());
     for (size_t i = 0; i < scales.size(); ++i)
       x[i] = y[i] / scales[i];
   }
@@ -101,22 +105,21 @@ private:
  */
 class vars_oscillate_t {
 public:
-  explicit vars_oscillate_t(const size_t n) : n(n) {}
-
-  void apply(const double *x, double *y) const {
-    for (size_t i = 0; i < n; ++i)
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == y.size());
+    for (size_t i = 0; i < x.size(); ++i)
       y[i] = tosz_uv(x[i], alpha);
   }
 
   /** @brief Inverts the transformation numerically. */
-  void inverse(const double *y, double *x) const {
-    for (size_t i = 0; i < n; ++i)
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == x.size());
+    for (size_t i = 0; i < y.size(); ++i)
       x[i] = brentinv([](const double xi) { return tosz_uv(xi, alpha); }, y[i]);
   }
 
 private:
   static constexpr double alpha = 0.1;
-  size_t n;
 };
 
 /**
@@ -126,13 +129,15 @@ class vars_asymmetric_t {
 public:
   vars_asymmetric_t(const double beta, const size_t n) : beta(beta), n(n) {}
 
-  void apply(const double *x, double *y) const {
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == n && y.size() == n);
     for (size_t i = 0; i < n; ++i)
       y[i] = tasy_uv(x[i], beta, i, n);
   }
 
   /** @brief Inverts the transformation numerically. */
-  void inverse(const double *y, double *x) const {
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == n && x.size() == n);
     for (size_t i = 0; i < n; ++i)
       x[i] = brentinv([this, i](const double xi) { return tasy_uv(xi, beta, i, n); }, y[i]);
   }
@@ -149,18 +154,19 @@ class vars_affine_t {
 public:
   vars_affine_t(coco_matrix_t M, std::vector<double> b) : M(std::move(M)), b(std::move(b)) {}
 
-  void apply(const double *x, double *y) const { M.multiply_add(x, b.data(), y); }
+  void apply(std::span<const double> x, std::span<double> y) const { M.multiply_add(x, b, y); }
 
   /** @brief Solves M x = y - b, which is M^T (y - b) if M is orthogonal. Returns false if M is singular. */
-  bool inverse(const double *y, double *x) const {
+  bool inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == b.size());
     std::vector<double> shifted_y(b.size());
     for (size_t i = 0; i < b.size(); ++i)
       shifted_y[i] = y[i] - b[i];
     if (M.is_orthogonal()) {
-      M.multiply_transposed(shifted_y.data(), x);
+      M.multiply_transposed(shifted_y, x);
       return true;
     }
-    return M.solve(shifted_y.data(), x);
+    return M.solve(shifted_y, x);
   }
 
   const coco_matrix_t &matrix() const { return M; }
@@ -177,8 +183,8 @@ class vars_blockrotation_t {
 public:
   explicit vars_blockrotation_t(coco_block_diagonal_matrix_t B) : B(std::move(B)) {}
 
-  void apply(const double *x, double *y) const { B.multiply(x, y); }
-  void inverse(const double *y, double *x) const { B.multiply_transposed(y, x); }
+  void apply(std::span<const double> x, std::span<double> y) const { B.multiply(x, y); }
+  void inverse(std::span<const double> y, std::span<double> x) const { B.multiply_transposed(y, x); }
 
   const coco_block_diagonal_matrix_t &matrix() const { return B; }
 
@@ -192,9 +198,11 @@ private:
  */
 class vars_permutation_t {
 public:
-  vars_permutation_t(const size_t *P, const size_t n, const bool is_inverse) : P(P, P + n), is_inverse(is_inverse) {}
+  vars_permutation_t(std::span<const size_t> P, const bool is_inverse)
+      : P(P.begin(), P.end()), is_inverse(is_inverse) {}
 
-  void apply(const double *x, double *y) const {
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == P.size() && y.size() == P.size());
     if (is_inverse) {
       for (size_t i = 0; i < P.size(); ++i)
         y[P[i]] = x[i];
@@ -204,7 +212,8 @@ public:
     }
   }
 
-  void inverse(const double *y, double *x) const {
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == P.size() && x.size() == P.size());
     for (size_t i = 0; i < P.size(); ++i) {
       if (is_inverse)
         x[i] = y[P[i]];
@@ -227,25 +236,25 @@ private:
 class vars_permblockdiag_t {
 public:
   vars_permblockdiag_t(const size_t n, const long seed_first, const long seed_rotation, const long seed_second)
-      : first(random_permutation(n, seed_first).data(), n, false), rotation(random_blockrotation(n, seed_rotation)),
-        second(random_permutation(n, seed_second).data(), n, false), tmp1(n), tmp2(n) {}
+      : first(random_permutation(n, seed_first), false), rotation(random_blockrotation(n, seed_rotation)),
+        second(random_permutation(n, seed_second), false), tmp1(n), tmp2(n) {}
 
-  void apply(const double *x, double *y) const {
-    first.apply(x, tmp1.data());
-    rotation.apply(tmp1.data(), tmp2.data());
-    second.apply(tmp2.data(), y);
+  void apply(std::span<const double> x, std::span<double> y) const {
+    first.apply(x, tmp1);
+    rotation.apply(tmp1, tmp2);
+    second.apply(tmp2, y);
   }
 
-  void inverse(const double *y, double *x) const {
-    second.inverse(y, tmp2.data());
-    rotation.inverse(tmp2.data(), tmp1.data());
-    first.inverse(tmp1.data(), x);
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    second.inverse(y, tmp2);
+    rotation.inverse(tmp2, tmp1);
+    first.inverse(tmp1, x);
   }
 
 private:
   static std::vector<size_t> random_permutation(const size_t n, const long seed) {
     std::vector<size_t> P(n);
-    coco_compute_truncated_uniform_swap_permutation(P.data(), seed, n, coco_get_nb_swaps(n, "bbob-largescale"),
+    coco_compute_truncated_uniform_swap_permutation(P, seed, coco_get_nb_swaps(n, "bbob-largescale"),
                                                     coco_get_swap_range(n, "bbob-largescale"));
     return P;
   }
@@ -253,7 +262,7 @@ private:
   static coco_block_diagonal_matrix_t random_blockrotation(const size_t n, const long seed) {
     size_t number_of_blocks;
     const std::vector<size_t> block_sizes = coco_get_block_sizes(&number_of_blocks, n, "bbob-largescale");
-    return coco_compute_blockrotation(seed, block_sizes.data(), number_of_blocks);
+    return coco_compute_blockrotation(seed, block_sizes);
   }
 
   vars_permutation_t first;
@@ -268,10 +277,11 @@ private:
  */
 class vars_round_step_t {
 public:
-  vars_round_step_t(const double alpha, const size_t n) : alpha(alpha), n(n) {}
+  explicit vars_round_step_t(const double alpha) : alpha(alpha) {}
 
-  void apply(const double *x, double *y) const {
-    for (size_t i = 0; i < n; ++i) {
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == y.size());
+    for (size_t i = 0; i < x.size(); ++i) {
       if (fabs(x[i]) > 0.5)
         y[i] = coco_double_round(x[i]);
       else
@@ -281,15 +291,16 @@ public:
 
 private:
   double alpha;
-  size_t n;
 };
 
 /**
  * @brief The penalty of the large-scale suite for x outside the region of interest [lower, upper].
  */
-static double coco_boundary_penalty(const double *x, const double *lower, const double *upper, const size_t n) {
+static double coco_boundary_penalty(std::span<const double> x, std::span<const double> lower,
+                                    std::span<const double> upper) {
+  assert(lower.size() == x.size() && upper.size() == x.size());
   double penalty = 0.0;
-  for (size_t i = 0; i < n; ++i) {
+  for (size_t i = 0; i < x.size(); ++i) {
     const double c1 = x[i] - upper[i];
     const double c2 = lower[i] - x[i];
     assert(lower[i] < upper[i]);

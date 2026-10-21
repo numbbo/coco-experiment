@@ -23,10 +23,12 @@ class logger_toy_t final : public coco_problem_transformed_t {
 public:
   logger_toy_t(observer_toy_t &observer, coco_problem_ptr_t inner);
 
-  void evaluate_function(const double *x, double *y) override;
+  void evaluate_function(std::span<const double> x, std::span<double> y) override;
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
 private:
   FILE *log_file{}; /**< @brief Pointer to the file already prepared for logging (owned by the observer). */
@@ -40,7 +42,7 @@ private:
  * @brief Evaluates the function, increases the number of evaluations and outputs information based on the
  * targets that have been hit.
  */
-void logger_toy_t::evaluate_function(const double *x, double *y) {
+void logger_toy_t::evaluate_function(std::span<const double> x, std::span<double> y) {
 
   inner_problem->evaluate_function(x, y);
   number_of_evaluations++;

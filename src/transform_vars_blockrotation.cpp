@@ -33,9 +33,9 @@ public:
     }
   }
 
-  void evaluate_function(const double *x, double *y) override {
-    rotation.apply(x, Bx.data());
-    inner_problem->evaluate_function(Bx.data(), y);
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
+    rotation.apply(x, Bx);
+    inner_problem->evaluate_function(Bx, y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
@@ -48,7 +48,7 @@ public:
     for (size_t i = 0; i < number_of_variables; ++i) { /* for each row */
       for (size_t j = 0; j < number_of_variables; ++j)
         row[j] = B(i, j);
-      B.multiply(row.data(), y.data());
+      B.multiply(row, y);
       for (size_t j = 0; j < number_of_variables; ++j) { /* check result */
         if (!coco_double_almost_equal(y[j], (i == j) ? 1.0 : 0.0, precision)) {
           coco_error("transform_vars_blockrotation_t::test() with precision %e "
@@ -60,7 +60,7 @@ public:
   }
 
   /** @brief Multiplies by the transpose of the (orthogonal) rotation. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     rotation.inverse(inner_x, x);
     return true;
   }

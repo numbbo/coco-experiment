@@ -27,29 +27,29 @@ struct f_lunacek_bi_rastrigin_shared_data_t {
  */
 class transform_vars_x_hat_generic_t final : public coco_problem_transformed_t {
 public:
-  transform_vars_x_hat_generic_t(coco_problem_ptr_t inner, const double *sign_vector,
+  transform_vars_x_hat_generic_t(coco_problem_ptr_t inner, std::span<const double> sign_vector,
                                  f_lunacek_bi_rastrigin_shared_data_t *shared)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_x_hat_generic"),
-        sign_vector(sign_vector, sign_vector + inner_problem->get_number_of_variables()),
-        x_hat(inner_problem->get_number_of_variables()), shared(shared) {
+        sign_vector(sign_vector.begin(), sign_vector.end()), x_hat(inner_problem->get_number_of_variables()),
+        shared(shared) {
     update_best_parameter();
   }
 
   /**
    * @brief Evaluates the transformation.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
 
     for (size_t i = 0; i < number_of_variables; ++i) {
       x_hat[i] = 2.0 * sign_vector[i] * x[i];
       shared->x_hat[i] = x_hat[i];
     }
-    inner_problem->evaluate_function(x_hat.data(), y);
+    inner_problem->evaluate_function(x_hat, y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /** @brief Divides by twice the sign. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     for (size_t i = 0; i < number_of_variables; ++i)
       x[i] = inner_x[i] / (2.0 * sign_vector[i]);
     return true;
@@ -64,7 +64,8 @@ private:
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_ptr_t transform_vars_x_hat_generic(coco_problem_ptr_t inner_problem, const double *sign_vector,
+static coco_problem_ptr_t transform_vars_x_hat_generic(coco_problem_ptr_t inner_problem,
+                                                       std::span<const double> sign_vector,
                                                        f_lunacek_bi_rastrigin_shared_data_t *shared) {
   return std::make_unique<transform_vars_x_hat_generic_t>(std::move(inner_problem), sign_vector, shared);
 }

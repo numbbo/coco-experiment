@@ -20,21 +20,21 @@ class transform_vars_oscillate_t final : public coco_problem_transformed_t {
 public:
   explicit transform_vars_oscillate_t(coco_problem_ptr_t inner)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_oscillate"),
-        oscillate(inner_problem->get_number_of_variables()), oscillated_x(inner_problem->get_number_of_variables()) {
+        oscillated_x(inner_problem->get_number_of_variables()) {
     update_best_parameter();
   }
 
   /**
    * @brief Evaluates the transformed function.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     if (inner_problem->get_number_of_objectives() == 0) {
       inner_problem->evaluate_function(x, y);
       return;
     }
 
-    oscillate.apply(x, oscillated_x.data());
-    inner_problem->evaluate_function(oscillated_x.data(), y);
+    oscillate.apply(x, oscillated_x);
+    inner_problem->evaluate_function(oscillated_x, y);
 
     assert_not_below_best_value(x, y);
   }
@@ -42,24 +42,24 @@ public:
   /**
    * @brief Evaluates the transformed constraint.
    */
-  void evaluate_constraint(const double *x, double *y, int update_counter) override {
+  void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) override {
     if (inner_problem->get_number_of_constraints() == 0) {
       inner_problem->evaluate_constraint(x, y, update_counter);
       return;
     }
 
-    oscillate.apply(x, oscillated_x.data());
-    inner_problem->evaluate_constraint(oscillated_x.data(), y, update_counter);
+    oscillate.apply(x, oscillated_x);
+    inner_problem->evaluate_constraint(oscillated_x, y, update_counter);
   }
 
   /** @brief Inverts the oscillation numerically. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     oscillate.inverse(inner_x, x);
     return true;
   }
 
 private:
-  const vars_oscillate_t oscillate;
+  const vars_oscillate_t oscillate{};
   std::vector<double> oscillated_x;
 };
 

@@ -10,7 +10,7 @@ We strive to make the code as portable as possible and provide two example build
 Building the example experiment using CMake has minimal requirements:
 
 - CMake version 3.19 or greater
-- Working C compiler supporting C99 and C++ compiler supporting C++17 (any recent gcc, clang or msvc will do)
+- Working C compiler supporting C99 and C++ compiler supporting C++20 (gcc 10, clang 10, Xcode 12, Visual Studio 2019 16.11 or newer)
 
 To build the included example experiment, run
 

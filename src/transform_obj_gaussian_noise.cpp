@@ -19,7 +19,7 @@ public:
   /**
    * @brief Evaluates the transformed objective function by applying gaussian multiplicative noise.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     double fopt = inner_problem->get_best_value()[0];
     double gaussian_noise = coco_sample_gaussian_noise();
     gaussian_noise = exp(beta * gaussian_noise);
@@ -28,13 +28,15 @@ public:
     for (size_t i = 0; i < number_of_objectives; i++) {
       last_noise_free_values[i] = y[i];
     }
-    *(y) = *(y)-fopt;
-    *(y) = *(y)*gaussian_noise + 1.01 * tol;
-    *(y) = *(y) + fopt + boundary_penalty(x);
+    y[0] = y[0] - fopt;
+    y[0] = y[0] * gaussian_noise + 1.01 * tol;
+    y[0] = y[0] + fopt + boundary_penalty(x);
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
 private:
   const double beta;

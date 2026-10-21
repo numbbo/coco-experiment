@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(COCO LANGUAGES C CXX)
 
 ## The COCO library is C++, the JNI glue code is C.
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Disable floating-point contraction (FMA), see src/coco_fp_contract.h

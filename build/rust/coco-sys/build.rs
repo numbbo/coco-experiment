@@ -27,7 +27,7 @@ fn main() {
 
     cc::Build::new()
         .cpp(true)
-        .std("c++17")
+        .std("c++20")
         .file(src_path.join("coco.cpp"))
         .warnings(false)
         // Disable floating-point contraction (FMA), see src/coco_fp_contract.h

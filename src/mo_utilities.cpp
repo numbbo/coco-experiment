@@ -25,13 +25,14 @@ static const double mo_precision = 1e-13;
 static const double mo_discretization = 5 * 1e-13;
 
 /**
- * @brief Computes and returns the Euclidean norm of two dim-dimensional points first and second.
+ * @brief Computes and returns the Euclidean distance of the points first and second.
  */
-static double mo_get_norm(const double *first, const double *second, const size_t dim) {
+static double mo_get_norm(std::span<const double> first, std::span<const double> second) {
 
   double norm = 0;
 
-  for (size_t i = 0; i < dim; i++) {
+  assert(first.size() == second.size());
+  for (size_t i = 0; i < first.size(); i++) {
     norm += pow(first[i] - second[i], 2);
   }
 
@@ -43,9 +44,10 @@ static double mo_get_norm(const double *first, const double *second, const size_
  *
  * If the solution seems to be better than the extremes it is corrected (2 objectives are assumed).
  */
-static std::vector<double> mo_normalize(const double *y, const double *ideal, const double *nadir,
-                                        const size_t num_obj) {
-
+static std::vector<double> mo_normalize(std::span<const double> y, std::span<const double> ideal,
+                                        std::span<const double> nadir) {
+  const size_t num_obj = y.size();
+  assert(ideal.size() == num_obj && nadir.size() == num_obj);
   std::vector<double> normalized_y(num_obj);
 
   for (size_t i = 0; i < num_obj; i++) {
@@ -81,12 +83,13 @@ static std::vector<double> mo_normalize(const double *y, const double *ideal, co
  * -1 if normalized_y2 dominates normalized_y1 <br>
  * -2 if normalized_y1 is identical to normalized_y2
  */
-static int mo_get_dominance(const double *normalized_y1, const double *normalized_y2, const size_t num_obj) {
+static int mo_get_dominance(std::span<const double> normalized_y1, std::span<const double> normalized_y2) {
 
   int flag1 = 0;
   int flag2 = 0;
 
-  for (size_t i = 0; i < num_obj; i++) {
+  assert(normalized_y1.size() == normalized_y2.size());
+  for (size_t i = 0; i < normalized_y1.size(); i++) {
     if (coco_double_almost_equal(normalized_y1[i], normalized_y2[i], mo_precision)) {
       continue;
     } else if (normalized_y1[i] < normalized_y2[i]) {
@@ -110,11 +113,11 @@ static int mo_get_dominance(const double *normalized_y1, const double *normalize
 /**
  * @brief Checks whether the normalized solution is within [0, 1]^num_obj.
  */
-static int mo_is_within_ROI(const double *normalized_y, const size_t num_obj) {
+static int mo_is_within_ROI(std::span<const double> normalized_y) {
 
   int within = 1;
 
-  for (size_t i = 0; i < num_obj; i++) {
+  for (size_t i = 0; i < normalized_y.size(); i++) {
     if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) ||
         coco_double_almost_equal(normalized_y[i], 1, mo_precision) || (normalized_y[i] > 0 && normalized_y[i] < 1))
       continue;
@@ -130,14 +133,14 @@ static int mo_is_within_ROI(const double *normalized_y, const size_t num_obj) {
  *
  *  @note Assumes num_obj = 2 and normalized_y >= 0
  */
-static double mo_get_distance_to_ROI(const double *normalized_y, const size_t num_obj) {
+static double mo_get_distance_to_ROI(std::span<const double> normalized_y) {
 
   double diff_0, diff_1;
 
-  if (mo_is_within_ROI(normalized_y, num_obj))
+  if (mo_is_within_ROI(normalized_y))
     return 0;
 
-  assert(num_obj == 2);
+  assert(normalized_y.size() == 2);
   assert(normalized_y[0] >= 0);
   assert(normalized_y[1] >= 0);
 

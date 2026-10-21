@@ -496,7 +496,7 @@ MU_TEST(test_coco_matrix) {
   matrix(0, 0) = 1.0;
   matrix(1, 2) = 5.0;
   mu_check(matrix.row(1)[2] == 5.0);
-  mu_check(matrix.row(1) == matrix.row(0) + 3); /* row-major */
+  mu_check(matrix.row(1).data() == matrix.row(0).data() + 3); /* row-major */
 
   matrix.multiply(x, y);
   mu_check(y[0] == 1.0 && y[1] == 15.0);
@@ -512,7 +512,7 @@ MU_TEST(test_coco_matrix) {
  */
 MU_TEST(test_coco_block_diagonal_matrix) {
   const size_t block_sizes[2] = {1, 2};
-  coco_block_diagonal_matrix_t matrix(block_sizes, 2);
+  coco_block_diagonal_matrix_t matrix(block_sizes);
   const double x[3] = {1.0, 2.0, 3.0};
   double y[3];
 

@@ -100,10 +100,10 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
   const std::string problem_type2 = problem2->get_type();
 
   /* Second, discretize the single-objective problems */
-  problem1_mixint = transform_vars_discretize(std::move(problem1), smallest_values_of_interest.data(),
-                                              largest_values_of_interest.data(), num_integer);
-  problem2_mixint = transform_vars_discretize(std::move(problem2), smallest_values_of_interest.data(),
-                                              largest_values_of_interest.data(), num_integer);
+  problem1_mixint = transform_vars_discretize(std::move(problem1), smallest_values_of_interest,
+                                              largest_values_of_interest, num_integer);
+  problem2_mixint = transform_vars_discretize(std::move(problem2), smallest_values_of_interest,
+                                              largest_values_of_interest, num_integer);
 
   /* Third, scale the objective values */
   problem1_mixint = transform_obj_scale(std::move(problem1_mixint), suite_bbob_mixint_scaling_factors[function1 - 1]);
@@ -111,7 +111,7 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
 
   /* Fourth, combine the problems in a bi-objective mixed-integer problem */
   problem = coco_problem_stacked_allocate(std::move(problem1_mixint), std::move(problem2_mixint),
-                                          smallest_values_of_interest.data(), largest_values_of_interest.data());
+                                          smallest_values_of_interest, largest_values_of_interest);
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   problem->set_name("%s", problem->get_id().c_str());

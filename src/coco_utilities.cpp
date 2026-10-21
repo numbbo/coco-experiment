@@ -12,8 +12,8 @@
 #include <errno.h>
 #include <limits.h>
 
-#if __cplusplus < 201703L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
-#error "COCO needs C++17 (for example -std=c++17 or /std:c++17)"
+#if __cplusplus < 202002L && (!defined(_MSVC_LANG) || _MSVC_LANG < 202002L)
+#error "COCO needs C++20 (for example -std=c++20 or /std:c++20)"
 #endif
 
 #include <algorithm>
@@ -267,8 +267,10 @@ public:
   double operator()(const size_t i, const size_t j) const { return values_[i * number_of_columns_ + j]; }
 
   /** @brief The elements of row i. */
-  double *row(const size_t i) { return values_.data() + i * number_of_columns_; }
-  const double *row(const size_t i) const { return values_.data() + i * number_of_columns_; }
+  std::span<double> row(const size_t i) { return {values_.data() + i * number_of_columns_, number_of_columns_}; }
+  std::span<const double> row(const size_t i) const {
+    return {values_.data() + i * number_of_columns_, number_of_columns_};
+  }
 
   /** @brief Returns whether the matrix is square and M M^T is the identity up to chosen_precision. */
   bool is_orthogonal() const;
@@ -277,12 +279,13 @@ public:
    * @brief Solves M x = y by Gaussian elimination with partial pivoting. Returns false if the matrix is not
    * square or singular.
    */
-  bool solve(const double *y, double *x) const;
+  bool solve(std::span<const double> y, std::span<double> x) const;
 
   /** @brief Computes y = M x + b; x and y must not overlap (b and y may be the same). */
-  void multiply_add(const double *x, const double *b, double *y) const {
+  void multiply_add(std::span<const double> x, std::span<const double> b, std::span<double> y) const {
+    assert(x.size() == number_of_columns_ && b.size() == number_of_rows_ && y.size() == number_of_rows_);
     for (size_t i = 0; i < number_of_rows_; ++i) {
-      const double *current_row = row(i);
+      const std::span<const double> current_row = row(i);
       y[i] = b[i];
       for (size_t j = 0; j < number_of_columns_; ++j)
         y[i] += current_row[j] * x[j];
@@ -290,9 +293,10 @@ public:
   }
 
   /** @brief Computes y = M x; x and y must not overlap. */
-  void multiply(const double *x, double *y) const {
+  void multiply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == number_of_columns_ && y.size() == number_of_rows_);
     for (size_t i = 0; i < number_of_rows_; ++i) {
-      const double *current_row = row(i);
+      const std::span<const double> current_row = row(i);
       y[i] = 0;
       for (size_t j = 0; j < number_of_columns_; ++j)
         y[i] += current_row[j] * x[j];
@@ -300,11 +304,12 @@ public:
   }
 
   /** @brief Computes y = M^T x; x and y must not overlap. */
-  void multiply_transposed(const double *x, double *y) const {
+  void multiply_transposed(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == number_of_rows_ && y.size() == number_of_columns_);
     for (size_t j = 0; j < number_of_columns_; ++j)
       y[j] = 0;
     for (size_t i = 0; i < number_of_rows_; ++i) {
-      const double *current_row = row(i);
+      const std::span<const double> current_row = row(i);
       for (size_t j = 0; j < number_of_columns_; ++j)
         y[j] += current_row[j] * x[i];
     }
@@ -344,16 +349,16 @@ public:
   coco_block_diagonal_matrix_t() = default;
 
   /** @brief A matrix with number_of_blocks blocks of the given sizes. */
-  coco_block_diagonal_matrix_t(const size_t *block_sizes, const size_t number_of_blocks) {
+  explicit coco_block_diagonal_matrix_t(std::span<const size_t> block_sizes) {
     size_t first_column = 0, number_of_values = 0;
-    for (size_t k = 0; k < number_of_blocks; ++k) {
-      for (size_t r = 0; r < block_sizes[k]; ++r) {
-        block_size_.push_back(block_sizes[k]);
+    for (const size_t block_size : block_sizes) {
+      for (size_t r = 0; r < block_size; ++r) {
+        block_size_.push_back(block_size);
         first_column_.push_back(first_column);
         row_start_.push_back(number_of_values);
-        number_of_values += block_sizes[k];
+        number_of_values += block_size;
       }
-      first_column += block_sizes[k];
+      first_column += block_size;
     }
     values_.resize(number_of_values);
   }
@@ -375,7 +380,8 @@ public:
   }
 
   /** @brief Computes y = B x; x and y must not overlap. */
-  void multiply(const double *x, double *y) const {
+  void multiply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == dimension() && y.size() == dimension());
     for (size_t i = 0; i < dimension(); ++i) {
       y[i] = 0;
       for (size_t j = first_column_[i]; j < first_column_[i] + block_size_[i]; ++j)
@@ -384,7 +390,8 @@ public:
   }
 
   /** @brief Computes y = B^T x; x and y must not overlap. */
-  void multiply_transposed(const double *x, double *y) const {
+  void multiply_transposed(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == dimension() && y.size() == dimension());
     for (size_t j = 0; j < dimension(); ++j)
       y[j] = 0;
     for (size_t i = 0; i < dimension(); ++i) {
@@ -769,22 +776,22 @@ static bool coco_is_nan(const double x) {
 }
 
 /**
- * @brief Returns whether the input vector of dimension dim contains any NAN values.
+ * @brief Returns whether the vector x contains any NAN values.
  */
-static bool coco_vector_contains_nan(const double *x, const size_t dim) {
-  for (size_t i = 0; i < dim; i++) {
-    if (COCO_UNLIKELY(coco_is_nan(x[i])))
+static bool coco_vector_contains_nan(std::span<const double> x) {
+  for (const double xi : x) {
+    if (COCO_UNLIKELY(coco_is_nan(xi)))
       return true;
   }
   return false;
 }
 
 /**
- * @brief Sets all dim values of y to NAN.
+ * @brief Sets all values of y to NAN.
  */
-static void coco_vector_set_to_nan(double *y, const size_t dim) {
-  for (size_t i = 0; i < dim; i++) {
-    y[i] = NAN;
+static void coco_vector_set_to_nan(std::span<double> y) {
+  for (double &yi : y) {
+    yi = NAN;
   }
 }
 
@@ -798,20 +805,20 @@ static bool coco_is_inf(const double x) {
 }
 
 /**
- * @brief Sets all dim values of y to Inf.
+ * @brief Sets all values of y to Inf.
  */
-static void coco_vector_set_to_inf(double *y, const size_t dim) {
-  for (size_t i = 0; i < dim; i++) {
-    y[i] = INFINITY;
+static void coco_vector_set_to_inf(std::span<double> y) {
+  for (double &yi : y) {
+    yi = INFINITY;
   }
 }
 
 /**
- * @brief Returns whether the input vector of dimension dim contains no NaN or inf values.
+ * @brief Returns whether the vector x contains no NaN or inf values.
  */
-static bool coco_vector_isfinite(const double *x, const size_t dim) {
-  for (size_t i = 0; i < dim; i++) {
-    if (COCO_UNLIKELY(coco_is_nan(x[i])) || COCO_UNLIKELY(coco_is_inf(x[i])))
+static bool coco_vector_isfinite(std::span<const double> x) {
+  for (const double xi : x) {
+    if (COCO_UNLIKELY(coco_is_nan(xi)) || COCO_UNLIKELY(coco_is_inf(xi)))
       return false;
   }
   return true;
@@ -820,8 +827,8 @@ static bool coco_vector_isfinite(const double *x, const size_t dim) {
 /**
  * @brief Returns whether the point x is feasible.
  *
- * Allows constraint_values == nullptr, otherwise constraint_values
- * must be a valid double* pointer and contains the g-values of x
+ * Allows an empty constraint_values, otherwise constraint_values
+ * must have one element per constraint and contains the g-values of x
  * on "return".
  *
  * Any point x containing NaN or inf values is considered infeasible.
@@ -833,22 +840,22 @@ static bool coco_vector_isfinite(const double *x, const size_t dim) {
  * @param x Decision vector.
  * @param constraint_values Vector of contraints values resulting from evaluation.
  */
-bool coco_problem_s::is_feasible(const double *x, double *constraint_values) {
+bool coco_problem_s::is_feasible(std::span<const double> x, std::span<double> constraint_values) {
 
-  double *cons_values = constraint_values;
+  std::span<double> cons_values = constraint_values;
   std::vector<double> buffer;
   int ret_val = 1;
 
   /* Return 0 if the decision vector contains any INFINITY or NaN values */
-  if (!coco_vector_isfinite(x, coco_problem_get_dimension(this)))
+  if (!coco_vector_isfinite(x))
     return false;
 
   if (coco_problem_get_number_of_constraints(this) <= 0)
     return true;
 
-  if (constraint_values == nullptr) {
+  if (constraint_values.empty()) {
     buffer.resize(number_of_constraints);
-    cons_values = buffer.data();
+    cons_values = buffer;
   }
 
   evaluate_constraint(x, cons_values, 0);
@@ -891,18 +898,14 @@ static std::string coco_current_time_get_string() {
  *
  * return used scaling factor, usually nom/denom.
  *
- * Example: coco_vector_scale(x, dimension, 1, coco_vector_norm(x, dimension));
+ * Example: coco_vector_scale(x, 1, coco_vector_norm(x));
  */
-static double coco_vector_scale(double *x, size_t dimension, double nom, double denom) {
-
-
-  assert(x);
-
+static double coco_vector_scale(std::span<double> x, double nom, double denom) {
   if (denom != 0)
     nom /= denom;
 
-  for (size_t i = 0; i < dimension; ++i)
-    x[i] *= nom;
+  for (double &xi : x)
+    xi *= nom;
   return nom;
 }
 
@@ -910,14 +913,12 @@ static double coco_vector_scale(double *x, size_t dimension, double nom, double 
  * @brief return norm of vector x.
  *
  */
-static double coco_vector_norm(const double *x, size_t dimension) {
+static double coco_vector_norm(std::span<const double> x) {
 
   double ssum = 0.0;
 
-  assert(x);
-
-  for (size_t i = 0; i < dimension; ++i)
-    ssum += x[i] * x[i];
+  for (const double xi : x)
+    ssum += xi * xi;
 
   return sqrt(ssum);
 }
@@ -926,14 +927,12 @@ static double coco_vector_norm(const double *x, size_t dimension) {
  * @brief return scalar product between vectors x and y.
  *
  */
-static double coco_vector_scalar_product(const double *x, const double *y, size_t dimension) {
+static double coco_vector_scalar_product(std::span<const double> x, std::span<const double> y) {
 
   double ssum = 0.0;
 
-  assert(x);
-  assert(y);
-
-  for (size_t i = 0; i < dimension; ++i)
+  assert(x.size() == y.size());
+  for (size_t i = 0; i < x.size(); ++i)
     ssum += x[i] * y[i];
 
   return ssum;
@@ -968,13 +967,14 @@ bool coco_matrix_t::is_orthogonal() const {
   return true;
 }
 
-bool coco_matrix_t::solve(const double *y, double *x) const {
+bool coco_matrix_t::solve(std::span<const double> y, std::span<double> x) const {
   const size_t n = number_of_rows_;
   if (n != number_of_columns_)
     return false;
 
+  assert(y.size() == n && x.size() == n);
   coco_matrix_t A = *this;
-  std::vector<double> b(y, y + n);
+  std::vector<double> b(y.begin(), y.end());
   for (size_t k = 0; k < n; ++k) {
     size_t pivot = k;
     for (size_t i = k + 1; i < n; ++i) {
@@ -1007,14 +1007,14 @@ bool coco_matrix_t::solve(const double *y, double *x) const {
 /**
  * @brief Returns whether the input vector x is (close to) zero.
  */
-static bool coco_vector_is_zero(const double *x, const size_t dim) {
+static bool coco_vector_is_zero(std::span<const double> x) {
   size_t i = 0;
   bool is_zero = true;
 
-  if (coco_vector_contains_nan(x, dim))
+  if (coco_vector_contains_nan(x))
     return false;
 
-  while (i < dim && is_zero) {
+  while (i < x.size() && is_zero) {
     is_zero = coco_double_almost_equal(x[i], 0, chosen_precision);
     i++;
   }

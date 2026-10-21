@@ -22,8 +22,8 @@
  * @brief Implements the Schwefel function without connections to any COCO
  * structures.
  */
-static double f_schwefel_raw(const double *x,
-                             const size_t number_of_variables) {
+static double f_schwefel_raw(std::span<const double> x) {
+  const size_t number_of_variables = x.size();
 
   size_t i = 0;
   double penalty, sum;
@@ -56,15 +56,15 @@ public:
     set_id("%s_d%02zu", "schwefel", number_of_variables);
 
     /* Compute best solution: best_parameter[i] = 200 * fabs(xopt[i]) */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_schwefel_raw(x, number_of_variables);
+    y[0] = f_schwefel_raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
@@ -92,7 +92,7 @@ static coco_problem_ptr_t f_schwefel_bbob_problem_allocate(const size_t function
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_unif(tmp1.data(), dimension, rseed);
+  bbob2009_unif(tmp1, rseed);
   for (size_t i = 0; i < dimension; ++i) {
     xopt[i] = (tmp1[i] < 0.5 ? -1 : 1) * 0.5 * 4.2096874637;
   }
@@ -104,14 +104,14 @@ static coco_problem_ptr_t f_schwefel_bbob_problem_allocate(const size_t function
 
   problem = f_schwefel_allocate(dimension);
   problem = transform_vars_scale(std::move(problem), 100);
-  problem = transform_vars_shift(std::move(problem), tmp1.data(), 0);
+  problem = transform_vars_shift(std::move(problem), tmp1, 0);
   /* The best parameter of the Schwefel function (420.96874633 / 100) and the shift (2 |xopt[i]| = 4.2096874637)
    * differ by 4e-10. The conditioning and the z^hat transformation keep the best parameter instead of computing it
    * with inverse(), which would change it by about 1e-10: the bi-objective suites evaluate their other objective
    * at this point to compute the nadir, which has to stay the same for the existing reference data. */
   problem = transform_vars_conditioning(std::move(problem), condition, true);
-  problem = transform_vars_shift(std::move(problem), tmp2.data(), 0);
-  problem = transform_vars_z_hat(std::move(problem), xopt.data());
+  problem = transform_vars_shift(std::move(problem), tmp2, 0);
+  problem = transform_vars_z_hat(std::move(problem), xopt);
   problem = transform_vars_scale(std::move(problem), 2);
   problem = transform_vars_x_hat(std::move(problem), rseed);
   problem = transform_obj_shift(std::move(problem), fopt);

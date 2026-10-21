@@ -29,7 +29,7 @@ public:
   /**
    * @brief Evaluates the transformation.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     for (size_t i = 0; i < number_of_variables; ++i) {
       double factor = factors[i];
       /* Documentation specifies odd indices and starts indexing
@@ -41,12 +41,12 @@ public:
       }
       scaled_x[i] = factor * x[i];
     }
-    inner_problem->evaluate_function(scaled_x.data(), y);
+    inner_problem->evaluate_function(scaled_x, y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /** @brief Divides by the factor; the factor is positive, so inner_x has the sign of x. */
-  bool inverse(const double *inner_x, double *x) const override {
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
     for (size_t i = 0; i < number_of_variables; ++i) {
       double factor = factors[i];
       if (inner_x[i] > 0.0 && i % 2 == 0) {

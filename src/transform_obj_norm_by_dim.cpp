@@ -21,7 +21,7 @@ public:
   /**
    * @brief Evaluates the transformation.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     inner_problem->evaluate_function(x, y);
     y[0] *= coco_norm_by_dim_factor(number_of_variables);
 
@@ -29,7 +29,9 @@ public:
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 };
 
 /**

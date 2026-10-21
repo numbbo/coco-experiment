@@ -21,7 +21,7 @@
 class f_lunacek_bi_rastrigin_t final : public coco_problem_s {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(const double *x);
+  double raw(std::span<const double> x);
 
   /** @brief Creates the Lunacek bi-Rastrigin function of the given instance (random seed). */
   f_lunacek_bi_rastrigin_t(const size_t dimension, const long rseed, const coco_bbob_variant_t variant)
@@ -38,13 +38,13 @@ public:
       c1[i] = pow(sqrt(condition), (static_cast<double>(i)) / static_cast<double>(dimension - 1));
     xopt.resize(dimension);
 
-    bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+    bbob_compute_xopt(xopt, rseed, variant);
     rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
     rot2 = bbob2009_compute_rotation(rseed, dimension);
 
     /* Compute best solution */
     std::vector<double> signs(dimension);
-    bbob2009_gauss(signs.data(), dimension, rseed);
+    bbob2009_gauss(signs, rseed);
     for (size_t i = 0; i < dimension; ++i) {
       xopt[i] = 0.5 * mu0;
       if (signs[i] < 0.0) {
@@ -52,13 +52,13 @@ public:
       }
       best_parameter[i] = xopt[i];
     }
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
@@ -75,7 +75,7 @@ private:
  * @brief Implements the Lunacek bi-Rastrigin function without connections to
  * any COCO structures.
  */
-double f_lunacek_bi_rastrigin_t::raw(const double *x) {
+double f_lunacek_bi_rastrigin_t::raw(std::span<const double> x) {
   double result;
   double penalty = 0.0;
   static const double mu0 = 2.5;
@@ -107,7 +107,7 @@ double f_lunacek_bi_rastrigin_t::raw(const double *x) {
       tmpvect[i] += c1[i] * rot2(i, j) * (x_hat[j] - mu0);
     }
   }
-  rot1.multiply(tmpvect.data(), z.data());
+  rot1.multiply(tmpvect, z);
   /* Computation core */
   for (size_t i = 0; i < number_of_variables; ++i) {
     sum1 += (x_hat[i] - mu0) * (x_hat[i] - mu0);
@@ -155,15 +155,15 @@ public:
       : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("lunacek_bi_rastrigin_sub function", -5.0, 5.0, 0.0);
     set_id("%s_d%04zu", "lunacek_bi_rastrigin_sub", number_of_variables);
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the core function to evaluate the sub problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_sphere_raw(x, number_of_variables);
+    y[0] = f_sphere_raw(x);
   }
 };
 
@@ -178,22 +178,18 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_sub_problem_allocate(const size
  * @brief Implements the lunacek_bi_rastrigin function without connections to
  * any COCO structures. Wassim: core to not conflict with raw for now
  */
-static double
-f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
-                            f_lunacek_bi_rastrigin_shared_data_t *shared) {
-
+static double f_lunacek_bi_rastrigin_core(std::span<const double> x, f_lunacek_bi_rastrigin_shared_data_t *shared) {
+  const size_t number_of_variables = x.size();
   coco_problem_t *problem_sub_mu0, *problem_sub_mu1;
   double result = 0.0;
   double y0, y1;
-  double *x_hat;
-
-  x_hat = shared->x_hat.data();
+  const std::span<const double> x_hat = shared->x_hat;
 
   problem_sub_mu0 = shared->sub_problem_mu0.get();
-  problem_sub_mu0->evaluate_function(x_hat, &y0);
+  problem_sub_mu0->evaluate_function(x_hat, {&y0, 1});
 
   problem_sub_mu1 = shared->sub_problem_mu1.get();
-  problem_sub_mu1->evaluate_function(x_hat, &y1);
+  problem_sub_mu1->evaluate_function(x_hat, {&y1, 1});
 
   result += static_cast<double>(number_of_variables);
 
@@ -226,9 +222,9 @@ public:
   /**
    * @brief Uses the core function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_lunacek_bi_rastrigin_core(x, number_of_variables, &shared);
+    y[0] = f_lunacek_bi_rastrigin_core(x, &shared);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
@@ -276,21 +272,17 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
   nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
   nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
-  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2);
 
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P12(dimension);
   std::vector<size_t> P21(dimension);
   std::vector<size_t> P22(dimension);
-  coco_compute_truncated_uniform_swap_permutation(
-      P11.data(), rseed + 3000000, dimension, nb_swaps1, swap_range1);
-  coco_compute_truncated_uniform_swap_permutation(
-      P12.data(), rseed + 4000000, dimension, nb_swaps1, swap_range1);
-  coco_compute_truncated_uniform_swap_permutation(
-      P21.data(), rseed + 5000000, dimension, nb_swaps2, swap_range2);
-  coco_compute_truncated_uniform_swap_permutation(
-      P22.data(), rseed + 6000000, dimension, nb_swaps2, swap_range2);
+  coco_compute_truncated_uniform_swap_permutation(P11, rseed + 3000000, nb_swaps1, swap_range1);
+  coco_compute_truncated_uniform_swap_permutation(P12, rseed + 4000000, nb_swaps1, swap_range1);
+  coco_compute_truncated_uniform_swap_permutation(P21, rseed + 5000000, nb_swaps2, swap_range2);
+  coco_compute_truncated_uniform_swap_permutation(P22, rseed + 6000000, nb_swaps2, swap_range2);
 
   std::unique_ptr<f_lunacek_bi_rastrigin_ls_t> lunacek = f_lunacek_bi_rastrigin_problem_allocate(dimension);
   f_lunacek_bi_rastrigin_ls_t *raw_problem = lunacek.get();
@@ -308,7 +300,7 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
 
   /* set sign_vector */
   std::vector<double> tmp_normal(dimension);
-  bbob2009_gauss(tmp_normal.data(), dimension, rseed);
+  bbob2009_gauss(tmp_normal, rseed);
   std::vector<double> sign_vector(dimension); /* Wassim sign vector designate the 1^+_- vector*/
   for (size_t i = 0; i < dimension; i++) {    /* set sign(x_opt)*/
     if (tmp_normal[i] < 0.0) {      /* Wassim: noraml is used here but unif for Schweffel!!! */
@@ -321,24 +313,24 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
 
   /* apply transformations to sub-problems */
   sub_problem_tmp = &raw_problem->shared_data().sub_problem_mu0;
-  *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu0_vector.data(), 0);
+  *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu0_vector, 0);
 
   sub_problem_tmp = &raw_problem->shared_data().sub_problem_mu1;
-  *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu1_vector.data(), 0);
+  *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu1_vector, 0);
   *sub_problem_tmp = transform_obj_scale(std::move(*sub_problem_tmp), s); /* Manh: need to use s */
   *sub_problem_tmp = transform_obj_shift(std::move(*sub_problem_tmp), d * static_cast<double>(dimension));
 
   /* transformations on main problem */
-  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P22);
   problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P21);
   problem = transform_vars_conditioning(std::move(problem), condition);
 
-  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P12);
   problem = transform_vars_blockrotation(std::move(problem), B2);
-  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
-  problem = transform_vars_shift(std::move(problem), mu0_vector.data(), 0);
-  problem = transform_vars_x_hat_generic(std::move(problem), sign_vector.data(), &raw_problem->shared_data());
+  problem = transform_vars_permutation(std::move(problem), P11);
+  problem = transform_vars_shift(std::move(problem), mu0_vector, 0);
+  problem = transform_vars_x_hat_generic(std::move(problem), sign_vector, &raw_problem->shared_data());
 
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_penalize(std::move(problem), penalty_factor);

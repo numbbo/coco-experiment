@@ -47,7 +47,7 @@ It is harmless to run `fabricate` too often, but forgetting to run it means you 
 
 ### Coding conventions for the core
 
-The core in `src/` is C++17 that is amalgamated into a single `coco.cpp` and exposes a C interface (`coco.h`).
+The core in `src/` is C++20 that is amalgamated into a single `coco.cpp` and exposes a C interface (`coco.h`).
 
 - **No exceptions.** COCO is compiled with `-fno-exceptions` where the compiler supports it. Report errors with
   `coco_error()`, `coco_warning()` etc. and avoid library functions that signal errors by throwing
@@ -61,6 +61,10 @@ The core in `src/` is C++17 that is amalgamated into a single `coco.cpp` and exp
   a problem take it by value and the caller hands it over with `std::move()`, e.g.
   `problem = transform_obj_shift(std::move(problem), fopt);`. Ownership is only released to a raw pointer
   at the C interface.
+- Pass arrays of values as `std::span` (`std::span<const double>` for input, `std::span<double>` for output)
+  instead of a pointer and a length. Raw pointers to arrays only appear in the C interface, where they are
+  wrapped into spans of the problem's dimension (or number of objectives or constraints).
+- Don't use `std::format` yet: it needs GCC 13 and macOS 13.3.
 
 ### Running unit tests
 

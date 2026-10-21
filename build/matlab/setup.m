@@ -6,15 +6,15 @@ more off; % turn off page-wise output
 
 % The COCO library is C++ and is compiled separately because the char16_t
 % define needed for cocoCall.c on some systems must not be applied to C++.
-% coco.cpp needs C++17, which is not the default of every compiler that mex uses.
+% coco.cpp needs C++20, which is not the default of every compiler that mex uses.
 fprintf('compiling coco.cpp...');
 if exist('OCTAVE_VERSION', 'builtin')
-  setenv('CXXFLAGS', [strtrim(mkoctfile('-p', 'CXXFLAGS')) ' -std=c++17']);
+  setenv('CXXFLAGS', [strtrim(mkoctfile('-p', 'CXXFLAGS')) ' -std=c++20']);
   mex('-c', 'coco.cpp');
 elseif ispc
-  mex('COMPFLAGS=$COMPFLAGS /std:c++17', '-c', 'coco.cpp');
+  mex('COMPFLAGS=$COMPFLAGS /std:c++20', '-c', 'coco.cpp');
 else
-  mex('CXXFLAGS=$CXXFLAGS -std=c++17', '-c', 'coco.cpp');
+  mex('CXXFLAGS=$CXXFLAGS -std=c++20', '-c', 'coco.cpp');
 end
 fprintf('Done\n');
 

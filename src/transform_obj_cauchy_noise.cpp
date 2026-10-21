@@ -19,7 +19,7 @@ public:
   /**
    * @brief Evaluates the transformed objective function by applying cauchy additive noise.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     double uniform_indicator, numerator_normal_variate, denominator_normal_variate;
     uniform_indicator = coco_sample_uniform_noise();
     numerator_normal_variate = coco_sample_gaussian_noise();
@@ -34,11 +34,13 @@ public:
     for (size_t i = 0; i < number_of_objectives; i++) {
       last_noise_free_values[i] = y[i];
     }
-    *(y) = *(y) + cauchy_noise + 1.01 * tol + boundary_penalty(x);
+    y[0] = y[0] + cauchy_noise + 1.01 * tol + boundary_penalty(x);
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
 private:
   const double alpha;

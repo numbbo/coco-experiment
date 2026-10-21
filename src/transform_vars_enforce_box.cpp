@@ -19,11 +19,11 @@ public:
   /**
    * @brief Evaluates the transformed objective function.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i) {
       if ((x[i] < smallest_values_of_interest[i]) || (x[i] > largest_values_of_interest[i])) {
         /* Box constraint is violated, return Inf */
-        coco_vector_set_to_inf(y, coco_problem_get_number_of_objectives(this));
+        coco_vector_set_to_inf(y);
         return;
       }
     }
@@ -34,7 +34,9 @@ public:
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 };
 
 /**

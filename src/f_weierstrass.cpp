@@ -28,7 +28,7 @@ static constexpr size_t F_WEIERSTRASS_SUMMANDS = 12;
 class f_weierstrass_t final : public coco_problem_s {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(const double *x) const;
+  double raw(std::span<const double> x) const;
 
   explicit f_weierstrass_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
 
@@ -44,13 +44,13 @@ public:
 
     /* Compute best solution */
     std::vector<double> non_unique_best_value(number_of_variables, 0.0);
-    evaluate_function(non_unique_best_value.data(), best_value.data());
+    evaluate_function(non_unique_best_value, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
@@ -66,7 +66,7 @@ private:
  * @brief Implements the Weierstrass function without connections to any COCO
  * structures.
  */
-double f_weierstrass_t::raw(const double *x) const {
+double f_weierstrass_t::raw(std::span<const double> x) const {
 
   double result = 0.0;
   for (size_t i = 0; i < number_of_variables; ++i) {
@@ -103,7 +103,7 @@ static coco_problem_ptr_t f_weierstrass_bbob_problem_allocate(const size_t funct
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
@@ -121,7 +121,7 @@ static coco_problem_ptr_t f_weierstrass_bbob_problem_allocate(const size_t funct
   problem = transform_vars_oscillate(std::move(problem));
   M = rot1;
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -154,32 +154,32 @@ f_weierstrass_permblockdiag_bbob_problem_allocate(const size_t function, const s
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
-  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
-  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2);
 
-  coco_compute_truncated_uniform_swap_permutation(P11.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P21.data(), rseed + 4000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P12.data(), rseed + 5000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P22.data(), rseed + 6000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P11, rseed + 3000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P21, rseed + 4000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P12, rseed + 5000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P22, rseed + 6000000, nb_swaps, swap_range);
 
   problem = f_weierstrass_allocate(dimension);
-  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P22);
   problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P12);
 
   problem = transform_vars_conditioning(std::move(problem), 1.0 / condition);
-  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P21);
   problem = transform_vars_blockrotation(std::move(problem), B2);
-  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P11);
 
   problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P22);
   problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P12);
 
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem), fopt);
 

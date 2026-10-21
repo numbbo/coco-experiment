@@ -53,7 +53,7 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
   }
 
   /* Seed value used for shifting the whole constrained problem */
-  bbob2009_compute_xopt(xopt.data(), rseed, dimension);
+  bbob2009_compute_xopt(xopt, rseed);
 
   /* Choose a different seed value for building the objective function */
   rseed = static_cast<long>(function + 20000 * instance);
@@ -63,7 +63,7 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
   if (obj_function_type(function) == 1) {
 
     problem = f_sphere_c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
-                                                           rseed, feasible_direction.data(), xopt.data(), problem_id_template,
+                                                           rseed, feasible_direction, xopt, problem_id_template,
                                                            problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   10.); /* move initial feasible point to a delta-f between 100 and 10000 */
@@ -71,15 +71,15 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
   } else if (obj_function_type(function) == 2) {
 
     problem = f_ellipsoid_c_linear_cons_bbob_problem_allocate(function, dimension, instance,
-                                                              number_of_linear_constraints, rseed, feasible_direction.data(),
-                                                              xopt.data(), problem_id_template, problem_name_template);
+                                                              number_of_linear_constraints, rseed, feasible_direction,
+                                                              xopt, problem_id_template, problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 3) {
 
     problem = f_linear_slope_c_linear_cons_bbob_problem_allocate(
-        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
+        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction, xopt,
         problem_id_template, problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   10.); /* move initial feasible point to a delta-f between 100 and 10000 */
@@ -87,7 +87,7 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
   } else if (obj_function_type(function) == 4) {
 
     problem = f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
-        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
+        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction, xopt,
         problem_id_template, problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
@@ -95,7 +95,7 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
   } else if (obj_function_type(function) == 5) {
 
     problem = f_discus_c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
-                                                           rseed, feasible_direction.data(), xopt.data(), problem_id_template,
+                                                           rseed, feasible_direction, xopt, problem_id_template,
                                                            problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
@@ -103,15 +103,15 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
   } else if (obj_function_type(function) == 6) {
 
     problem = f_bent_cigar_c_linear_cons_bbob_problem_allocate(function, dimension, instance,
-                                                               number_of_linear_constraints, rseed, feasible_direction.data(),
-                                                               xopt.data(), problem_id_template, problem_name_template);
+                                                               number_of_linear_constraints, rseed, feasible_direction,
+                                                               xopt, problem_id_template, problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   1e-4); /* move initial feasible point to a delta-f between 100 and 100,000 */
 
   } else if (obj_function_type(function) == 7) {
 
     problem = f_different_powers_c_linear_cons_bbob_problem_allocate(
-        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
+        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction, xopt,
         problem_id_template, problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   1e2); /* move initial feasible point to a delta-f between 100 and 1000 */
@@ -119,15 +119,15 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
   } else if (obj_function_type(function) == 8) {
 
     problem = f_rastrigin_c_linear_cons_bbob_problem_allocate(function, dimension, instance,
-                                                              number_of_linear_constraints, rseed, feasible_direction.data(),
-                                                              xopt.data(), problem_id_template, problem_name_template);
+                                                              number_of_linear_constraints, rseed, feasible_direction,
+                                                              xopt, problem_id_template, problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   10.); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 9) {
 
     problem = f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
-        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
+        function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction, xopt,
         problem_id_template, problem_name_template);
     problem = transform_obj_scale(std::move(problem),
                                   10.); /* move initial feasible point to a delta-f between 100 and 10000 */

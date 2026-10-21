@@ -61,8 +61,8 @@ public:
 
   ~logger_bbob_t() override;
 
-  void evaluate_function(const double *x, double *y) override;
-  void recommend_solution(const double *x) override;
+  void evaluate_function(std::span<const double> x, std::span<double> y) override;
+  void recommend_solution(std::span<const double> x) override;
 
   /** @brief Saves the information that the algorithm has restarted. */
   void signal_restart();
@@ -97,11 +97,13 @@ private:
   }
 
   /** @brief Outputs a formatted line to a data file. */
-  void output(FILE *data_file, const double *x, double logged_value, double logged_best_value,
-              const double *constraints) const;
+  void output(FILE *data_file, std::span<const double> x, double logged_value, double logged_best_value,
+              std::span<const double> constraints) const;
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
   observer_bbob_t *observer{};    /**< @brief Pointer to the observer (might be nullptr at the end) */
   std::string suite_name;         /**< @brief The suite name */
@@ -193,19 +195,19 @@ static int logger_bbob_single_digit_constraint(const double c) {
 /**
  * @brief Outputs a formatted line to a data file
  */
-void logger_bbob_t::output(FILE *data_file, const double *x, double logged_value, double logged_best_value,
-                           const double *constraints) const {
+void logger_bbob_t::output(FILE *data_file, std::span<const double> x, double logged_value, double logged_best_value,
+                           std::span<const double> constraints) const {
   /* This function contains many hard-coded values (10.9, 22, 5.4) that could be read through
    * observer options */
 
   fprintf(data_file, "%zu %zu %+10.9e %+10.9e ", num_func_evaluations, num_cons_evaluations,
           logged_best_value - optimal_value, logged_value);
 
-  if ((number_of_constraints > 0) && (constraints != nullptr)) {
+  if ((number_of_constraints > 0) && !constraints.empty()) {
     for (size_t i = 0; i < number_of_constraints; ++i) {
       /* print 01234567890123..., may happen in the last line of .tdat */
       fprintf(data_file, "%d",
-              constraints ? logger_bbob_single_digit_constraint(constraints[i]) : static_cast<int>(i % 10));
+              !constraints.empty() ? logger_bbob_single_digit_constraint(constraints[i]) : static_cast<int>(i % 10));
     }
   } else {
     fprintf(data_file, "%+10.9e", logged_best_value);
@@ -347,9 +349,9 @@ void logger_bbob_t::initialize() {
  * @brief Evaluates the function, increases the number of evaluations and outputs information according to
  * observer options.
  */
-void logger_bbob_t::evaluate_function(const double *x, double *y) {
+void logger_bbob_t::evaluate_function(std::span<const double> x, std::span<double> y) {
   double y_logged, max_value = 0, sum_constraints;
-  const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, nullptr);
+  const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, {});
 
   if (is_tainted() || inner_problem->is_tainted()) {
     coco_error("Though shalt not cheat! Trying to evaluate a tainted observed problem. Do _not_ call "
@@ -389,7 +391,7 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
   /* Evaluate the constraints */
   std::vector<double> constraints(number_of_constraints);
   if (number_of_constraints > 0)
-    inner_problem->evaluate_constraint(x, constraints.data(), 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
   num_cons_evaluations = get_evaluations_constraints();
 
   /* Compute the sum of positive constraint values */
@@ -426,20 +428,20 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
     /* Add a line in the .dat file is the performance target is reached by a feasible solution
      * and always at the first evaluation */
     if (num_func_evaluations == 1 || targets.trigger(best_found_value - optimal_value)) {
-      output(dat_file, x, y_logged, best_found_value, constraints.data());
+      output(dat_file, x, y_logged, best_found_value, constraints);
       last_logged_eval_dat = num_func_evaluations;
     }
   }
 
   /* Add a line in the .tdat file for specific number of evaluations*/
   if (evaluation_triggers.trigger(num_func_evaluations + num_cons_evaluations)) {
-    output(tdat_file, x, y_logged, best_found_value, constraints.data());
+    output(tdat_file, x, y_logged, best_found_value, constraints);
     last_logged_eval_tdat = num_func_evaluations;
   }
 
   /* Add a line in the .rdat file if the algorithm was restarted */
   if (algorithm_restarted) {
-    output(rdat_file, x, y_logged, best_found_value, constraints.data());
+    output(rdat_file, x, y_logged, best_found_value, constraints);
     algorithm_restarted = 0;
   }
 
@@ -450,8 +452,8 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
  * @brief Evaluates the function and outputs information according to observer options to the file with
  * recommendations. The evaluation result is not returned and the evaluation counter is not increased.
  */
-void logger_bbob_t::recommend_solution(const double *x) {
-  const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, nullptr);
+void logger_bbob_t::recommend_solution(std::span<const double> x) {
+  const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, {});
 
   if (!is_initialized) {
     initialize();
@@ -459,7 +461,7 @@ void logger_bbob_t::recommend_solution(const double *x) {
 
   /* Fulfill contract of a COCO evaluate function, but do not increase the evaluation counters */
   std::vector<double> y(number_of_objectives);
-  coco_evaluate_function(inner_problem.get(), x, y.data()); /* checks x, which recommendations do not */
+  coco_evaluate_function(inner_problem.get(), x.data(), y.data()); /* checks x, which recommendations do not */
 
   double y_logged = y[0];
   if (coco_is_nan(y_logged))
@@ -476,7 +478,7 @@ void logger_bbob_t::recommend_solution(const double *x) {
   /* Evaluate the constraints */
   std::vector<double> constraints(number_of_constraints);
   if (number_of_constraints > 0)
-    inner_problem->evaluate_constraint(x, constraints.data(), 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
 
   /* Compute the sum of positive constraint values */
   double sum_constraints = 0.0;
@@ -511,7 +513,7 @@ void logger_bbob_t::recommend_solution(const double *x) {
     best_recommended_value = max_value + sum_constraints;
     /* Add a line in the .mdat file is the performance target is reached by a feasible solution */
     if (mdat_targets.trigger(best_recommended_value - optimal_value)) {
-      output(mdat_file, x, y_logged, best_recommended_value, constraints.data());
+      output(mdat_file, x, y_logged, best_recommended_value, constraints);
       last_logged_eval_mdat = num_func_evaluations;
     }
   }
@@ -533,20 +535,20 @@ logger_bbob_t::~logger_bbob_t() {
 
   if (dat_file != nullptr) {
     if (num_func_evaluations != last_logged_eval_dat)
-      output(dat_file, best_found_solution.data(), best_found_value, best_found_value, nullptr);
+      output(dat_file, best_found_solution, best_found_value, best_found_value, {});
     dat_file.close();
   }
 
   if (tdat_file != nullptr) {
     if (num_func_evaluations != last_logged_eval_tdat)
-      output(tdat_file, best_found_solution.data(), best_found_value, best_found_value, nullptr);
+      output(tdat_file, best_found_solution, best_found_value, best_found_value, {});
     tdat_file.close();
   }
 
 
   if (mdat_file != nullptr) {
     if ((num_func_evaluations != last_logged_eval_mdat) && (last_logged_eval_mdat != 0))
-      output(mdat_file, best_recommended_solution.data(), best_recommended_value, best_recommended_value, nullptr);
+      output(mdat_file, best_recommended_solution, best_recommended_value, best_recommended_value, {});
     mdat_file.close();
   }
 

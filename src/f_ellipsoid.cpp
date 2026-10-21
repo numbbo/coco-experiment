@@ -22,7 +22,7 @@
 class f_ellipsoid_t final : public coco_problem_s {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(const double *x) const;
+  double raw(std::span<const double> x) const;
 
   f_ellipsoid_t(const size_t number_of_variables, const double conditioning)
       : coco_problem_s(number_of_variables, 1, 0) {
@@ -36,13 +36,13 @@ public:
     }
 
     /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
+    evaluate_function(best_parameter, best_value);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(const double *x, double *y) override {
+  void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
@@ -51,7 +51,7 @@ public:
   /**
    * @brief Evaluates the gradient of the ellipsoid function.
    */
-  void evaluate_gradient(const double *x, double *y) override {
+  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
     for (size_t i = 0; i < number_of_variables; ++i)
       y[i] = 2.0 * scales[i] * x[i];
   }
@@ -64,7 +64,7 @@ private:
  * @brief Implements the ellipsoid function without connections to any COCO
  * structures.
  */
-double f_ellipsoid_t::raw(const double *x) const {
+double f_ellipsoid_t::raw(std::span<const double> x) const {
 
   double result = x[0] * x[0];
   for (size_t i = 1; i < number_of_variables; ++i)
@@ -92,11 +92,11 @@ static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t functio
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
   problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /*if large scale test-bed, normalize by dim*/
   if (variant == coco_bbob_variant_t::largescale) {
@@ -126,7 +126,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
   double fopt = bbob2009_compute_fopt(function, instance);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -134,7 +134,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t
   problem = f_ellipsoid_allocate(dimension, conditioning);
   problem = transform_vars_oscillate(std::move(problem));
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
@@ -161,20 +161,20 @@ static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const 
   size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
   double fopt = bbob2009_compute_fopt(function, instance);
 
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes);
 
-  coco_compute_truncated_uniform_swap_permutation(P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, nb_swaps, swap_range);
+  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, nb_swaps, swap_range);
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
   problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_permutation(std::move(problem), P2);
   problem = transform_vars_blockrotation(std::move(problem), B);
-  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P1);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_shift(std::move(problem), fopt);
@@ -198,12 +198,12 @@ static coco_problem_ptr_t f_ellipsoid_cons_bbob_problem_allocate(const size_t fu
 
   std::vector<double> xopt(dimension);
   double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
 
   /* TODO (NH): fopt -= problem->evaluate(all_zeros(dimension)) */
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -228,7 +228,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const s
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+  bbob_compute_xopt(xopt, rseed, variant);
   double fopt = bbob2009_compute_fopt(function, instance);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -236,7 +236,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const s
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
   problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);

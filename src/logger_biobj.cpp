@@ -159,23 +159,21 @@ struct logger_biobj_avl_item_t {
 /**
  * @brief Creates and returns the information on the solution in the form of a node's item in the AVL tree.
  */
-static logger_biobj_avl_item_t *logger_biobj_node_create(const coco_problem_t *problem, const double *x,
-                                                         const double *y, const double *constraints,
-                                                         const size_t evaluation_number, const size_t dim,
-                                                         const size_t num_obj, const size_t num_const) {
+static logger_biobj_avl_item_t *logger_biobj_node_create(const coco_problem_t *problem, std::span<const double> x,
+                                                         std::span<const double> y, std::span<const double> constraints,
+                                                         const size_t evaluation_number) {
 
   double sum_constraints = 0;
 
   logger_biobj_avl_item_t *item = new logger_biobj_avl_item_t();
 
   /* Copy the data */
-  item->x.assign(x, x + dim);
-  item->y.assign(y, y + num_obj);
+  item->x.assign(x.begin(), x.end());
+  item->y.assign(y.begin(), y.end());
 
   /* Compute the normalized y */
-  item->normalized_y =
-      mo_normalize(item->y.data(), problem->get_best_value().data(), problem->get_nadir_value().data(), num_obj);
-  item->within_ROI = mo_is_within_ROI(item->normalized_y.data(), num_obj);
+  item->normalized_y = mo_normalize(item->y, problem->get_best_value(), problem->get_nadir_value());
+  item->within_ROI = mo_is_within_ROI(item->normalized_y);
 
   item->evaluation_number = evaluation_number;
   for (size_t i = 0; i < LOGGER_BIOBJ_NUMBER_OF_INDICATORS; i++)
@@ -183,11 +181,10 @@ static logger_biobj_avl_item_t *logger_biobj_node_create(const coco_problem_t *p
 
   /* Determine whether the solution is feasible */
   item->is_feasible = 1;
-  if (num_const > 0) {
-    assert(constraints != nullptr);
-    for (size_t i = 0; i < num_const; i++) {
-      if (constraints[i] > 0)
-        sum_constraints += constraints[i];
+  if (!constraints.empty()) {
+    for (const double constraint : constraints) {
+      if (constraint > 0)
+        sum_constraints += constraint;
     }
     item->is_feasible = !(sum_constraints > 0);
   }
@@ -214,9 +211,9 @@ public:
 
   ~logger_biobj_t() override;
 
-  void evaluate_function(const double *x, double *y) override;
-  void recommend_solution(const double *x) override;
-  bool feed_solution(const size_t evaluation, const double *y);
+  void evaluate_function(std::span<const double> x, std::span<double> y) override;
+  void recommend_solution(std::span<const double> x) override;
+  bool feed_solution(const size_t evaluation, std::span<const double> y);
 
   /** @brief Saves the information that the algorithm has restarted. */
   void signal_restart();
@@ -243,7 +240,9 @@ private:
   void write_final_archive();
 
   /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return identity_inverse(inner_x, x);
+  }
 
   observer_biobj_t *observer{}; /**< @brief Pointer to the observer (might be nullptr at the end) */
   observer_biobj_log_nondom_e log_nondom_mode{};
@@ -361,9 +360,8 @@ bool logger_biobj_t::update_archive(logger_biobj_avl_item_t *node_item) {
     trigger_update = true;
     next_node = archive_tree->head;
   } else {
-    dominance = mo_get_dominance(node_item->normalized_y.data(),
-                                 (static_cast<logger_biobj_avl_item_t *>(node->item))->normalized_y.data(),
-                                 number_of_objectives);
+    dominance =
+        mo_get_dominance(node_item->normalized_y, (static_cast<logger_biobj_avl_item_t *>(node->item))->normalized_y);
     if (dominance > -1) {
       trigger_update = true;
       next_node = node->next;
@@ -393,9 +391,8 @@ bool logger_biobj_t::update_archive(logger_biobj_avl_item_t *node_item) {
        * dominance = 0: the new node and the next node are nondominated
        * dominance = 1: the new node dominates the next node */
       node = next_node;
-      dominance = mo_get_dominance(node_item->normalized_y.data(),
-                                   (static_cast<logger_biobj_avl_item_t *>(node->item))->normalized_y.data(),
-                                   number_of_objectives);
+      dominance =
+          mo_get_dominance(node_item->normalized_y, (static_cast<logger_biobj_avl_item_t *>(node->item))->normalized_y);
       if (dominance == 1) {
         /* The new point dominates the next point, remove the next point */
         if (compute_indicators) {
@@ -632,7 +629,7 @@ void logger_biobj_indicator_t::output(const logger_biobj_t &logger, const int up
       if (coco_double_almost_equal(current_value, 0, mo_precision)) {
         /* Update the additional penalty for hypervolume (the minimal distance from the nondominated set
          * to the ROI) */
-        double new_distance = mo_get_distance_to_ROI(node_item->normalized_y.data(), logger.get_number_of_objectives());
+        double new_distance = mo_get_distance_to_ROI(node_item->normalized_y);
         additional_penalty = coco_double_min(additional_penalty, new_distance);
         assert(additional_penalty >= 0);
       } else {
@@ -712,7 +709,7 @@ void logger_biobj_t::output(const int update_performed, const logger_biobj_avl_i
  * @brief Evaluates the function, increases the number of evaluations and outputs information according to
  * observer options.
  */
-void logger_biobj_t::evaluate_function(const double *x, double *y) {
+void logger_biobj_t::evaluate_function(std::span<const double> x, std::span<double> y) {
   logger_biobj_avl_item_t *node_item;
 
   /* Evaluate the objectives */
@@ -722,11 +719,10 @@ void logger_biobj_t::evaluate_function(const double *x, double *y) {
   /* Evaluate the constraints */
   std::vector<double> constraints(number_of_constraints);
   if (number_of_constraints > 0)
-    inner_problem->evaluate_constraint(x, constraints.data(), 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
   num_cons_evaluations = get_evaluations_constraints();
 
-  node_item = logger_biobj_node_create(inner_problem.get(), x, y, constraints.data(), num_func_evaluations,
-                                       number_of_variables, number_of_objectives, number_of_constraints);
+  node_item = logger_biobj_node_create(inner_problem.get(), x, y, constraints, num_func_evaluations);
 
   /* Update the archive with the new solution, if it is not dominated by or equal to existing solutions in
    * the archive */
@@ -751,17 +747,17 @@ void logger_biobj_t::evaluate_function(const double *x, double *y) {
  * @brief Evaluates the function and outputs information according to observer options to the file with
  * recommendations. The evaluation result is not returned and the evaluation counter is not increased.
  */
-void logger_biobj_t::recommend_solution(const double *x) {
+void logger_biobj_t::recommend_solution(std::span<const double> x) {
   size_t i;
 
   /* Evaluate the objectives */
   std::vector<double> y(number_of_objectives);
-  coco_evaluate_function(inner_problem.get(), x, y.data()); /* checks x, which recommendations do not */
+  coco_evaluate_function(inner_problem.get(), x.data(), y.data()); /* checks x, which recommendations do not */
 
   /* Evaluate the constraints */
   std::vector<double> constraints(number_of_constraints);
   if (number_of_constraints > 0)
-    inner_problem->evaluate_constraint(x, constraints.data(), 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
   num_cons_evaluations = get_evaluations_constraints();
 
   /* If this is the first call to the recommend function (on any problem), warn about the large
@@ -801,7 +797,7 @@ void logger_biobj_t::recommend_solution(const double *x) {
  * @param y The objective vector.
  * @return Whether the archive was updated.
  */
-bool logger_biobj_t::feed_solution(const size_t evaluation, const double *y) {
+bool logger_biobj_t::feed_solution(const size_t evaluation, std::span<const double> y) {
   logger_biobj_avl_item_t *node_item;
   bool update_performed;
 
@@ -819,8 +815,7 @@ bool logger_biobj_t::feed_solution(const size_t evaluation, const double *y) {
   std::vector<double> x(number_of_variables);
   for (size_t i = 0; i < number_of_variables; i++)
     x[i] = 0;
-  node_item = logger_biobj_node_create(inner_problem.get(), x.data(), y, nullptr, num_func_evaluations,
-                                       number_of_variables, number_of_objectives, 0);
+  node_item = logger_biobj_node_create(inner_problem.get(), x, y, {}, num_func_evaluations);
 
   /* Update the archive */
   update_performed = update_archive(node_item);
@@ -915,7 +910,8 @@ logger_biobj_t *logger_biobj_t::from(const coco_problem_t *problem) {
  * logger_biobj_t::feed_solution().
  */
 int coco_logger_biobj_feed_solution(coco_problem_t *problem, const size_t evaluation, const double *y) {
-  return logger_biobj_t::from(problem)->feed_solution(evaluation, y);
+  logger_biobj_t *logger = logger_biobj_t::from(problem);
+  return logger->feed_solution(evaluation, {y, logger->get_number_of_objectives()});
 }
 
 void observer_biobj_t::signal_restart(coco_problem_t *problem) { logger_biobj_t::from(problem)->signal_restart(); }

@@ -20,7 +20,7 @@ MU_TEST(test_coco_evaluate_function) {
     x[0] = 0;
     x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan(y, 1));
+    mu_check(coco_vector_contains_nan({y, 1}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -33,7 +33,7 @@ MU_TEST(test_coco_evaluate_function) {
     x[0] = 0;
     x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan(y, 1));
+    mu_check(coco_vector_contains_nan({y, 1}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -46,7 +46,7 @@ MU_TEST(test_coco_evaluate_function) {
   	x[0] = 0;
   	x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan(y, 2));
+    mu_check(coco_vector_contains_nan({y, 2}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -59,7 +59,7 @@ MU_TEST(test_coco_evaluate_function) {
   	x[0] = 0;
   	x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan(y, 1));
+    mu_check(coco_vector_contains_nan({y, 1}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -86,7 +86,7 @@ MU_TEST(test_coco_evaluate_constraint) {
   	number_of_constraints = coco_problem_get_number_of_constraints(problem);
   	y = coco_allocate_vector(number_of_constraints);
     coco_evaluate_constraint(problem, x, y);
-    mu_check(coco_vector_contains_nan(y, number_of_constraints));
+    mu_check(coco_vector_contains_nan({y, number_of_constraints}));
     coco_free_memory(y);
   }
   coco_suite_free(suite);
@@ -115,10 +115,10 @@ MU_TEST(test_coco_is_feasible) {
     x[1] = NAN;
   	number_of_constraints = coco_problem_get_number_of_constraints(problem);
   	y = coco_allocate_vector(number_of_constraints);
-    mu_check(problem->is_feasible(x, y) == 0);
-    coco_problem_get_initial_solution(problem, initial_solution);
-    mu_check(problem->is_feasible(initial_solution, y) == 1);
-    coco_free_memory(y);
+        mu_check(problem->is_feasible({x, 2}, {y, number_of_constraints}) == 0);
+        coco_problem_get_initial_solution(problem, initial_solution);
+        mu_check(problem->is_feasible({initial_solution, 2}, {y, number_of_constraints}) == 1);
+        coco_free_memory(y);
   }
   coco_suite_free(suite);
   coco_free_memory(x);

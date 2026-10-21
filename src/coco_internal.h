@@ -8,8 +8,10 @@
 #ifndef COCOEX_COCO_INTERNAL_H
 #define COCOEX_COCO_INTERNAL_H
 
+#include <cassert>
 #include <cstdio>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -97,20 +99,20 @@ struct coco_problem_s {
    *
    * Does not check x or update any counters, see coco_evaluate_function() for that.
    */
-  virtual void evaluate_function(const double *x, double *y);
+  virtual void evaluate_function(std::span<const double> x, std::span<double> y);
 
   /**
    * @brief Evaluates the constraints at x and stores the result in y.
    *
    * Does not check x or update the counter of this problem, see coco_evaluate_constraint_optional_update().
    */
-  virtual void evaluate_constraint(const double *x, double *y, int update_counter);
+  virtual void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter);
 
   /** @brief Evaluates the gradient of the objective function at x and stores the result in y. */
-  virtual void evaluate_gradient(const double *x, double *y);
+  virtual void evaluate_gradient(std::span<const double> x, std::span<double> y);
 
   /** @brief Logs the recommended solution x. */
-  virtual void recommend_solution(const double *x);
+  virtual void recommend_solution(std::span<const double> x);
 
   /**
    * @brief Maps base_x from the coordinates of the base problem to the coordinates of this problem and stores
@@ -119,7 +121,7 @@ struct coco_problem_s {
    * The base problem is the first problem in the chain of inner problems that is not a transformation, for a
    * problem that is not a transformation it is the problem itself (and x is a copy of base_x).
    */
-  virtual bool from_base_coordinates(const double *base_x, double *x) const;
+  virtual bool from_base_coordinates(std::span<const double> base_x, std::span<double> x) const;
 
   /**
    * @brief Sets the name and, for every variable, the same region of interest and best parameter. Assumes a
@@ -132,18 +134,18 @@ struct coco_problem_s {
 
   /**
    * @brief Returns whether x is finite and satisfies all constraints. Stores the constraint values
-   * in constraint_values unless it is nullptr.
+   * in constraint_values unless it is empty.
    */
-  bool is_feasible(const double *x, double *constraint_values);
+  bool is_feasible(std::span<const double> x, std::span<double> constraint_values);
 
   /**
    * @brief Asserts that the objective value y[0] at x is not below the best value unless x is infeasible. Does
    * nothing (in particular, does not evaluate the constraints) if NDEBUG is defined.
    */
-  void assert_not_below_best_value(const double *x, const double *y);
+  void assert_not_below_best_value(std::span<const double> x, std::span<const double> y);
 
   /** @brief Returns the penalty of the noisy suites for x outside the region of interest. */
-  double boundary_penalty(const double *x) const;
+  double boundary_penalty(std::span<const double> x) const;
 
   /** @brief Sets the problem_id using formatted printing (as in printf) and checks that it is well-formed. */
   void set_id(const char *format, ...) COCO_FORMAT(2, 3);
@@ -158,7 +160,7 @@ struct coco_problem_s {
    * @brief Counts an evaluation of the objective function(s) at x with the result y and keeps track of the best
    * observed feasible value.
    */
-  void count_evaluation(const double *x, const double *y);
+  void count_evaluation(std::span<const double> x, std::span<const double> y);
 
   /** @brief Counts an evaluation of the constraints. */
   void count_constraint_evaluation() { ++evaluations_constraints; }
@@ -182,10 +184,13 @@ struct coco_problem_s {
   void set_opt_known(const bool known) { opt_known = known; }
 
   /** @brief Sets the best value to the objective value(s) at the best parameter. */
-  void evaluate_best_value() { evaluate_function(best_parameter.data(), best_value.data()); }
+  void evaluate_best_value() { evaluate_function(best_parameter, best_value); }
 
   /** @brief Sets the initial solution, which should be feasible. */
-  void set_initial_solution(const double *x) { initial_solution.assign(x, x + number_of_variables); }
+  void set_initial_solution(std::span<const double> x) {
+    assert(x.size() == number_of_variables);
+    initial_solution.assign(x.begin(), x.end());
+  }
 
   /** @brief Sets the region of interest of the variable with the given index. */
   void set_region_of_interest(const size_t i, const double smallest, const double largest) {
@@ -276,18 +281,18 @@ private:
 struct coco_problem_transformed_s : public coco_problem_s {
   coco_problem_transformed_s(coco_problem_ptr_t inner, std::string_view name_prefix);
 
-  void evaluate_function(const double *x, double *y) override;
-  void evaluate_constraint(const double *x, double *y, int update_counter) override;
-  void evaluate_gradient(const double *x, double *y) override;
-  void recommend_solution(const double *x) override;
-  bool from_base_coordinates(const double *base_x, double *x) const override;
+  void evaluate_function(std::span<const double> x, std::span<double> y) override;
+  void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) override;
+  void evaluate_gradient(std::span<const double> x, std::span<double> y) override;
+  void recommend_solution(std::span<const double> x) override;
+  bool from_base_coordinates(std::span<const double> base_x, std::span<double> x) const override;
 
   /**
    * @brief Maps inner_x from the coordinates of the inner problem to the coordinates of this problem, i.e. inverts
    * the transformation of the decision values, and stores the result in x. Returns false if the transformation
    * is not invertible.
    */
-  virtual bool inverse(const double *inner_x, double *x) const = 0;
+  virtual bool inverse(std::span<const double> inner_x, std::span<double> x) const = 0;
 
   coco_problem_t *get_inner_problem() const { return inner_problem.get(); }
 
@@ -296,7 +301,7 @@ struct coco_problem_transformed_s : public coco_problem_s {
 
 protected:
   /** @brief The inverse of a transformation that does not change the decision values. */
-  bool identity_inverse(const double *inner_x, double *x) const;
+  bool identity_inverse(std::span<const double> inner_x, std::span<double> x) const;
 
   /**
    * @brief Sets the best parameter to the inverse of the best parameter of the inner problem, or to NaN if the
@@ -317,15 +322,15 @@ using coco_problem_transformed_t = coco_problem_transformed_s;
  */
 struct coco_problem_stacked_s : public coco_problem_s {
   /**
-   * @brief Stacks the two problems. Uses the given region of interest or, if it is nullptr, the one of the second
+   * @brief Stacks the two problems. Uses the given region of interest or, if it is empty, the one of the second
    * problem.
    */
   coco_problem_stacked_s(coco_problem_ptr_t first, coco_problem_ptr_t second,
-                         const double *smallest_values_of_interest = nullptr,
-                         const double *largest_values_of_interest = nullptr);
+                         std::span<const double> smallest_values_of_interest = {},
+                         std::span<const double> largest_values_of_interest = {});
 
-  void evaluate_function(const double *x, double *y) override;
-  void evaluate_constraint(const double *x, double *y, int update_counter) override;
+  void evaluate_function(std::span<const double> x, std::span<double> y) override;
+  void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) override;
 
   coco_problem_t *get_problem1() const { return problem1.get(); }
   coco_problem_t *get_problem2() const { return problem2.get(); }

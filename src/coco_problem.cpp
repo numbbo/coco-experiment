@@ -29,25 +29,27 @@
 void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   /* implements a safer version of problem->evaluate(problem, x, y) */
   assert(problem != nullptr);
+  const std::span<const double> x_span(x, coco_problem_get_dimension(problem));
+  const std::span<double> y_span(y, coco_problem_get_number_of_objectives(problem));
 
   /* Set objective vector to INFINITY if the decision vector contains any INFINITY values */
-  for (size_t i = 0; i < coco_problem_get_dimension(problem); i++) {
-    if (coco_is_inf(x[i])) {
-      for (size_t j = 0; j < coco_problem_get_number_of_objectives(problem); j++) {
-        y[j] = fabs(x[i]);
+  for (const double xi : x_span) {
+    if (coco_is_inf(xi)) {
+      for (double &yj : y_span) {
+        yj = fabs(xi);
       }
       return;
     }
   }
 
   /* Set objective vector to NAN if the decision vector contains any NAN values */
-  if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-    coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
+  if (coco_vector_contains_nan(x_span)) {
+    coco_vector_set_to_nan(y_span);
     return;
   }
 
-  problem->evaluate_function(x, y);
-  problem->count_evaluation(x, y);
+  problem->evaluate_function(x_span, y_span);
+  problem->count_evaluation(x_span, y_span);
 }
 
 /**
@@ -62,24 +64,26 @@ void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y)
 void coco_evaluate_constraint_optional_update(coco_problem_t *problem, const double *x, double *y, int update_counter) {
   /* implements a safer version of problem->evaluate(problem, x, y) */
   assert(problem != nullptr);
+  const std::span<const double> x_span(x, coco_problem_get_dimension(problem));
+  const std::span<double> y_span(y, coco_problem_get_number_of_constraints(problem));
 
   /* Set constraints vector to INFINITY if the decision vector contains any INFINITY values */
-  for (size_t i = 0; i < coco_problem_get_dimension(problem); i++) {
-    if (coco_is_inf(x[i])) {
-      for (size_t j = 0; j < coco_problem_get_number_of_constraints(problem); j++) {
-        y[j] = fabs(x[i]);
+  for (const double xi : x_span) {
+    if (coco_is_inf(xi)) {
+      for (double &yj : y_span) {
+        yj = fabs(xi);
       }
       return;
     }
   }
 
   /* Set constraints vector to NAN if the decision vector contains any NAN values */
-  if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-    coco_vector_set_to_nan(y, coco_problem_get_number_of_constraints(problem));
+  if (coco_vector_contains_nan(x_span)) {
+    coco_vector_set_to_nan(y_span);
     return;
   }
 
-  problem->evaluate_constraint(x, y, update_counter);
+  problem->evaluate_constraint(x_span, y_span, update_counter);
   if (update_counter)
     problem->count_constraint_evaluation();
 }
@@ -99,7 +103,7 @@ void coco_evaluate_constraint(coco_problem_t *problem, const double *x, double *
  */
 void coco_recommend_solution(coco_problem_t *problem, const double *x) {
   assert(problem != nullptr);
-  problem->recommend_solution(x);
+  problem->recommend_solution({x, coco_problem_get_dimension(problem)});
 }
 
 /**
@@ -108,33 +112,35 @@ void coco_recommend_solution(coco_problem_t *problem, const double *x) {
  * They report that the method is not implemented for the problem.
  */
 /**@{*/
-void coco_problem_s::evaluate_function(const double *, double *) {
+void coco_problem_s::evaluate_function(std::span<const double>, std::span<double>) {
   coco_error("coco_evaluate_function(): No function implemented for problem %s", problem_id.c_str());
 }
 
-void coco_problem_s::evaluate_constraint(const double *, double *, int) {
+void coco_problem_s::evaluate_constraint(std::span<const double>, std::span<double>, int) {
   coco_error("coco_evaluate_constraint_optional_update(): No constraint function implemented for problem %s",
              problem_id.c_str());
 }
 
-void coco_problem_s::evaluate_gradient(const double *, double *) {
+void coco_problem_s::evaluate_gradient(std::span<const double>, std::span<double>) {
   coco_error("evaluate_gradient(): No gradient function implemented for problem %s", problem_id.c_str());
 }
 
-void coco_problem_s::recommend_solution(const double *) {
+void coco_problem_s::recommend_solution(std::span<const double>) {
   coco_warning("coco_recommend_solution(): No recommend solution function implemented for problem %s",
                problem_id.c_str());
 }
 
-void coco_problem_s::assert_not_below_best_value([[maybe_unused]] const double *x, [[maybe_unused]] const double *y) {
+void coco_problem_s::assert_not_below_best_value([[maybe_unused]] std::span<const double> x,
+                                                 [[maybe_unused]] std::span<const double> y) {
 #ifndef NDEBUG
-  if (number_of_constraints == 0 || is_feasible(x, nullptr))
+  if (number_of_constraints == 0 || is_feasible(x, {}))
     assert(y[0] + 1e-13 >= best_value[0]);
 #endif
 }
 
-bool coco_problem_s::from_base_coordinates(const double *base_x, double *x) const {
-  std::copy(base_x, base_x + number_of_variables, x);
+bool coco_problem_s::from_base_coordinates(std::span<const double> base_x, std::span<double> x) const {
+  assert(base_x.size() == x.size());
+  std::copy(base_x.begin(), base_x.end(), x.begin());
   return true;
 }
 /**@}*/
@@ -216,7 +222,7 @@ void coco_problem_s::copy_properties_from(const coco_problem_s &other) {
   suite_dep_instance = other.suite_dep_instance;
 }
 
-void coco_problem_s::count_evaluation(const double *x, const double *y) {
+void coco_problem_s::count_evaluation(std::span<const double> x, std::span<const double> y) {
   evaluations++; /* each derived class has its own counter, only the most outer will be visible */
 
   /* A little bit of bookkeeping */
@@ -224,7 +230,7 @@ void coco_problem_s::count_evaluation(const double *x, const double *y) {
     bool feasible = true;
     if (number_of_constraints > 0) {
       std::vector<double> z(number_of_constraints);
-      feasible = is_feasible(x, z.data());
+      feasible = is_feasible(x, z);
     }
     if (feasible) {
       best_observed_fvalue = y[0];
@@ -609,48 +615,50 @@ coco_problem_transformed_s::coco_problem_transformed_s(coco_problem_ptr_t inner,
 /**
  * @brief Evaluates the objective function of the inner problem.
  */
-void coco_problem_transformed_s::evaluate_function(const double *x, double *y) {
+void coco_problem_transformed_s::evaluate_function(std::span<const double> x, std::span<double> y) {
   inner_problem->evaluate_function(x, y);
 }
 
 /**
  * @brief Evaluates the constraints of the inner problem.
  */
-void coco_problem_transformed_s::evaluate_constraint(const double *x, double *y, int update_counter) {
+void coco_problem_transformed_s::evaluate_constraint(std::span<const double> x, std::span<double> y,
+                                                     int update_counter) {
   inner_problem->evaluate_constraint(x, y, update_counter);
 }
 
 /**
  * @brief Calls the bbob_evaluate_gradient function on the inner problem.
  */
-void coco_problem_transformed_s::evaluate_gradient(const double *x, double *y) {
+void coco_problem_transformed_s::evaluate_gradient(std::span<const double> x, std::span<double> y) {
   inner_problem->evaluate_gradient(x, y);
 }
 
 /**
  * @brief Calls the coco_recommend_solution function on the inner problem.
  */
-void coco_problem_transformed_s::recommend_solution(const double *x) { coco_recommend_solution(inner_problem.get(), x); }
+void coco_problem_transformed_s::recommend_solution(std::span<const double> x) { inner_problem->recommend_solution(x); }
 
 /**
  * @brief Maps base_x to the coordinates of the inner problem and from there to the coordinates of this problem.
  */
-bool coco_problem_transformed_s::from_base_coordinates(const double *base_x, double *x) const {
+bool coco_problem_transformed_s::from_base_coordinates(std::span<const double> base_x, std::span<double> x) const {
   std::vector<double> inner_x(inner_problem->get_number_of_variables());
-  return inner_problem->from_base_coordinates(base_x, inner_x.data()) && inverse(inner_x.data(), x);
+  return inner_problem->from_base_coordinates(base_x, inner_x) && inverse(inner_x, x);
 }
 
 void coco_problem_transformed_s::update_best_parameter() {
   if (best_parameter.empty())
     return;
-  if (!inverse(inner_problem->get_best_parameter().data(), best_parameter.data())) {
+  if (!inverse(inner_problem->get_best_parameter(), best_parameter)) {
     coco_warning("%s: the transformation is not invertible, 'best_parameter' set to NAN", get_name().c_str());
-    coco_vector_set_to_nan(best_parameter.data(), number_of_variables);
+    coco_vector_set_to_nan(best_parameter);
   }
 }
 
-bool coco_problem_transformed_s::identity_inverse(const double *inner_x, double *x) const {
-  std::copy(inner_x, inner_x + number_of_variables, x);
+bool coco_problem_transformed_s::identity_inverse(std::span<const double> inner_x, std::span<double> x) const {
+  assert(inner_x.size() == x.size());
+  std::copy(inner_x.begin(), inner_x.end(), x.begin());
   return true;
 }
 
@@ -680,14 +688,13 @@ static coco_problem_stacked_t *coco_problem_as_stacked(const coco_problem_t *pro
 }
 
 coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_problem_ptr_t second,
-                                               const double *smallest_values_of_interest,
-                                               const double *largest_values_of_interest)
+                                               std::span<const double> smallest_values_of_interest,
+                                               std::span<const double> largest_values_of_interest)
     : coco_problem_s(
           coco_problem_get_dimension(first.get()),
           coco_problem_get_number_of_objectives(first.get()) + coco_problem_get_number_of_objectives(second.get()),
           coco_problem_get_number_of_constraints(first.get()) + coco_problem_get_number_of_constraints(second.get())),
       problem1(std::move(first)), problem2(std::move(second)) {
-
 
   assert(problem1);
   assert(problem2);
@@ -697,10 +704,10 @@ coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_pr
   set_name("%s + %s", problem1->get_name().c_str(), problem2->get_name().c_str());
 
   /* Without an explicit region of interest, use the one of the second problem */
-  if (smallest_values_of_interest == nullptr)
-    smallest_values_of_interest = problem2->get_smallest_values_of_interest().data();
-  if (largest_values_of_interest == nullptr)
-    largest_values_of_interest = problem2->get_largest_values_of_interest().data();
+  if (smallest_values_of_interest.empty())
+    smallest_values_of_interest = problem2->get_smallest_values_of_interest();
+  if (largest_values_of_interest.empty())
+    largest_values_of_interest = problem2->get_largest_values_of_interest();
 
   for (size_t i = 0; i < number_of_variables; ++i) {
     this->smallest_values_of_interest[i] = smallest_values_of_interest[i];
@@ -735,15 +742,15 @@ coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_pr
 /**
  * @brief Evaluates the objective functions of the underlying problems.
  */
-void coco_problem_stacked_s::evaluate_function(const double *x, double *y) {
+void coco_problem_stacked_s::evaluate_function(std::span<const double> x, std::span<double> y) {
   const size_t number_of_objectives_problem1 = coco_problem_get_number_of_objectives(problem1.get());
   const size_t number_of_objectives_problem2 = coco_problem_get_number_of_objectives(problem2.get());
   assert(coco_problem_get_number_of_objectives(this) == number_of_objectives_problem1 + number_of_objectives_problem2);
 
   if (number_of_objectives_problem1 > 0)
-    problem1->evaluate_function(x, &y[0]);
+    problem1->evaluate_function(x, y.first(number_of_objectives_problem1));
   if (number_of_objectives_problem2 > 0)
-    problem2->evaluate_function(x, &y[number_of_objectives_problem1]);
+    problem2->evaluate_function(x, y.subspan(number_of_objectives_problem1));
 
   /* Make sure that no feasible point has a function value lower
    * than the minimum's.
@@ -755,7 +762,7 @@ void coco_problem_stacked_s::evaluate_function(const double *x, double *y) {
 /**
  * @brief Evaluates the constraints of the underlying problems.
  */
-void coco_problem_stacked_s::evaluate_constraint(const double *x, double *y, int update_counter) {
+void coco_problem_stacked_s::evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) {
   const size_t number_of_constraints_problem1 = coco_problem_get_number_of_constraints(problem1.get());
   const size_t number_of_constraints_problem2 = coco_problem_get_number_of_constraints(problem2.get());
 
@@ -768,9 +775,9 @@ void coco_problem_stacked_s::evaluate_constraint(const double *x, double *y, int
          number_of_constraints_problem1 + number_of_constraints_problem2);
 
   if (number_of_constraints_problem1 > 0)
-    problem1->evaluate_constraint(x, y, update_counter);
+    problem1->evaluate_constraint(x, y.first(number_of_constraints_problem1), update_counter);
   if (number_of_constraints_problem2 > 0)
-    problem2->evaluate_constraint(x, &y[number_of_constraints_problem1], update_counter);
+    problem2->evaluate_constraint(x, y.subspan(number_of_constraints_problem1), update_counter);
 }
 
 /* TODO: Missing coco_problem_stacked_recommend_solution function! */
@@ -785,8 +792,8 @@ void coco_problem_stacked_s::evaluate_constraint(const double *x, double *y, int
  * @note Best parameter becomes somewhat meaningless, but the nadir value make sense now.
  */
 static coco_problem_ptr_t coco_problem_stacked_allocate(coco_problem_ptr_t first, coco_problem_ptr_t second,
-                                                        const double *smallest_values_of_interest = nullptr,
-                                                        const double *largest_values_of_interest = nullptr) {
+                                                        std::span<const double> smallest_values_of_interest = {},
+                                                        std::span<const double> largest_values_of_interest = {}) {
   return std::make_unique<coco_problem_stacked_t>(std::move(first), std::move(second), smallest_values_of_interest,
                                                   largest_values_of_interest);
 }
