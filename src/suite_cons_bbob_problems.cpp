@@ -196,9 +196,9 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -206,7 +206,7 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -220,7 +220,7 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -263,13 +263,13 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -277,7 +277,7 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -295,7 +295,7 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -337,13 +337,13 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -351,7 +351,7 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -368,7 +368,7 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -411,13 +411,13 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -431,7 +431,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   problem = transform_vars_shift(problem, xopt, 1);
 
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -440,7 +440,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   problem->evaluations_constraints = 0;
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -484,13 +484,13 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value
@@ -498,7 +498,7 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -515,7 +515,7 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -558,13 +558,13 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -572,7 +572,7 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -589,7 +589,7 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -631,13 +631,13 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -645,7 +645,7 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -659,7 +659,7 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -702,13 +702,13 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -716,7 +716,7 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -734,7 +734,7 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);
@@ -776,13 +776,13 @@ static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
   problem_c = c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                   problem_id_template, problem_name_template, feasible_direction);
 
-  problem_type_temp = coco_strdup(problem->problem_type);
+  problem_type_temp = coco_strdup(problem->problem_type.c_str());
 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest,
-                                          problem_c->largest_values_of_interest);
+  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
+                                          problem_c->largest_values_of_interest.data());
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -790,7 +790,7 @@ static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter, problem->best_value);
+  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -808,7 +808,7 @@ static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
   problem = transform_vars_shift(problem, xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem_type_temp, problem_c->problem_type.c_str());
 
   coco_free_memory(problem_type_temp);
   coco_free_memory(all_zeros);

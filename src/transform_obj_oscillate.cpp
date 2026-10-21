@@ -45,6 +45,6 @@ static coco_problem_t *transform_obj_oscillate(coco_problem_t *inner_problem) {
   problem->evaluate_function = transform_obj_oscillate_evaluate;
   /* Compute best value */
   /* Maybe not the most efficient solution */
-  transform_obj_oscillate_evaluate(problem, problem->best_parameter, problem->best_value);
+  transform_obj_oscillate_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
   return problem;
 }

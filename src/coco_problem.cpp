@@ -84,7 +84,7 @@ void coco_evaluate_constraint_optional_update(coco_problem_t *problem, const dou
   assert(problem != NULL);
   if (problem->evaluate_constraint == NULL) {
     coco_error("coco_evaluate_constraint_optional_update(): No constraint function implemented for problem %s",
-               problem->problem_id);
+               problem->problem_id.c_str());
   }
 
   /* Set constraints vector to INFINITY if the decision vector contains any INFINITY values */
@@ -123,7 +123,8 @@ static void bbob_evaluate_gradient(coco_problem_t *problem, const double *x, dou
   /* implements a safer version of problem->evaluate_gradient(problem, x, y) */
   assert(problem != NULL);
   if (problem->evaluate_gradient == NULL) {
-    coco_error("bbob_evaluate_gradient(): No gradient function implemented for problem %s", problem->problem_id);
+    coco_error("bbob_evaluate_gradient(): No gradient function implemented for problem %s",
+               problem->problem_id.c_str());
   }
   problem->evaluate_gradient(problem, x, y);
 }
@@ -141,7 +142,7 @@ void coco_recommend_solution(coco_problem_t *problem, const double *x) {
   assert(problem != NULL);
   if (problem->recommend_solution == NULL) {
     coco_warning("coco_recommend_solution(): No recommend solution function implemented for problem %s",
-                 problem->problem_id);
+                 problem->problem_id.c_str());
   } else {
     problem->recommend_solution(problem, x);
   }
@@ -154,10 +155,8 @@ void coco_recommend_solution(coco_problem_t *problem, const double *x) {
  */
 static coco_problem_t *coco_problem_allocate(const size_t number_of_variables, const size_t number_of_objectives,
                                              const size_t number_of_constraints) {
-  coco_problem_t *problem;
-  problem = (coco_problem_t *)coco_allocate_memory(sizeof(*problem));
+  coco_problem_t *problem = new coco_problem_t();
   /* Initialize fields to sane/safe defaults */
-  problem->initial_solution = NULL;
   problem->evaluate_function = NULL;
   problem->evaluate_constraint = NULL;
   problem->evaluate_gradient = NULL;
@@ -167,30 +166,24 @@ static coco_problem_t *coco_problem_allocate(const size_t number_of_variables, c
   problem->number_of_variables = number_of_variables;
   problem->number_of_objectives = number_of_objectives;
   problem->number_of_constraints = number_of_constraints;
-  problem->smallest_values_of_interest = coco_allocate_vector(number_of_variables);
-  problem->largest_values_of_interest = coco_allocate_vector(number_of_variables);
+  problem->smallest_values_of_interest.assign(number_of_variables, 0.0);
+  problem->largest_values_of_interest.assign(number_of_variables, 0.0);
   problem->number_of_integer_variables = 0; /* No integer variables by default */
 
   problem->is_noisy = 0;
-  problem->last_noise_free_values = NULL;
   if (number_of_objectives > 0)
-    problem->last_noise_free_values = coco_allocate_vector(number_of_objectives);
+    problem->last_noise_free_values.assign(number_of_objectives, 0.0);
   if (number_of_objectives > 1) {
     problem->is_opt_known = 0; /* Optimum of multi-objective problems is unknown by default */
-    problem->best_parameter = NULL;
-    problem->best_value = coco_allocate_vector(number_of_objectives);
-    problem->nadir_value = coco_allocate_vector(number_of_objectives);
+    problem->best_value.assign(number_of_objectives, 0.0);
+    problem->nadir_value.assign(number_of_objectives, 0.0);
   } else {
     problem->is_opt_known = 1; /* Optimum of single-objective problems is known by default */
-    problem->best_parameter = coco_allocate_vector(number_of_variables);
-    problem->best_value = coco_allocate_vector(1);
-    problem->nadir_value = NULL;
+    problem->best_parameter.assign(number_of_variables, 0.0);
+    problem->best_value.assign(1, 0.0);
   }
   problem->is_tainted = 0;
 
-  problem->problem_name = NULL;
-  problem->problem_id = NULL;
-  problem->problem_type = NULL;
   problem->evaluations = 0;
   problem->evaluations_constraints = 0;
   problem->final_target_delta[0] = 1e-8; /* in case to be modified by the benchmark */
@@ -209,7 +202,6 @@ static coco_problem_t *coco_problem_allocate(const size_t number_of_variables, c
  * @brief Creates a duplicate of the 'other' problem for all fields except for data, which points to NULL.
  */
 static coco_problem_t *coco_problem_duplicate(const coco_problem_t *other) {
-  size_t i;
   coco_problem_t *problem;
   problem =
       coco_problem_allocate(other->number_of_variables, other->number_of_objectives, other->number_of_constraints);
@@ -221,42 +213,25 @@ static coco_problem_t *coco_problem_duplicate(const coco_problem_t *other) {
 
   problem->versatile_data = other->versatile_data; /* Wassim: make the pointers the same*/
 
-  /*
-   * OME: coco_problem_allocate allocates ->best_parameter. No need to do it here since that leaks memory.
-   * if (other->best_parameter) {
-   *  problem->best_parameter = coco_allocate_vector(problem->number_of_variables);
-   * }
-   */
-
-  for (i = 0; i < problem->number_of_variables; ++i) {
-    problem->smallest_values_of_interest[i] = other->smallest_values_of_interest[i];
-    problem->largest_values_of_interest[i] = other->largest_values_of_interest[i];
-    if (other->best_parameter)
-      problem->best_parameter[i] = other->best_parameter[i];
-  }
+  problem->smallest_values_of_interest = other->smallest_values_of_interest;
+  problem->largest_values_of_interest = other->largest_values_of_interest;
+  if (!other->best_parameter.empty())
+    problem->best_parameter = other->best_parameter;
   problem->is_tainted = other->is_tainted;
 
   problem->number_of_integer_variables = other->number_of_integer_variables;
 
-  if (other->initial_solution)
-    problem->initial_solution = coco_duplicate_vector(other->initial_solution, other->number_of_variables);
+  problem->initial_solution = other->initial_solution;
 
   problem->is_opt_known = other->is_opt_known;
-  if (other->best_value)
-    for (i = 0; i < problem->number_of_objectives; ++i) {
-      problem->best_value[i] = other->best_value[i];
-    }
+  if (!other->best_value.empty())
+    problem->best_value = other->best_value;
+  if (!other->nadir_value.empty())
+    problem->nadir_value = other->nadir_value;
 
-  if (other->nadir_value) {
-    problem->nadir_value = coco_allocate_vector(problem->number_of_objectives);
-    for (i = 0; i < problem->number_of_objectives; ++i) {
-      problem->nadir_value[i] = other->nadir_value[i];
-    }
-  }
-
-  problem->problem_name = coco_strdup(other->problem_name);
-  problem->problem_id = coco_strdup(other->problem_id);
-  problem->problem_type = coco_strdup(other->problem_type);
+  problem->problem_name = other->problem_name;
+  problem->problem_id = other->problem_id;
+  problem->problem_type = other->problem_type;
 
   problem->evaluations = other->evaluations;
   problem->evaluations_constraints = other->evaluations_constraints;
@@ -286,7 +261,7 @@ coco_problem_allocate_from_scalars(const char *problem_name, coco_evaluate_funct
   size_t i;
   coco_problem_t *problem = coco_problem_allocate(number_of_variables, 1, 0);
 
-  problem->problem_name = coco_strdup(problem_name);
+  problem->problem_name = problem_name;
   problem->number_of_variables = number_of_variables;
   problem->number_of_objectives = 1;
   problem->number_of_constraints = 0;
@@ -308,37 +283,11 @@ void coco_problem_free(coco_problem_t *problem) {
     problem->problem_free_function(problem);
   } else {
     /* Best guess at freeing all relevant structures */
-    if (problem->smallest_values_of_interest != NULL)
-      coco_free_memory(problem->smallest_values_of_interest);
-    if (problem->largest_values_of_interest != NULL)
-      coco_free_memory(problem->largest_values_of_interest);
-    if (problem->best_parameter != NULL)
-      coco_free_memory(problem->best_parameter);
-    if (problem->best_value != NULL)
-      coco_free_memory(problem->best_value);
-    if (problem->nadir_value != NULL)
-      coco_free_memory(problem->nadir_value);
-    if (problem->problem_name != NULL)
-      coco_free_memory(problem->problem_name);
-    if (problem->problem_id != NULL)
-      coco_free_memory(problem->problem_id);
-    if (problem->problem_type != NULL)
-      coco_free_memory(problem->problem_type);
     if (problem->data != NULL)
       coco_free_memory(problem->data);
-    if (problem->initial_solution != NULL)
-      coco_free_memory(problem->initial_solution);
-    if (problem->last_noise_free_values != NULL)
-      coco_free_memory(problem->last_noise_free_values);
-    problem->smallest_values_of_interest = NULL;
-    problem->largest_values_of_interest = NULL;
-    problem->best_parameter = NULL;
     problem->data = NULL;
-    problem->best_value = NULL;
-    problem->nadir_value = NULL;
     problem->suite = NULL;
-    problem->initial_solution = NULL;
-    coco_free_memory(problem);
+    delete problem;
   }
 }
 
@@ -382,14 +331,15 @@ static int coco_problem_id_is_fine(const char *id, ...) {
  */
 static void coco_problem_set_id(coco_problem_t *problem, const char *id, ...) {
   va_list args;
+  char *s;
 
   va_start(args, id);
-  if (problem->problem_id != NULL)
-    coco_free_memory(problem->problem_id);
-  problem->problem_id = coco_vstrdupf(id, args);
+  s = coco_vstrdupf(id, args);
   va_end(args);
-  if (!coco_problem_id_is_fine(problem->problem_id)) {
-    coco_error("Problem id should only contain standard chars, not like '%s'", problem->problem_id);
+  problem->problem_id = s;
+  coco_free_memory(s);
+  if (!coco_problem_id_is_fine(problem->problem_id.c_str())) {
+    coco_error("Problem id should only contain standard chars, not like '%s'", problem->problem_id.c_str());
   }
 }
 
@@ -400,12 +350,13 @@ static void coco_problem_set_id(coco_problem_t *problem, const char *id, ...) {
  */
 static void coco_problem_set_name(coco_problem_t *problem, const char *name, ...) {
   va_list args;
+  char *s;
 
   va_start(args, name);
-  if (problem->problem_name != NULL)
-    coco_free_memory(problem->problem_name);
-  problem->problem_name = coco_vstrdupf(name, args);
+  s = coco_vstrdupf(name, args);
   va_end(args);
+  problem->problem_name = s;
+  coco_free_memory(s);
 }
 
 /**
@@ -415,12 +366,13 @@ static void coco_problem_set_name(coco_problem_t *problem, const char *name, ...
  */
 static void coco_problem_set_type(coco_problem_t *problem, const char *type, ...) {
   va_list args;
+  char *s;
 
   va_start(args, type);
-  if (problem->problem_type != NULL)
-    coco_free_memory(problem->problem_type);
-  problem->problem_type = coco_vstrdupf(type, args);
+  s = coco_vstrdupf(type, args);
   va_end(args);
+  problem->problem_type = s;
+  coco_free_memory(s);
 }
 
 size_t coco_problem_get_evaluations(const coco_problem_t *problem) {
@@ -440,7 +392,7 @@ static int coco_problem_best_parameter_not_zero(const coco_problem_t *problem) {
   size_t i = 0;
   int best_is_zero = 1;
 
-  if (coco_vector_contains_nan(problem->best_parameter, problem->number_of_variables))
+  if (coco_vector_contains_nan(problem->best_parameter.data(), problem->number_of_variables))
     return 1;
 
   while (i < problem->number_of_variables && best_is_zero) {
@@ -458,7 +410,7 @@ int coco_problem_final_target_hit(const coco_problem_t *problem) {
   assert(problem != NULL);
   if (coco_problem_get_number_of_objectives(problem) != 1 || coco_problem_get_evaluations(problem) < 1)
     return 0;
-  if (problem->best_value == NULL)
+  if (problem->best_value.empty())
     return 0;
   return problem->best_observed_fvalue[0] <= problem->best_value[0] + problem->final_target_delta[0] ? 1 : 0;
 }
@@ -475,7 +427,7 @@ double coco_problem_get_best_observed_fvalue1(const coco_problem_t *problem) {
  */
 double coco_problem_get_best_value(const coco_problem_t *problem) {
   assert(problem != NULL);
-  assert(problem->best_value != NULL);
+  assert(!problem->best_value.empty());
   return problem->best_value[0];
 }
 
@@ -485,8 +437,7 @@ double coco_problem_get_best_value(const coco_problem_t *problem) {
  */
 double coco_problem_get_final_target_fvalue1(const coco_problem_t *problem) {
   assert(problem != NULL);
-  assert(problem->best_value != NULL);
-  assert(problem->final_target_delta != NULL);
+  assert(!problem->best_value.empty());
   return problem->best_value[0] + problem->final_target_delta[0];
 }
 
@@ -496,8 +447,8 @@ double coco_problem_get_final_target_fvalue1(const coco_problem_t *problem) {
  */
 const char *coco_problem_get_name(const coco_problem_t *problem) {
   assert(problem != NULL);
-  assert(problem->problem_name != NULL);
-  return problem->problem_name;
+  assert(!problem->problem_name.empty());
+  return problem->problem_name.c_str();
 }
 
 /**
@@ -511,14 +462,14 @@ const char *coco_problem_get_name(const coco_problem_t *problem) {
  */
 const char *coco_problem_get_id(const coco_problem_t *problem) {
   assert(problem != NULL);
-  assert(problem->problem_id != NULL);
-  return problem->problem_id;
+  assert(!problem->problem_id.empty());
+  return problem->problem_id.c_str();
 }
 
 const char *coco_problem_get_type(const coco_problem_t *problem) {
   assert(problem != NULL);
-  assert(problem->problem_type != NULL);
-  return problem->problem_type;
+  assert(!problem->problem_type.empty());
+  return problem->problem_type.c_str();
 }
 
 size_t coco_problem_get_dimension(const coco_problem_t *problem) {
@@ -539,14 +490,14 @@ size_t coco_problem_get_number_of_constraints(const coco_problem_t *problem) {
 
 const double *coco_problem_get_smallest_values_of_interest(const coco_problem_t *problem) {
   assert(problem != NULL);
-  assert(problem->smallest_values_of_interest != NULL);
-  return problem->smallest_values_of_interest;
+  assert(!problem->smallest_values_of_interest.empty());
+  return problem->smallest_values_of_interest.data();
 }
 
 const double *coco_problem_get_largest_values_of_interest(const coco_problem_t *problem) {
   assert(problem != NULL);
-  assert(problem->largest_values_of_interest != NULL);
-  return problem->largest_values_of_interest;
+  assert(!problem->largest_values_of_interest.empty());
+  return problem->largest_values_of_interest.data();
 }
 
 size_t coco_problem_get_number_of_integer_variables(const coco_problem_t *problem) {
@@ -559,9 +510,9 @@ const double *coco_problem_get_largest_fvalues_of_interest(const coco_problem_t 
   if (problem->number_of_objectives == 1)
     coco_error(
         "coco_problem_get_largest_fvalues_of_interest(): f-values of interest undefined for single-objective problems");
-  if (problem->nadir_value == NULL)
+  if (problem->nadir_value.empty())
     coco_error("coco_problem_get_largest_fvalues_of_interest(): f-values of interest undefined");
-  return problem->nadir_value;
+  return problem->nadir_value.data();
 }
 
 /**
@@ -577,12 +528,12 @@ void coco_problem_get_initial_solution(const coco_problem_t *problem, double *in
   size_t i;
 
   assert(problem != NULL);
-  if (problem->initial_solution != NULL) {
+  if (!problem->initial_solution.empty()) {
     for (i = 0; i < problem->number_of_variables; ++i)
       initial_solution[i] = problem->initial_solution[i];
   } else {
-    assert(problem->smallest_values_of_interest != NULL);
-    assert(problem->largest_values_of_interest != NULL);
+    assert(!problem->smallest_values_of_interest.empty());
+    assert(!problem->largest_values_of_interest.empty());
     for (i = 0; i < problem->number_of_variables; ++i)
       initial_solution[i] = problem->smallest_values_of_interest[i] +
                             0.5 * (problem->largest_values_of_interest[i] - problem->smallest_values_of_interest[i]);
@@ -635,7 +586,7 @@ int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parame
   size_t i;
   assert(problem != NULL);
 
-  if (NULL == problem->best_parameter || problem->number_of_objectives != 1) {
+  if (problem->best_parameter.empty() || problem->number_of_objectives != 1) {
     return 0;
   }
 
@@ -662,7 +613,7 @@ void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
   size_t i;
   FILE *file;
   assert(problem != NULL);
-  assert(problem->best_parameter != NULL);
+  assert(!problem->best_parameter.empty());
   file = fopen("._bbob_problem_best_parameter.txt", "w");
   if (file != NULL) {
     for (i = 0; i < problem->number_of_variables; ++i)
@@ -702,11 +653,11 @@ void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
   assert(problem != NULL);
   problem1 = ((coco_problem_stacked_data_t *)problem->data)->problem1;
   assert(problem1 != NULL);
-  assert(problem1->best_parameter != NULL);
+  assert(!problem1->best_parameter.empty());
 
   problem2 = ((coco_problem_stacked_data_t *)problem->data)->problem2;
   assert(problem2 != NULL);
-  assert(problem2->best_parameter != NULL);
+  assert(!problem2->best_parameter.empty());
 
   file = fopen("._bbob_biobj_problem_best_parameter.txt", "w");
   if (file != NULL) {
@@ -852,7 +803,7 @@ static coco_problem_t *coco_problem_transformed_allocate(coco_problem_t *inner_p
                                                          const char *name_prefix) {
   coco_problem_transformed_data_t *problem;
   coco_problem_t *inner_copy;
-  char *old_name = coco_strdup(inner_problem->problem_name);
+  const std::string old_name = inner_problem->problem_name;
 
   problem = (coco_problem_transformed_data_t *)coco_allocate_memory(sizeof(*problem));
   problem->inner_problem = inner_problem;
@@ -867,8 +818,7 @@ static coco_problem_t *coco_problem_transformed_allocate(coco_problem_t *inner_p
   inner_copy->problem_free_function = coco_problem_transformed_free;
   inner_copy->data = problem;
 
-  coco_problem_set_name(inner_copy, "%s(%s)", name_prefix, old_name);
-  coco_free_memory(old_name);
+  coco_problem_set_name(inner_copy, "%s(%s)", name_prefix, old_name.c_str());
 
   return inner_copy;
 }
@@ -972,7 +922,6 @@ static coco_problem_t *coco_problem_stacked_allocate(coco_problem_t *problem1, c
 
   size_t number_of_variables, number_of_objectives, number_of_constraints;
   size_t i;
-  char *s;
   coco_problem_stacked_data_t *data;
   coco_problem_t *problem; /* the new coco problem */
 
@@ -988,12 +937,8 @@ static coco_problem_t *coco_problem_stacked_allocate(coco_problem_t *problem1, c
 
   problem = coco_problem_allocate(number_of_variables, number_of_objectives, number_of_constraints);
 
-  s = coco_strconcat(coco_problem_get_id(problem1), "__");
-  problem->problem_id = coco_strconcat(s, coco_problem_get_id(problem2));
-  coco_free_memory(s);
-  s = coco_strconcat(coco_problem_get_name(problem1), " + ");
-  problem->problem_name = coco_strconcat(s, coco_problem_get_name(problem2));
-  coco_free_memory(s);
+  problem->problem_id = problem1->problem_id + "__" + problem2->problem_id;
+  problem->problem_name = problem1->problem_name + " + " + problem2->problem_name;
 
   problem->evaluate_function = coco_problem_stacked_evaluate_function;
   if (number_of_constraints > 0)
@@ -1009,7 +954,7 @@ static coco_problem_t *coco_problem_stacked_allocate(coco_problem_t *problem1, c
   assert(problem1->number_of_integer_variables == problem2->number_of_integer_variables);
   problem->number_of_integer_variables = problem1->number_of_integer_variables;
 
-  assert(problem->best_value);
+  assert(!problem->best_value.empty());
 
   if (number_of_constraints > 0) {
 
@@ -1017,18 +962,18 @@ static coco_problem_t *coco_problem_stacked_allocate(coco_problem_t *problem1, c
     problem->best_value[0] = -FLT_MAX;
 
     /* Define problem->initial_solution as problem2->initial_solution */
-    if (coco_problem_get_number_of_constraints(problem2) > 0 && problem2->initial_solution)
-      problem->initial_solution = coco_duplicate_vector(problem2->initial_solution, number_of_variables);
+    if (coco_problem_get_number_of_constraints(problem2) > 0 && !problem2->initial_solution.empty())
+      problem->initial_solution = problem2->initial_solution;
 
   } else {
 
     /* Compute the ideal and nadir values */
-    assert(problem->nadir_value);
+    assert(!problem->nadir_value.empty());
 
     problem->best_value[0] = problem1->best_value[0];
     problem->best_value[1] = problem2->best_value[0];
-    coco_evaluate_function(problem1, problem2->best_parameter, &problem->nadir_value[0]);
-    coco_evaluate_function(problem2, problem1->best_parameter, &problem->nadir_value[1]);
+    coco_evaluate_function(problem1, problem2->best_parameter.data(), &problem->nadir_value[0]);
+    coco_evaluate_function(problem2, problem1->best_parameter.data(), &problem->nadir_value[1]);
   }
 
   /* setup data holder */

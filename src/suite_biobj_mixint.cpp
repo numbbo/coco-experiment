@@ -146,12 +146,12 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, cons
                                           largest_values_of_interest);
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  coco_problem_set_name(problem, problem->problem_id);
+  coco_problem_set_name(problem, problem->problem_id.c_str());
   coco_problem_set_id(problem, "bbob-biobj-mixint_f%03lu_i%02lu_d%03lu", (unsigned long)function,
                       (unsigned long)instance, (unsigned long)dimension);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem1->problem_type, problem2->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem1->problem_type.c_str(), problem2->problem_type.c_str());
 
   coco_free_memory(smallest_values_of_interest);
   coco_free_memory(largest_values_of_interest);
@@ -183,10 +183,10 @@ static coco_problem_t *suite_biobj_mixint_get_problem(coco_suite_t *suite, const
 
   if (dimension < dim_large_scale)
     problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_bbob_problem, &new_inst_data,
-                                            suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
+                                            suite->instances.size(), suite->dimensions.data(), suite->dimensions.size());
   else
     problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_largescale_problem, &new_inst_data,
-                                            suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
+                                            suite->instances.size(), suite->dimensions.data(), suite->dimensions.size());
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;

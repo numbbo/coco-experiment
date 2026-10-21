@@ -8,6 +8,9 @@
 #ifndef COCOEX_COCO_INTERNAL_H
 #define COCOEX_COCO_INTERNAL_H
 
+#include <string>
+#include <vector>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -143,25 +146,25 @@ struct coco_problem_s {
   size_t number_of_objectives;  /**< @brief Number of objectives. */
   size_t number_of_constraints; /**< @brief Number of constraints. */
 
-  double *smallest_values_of_interest; /**< @brief The lower bounds of the ROI in the decision space. */
-  double *largest_values_of_interest;  /**< @brief The upper bounds of the ROI in the decision space. */
+  std::vector<double> smallest_values_of_interest; /**< @brief The lower bounds of the ROI in the decision space. */
+  std::vector<double> largest_values_of_interest; /**< @brief The upper bounds of the ROI in the decision space. */
   size_t number_of_integer_variables;  /**< @brief Number of integer variables (if > 0, all integer variables come
                                        before any continuous ones). */
 
   int is_noisy;                   /**< @brief*/
-  double *last_noise_free_values; /**< @brief*/
+  std::vector<double> last_noise_free_values; /**< @brief Empty if the problem has no objectives. */
 
-  double *initial_solution; /**< @brief Initial feasible solution. */
+  std::vector<double> initial_solution; /**< @brief Initial feasible solution (empty if not defined). */
   int is_opt_known;         /**< @brief Whether the optimal (best) value is actually known for this problem. */
-  double *best_value;       /**< @brief Optimal (smallest) function value if known, otherwise a reference
-                            valued defined in the problem construction. */
-  double *nadir_value;      /**< @brief The nadir point (defined when number_of_objectives > 1) */
-  double *best_parameter;   /**< @brief Optimal decision vector (defined only when unique) */
+  std::vector<double> best_value; /**< @brief Optimal (smallest) function value if known, otherwise a reference
+                                       value defined in the problem construction. */
+  std::vector<double> nadir_value; /**< @brief The nadir point (empty unless number_of_objectives > 1) */
+  std::vector<double> best_parameter; /**< @brief Optimal decision vector (empty unless unique) */
   int is_tainted; /**< @brief Is the problem tainted, i.e. has the optimal parameter setting been retrieved? */
 
-  char *problem_name; /**< @brief Problem name. */
-  char *problem_id;   /**< @brief Problem ID (unique in the containing suite) */
-  char *problem_type; /**< @brief Problem type */
+  std::string problem_name; /**< @brief Problem name. */
+  std::string problem_id;   /**< @brief Problem ID (unique in the containing suite) */
+  std::string problem_type; /**< @brief Problem type (empty if not set) */
 
   size_t evaluations;             /**< @brief Number of objective function evaluations performed on the problem. */
   size_t evaluations_constraints; /**< @brief Number of constraint function evaluations performed on the problem. */
@@ -197,18 +200,18 @@ struct coco_problem_s {
 struct coco_observer_s {
 
   int is_active;        /**< @brief Whether the observer is active (the logger will log some output). */
-  char *observer_name;  /**< @brief Name of the observer for identification purposes. */
-  char *result_folder;  /**< @brief Name of the result folder. */
-  char *algorithm_name; /**< @brief Name of the algorithm to be used in logger output. */
-  char *algorithm_info; /**< @brief Additional information on the algorithm to be used in logger output. */
-  char *settings;       /**< @brief Additional settings to be used in logger output. */
+  std::string observer_name;  /**< @brief Name of the observer for identification purposes. */
+  std::string result_folder;  /**< @brief Name of the result folder. */
+  std::string algorithm_name; /**< @brief Name of the algorithm to be used in logger output. */
+  std::string algorithm_info; /**< @brief Additional information on the algorithm to be used in logger output. */
+  std::string settings;       /**< @brief Additional settings to be used in logger output. */
   size_t number_target_triggers;
   /**< @brief The number of targets between each 10**i and 10**(i+1). */
   double log_target_precision; /**< @brief The minimal precision used for logarithmic targets. */
   double lin_target_precision; /**< @brief The minimal precision used for linear targets. */
   size_t number_evaluation_triggers;
   /**< @brief The number of triggers between each 10**i and 10**(i+1) evaluation number. */
-  char *base_evaluation_triggers;
+  std::string base_evaluation_triggers;
   /**< @brief The "base evaluations" used to evaluations that trigger logging. */
   int precision_x;         /**< @brief Output precision for decision variables. */
   int precision_f;         /**< @brief Output precision for function values. */
@@ -232,17 +235,14 @@ struct coco_observer_s {
  */
 struct coco_suite_s {
 
-  char *suite_name; /**< @brief Name of the suite. */
+  std::string suite_name; /**< @brief Name of the suite. */
 
-  size_t number_of_dimensions; /**< @brief Number of dimensions contained in the suite. */
-  size_t *dimensions;          /**< @brief The dimensions contained in the suite. */
+  std::vector<size_t> dimensions; /**< @brief The dimensions contained in the suite (0 if filtered out). */
 
-  size_t number_of_functions; /**< @brief Number of functions contained in the suite. */
-  size_t *functions;          /**< @brief The functions contained in the suite. */
+  std::vector<size_t> functions; /**< @brief The functions contained in the suite (0 if filtered out). */
 
-  size_t number_of_instances; /**< @brief Number of instances contained in the suite. */
-  char *default_instances;    /**< @brief The instances contained in the suite by default. */
-  size_t *instances;          /**< @brief The instances contained in the suite. */
+  std::string default_instances;  /**< @brief The instances contained in the suite by default. */
+  std::vector<size_t> instances; /**< @brief The instances contained in the suite (0 if filtered out). */
 
   int known_optima; /**< @brief Whether the problems of the suite have known optimal values */
 
@@ -268,6 +268,7 @@ static void bbob_evaluate_gradient(coco_problem_t *problem, const double *x, dou
 coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance);
 double coco_problem_get_best_value(const coco_problem_t *problem);
 double coco_problem_get_final_target_fvalue1(const coco_problem_t *problem);
+void coco_suite_forget_current_problem(coco_suite_t *suite);
 /**@}*/
 
 /***********************************************************************************************************/

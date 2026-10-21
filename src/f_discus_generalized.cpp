@@ -94,8 +94,8 @@ static coco_problem_t *f_discus_generalized_allocate(const size_t number_of_vari
       proportion_short_axes_denom;
 
   /* Compute best solution */
-  f_discus_generalized_evaluate(problem, problem->best_parameter,
-                                problem->best_value);
+  f_discus_generalized_evaluate(problem, problem->best_parameter.data(),
+                                problem->best_value.data());
   return problem;
 }
 

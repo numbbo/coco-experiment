@@ -57,7 +57,7 @@
  */
 typedef struct {
   coco_observer_t *observer; /**< @brief Pointer to the observer (might be NULL at the end) */
-  char *suite_name;          /**< @brief The suite name */
+  const char *suite_name;    /**< @brief The suite name (owned by the suite) */
   int is_initialized;        /**< @brief Whether the logger was already initialized */
   int algorithm_restarted;   /**< @brief Whether the algorithm has restarted (output information to .rdat file). */
 
@@ -282,9 +282,9 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const char *f
               "algId = '%s', coco_version = '%s', logger = '%s', "
               "data_format = '%s', settings = '%s'\n",
               suite_name, (unsigned long)logger->function, (unsigned long)logger->number_of_variables, pow(10, -8),
-              observer->algorithm_name, coco_version, observer->observer_name,
-              logger_bbob_data_format, observer->settings);
-      fprintf(*info_file, "%% %s\n", observer->algorithm_info);
+              observer->algorithm_name.c_str(), coco_version, observer->observer_name.c_str(),
+              logger_bbob_data_format, observer->settings.c_str());
+      fprintf(*info_file, "%% %s\n", observer->algorithm_info.c_str());
       /* data_file_path does not have the extension */
       fprintf(*info_file, "%s.dat", data_file_path);
     }
@@ -323,7 +323,7 @@ static void logger_bbob_initialize(logger_bbob_data_t *logger, int is_opt_known)
   /* Prepare paths and names */
   strncpy(relative_path, "data_f", COCO_PATH_MAX);
   strncat(relative_path, function_string, COCO_PATH_MAX - strlen(relative_path) - 1);
-  coco_join_path(folder_path, sizeof(folder_path), logger->observer->result_folder, relative_path, NULL);
+  coco_join_path(folder_path, sizeof(folder_path), logger->observer->result_folder.c_str(), relative_path, NULL);
   coco_create_directory(folder_path);
   strncat(relative_path, "/bbobexp_f", COCO_PATH_MAX - strlen(relative_path) - 1);
   strncat(relative_path, function_string, COCO_PATH_MAX - strlen(relative_path) - 1);
@@ -334,7 +334,7 @@ static void logger_bbob_initialize(logger_bbob_data_t *logger, int is_opt_known)
   start_new_line = logger_bbob_start_new_line(logger->observer, logger->number_of_variables, logger->function);
   if (start_new_line) {
     relative_path_pointer = coco_strdup(relative_path);
-    coco_create_unique_filename(logger->observer->result_folder, &relative_path_pointer, ".dat");
+    coco_create_unique_filename(logger->observer->result_folder.c_str(), &relative_path_pointer, ".dat");
     strncpy(observer_data->last_dat_file, relative_path_pointer, COCO_PATH_MAX);
     observer_data->last_function = logger->function;
     observer_data->last_dimension = logger->number_of_variables;
@@ -343,18 +343,18 @@ static void logger_bbob_initialize(logger_bbob_data_t *logger, int is_opt_known)
   }
 
   /* info file */
-  logger_bbob_open_info_file(logger, logger->observer->result_folder, function_string, relative_path_pointer,
+  logger_bbob_open_info_file(logger, logger->observer->result_folder.c_str(), function_string, relative_path_pointer,
                              logger->suite_name, start_new_line);
   fprintf(logger->info_file, ", %lu", (unsigned long)logger->instance);
 
   /* data files */
-  logger_bbob_open_data_file(&(logger->dat_file), logger->observer->result_folder, relative_path_pointer, ".dat");
+  logger_bbob_open_data_file(&(logger->dat_file), logger->observer->result_folder.c_str(), relative_path_pointer, ".dat");
   fprintf(logger->dat_file, logger_bbob_header, str_pointer, logger->optimal_value);
-  logger_bbob_open_data_file(&(logger->tdat_file), logger->observer->result_folder, relative_path_pointer, ".tdat");
+  logger_bbob_open_data_file(&(logger->tdat_file), logger->observer->result_folder.c_str(), relative_path_pointer, ".tdat");
   fprintf(logger->tdat_file, logger_bbob_header, str_pointer, logger->optimal_value);
-  logger_bbob_open_data_file(&(logger->rdat_file), logger->observer->result_folder, relative_path_pointer, ".rdat");
+  logger_bbob_open_data_file(&(logger->rdat_file), logger->observer->result_folder.c_str(), relative_path_pointer, ".rdat");
   fprintf(logger->rdat_file, logger_bbob_header, str_pointer, logger->optimal_value);
-  logger_bbob_open_data_file(&(logger->mdat_file), logger->observer->result_folder, relative_path_pointer, ".mdat");
+  logger_bbob_open_data_file(&(logger->mdat_file), logger->observer->result_folder.c_str(), relative_path_pointer, ".mdat");
   fprintf(logger->mdat_file, logger_bbob_header, str_pointer, logger->optimal_value);
 
   logger->is_initialized = 1;
@@ -696,7 +696,7 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
 
   logger_data = (logger_bbob_data_t *)coco_allocate_memory(sizeof(*logger_data));
   logger_data->observer = observer;
-  logger_data->suite_name = coco_problem_get_suite(inner_problem)->suite_name;
+  logger_data->suite_name = coco_problem_get_suite(inner_problem)->suite_name.c_str();
   logger_data->is_initialized = 0;
   logger_data->algorithm_restarted = 0;
 
@@ -713,7 +713,7 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
 
   logger_data->best_found_solution = coco_allocate_vector(inner_problem->number_of_variables);
   logger_data->best_found_value = DBL_MAX;
-  logger_data->optimal_value = *(inner_problem->best_value);
+  logger_data->optimal_value = inner_problem->best_value[0];
 
   logger_data->current_value = DBL_MAX;
   
@@ -731,13 +731,13 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
   logger_data->targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
                                                observer->number_target_triggers, observer->log_target_precision);
   logger_data->evaluations = coco_observer_evaluations(
-    observer->number_evaluation_triggers, observer->base_evaluation_triggers, inner_problem->number_of_variables);
+    observer->number_evaluation_triggers, observer->base_evaluation_triggers.c_str(), inner_problem->number_of_variables);
   logger_data->mdat_targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
                                                     observer->number_target_triggers, observer->log_target_precision);
 
   coco_debug("Ended   logger_bbob()");
 
-  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_bbob_free, observer->observer_name);
+  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_bbob_free, observer->observer_name.c_str());
   problem->evaluate_function = logger_bbob_evaluate;
   problem->recommend_solution = logger_bbob_recommend;
 

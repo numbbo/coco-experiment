@@ -135,7 +135,7 @@ static coco_problem_t *transform_vars_shift(coco_problem_t *inner_problem, const
     problem->best_parameter[i] += data->offset[i];
 
   /* Update the initial solution if any */
-  if (problem->initial_solution)
+  if (!problem->initial_solution.empty())
     for (i = 0; i < problem->number_of_variables; i++)
       problem->initial_solution[i] += data->offset[i];
 

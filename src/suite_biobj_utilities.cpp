@@ -84,21 +84,21 @@ static int suite_biobj_check_inst_consistency(const size_t dimension, size_t fun
   coco_free_memory(largest_values_of_interest);
 
   /* Check whether the ideal and nadir points are too close in the objective space */
-  norm = mo_get_norm(problem->best_value, problem->nadir_value, 2);
+  norm = mo_get_norm(problem->best_value.data(), problem->nadir_value.data(), 2);
   if (norm < 1e-1) { /* TODO How to set this value in a sensible manner? */
     coco_debug(
         "suite_biobj_check_inst_consistency(): The ideal and nadir points of %s are too close in the objective space",
-        problem->problem_id);
+        problem->problem_id.c_str());
     coco_debug("norm = %e, ideal = %e\t%e, nadir = %e\t%e", norm, problem->best_value[0], problem->best_value[1],
                problem->nadir_value[0], problem->nadir_value[1]);
     break_search = 1;
   }
 
   /* Check whether the extreme optimal points are too close in the decision space */
-  norm = mo_get_norm(problem1->best_parameter, problem2->best_parameter, problem->number_of_variables);
+  norm = mo_get_norm(problem1->best_parameter.data(), problem2->best_parameter.data(), problem->number_of_variables);
   if (norm < apart_enough) {
     coco_debug("suite_biobj_check_inst_consistency(): The extreme points of %s are too close in the decision space",
-               problem->problem_id);
+               problem->problem_id.c_str());
     coco_debug("norm = %e", norm);
     break_search = 1;
   }
@@ -463,13 +463,13 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
   problem = coco_problem_stacked_allocate(problem1, problem2, smallest_values_of_interest, largest_values_of_interest);
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  coco_problem_set_name(problem, problem->problem_id);
+  coco_problem_set_name(problem, problem->problem_id.c_str());
   /* Attention! Any change to the problem id affects also archive processing! */
   coco_problem_set_id(problem, "bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function, (unsigned long)instance,
                       (unsigned long)dimension);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem1->problem_type, problem2->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem1->problem_type.c_str(), problem2->problem_type.c_str());
 
   coco_free_memory(smallest_values_of_interest);
   coco_free_memory(largest_values_of_interest);

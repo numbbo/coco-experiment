@@ -150,7 +150,7 @@ static coco_problem_t *transform_vars_blockrotation(coco_problem_t *inner_proble
   if (coco_problem_best_parameter_not_zero(inner_problem)) {
     coco_debug("transform_vars_blockrotation(): 'best_parameter' not updated, "
                "set to NAN");
-    coco_vector_set_to_nan(inner_problem->best_parameter, inner_problem->number_of_variables);
+    coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
   }
   problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_blockrotation_free,
                                               "transform_vars_blockrotation");

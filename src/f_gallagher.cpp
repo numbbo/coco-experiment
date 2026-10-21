@@ -278,7 +278,7 @@ static coco_problem_t *f_gallagher_bbob_problem_allocate(const size_t function, 
   problem->data = data;
 
   /* Compute best solution */
-  f_gallagher_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_gallagher_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
 
   fopt = bbob2009_compute_fopt(function, instance);
   problem = transform_obj_shift(problem, fopt);
@@ -578,7 +578,7 @@ static coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const siz
   }
 
   f_gallagher_evaluate_core(problem, best_param_after_rotation,
-                            problem->best_value);
+                            problem->best_value.data());
   problem = transform_vars_blockrotation(problem, B_const, dimension,
                                          block_sizes, nb_blocks);
   for (i = 0; i < dimension; i++) {

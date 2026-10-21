@@ -185,7 +185,7 @@ MU_TEST(test_logger_bbob_last_line) {
   observer = coco_observer("bbob", "number_target_triggers: 100 number_evaluation_triggers: 20 base_evaluation_triggers: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
-  folder = coco_strdup(observer->result_folder);
+  folder = coco_strdup(observer->result_folder.c_str());
 
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
@@ -227,7 +227,7 @@ MU_TEST(test_logger_bbob_last_line) {
   observer = coco_observer("bbob", "number_target_triggers: 20 number_evaluation_triggers: 4 base_evaluation_triggers: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
-  folder = coco_strdup(observer->result_folder);
+  folder = coco_strdup(observer->result_folder.c_str());
 
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);

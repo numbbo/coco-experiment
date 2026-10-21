@@ -292,7 +292,7 @@ static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const si
       /* Most often the actual number of new instances will be lower than max_new_instances, because
        * some of them are already in suite_biobj_ext_instances. However, in order to avoid iterating over
        * suite_biobj_ext_instances, the allocation uses max_new_instances. */
-      data->max_new_instances = suite->number_of_instances;
+      data->max_new_instances = suite->instances.size();
 
       data->new_instances = (size_t **)coco_allocate_memory(data->max_new_instances * sizeof(size_t *));
       for (i = 0; i < data->max_new_instances; i++) {
@@ -327,12 +327,12 @@ static coco_problem_t *suite_biobj_ext_get_problem(coco_suite_t *suite, const si
   problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
 
   /* Use the standard stacked problem_id as problem_name and construct a new suite-specific problem_id */
-  coco_problem_set_name(problem, problem->problem_id);
+  coco_problem_set_name(problem, problem->problem_id.c_str());
   coco_problem_set_id(problem, "bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function, (unsigned long)instance,
                       (unsigned long)dimension);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem1->problem_type, problem2->problem_type);
+  coco_problem_set_type(problem, "%s_%s", problem1->problem_type.c_str(), problem2->problem_type.c_str());
 
   coco_free_memory(smallest_values_of_interest);
   coco_free_memory(largest_values_of_interest);
@@ -370,7 +370,7 @@ static int check_consistency_of_instances(const size_t dimension, size_t functio
   if (norm < 1e-1) { /* TODO How to set this value in a sensible manner? */
     coco_debug(
         "suite_biobj_ext_get_new_instance(): The ideal and nadir points of %s are too close in the objective space",
-        problem->problem_id);
+        problem->problem_id.c_str());
     coco_debug("norm = %e, ideal = %e\t%e, nadir = %e\t%e", norm, problem->best_value[0], problem->best_value[1],
                problem->nadir_value[0], problem->nadir_value[1]);
     break_search = 1;
@@ -380,7 +380,7 @@ static int check_consistency_of_instances(const size_t dimension, size_t functio
   norm = mo_get_norm(problem1->best_parameter, problem2->best_parameter, problem->number_of_variables);
   if (norm < apart_enough) {
     coco_debug("suite_biobj_ext_get_new_instance(): The extreme points of %s are too close in the decision space",
-               problem->problem_id);
+               problem->problem_id.c_str());
     coco_debug("norm = %e", norm);
     break_search = 1;
   }
@@ -434,7 +434,7 @@ static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t
       function1 = bbob_functions[f1];
       for (f2 = f1 + 1; (f2 < num_bbob_functions) && !break_search; f2++) {
         function2 = bbob_functions[f2];
-        for (d = 0; (d < suite->number_of_dimensions) && !break_search; d++) {
+        for (d = 0; (d < suite->dimensions.size()) && !break_search; d++) {
           dimension = suite->dimensions[d];
 
           if (dimension == 0) {
@@ -454,7 +454,7 @@ static size_t suite_biobj_ext_get_new_instance(coco_suite_t *suite, const size_t
     for (f1 = 0; (f1 < 10) && !break_search; f1++) {
       function1 = reduced_bbob_functions[f1];
       function2 = reduced_bbob_functions[f1];
-      for (d = 0; (d < suite->number_of_dimensions) && !break_search; d++) {
+      for (d = 0; (d < suite->dimensions.size()) && !break_search; d++) {
         dimension = suite->dimensions[d];
 
         if (dimension == 0) {

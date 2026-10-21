@@ -240,7 +240,7 @@ static coco_problem_t *f_step_ellipsoid_allocate(const size_t number_of_variable
 
   coco_problem_set_id(problem, "%s_d%02lu", "step_ellipsoid", number_of_variables);
   /* Compute best solution, here done outside after the zhat is set to the best_value */
-  f_step_ellipsoid_permblock_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_step_ellipsoid_permblock_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
   return problem;
 }
 

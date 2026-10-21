@@ -83,7 +83,7 @@ static coco_problem_t *transform_vars_z_hat(coco_problem_t *inner_problem, const
   */
   if (strstr(coco_problem_get_id(inner_problem), "schwefel") == NULL) {
     coco_warning("transform_vars_z_hat(): 'best_parameter' not updated, set to NAN.");
-    coco_vector_set_to_nan(problem->best_parameter, problem->number_of_variables);
+    coco_vector_set_to_nan(problem->best_parameter.data(), problem->number_of_variables);
   }
 
   return problem;

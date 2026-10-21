@@ -176,7 +176,7 @@ static coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const si
   const size_t dimension = suite->dimensions[dimension_idx];
   const size_t instance = suite->instances[instance_idx];
 
-  problem = coco_get_cons_bbob_problem(suite->suite_name, function, dimension, instance);
+  problem = coco_get_cons_bbob_problem(suite->suite_name.c_str(), function, dimension, instance);
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;
@@ -185,9 +185,9 @@ static coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const si
   /* Use the standard stacked problem_id as problem_name and
    * construct a new suite-specific problem_id
    */
-  coco_problem_set_id(problem, "%s_f%03lu_i%02lu_d%02lu", suite->suite_name, (unsigned long)function,
+  coco_problem_set_id(problem, "%s_f%03lu_i%02lu_d%02lu", suite->suite_name.c_str(), (unsigned long)function,
                       (unsigned long)instance, (unsigned long)dimension);
-  coco_problem_set_name(problem, "%s suite problem f%lu instance %lu in %luD", suite->suite_name,
+  coco_problem_set_name(problem, "%s suite problem f%lu instance %lu in %luD", suite->suite_name.c_str(),
                         (unsigned long)function, (unsigned long)instance, (unsigned long)dimension);
 
   return problem;

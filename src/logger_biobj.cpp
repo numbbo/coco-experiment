@@ -193,7 +193,7 @@ static logger_biobj_avl_item_t *logger_biobj_node_create(const coco_problem_t *p
     item->y[i] = y[i];
 
   /* Compute the normalized y */
-  item->normalized_y = mo_normalize(item->y, problem->best_value, problem->nadir_value, num_obj);
+  item->normalized_y = mo_normalize(item->y, problem->best_value.data(), problem->nadir_value.data(), num_obj);
   item->within_ROI = mo_is_within_ROI(item->normalized_y, num_obj);
 
   item->evaluation_number = evaluation_number;
@@ -464,10 +464,10 @@ static void logger_biobj_indicator_initialize_file(const logger_biobj_data_t *lo
 
   /* Create and open the file */
   path_name = coco_allocate_string(COCO_PATH_MAX + 1);
-  memcpy(path_name, observer->result_folder, strlen(observer->result_folder) + 1);
-  coco_join_path(path_name, COCO_PATH_MAX, problem->problem_type, NULL);
+  memcpy(path_name, observer->result_folder.c_str(), strlen(observer->result_folder.c_str()) + 1);
+  coco_join_path(path_name, COCO_PATH_MAX, problem->problem_type.c_str(), NULL);
   coco_create_directory(path_name);
-  prefix = coco_remove_from_string(problem->problem_id, "_i", "_d");
+  prefix = coco_remove_from_string(problem->problem_id.c_str(), "_i", "_d");
   file_name = coco_strdupf("%s_%s.%s", prefix, indicator->name, file_ending);
   coco_join_path(path_name, COCO_PATH_MAX, file_name, NULL);
   *f = fopen(path_name, "a");
@@ -480,10 +480,10 @@ static void logger_biobj_indicator_initialize_file(const logger_biobj_data_t *lo
 
   /* Output header */
   if (output_targets)
-    fprintf(*f, header_w_targets, (unsigned long)problem->suite_dep_index, problem->problem_name,
+    fprintf(*f, header_w_targets, (unsigned long)problem->suite_dep_index, problem->problem_name.c_str(),
             (unsigned long)problem->suite_dep_instance, logger->precision_f, indicator->best_value);
   else
-    fprintf(*f, header_wo_targets, (unsigned long)problem->suite_dep_index, problem->problem_name,
+    fprintf(*f, header_wo_targets, (unsigned long)problem->suite_dep_index, problem->problem_name.c_str(),
             (unsigned long)problem->suite_dep_instance, logger->precision_f, indicator->best_value);
 }
 
@@ -524,14 +524,14 @@ static logger_biobj_indicator_t *logger_biobj_indicator(const logger_biobj_data_
 
   indicator->targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
                                              observer->number_target_triggers, observer->log_target_precision);
-  indicator->evaluations = coco_observer_evaluations(observer->number_evaluation_triggers, observer->base_evaluation_triggers, 
+  indicator->evaluations = coco_observer_evaluations(observer->number_evaluation_triggers, observer->base_evaluation_triggers.c_str(), 
                                                      problem->number_of_variables);
 
   /* Prepare the info file */
   path_name = coco_allocate_string(COCO_PATH_MAX + 1);
-  memcpy(path_name, observer->result_folder, strlen(observer->result_folder) + 1);
+  memcpy(path_name, observer->result_folder.c_str(), strlen(observer->result_folder.c_str()) + 1);
   coco_create_directory(path_name);
-  file_name = coco_strdupf("%s_%s.info", problem->problem_type, indicator_name);
+  file_name = coco_strdupf("%s_%s.info", problem->problem_type.c_str(), indicator_name);
   coco_join_path(path_name, COCO_PATH_MAX, file_name, NULL);
   info_file_exists = coco_file_exists(path_name);
   indicator->info_file = fopen(path_name, "a");
@@ -543,15 +543,15 @@ static logger_biobj_indicator_t *logger_biobj_indicator(const logger_biobj_data_
   coco_free_memory(path_name);
 
   /* Output header information to the info file */
-  prefix = coco_remove_from_string(problem->problem_id, "_i", "_d");
+  prefix = coco_remove_from_string(problem->problem_id.c_str(), "_i", "_d");
   if (!info_file_exists) {
     /* Output algorithm name */
     assert(problem->suite);
     fprintf(indicator->info_file,
             "suite = '%s', algorithm = '%s', indicator = '%s', folder = '%s', coco_version = '%s', "
             "settings = '%s' \n%% %s",
-            problem->suite->suite_name, observer->algorithm_name, indicator_name, problem->problem_type, coco_version,
-            observer->settings, observer->algorithm_info);
+            problem->suite->suite_name.c_str(), observer->algorithm_name.c_str(), indicator_name, problem->problem_type.c_str(), coco_version,
+            observer->settings.c_str(), observer->algorithm_info.c_str());
     if (logger->log_nondom_mode == LOG_NONDOM_READ)
       fprintf(indicator->info_file, " (reconstructed)");
   }
@@ -1073,15 +1073,15 @@ static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *i
 
     /* Create the path to the file */
     path_name = coco_allocate_string(COCO_PATH_MAX + 1);
-    memcpy(path_name, observer->result_folder, strlen(observer->result_folder) + 1);
+    memcpy(path_name, observer->result_folder.c_str(), strlen(observer->result_folder.c_str()) + 1);
     coco_join_path(path_name, COCO_PATH_MAX, nondom_folder_name, NULL);
     coco_create_directory(path_name);
 
     /* Construct file name */
     if (logger_data->log_nondom_mode == LOG_NONDOM_ALL)
-      file_name = coco_strdupf("%s_nondom_all.adat", inner_problem->problem_id);
+      file_name = coco_strdupf("%s_nondom_all.adat", inner_problem->problem_id.c_str());
     else if (logger_data->log_nondom_mode == LOG_NONDOM_FINAL)
-      file_name = coco_strdupf("%s_nondom_final.adat", inner_problem->problem_id);
+      file_name = coco_strdupf("%s_nondom_final.adat", inner_problem->problem_id.c_str());
     coco_join_path(path_name, COCO_PATH_MAX, file_name, NULL);
     coco_free_memory(file_name);
 
@@ -1095,7 +1095,7 @@ static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *i
 
     /* Output header information */
     fprintf(logger_data->adat_file, "%% instance = %lu, name = %s\n", (unsigned long)inner_problem->suite_dep_instance,
-            inner_problem->problem_name);
+            inner_problem->problem_name.c_str());
     if (logger_data->log_vars) {
       fprintf(logger_data->adat_file, "%% function evaluation | %lu objectives | %lu variables\n",
               (unsigned long)inner_problem->number_of_objectives, (unsigned long)inner_problem->number_of_variables);
@@ -1120,7 +1120,7 @@ static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *i
     observer_data->previous_dimension = (long)inner_problem->number_of_variables;
   }
 
-  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_biobj_free, observer->observer_name);
+  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_biobj_free, observer->observer_name.c_str());
   problem->evaluate_function = logger_biobj_evaluate;
   problem->recommend_solution = logger_biobj_recommend;
 
@@ -1128,12 +1128,12 @@ static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *i
 
   /* Create the path to the file */
   path_name = coco_allocate_string(COCO_PATH_MAX + 1);
-  memcpy(path_name, observer->result_folder, strlen(observer->result_folder) + 1);
-  coco_join_path(path_name, COCO_PATH_MAX, problem->problem_type, NULL);
+  memcpy(path_name, observer->result_folder.c_str(), strlen(observer->result_folder.c_str()) + 1);
+  coco_join_path(path_name, COCO_PATH_MAX, problem->problem_type.c_str(), NULL);
   coco_create_directory(path_name);
 
   /* Construct file name */
-  prefix = coco_remove_from_string(problem->problem_id, "_i", "_d");
+  prefix = coco_remove_from_string(problem->problem_id.c_str(), "_i", "_d");
   file_name = coco_strdupf("%s.mdat", prefix);
   coco_join_path(path_name, COCO_PATH_MAX, file_name, NULL);
   coco_free_memory(file_name);
@@ -1149,7 +1149,7 @@ static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *i
 
   /* Output header information */
   fprintf(logger_data->mdat_file, "%% instance = %lu, name = %s\n%% function evaluation | %lu objectives",
-          (unsigned long)inner_problem->suite_dep_instance, inner_problem->problem_name,
+          (unsigned long)inner_problem->suite_dep_instance, inner_problem->problem_name.c_str(),
           (unsigned long)inner_problem->number_of_objectives);
   if (inner_problem->number_of_constraints > 0)
     fprintf(logger_data->mdat_file, " | %lu constraints", (unsigned long)inner_problem->number_of_constraints);

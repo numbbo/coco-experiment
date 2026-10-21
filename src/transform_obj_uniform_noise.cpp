@@ -19,7 +19,7 @@ typedef struct {
 static void transform_obj_uniform_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   double uniform_noise_term1, uniform_noise_term2;
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  double fopt = *(inner_problem->best_value);
+  double fopt = inner_problem->best_value[0];
   transform_obj_uniform_noise_data_t *data;
   data = (transform_obj_uniform_noise_data_t *)coco_problem_transformed_get_data(problem);
   uniform_noise_term1 = coco_sample_uniform_noise();

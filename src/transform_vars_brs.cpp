@@ -74,7 +74,7 @@ static coco_problem_t *transform_vars_brs(coco_problem_t *inner_problem) {
 
   if (coco_problem_best_parameter_not_zero(inner_problem)) {
     coco_warning("transform_vars_brs(): 'best_parameter' not updated, set to NAN");
-    coco_vector_set_to_nan(inner_problem->best_parameter, inner_problem->number_of_variables);
+    coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
   }
   return problem;
 }

@@ -185,7 +185,7 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
 
   /* Construct file name */
   path_name = coco_allocate_string(COCO_PATH_MAX + 1);
-  memcpy(path_name, observer->result_folder, strlen(observer->result_folder) + 1);
+  memcpy(path_name, observer->result_folder.c_str(), strlen(observer->result_folder.c_str()) + 1);
   coco_create_directory(path_name);
   file_name = coco_strdupf("%s_rw.txt", coco_problem_get_id(inner_problem));
   coco_join_path(path_name, COCO_PATH_MAX, file_name, NULL);
@@ -201,7 +201,7 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
 
   /* Output header information */
   fprintf(logger_data->out_file, "\n%% suite = '%s', problem_id = '%s', problem_name = '%s', coco_version = '%s'\n",
-          coco_problem_get_suite(inner_problem)->suite_name, coco_problem_get_id(inner_problem),
+          coco_problem_get_suite(inner_problem)->suite_name.c_str(), coco_problem_get_id(inner_problem),
           coco_problem_get_name(inner_problem), coco_version);
   fprintf(logger_data->out_file, "%% f-evaluations | g-evaluations | %lu objective",
           (unsigned long)inner_problem->number_of_objectives);
@@ -219,7 +219,7 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
     fprintf(logger_data->out_file, " | evaluation time (s)");
   fprintf(logger_data->out_file, "\n");
 
-  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_rw_free, observer->observer_name);
+  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_rw_free, observer->observer_name.c_str());
   problem->evaluate_function = logger_rw_evaluate;
 
   return problem;

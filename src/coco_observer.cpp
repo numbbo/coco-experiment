@@ -448,18 +448,18 @@ static coco_observer_t *coco_observer_allocate(
     const int precision_f, const int precision_g, const int log_discrete_as_int) {
 
   coco_observer_t *observer;
-  observer = (coco_observer_t *)coco_allocate_memory(sizeof(*observer));
+  observer = new coco_observer_t();
   /* Initialize fields to sane/safe defaults */
-  observer->result_folder = coco_strdup(result_folder);
-  observer->observer_name = coco_strdup(observer_name);
-  observer->algorithm_name = coco_strdup(algorithm_name);
-  observer->algorithm_info = coco_strdup(algorithm_info);
-  observer->settings = coco_strdup(settings);
+  observer->result_folder = result_folder;
+  observer->observer_name = observer_name;
+  observer->algorithm_name = algorithm_name;
+  observer->algorithm_info = algorithm_info;
+  observer->settings = settings;
   observer->number_target_triggers = number_target_triggers;
   observer->log_target_precision = log_target_precision;
   observer->lin_target_precision = lin_target_precision;
   observer->number_evaluation_triggers = number_evaluation_triggers;
-  observer->base_evaluation_triggers = coco_strdup(base_evaluation_triggers);
+  observer->base_evaluation_triggers = base_evaluation_triggers;
   observer->precision_x = precision_x;
   observer->precision_f = precision_f;
   observer->precision_g = precision_g;
@@ -483,19 +483,6 @@ void coco_observer_free(coco_observer_t *observer) {
 
   if (observer != NULL) {
     observer->is_active = 0;
-    if (observer->observer_name != NULL)
-      coco_free_memory(observer->observer_name);
-    if (observer->result_folder != NULL)
-      coco_free_memory(observer->result_folder);
-    if (observer->algorithm_name != NULL)
-      coco_free_memory(observer->algorithm_name);
-    if (observer->settings != NULL)
-      coco_free_memory(observer->settings);
-    if (observer->algorithm_info != NULL)
-      coco_free_memory(observer->algorithm_info);
-
-    if (observer->base_evaluation_triggers != NULL)
-      coco_free_memory(observer->base_evaluation_triggers);
 
     if (observer->data != NULL) {
       if (observer->data_free_function != NULL) {
@@ -509,8 +496,7 @@ void coco_observer_free(coco_observer_t *observer) {
     observer->logger_free_function = NULL;
     observer->restart_function = NULL;
 
-    coco_free_memory(observer);
-    observer = NULL;
+    delete observer;
   }
 }
 
@@ -875,11 +861,11 @@ coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_obser
    * This is a hack - it assumes that the name of the problem is formatted as
    * "observer_name(problem_name)". While not elegant, it does the job and is
    * better than nothing. */
-  prefix = coco_remove_from_string(problem->problem_name, "(", "");
-  if (strcmp(prefix, observer->observer_name) != 0) {
+  prefix = coco_remove_from_string(problem->problem_name.c_str(), "(", "");
+  if (strcmp(prefix, observer->observer_name.c_str()) != 0) {
     coco_error("coco_problem_remove_observer(): trying to remove observer %s "
                "instead of %s",
-               observer->observer_name, prefix);
+               observer->observer_name.c_str(), prefix);
   }
   coco_free_memory(prefix);
 
@@ -909,7 +895,7 @@ const char *coco_observer_get_result_folder(const coco_observer_t *observer) {
                  "returning empty string");
     return "";
   }
-  return observer->result_folder;
+  return observer->result_folder.c_str();
 }
 
 /**
@@ -930,7 +916,7 @@ void coco_observer_signal_restart(coco_observer_t *observer, coco_problem_t *pro
   if (observer->restart_function == NULL)
     coco_info("coco_observer_signal_restart(): Restart signaling not supported "
               "for observer %s",
-              observer->observer_name);
+              observer->observer_name.c_str());
   else
     observer->restart_function(problem);
 }

@@ -46,6 +46,15 @@ if (LIBRT)
   target_link_libraries(test_tainted_problem PUBLIC ${LIBRT})
 endif()
 
+## Tests that only use the public C interface
+add_executable(test_coco_suite test_coco_suite.c coco.cpp)
+if (LIBM)
+  target_link_libraries(test_coco_suite PUBLIC ${LIBM})
+endif()
+add_test(NAME test_coco_suite
+         COMMAND $<TARGET_FILE:test_coco_suite>
+         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_test(NAME test_tainted-bbob COMMAND $<TARGET_FILE:test_tainted_problem> bbob)
 set_property(TEST test_tainted-bbob PROPERTY WILL_FAIL YES)
 add_test(NAME test_tainted-bbob-largescale COMMAND $<TARGET_FILE:test_tainted_problem> bbob-largescale)

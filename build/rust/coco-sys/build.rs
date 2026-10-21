@@ -25,12 +25,6 @@ fn main() {
         .write_to_file(out_path.join("coco_sys.rs"))
         .expect("Couldn't write bindings to 'OUT_DIR/coco_sys.rs'!");
 
-    // The wrapper uses the COCO library, so it must come first on the link line.
-    cc::Build::new()
-        .file("wrapper.c")
-        .warnings(false)
-        .compile("coco_wrapper");
-
     cc::Build::new()
         .cpp(true)
         .std("c++17")

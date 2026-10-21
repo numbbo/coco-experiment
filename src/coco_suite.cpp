@@ -73,26 +73,26 @@ static coco_suite_t *coco_suite_intialize(const char *suite_name) {
 static const char *coco_suite_get_instances_by_year(const coco_suite_t *suite,
                                                     const int year) {
   const char *year_string;
-  if (strcmp(suite->suite_name, "bbob") == 0) {
+  if (suite->suite_name == "bbob") {
     year_string = suite_bbob_get_instances_by_year(year);
-  } else if (strcmp(suite->suite_name, "bbob-boxed") == 0) {
+  } else if (suite->suite_name == "bbob-boxed") {
     year_string = suite_sbox_cost_get_instances_by_year(year);
-  } else if ((strcmp(suite->suite_name, "bbob-biobj") == 0) || (strcmp(suite->suite_name, "bbob-biobj-ext") == 0)) {
+  } else if ((suite->suite_name == "bbob-biobj") || (suite->suite_name == "bbob-biobj-ext")) {
     year_string = suite_biobj_get_instances_by_year(year);
-  } else if (strncmp(suite->suite_name, "bbob-constrained", 16) == 0) {
+  } else if (suite->suite_name.compare(0, 16, "bbob-constrained") == 0) {
     year_string = suite_cons_bbob_get_instances_by_year(year);
-  } else if (strcmp(suite->suite_name, "bbob-largescale") == 0) {
+  } else if (suite->suite_name == "bbob-largescale") {
     year_string = suite_largescale_get_instances_by_year(year);
-  } else if (strcmp(suite->suite_name, "bbob-mixint") == 0) {
+  } else if (suite->suite_name == "bbob-mixint") {
     year_string = suite_bbob_mixint_get_instances_by_year(year);
-  } else if (strcmp(suite->suite_name, "bbob-biobj-mixint") == 0) {
+  } else if (suite->suite_name == "bbob-biobj-mixint") {
     year_string = suite_biobj_mixint_get_instances_by_year(year);
-  } else if (strcmp(suite->suite_name, "bbob-noisy") == 0) {
+  } else if (suite->suite_name == "bbob-noisy") {
     year_string = suite_bbob_noisy_get_instances_by_year(year);
   } else {
     coco_error(
         "coco_suite_get_instances_by_year(): suite '%s' has no years defined",
-        suite->suite_name);
+        suite->suite_name.c_str());
     return NULL;
   }
 
@@ -117,28 +117,28 @@ static coco_problem_t *coco_suite_get_problem_from_indices(coco_suite_t *suite, 
     return NULL;
   }
 
-  if (strcmp(suite->suite_name, "toy") == 0) {
+  if (suite->suite_name == "toy") {
     problem =
         suite_toy_get_problem(suite, function_idx, dimension_idx, instance_idx);
-  } else if (strcmp(suite->suite_name, "bbob") == 0) {
+  } else if (suite->suite_name == "bbob") {
     problem = suite_bbob_get_problem(suite, function_idx, dimension_idx, instance_idx);
-  } else if (strcmp(suite->suite_name, "bbob-boxed") == 0) {
+  } else if (suite->suite_name == "bbob-boxed") {
     problem = suite_sbox_cost_get_problem(suite, function_idx, dimension_idx,
                                           instance_idx);
-  } else if ((strcmp(suite->suite_name, "bbob-biobj") == 0) || (strcmp(suite->suite_name, "bbob-biobj-ext") == 0)) {
+  } else if ((suite->suite_name == "bbob-biobj") || (suite->suite_name == "bbob-biobj-ext")) {
     problem = suite_biobj_get_problem(suite, function_idx, dimension_idx, instance_idx);
-  } else if (strncmp(suite->suite_name, "bbob-constrained", 16) == 0) {
+  } else if (suite->suite_name.compare(0, 16, "bbob-constrained") == 0) {
     problem = suite_cons_bbob_get_problem(suite, function_idx, dimension_idx,
                                           instance_idx);
-  } else if (strcmp(suite->suite_name, "bbob-largescale") == 0) {
+  } else if (suite->suite_name == "bbob-largescale") {
     problem = suite_largescale_get_problem(suite, function_idx, dimension_idx,
                                            instance_idx);
-  } else if (strcmp(suite->suite_name, "bbob-mixint") == 0) {
+  } else if (suite->suite_name == "bbob-mixint") {
     problem = suite_bbob_mixint_get_problem(suite, function_idx, dimension_idx,
                                             instance_idx);
-  } else if (strcmp(suite->suite_name, "bbob-biobj-mixint") == 0) {
+  } else if (suite->suite_name == "bbob-biobj-mixint") {
     problem = suite_biobj_mixint_get_problem(suite, function_idx, dimension_idx, instance_idx);
-  } else if (strcmp(suite->suite_name, "bbob-noisy") == 0) {
+  } else if (suite->suite_name == "bbob-noisy") {
     problem = suite_bbob_noisy_get_problem(suite, function_idx, dimension_idx, instance_idx);
   } else {
     coco_error("coco_suite_get_problem_from_indices(): unknown problem suite");
@@ -157,7 +157,7 @@ static void coco_suite_get_best_indicator_value(const int known_optima, const co
                                                 const char *indicator_name, double *value) {
 
   if (strcmp(indicator_name, "hyp") == 0) {
-    suite_biobj_get_best_hyp_value(known_optima, problem->problem_id, value);
+    suite_biobj_get_best_hyp_value(known_optima, problem->problem_id.c_str(), value);
   } else {
     coco_error("coco_suite_get_best_indicator_value(): indicator %s not supported", indicator_name);
   }
@@ -177,7 +177,7 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
   int found;
 
   found = 0;
-  for (i = 0; i < suite->number_of_functions; i++) {
+  for (i = 0; i < suite->functions.size(); i++) {
     if (suite->functions[i] == function) {
       function_idx = (int)i;
       found = 1;
@@ -188,7 +188,7 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
     return NULL;
 
   found = 0;
-  for (i = 0; i < suite->number_of_dimensions; i++) {
+  for (i = 0; i < suite->dimensions.size(); i++) {
     if (suite->dimensions[i] == dimension) {
       dimension_idx = (int)i;
       found = 1;
@@ -199,7 +199,7 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
     return NULL;
 
   found = 0;
-  for (i = 0; i < suite->number_of_instances; i++) {
+  for (i = 0; i < suite->instances.size(); i++) {
     if (suite->instances[i] == instance) {
       instance_idx = (int)i;
       found = 1;
@@ -225,28 +225,23 @@ static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t nu
   coco_suite_t *suite;
   size_t i;
 
-  suite = (coco_suite_t *)coco_allocate_memory(sizeof(*suite));
+  suite = new coco_suite_t();
 
-  suite->suite_name = coco_strdup(suite_name);
+  suite->suite_name = suite_name;
 
-  suite->number_of_dimensions = number_of_dimensions;
   assert(number_of_dimensions > 0);
-  suite->dimensions = coco_allocate_vector_size_t(suite->number_of_dimensions);
-  for (i = 0; i < suite->number_of_dimensions; i++) {
-    suite->dimensions[i] = dimensions[i];
-  }
+  suite->dimensions.assign(dimensions, dimensions + number_of_dimensions);
 
-  suite->number_of_functions = number_of_functions;
   assert(number_of_functions > 0);
-  suite->functions = coco_allocate_vector_size_t(suite->number_of_functions);
-  for (i = 0; i < suite->number_of_functions; i++) {
+  suite->functions.resize(number_of_functions);
+  for (i = 0; i < number_of_functions; i++) {
     suite->functions[i] = i + 1;
-    if (strcmp(suite->suite_name, "bbob-noisy") == 0)
+    if (suite->suite_name == "bbob-noisy")
       suite->functions[i] = suite->functions[i] + 100;
   }
 
   assert(strlen(default_instances) > 0);
-  suite->default_instances = coco_strdup(default_instances);
+  suite->default_instances = default_instances;
   suite->known_optima = known_optima;
 
   /* Will be set to the first valid dimension index before the constructor ends
@@ -259,9 +254,7 @@ static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t nu
   suite->current_instance_idx = -1;
   suite->current_problem = NULL;
 
-  /* To be set in coco_suite_set_instance() */
-  suite->number_of_instances = 0;
-  suite->instances = NULL;
+  /* suite->instances is set in coco_suite_set_instance() */
 
   /* To be set in particular suites if needed */
   suite->data = NULL;
@@ -275,19 +268,14 @@ static coco_suite_t *coco_suite_allocate(const char *suite_name, const size_t nu
  */
 static void coco_suite_set_instance(coco_suite_t *suite, const size_t *instance_numbers) {
 
-  size_t i;
-
   if (!instance_numbers) {
     coco_error("coco_suite_set_instance(): no instance given");
     return;
   }
 
-  suite->number_of_instances = coco_count_numbers(
-      instance_numbers, COCO_MAX_INSTANCES, "suite instance numbers");
-  suite->instances = coco_allocate_vector_size_t(suite->number_of_instances);
-  for (i = 0; i < suite->number_of_instances; i++) {
-    suite->instances[i] = instance_numbers[i];
-  }
+  suite->instances.assign(instance_numbers,
+                          instance_numbers + coco_count_numbers(instance_numbers, COCO_MAX_INSTANCES,
+                                                                "suite instance numbers"));
 }
 
 /**
@@ -331,7 +319,7 @@ static void coco_suite_filter_dimensions(coco_suite_t *suite,
       coco_count_numbers(dimension_numbers, COCO_MAX_INSTANCES, "dimensions");
   int found;
 
-  for (i = 0; i < suite->number_of_dimensions; i++) {
+  for (i = 0; i < suite->dimensions.size(); i++) {
     found = 0;
     for (j = 0; j < count; j++) {
       if (suite->dimensions[i] == dimension_numbers[j])
@@ -353,7 +341,7 @@ static void coco_suite_filter_dimensions(coco_suite_t *suite,
 size_t coco_suite_get_function_from_function_index(const coco_suite_t *suite,
                                                    const size_t function_idx) {
 
-  if (function_idx >= suite->number_of_functions) {
+  if (function_idx >= suite->functions.size()) {
     coco_error("coco_suite_get_function_from_function_index(): function index "
                "exceeding the number of functions in the suite");
     return 0; /* Never reached*/
@@ -375,7 +363,7 @@ size_t
 coco_suite_get_dimension_from_dimension_index(const coco_suite_t *suite,
                                               const size_t dimension_idx) {
 
-  if (dimension_idx >= suite->number_of_dimensions) {
+  if (dimension_idx >= suite->dimensions.size()) {
     coco_error("coco_suite_get_dimension_from_dimension_index(): dimensions index exceeding the number of dimensions "
                "in the suite");
     return 0; /* Never reached*/
@@ -395,39 +383,29 @@ coco_suite_get_dimension_from_dimension_index(const coco_suite_t *suite,
 size_t coco_suite_get_instance_from_instance_index(const coco_suite_t *suite,
                                                    const size_t instance_idx) {
 
-  if (instance_idx >= suite->number_of_instances) {
+  if (instance_idx >= suite->instances.size()) {
     coco_error("coco_suite_get_instance_from_instance_index(): instance index "
                "exceeding the number of instances in the suite");
     return 0; /* Never reached*/
   }
 
-  return suite->functions[instance_idx];
+  return suite->instances[instance_idx];
+}
+
+/**
+ * @brief Makes the suite forget its current problem.
+ *
+ * Afterwards the caller owns the problem returned by the last call to coco_suite_get_next_problem() and is
+ * responsible for freeing it. Used by the Rust bindings.
+ */
+void coco_suite_forget_current_problem(coco_suite_t *suite) {
+  assert(suite != NULL);
+  suite->current_problem = NULL;
 }
 
 void coco_suite_free(coco_suite_t *suite) {
 
   if (suite != NULL) {
-
-    if (suite->suite_name) {
-      coco_free_memory(suite->suite_name);
-      suite->suite_name = NULL;
-    }
-    if (suite->dimensions) {
-      coco_free_memory(suite->dimensions);
-      suite->dimensions = NULL;
-    }
-    if (suite->functions) {
-      coco_free_memory(suite->functions);
-      suite->functions = NULL;
-    }
-    if (suite->instances) {
-      coco_free_memory(suite->instances);
-      suite->instances = NULL;
-    }
-    if (suite->default_instances) {
-      coco_free_memory(suite->default_instances);
-      suite->default_instances = NULL;
-    }
 
     if (suite->current_problem) {
       coco_problem_free(suite->current_problem);
@@ -442,8 +420,7 @@ void coco_suite_free(coco_suite_t *suite) {
       suite->data = NULL;
     }
 
-    coco_free_memory(suite);
-    suite = NULL;
+    delete suite;
   }
 }
 
@@ -479,8 +456,8 @@ coco_problem_t *coco_suite_get_problem(coco_suite_t *suite,
  * @return The number of problems in the suite.
  */
 size_t coco_suite_get_number_of_problems(const coco_suite_t *suite) {
-  return (suite->number_of_instances * suite->number_of_functions *
-          suite->number_of_dimensions);
+  return (suite->instances.size() * suite->functions.size() *
+          suite->dimensions.size());
 }
 
 /**
@@ -594,7 +571,7 @@ static int coco_suite_is_next_item_found(const size_t *items,
  */
 static int coco_suite_is_next_instance_found(coco_suite_t *suite) {
 
-  return coco_suite_is_next_item_found(suite->instances, suite->number_of_instances, &suite->current_instance_idx);
+  return coco_suite_is_next_item_found(suite->instances.data(), suite->instances.size(), &suite->current_instance_idx);
 }
 
 /**
@@ -610,7 +587,7 @@ static int coco_suite_is_next_instance_found(coco_suite_t *suite) {
 static int coco_suite_is_next_function_found(coco_suite_t *suite) {
 
   int result =
-      coco_suite_is_next_item_found(suite->functions, suite->number_of_functions, &suite->current_function_idx);
+      coco_suite_is_next_item_found(suite->functions.data(), suite->functions.size(), &suite->current_function_idx);
   if (!result) {
     /* Reset the instances */
     suite->current_instance_idx = -1;
@@ -630,7 +607,7 @@ static int coco_suite_is_next_function_found(coco_suite_t *suite) {
  */
 static int coco_suite_is_next_dimension_found(coco_suite_t *suite) {
 
-  return coco_suite_is_next_item_found(suite->dimensions, suite->number_of_dimensions, &suite->current_dimension_idx);
+  return coco_suite_is_next_item_found(suite->dimensions.data(), suite->dimensions.size(), &suite->current_dimension_idx);
 }
 
 /**
@@ -706,14 +683,14 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
   /* Set the instance */
   if ((!suite_instance) || (strlen(suite_instance) == 0))
     instances =
-        coco_suite_get_instance_indices(suite, suite->default_instances);
+        coco_suite_get_instance_indices(suite, suite->default_instances.c_str());
   else {
     instances = coco_suite_get_instance_indices(suite, suite_instance);
 
     if (!instances) {
       /* Something wrong in the suite_instance string, use default instead */
       instances =
-          coco_suite_get_instance_indices(suite, suite->default_instances);
+          coco_suite_get_instance_indices(suite, suite->default_instances.c_str());
     }
 
     /* Check for redundant option keys for suite instance */
@@ -748,10 +725,10 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
   if ((suite_options) && (strlen(suite_options) > 0)) {
     option_string = coco_allocate_string(COCO_PATH_MAX + 1);
     if (coco_options_read_values(suite_options, "function_indices", option_string) > 0) {
-      indices = coco_string_parse_ranges(option_string, 1, suite->number_of_functions, "function_indices",
+      indices = coco_string_parse_ranges(option_string, 1, suite->functions.size(), "function_indices",
                                          COCO_MAX_INSTANCES);
       if (indices != NULL) {
-        coco_suite_filter_indices(suite->functions, suite->number_of_functions,
+        coco_suite_filter_indices(suite->functions.data(), suite->functions.size(),
                                   indices, "function_indices");
         coco_free_memory(indices);
       }
@@ -760,10 +737,10 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
 
     option_string = coco_allocate_string(COCO_PATH_MAX + 1);
     if (coco_options_read_values(suite_options, "instance_indices", option_string) > 0) {
-      indices = coco_string_parse_ranges(option_string, 1, suite->number_of_instances, "instance_indices",
+      indices = coco_string_parse_ranges(option_string, 1, suite->instances.size(), "instance_indices",
                                          COCO_MAX_INSTANCES);
       if (indices != NULL) {
-        coco_suite_filter_indices(suite->instances, suite->number_of_instances,
+        coco_suite_filter_indices(suite->instances.data(), suite->instances.size(),
                                   indices, "instance_indices");
         coco_free_memory(indices);
       }
@@ -787,11 +764,11 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
     option_string = coco_allocate_string(COCO_PATH_MAX + 1);
     if ((dim_idx_found >= 0) && (parce_dim_idx == 1) &&
         (coco_options_read_values(suite_options, "dimension_indices", option_string) > 0)) {
-      indices = coco_string_parse_ranges(option_string, 1, suite->number_of_dimensions, "dimension_indices",
+      indices = coco_string_parse_ranges(option_string, 1, suite->dimensions.size(), "dimension_indices",
                                          COCO_MAX_INSTANCES);
       if (indices != NULL) {
-        coco_suite_filter_indices(suite->dimensions,
-                                  suite->number_of_dimensions, indices,
+        coco_suite_filter_indices(suite->dimensions.data(),
+                                  suite->dimensions.size(), indices,
                                   "dimension_indices");
         coco_free_memory(indices);
       }
@@ -811,7 +788,7 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
           ptr++;
       }
       dimensions = coco_string_parse_ranges(option_string, suite->dimensions[0],
-                                            suite->dimensions[suite->number_of_dimensions - 1], "dimensions",
+                                            suite->dimensions[suite->dimensions.size() - 1], "dimensions",
                                             COCO_MAX_INSTANCES);
       if (dimensions != NULL) {
         coco_suite_filter_dimensions(suite, dimensions);
@@ -848,11 +825,11 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
 
   /* Check that there are enough dimensions, functions and instances left */
   int number_of_active_dimensions = 0;
-  for (size_t i = 0; i < suite->number_of_dimensions; ++i) {
+  for (size_t i = 0; i < suite->dimensions.size(); ++i) {
     number_of_active_dimensions += suite->dimensions[i] != 0;
   }
-  if ((number_of_active_dimensions < 1) || (suite->number_of_dimensions < 1) || (suite->number_of_functions < 1) ||
-      (suite->number_of_instances < 1)) {
+  if ((number_of_active_dimensions < 1) || (suite->dimensions.size() < 1) || (suite->functions.size() < 1) ||
+      (suite->instances.size() < 1)) {
     coco_warning("coco_suite(): the suite does not contain at least one dimension, function and instance");
     return NULL;
   }
@@ -961,8 +938,8 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
 size_t coco_suite_encode_problem_index(const coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
                                        const size_t instance_idx) {
 
-  return instance_idx + (function_idx * suite->number_of_instances) +
-         (dimension_idx * suite->number_of_instances * suite->number_of_functions);
+  return instance_idx + (function_idx * suite->instances.size()) +
+         (dimension_idx * suite->instances.size() * suite->functions.size());
 }
 
 /**
@@ -978,8 +955,8 @@ size_t coco_suite_encode_problem_index(const coco_suite_t *suite, const size_t f
 void coco_suite_decode_problem_index(const coco_suite_t *suite, const size_t problem_index, size_t *function_idx,
                                      size_t *dimension_idx, size_t *instance_idx) {
 
-  if (problem_index > (suite->number_of_instances * suite->number_of_functions *
-                       suite->number_of_dimensions) -
+  if (problem_index > (suite->instances.size() * suite->functions.size() *
+                       suite->dimensions.size()) -
                           1) {
     coco_warning("coco_suite_decode_problem_index(): problem_index too large");
     function_idx = 0;
@@ -988,7 +965,7 @@ void coco_suite_decode_problem_index(const coco_suite_t *suite, const size_t pro
     return;
   }
 
-  *instance_idx = problem_index % suite->number_of_instances;
-  *function_idx = (problem_index / suite->number_of_instances) % suite->number_of_functions;
-  *dimension_idx = problem_index / (suite->number_of_instances * suite->number_of_functions);
+  *instance_idx = problem_index % suite->instances.size();
+  *function_idx = (problem_index / suite->instances.size()) % suite->functions.size();
+  *dimension_idx = problem_index / (suite->instances.size() * suite->functions.size());
 }

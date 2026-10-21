@@ -91,7 +91,7 @@ f_weierstrass_allocate(const size_t number_of_variables) {
   non_unique_best_value = coco_allocate_vector(number_of_variables);
   for (i = 0; i < number_of_variables; i++)
     non_unique_best_value[i] = 0.0;
-  f_weierstrass_evaluate(problem, non_unique_best_value, problem->best_value);
+  f_weierstrass_evaluate(problem, non_unique_best_value, problem->best_value.data());
   coco_free_memory(non_unique_best_value);
   return problem;
 }

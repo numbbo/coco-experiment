@@ -63,7 +63,7 @@ static coco_problem_t *f_rosenbrock_allocate(const size_t number_of_variables) {
   coco_problem_set_id(problem, "%s_d%02lu", "rosenbrock", number_of_variables);
 
   /* Compute best solution */
-  f_rosenbrock_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_rosenbrock_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
   return problem;
 }
 

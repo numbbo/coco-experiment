@@ -141,8 +141,8 @@ coco_archive_t *coco_archive(const char *suite_name, const size_t function, cons
   }
 
   /* Store the ideal and nadir points */
-  archive->ideal = coco_duplicate_vector(problem->best_value, 2);
-  archive->nadir = coco_duplicate_vector(problem->nadir_value, 2);
+  archive->ideal = coco_duplicate_vector(problem->best_value.data(), 2);
+  archive->nadir = coco_duplicate_vector(problem->nadir_value.data(), 2);
 
   /* Add the extreme points to the archive */
   text = coco_strdupf("0\t%.*e\t%.*e\n", output_precision, archive->nadir[0], output_precision, archive->ideal[1]);

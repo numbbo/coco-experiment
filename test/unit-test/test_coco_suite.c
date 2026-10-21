@@ -34,10 +34,33 @@ MU_TEST(test_coco_suite_encode_problem_index) {
 }
 
 /**
+ * Tests the functions that map function, dimension and instance indices to their values.
+ */
+MU_TEST(test_coco_suite_get_from_index) {
+
+  coco_suite_t *suite = coco_suite("bbob", "instances: 3,5,7", "");
+
+  mu_check(coco_suite_get_function_from_function_index(suite, 0) == 1);
+  mu_check(coco_suite_get_function_from_function_index(suite, 23) == 24);
+  mu_check(coco_suite_get_dimension_from_dimension_index(suite, 0) == 2);
+  mu_check(coco_suite_get_dimension_from_dimension_index(suite, 4) == 20);
+  mu_check(coco_suite_get_instance_from_instance_index(suite, 0) == 3);
+  mu_check(coco_suite_get_instance_from_instance_index(suite, 1) == 5);
+  mu_check(coco_suite_get_instance_from_instance_index(suite, 2) == 7);
+
+  coco_suite_free(suite);
+}
+
+/**
  * Run all tests in this file.
  */
-MU_TEST_SUITE(test_all_coco_suite) {
+int main(void) {
   MU_RUN_TEST(test_coco_suite_encode_problem_index);
   MU_RUN_TEST(test_coco_suite_get_problem);
+  MU_RUN_TEST(test_coco_suite_get_from_index);
+
+  MU_REPORT();
+
+  return MU_EXIT_CODE;
 }
 

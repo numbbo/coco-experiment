@@ -97,8 +97,8 @@ f_different_powers_allocate(const size_t number_of_variables) {
                       number_of_variables);
 
   /* Compute best solution */
-  f_different_powers_evaluate(problem, problem->best_parameter,
-                              problem->best_value);
+  f_different_powers_evaluate(problem, problem->best_parameter.data(),
+                              problem->best_value.data());
   return problem;
 }
 

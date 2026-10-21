@@ -123,8 +123,8 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
     /* Compute and compare the optima */
     problem_tmp = coco_problem_transformed_get_inner_problem(problem_disc);
     problem_cont = coco_problem_transformed_get_inner_problem(problem_tmp);
-    xopt_cont = problem_cont->best_parameter;
-    fopt_cont = problem_cont->best_value;
+    xopt_cont = problem_cont->best_parameter.data();
+    fopt_cont = problem_cont->best_value.data();
     fopt_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? xopt_cont[0] : (double)j);
@@ -246,7 +246,7 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     f_ext2_cont = problem2_cont->best_value[0];
 
     /* The first extreme point */
-    x_ext_cont = problem1_cont->best_parameter;
+    x_ext_cont = problem1_cont->best_parameter.data();
     f_ext1_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? x_ext_cont[0] : (double)j);
@@ -277,7 +277,7 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     }
 
     /* The second extreme point */
-    x_ext_cont = problem2_cont->best_parameter;
+    x_ext_cont = problem2_cont->best_parameter.data();
     f_ext2_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? x_ext_cont[0] : (double)j);

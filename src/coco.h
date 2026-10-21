@@ -70,7 +70,9 @@ typedef unsigned __int64 uint64_t;
 /** @brief Definition of NAN to be used only if undefined by the included headers */
 #define NAN 8.8888e88
 #endif
-#ifndef isnan
+/* In C++, isnan and isinf are functions rather than macros, so the fallbacks below must only be used in C.
+ * Otherwise they would replace the standard functions in any C++ code that includes this header. */
+#if !defined(__cplusplus) && !defined(isnan)
 /** @brief Definition of isnan to be used only if undefined by the included headers */
 #define isnan(x) (0)
 #endif
@@ -79,7 +81,7 @@ typedef unsigned __int64 uint64_t;
 #define INFINITY 1e22
 /* why not using 1e99? */
 #endif
-#ifndef isinf
+#if !defined(__cplusplus) && !defined(isinf)
 /** @brief Definition of isinf to be used only if undefined by the included headers */
 #define isinf(x) (0)
 #endif

@@ -171,8 +171,8 @@ static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t
     problem->best_parameter[i] = data->xopt[i];
   }
   coco_free_memory(tmpvect);
-  f_lunacek_bi_rastrigin_evaluate(problem, problem->best_parameter,
-                                  problem->best_value);
+  f_lunacek_bi_rastrigin_evaluate(problem, problem->best_parameter.data(),
+                                  problem->best_value.data());
 
   fopt = bbob2009_compute_fopt(function, instance);
   problem = transform_obj_shift(problem, fopt);
@@ -235,8 +235,8 @@ f_lunacek_bi_rastrigin_sub_problem_allocate(const size_t number_of_variables) {
   problem_i->versatile_data = NULL;
   coco_problem_set_id(problem_i, "%s_d%04lu", "lunacek_bi_rastrigin_sub",
                       number_of_variables);
-  f_lunacek_bi_rastrigin_sub_evaluate_core(problem_i, problem_i->best_parameter,
-                                           problem_i->best_value);
+  f_lunacek_bi_rastrigin_sub_evaluate_core(problem_i, problem_i->best_parameter.data(),
+                                           problem_i->best_value.data());
   return problem_i;
 }
 
@@ -301,7 +301,7 @@ f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
       coco_allocate_vector(number_of_variables); /* Manh: Allocate x_hat in versatile_data */
   coco_problem_set_id(problem, "%s_d%04lu", "lunacek_bi_rastrigin", number_of_variables);
   /* Compute the best solution later once the sub-problems are well defined */
-  *(problem->best_value) = 0; /* Manh: set default value to avoid assert() in transformation later*/
+  problem->best_value[0] = 0; /* Manh: set default value to avoid assert() in transformation later*/
   return problem;
 }
 

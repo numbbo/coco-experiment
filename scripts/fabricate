@@ -347,9 +347,6 @@ if not args.skip_rust:
                RUST_DIR / 'coco-sys/vendor/coco.cpp',
                args.release)
     amalgamate('src/coco.h', RUST_DIR / 'coco-sys/vendor/coco.h', args.release)
-    # FIXME: Why?
-    copy_file('src/coco_internal.h',
-          RUST_DIR / 'coco-sys/vendor/coco_internal.h')
 
     info("TOML", f"build/rust/Cargo.toml")
     cr = toml.load(RUST_DIR / "Cargo.toml.in")

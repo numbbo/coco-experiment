@@ -84,7 +84,7 @@ static coco_problem_t *suite_biobj_get_problem(coco_suite_t *suite, const size_t
   const size_t instance = suite->instances[instance_idx];
 
   problem = coco_get_biobj_problem(function, dimension, instance, coco_get_bbob_problem, &new_inst_data,
-                                   suite->number_of_instances, suite->dimensions, suite->number_of_dimensions);
+                                   suite->instances.size(), suite->dimensions.data(), suite->dimensions.size());
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;

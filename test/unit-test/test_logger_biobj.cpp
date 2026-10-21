@@ -36,8 +36,8 @@ MU_TEST(test_logger_biobj_evaluate) {
   while ((problem = coco_suite_get_next_problem(suite, observer)) != NULL) {
 
     /* Tests the ideal and nadir points */
-    mu_check(about_equal_2d(problem->best_value, 3.914e+01, -4.328e+01));
-    mu_check(about_equal_2d(problem->nadir_value, 1.080278978306634e+02, -3.795129793854297e+01));
+    mu_check(about_equal_2d(problem->best_value.data(), 3.914e+01, -4.328e+01));
+    mu_check(about_equal_2d(problem->nadir_value.data(), 1.080278978306634e+02, -3.795129793854297e+01));
 
     while (f_results) {
 
@@ -94,8 +94,8 @@ MU_TEST(test_logger_biobj_evaluate2) {
     indicator = (logger_biobj_indicator_t *) (logger->indicators[0]);
 
     /* Tests the ideal and nadir points */
-    mu_check(about_equal_2d(problem->best_value, 2.872000000000000e+001, 6.587000000000001e+001));
-    mu_check(about_equal_2d(problem->nadir_value, 8.182999486471047e+006, 2.973909225537448e+005));
+    mu_check(about_equal_2d(problem->best_value.data(), 2.872000000000000e+001, 6.587000000000001e+001));
+    mu_check(about_equal_2d(problem->nadir_value.data(), 8.182999486471047e+006, 2.973909225537448e+005));
 
     indicator->best_value = 9.999761801899431e-01;
 

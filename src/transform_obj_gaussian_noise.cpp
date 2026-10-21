@@ -17,7 +17,7 @@ typedef struct {
  */
 static void transform_obj_gaussian_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  double fopt = *(inner_problem->best_value);
+  double fopt = inner_problem->best_value[0];
   transform_obj_gaussian_noise_data_t *data;
   data = (transform_obj_gaussian_noise_data_t *)coco_problem_transformed_get_data(problem);
   double gaussian_noise = coco_sample_gaussian_noise();

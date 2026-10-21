@@ -120,7 +120,7 @@ static coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const
     for (i = 0; i < problem->number_of_variables; ++i)
       data->gradient[i] *= -1.0;
 
-  problem->initial_solution = coco_duplicate_vector(feasible_direction, problem->number_of_variables);
+  problem->initial_solution.assign(feasible_direction, feasible_direction + problem->number_of_variables);
 
   data = NULL;
   return problem;
@@ -405,18 +405,18 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
         con_update_linear_combination(linear_combination, problem_c2, coco_random_uniform(random_generator2));
     }
 
-    problem_c = coco_problem_stacked_allocate(problem_c, problem_c2, problem_c2->smallest_values_of_interest,
-                                              problem_c2->largest_values_of_interest);
+    problem_c = coco_problem_stacked_allocate(problem_c, problem_c2, problem_c2->smallest_values_of_interest.data(),
+                                              problem_c2->largest_values_of_interest.data());
 
     /* Use the standard stacked problem_id as problem_name and
      * construct a new suite-specific problem_id
      */
-    coco_problem_set_name(problem_c, problem_c->problem_id);
+    coco_problem_set_name(problem_c, problem_c->problem_id.c_str());
     coco_problem_set_id(problem_c, "bbob-constrained_f%02lu_i%02lu_d%02lu", (unsigned long)function,
                         (unsigned long)instance, (unsigned long)dimension);
 
     /* Construct problem type */
-    coco_problem_set_type(problem_c, "%s_%s", problem_c2->problem_type, problem_c2->problem_type);
+    coco_problem_set_type(problem_c, "%s_%s", problem_c2->problem_type.c_str(), problem_c2->problem_type.c_str());
   }
 
   /* Modify first constraint without changing the feasible solution,

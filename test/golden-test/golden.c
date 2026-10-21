@@ -152,7 +152,7 @@ static void record_problem(coco_problem_t *problem, int has_type) {
   for (j = 0; j < NUMBER_OF_RANDOM_POINTS; ++j) {
     for (i = 0; i < n; ++i)
       x[i] = lower[i] + rng_uniform() * (upper[i] - lower[i]);
-    sprintf(label, "random %lu", (unsigned long)j);
+    snprintf(label, sizeof(label), "random %lu", (unsigned long)j);
     evaluate_at(problem, label, x, y, c);
   }
   /* A point that is likely outside of the region of interest */

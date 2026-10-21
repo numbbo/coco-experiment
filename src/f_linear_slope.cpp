@@ -54,7 +54,7 @@ static void f_linear_slope_evaluate(coco_problem_t *problem, const double *x,
                                     double *y) {
   assert(problem->number_of_objectives == 1);
   y[0] = f_linear_slope_raw(x, problem->number_of_variables,
-                            problem->best_parameter);
+                            problem->best_parameter.data());
   assert(y[0] + 1e-13 >= problem->best_value[0]);
 }
 
@@ -102,7 +102,7 @@ static coco_problem_t *f_linear_slope_allocate(const size_t number_of_variables,
       problem->best_parameter[i] = problem->largest_values_of_interest[i];
     }
   }
-  f_linear_slope_evaluate(problem, problem->best_parameter, problem->best_value);
+  f_linear_slope_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
 
   return problem;
 }

@@ -50,6 +50,6 @@ static coco_problem_t *transform_obj_power(coco_problem_t *inner_problem, const 
   problem = coco_problem_transformed_allocate(inner_problem, data, NULL, "transform_obj_power");
   problem->evaluate_function = transform_obj_power_evaluate;
   /* Compute best value */
-  transform_obj_power_evaluate(problem, problem->best_parameter, problem->best_value);
+  transform_obj_power_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
   return problem;
 }

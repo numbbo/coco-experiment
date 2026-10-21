@@ -9,7 +9,7 @@ keywords = ["coco", "benchmark", "blackbox", "bindings"]
 categories = ["science"]
 edition = "2024"
 links = "coco"
-include = ["build.rs", "src/", "vendor/", "wrapper.c", "wrapper.h"]
+include = ["build.rs", "src/", "vendor/", "wrapper.h"]
 
 [build-dependencies]
 bindgen = "0.73.2"

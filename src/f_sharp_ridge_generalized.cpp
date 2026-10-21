@@ -102,8 +102,8 @@ static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of
       proportion_of_linear_dims;
 
   /* Compute best solution */
-  f_sharp_ridge_generalized_evaluate(problem, problem->best_parameter,
-                                     problem->best_value);
+  f_sharp_ridge_generalized_evaluate(problem, problem->best_parameter.data(),
+                                     problem->best_value.data());
   return problem;
 }
 
