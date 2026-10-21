@@ -29,14 +29,13 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
       return;
     }
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       /* OME: We could precalculate the scaling coefficients if we
        * really wanted to.
        */
@@ -50,7 +49,6 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
    * @brief Evaluates the gradient of the transformed function.
    */
   void evaluate_gradient(const double *x, double *y) override {
-    size_t i;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
@@ -59,16 +57,16 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
 
     std::vector<double> gradient(inner_problem->number_of_variables, 0.0);
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       gradient[i] = pow(alpha, 0.5 * (double)(long)i / ((double)(long)number_of_variables - 1.0));
       conditioned_x[i] = gradient[i] * x[i];
     }
     inner_problem->evaluate_gradient(conditioned_x.data(), y);
 
-    for (i = 0; i < inner_problem->number_of_variables; ++i)
+    for (size_t i = 0; i < inner_problem->number_of_variables; ++i)
       gradient[i] *= y[i];
 
-    for (i = 0; i < inner_problem->number_of_variables; ++i)
+    for (size_t i = 0; i < inner_problem->number_of_variables; ++i)
       y[i] = gradient[i];
 
   }

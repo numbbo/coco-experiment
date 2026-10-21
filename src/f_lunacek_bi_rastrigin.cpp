@@ -55,7 +55,6 @@ struct f_lunacek_bi_rastrigin_t final : public coco_problem_s {
 double f_lunacek_bi_rastrigin_t::raw(const double *x) {
   double result;
   static const double condition = 100.;
-  size_t i, j;
   double penalty = 0.0;
   static const double mu0 = 2.5;
   static const double d = 1.;
@@ -68,7 +67,7 @@ double f_lunacek_bi_rastrigin_t::raw(const double *x) {
   if (coco_vector_contains_nan(x, number_of_variables))
     return NAN;
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double tmp;
     tmp = fabs(x[i]) - 5.0;
     if (tmp > 0.0)
@@ -76,7 +75,7 @@ double f_lunacek_bi_rastrigin_t::raw(const double *x) {
   }
 
   /* x_hat */
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     x_hat[i] = 2. * x[i];
     if (xopt[i] < 0.) {
       x_hat[i] *= -1.;
@@ -85,17 +84,17 @@ double f_lunacek_bi_rastrigin_t::raw(const double *x) {
 
   std::vector<double> tmpvect(number_of_variables);
   /* affine transformation */
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double c1;
     tmpvect[i] = 0.0;
     c1 = pow(sqrt(condition), ((double)i) / (double)(number_of_variables - 1));
-    for (j = 0; j < number_of_variables; ++j) {
+    for (size_t j = 0; j < number_of_variables; ++j) {
       tmpvect[i] += c1 * rot2(i, j) * (x_hat[j] - mu0);
     }
   }
   rot1.multiply(tmpvect.data(), z.data());
   /* Computation core */
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     sum1 += (x_hat[i] - mu0) * (x_hat[i] - mu0);
     sum2 += (x_hat[i] - mu1) * (x_hat[i] - mu1);
     sum3 += cos(2 * coco_pi * z[i]);
@@ -113,6 +112,7 @@ double f_lunacek_bi_rastrigin_t::raw(const double *x) {
  */
 static coco_problem_ptr_t f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                        const size_t instance, const long rseed,
+                                                                       const coco_bbob_variant_t variant,
                                                                        const char *problem_id_template,
                                                                        const char *problem_name_template) {
 
@@ -123,23 +123,18 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_bbob_problem_allocate(const siz
   const double mu0 = 2.5;
 
   double fopt;
-  size_t i;
 
   lunacek->rseed = rseed;
 
   lunacek->fopt = bbob2009_compute_fopt(24, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(lunacek->xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(lunacek->xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(lunacek->xopt.data(), rseed, dimension, variant);
   lunacek->rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   lunacek->rot2 = bbob2009_compute_rotation(rseed, dimension);
 
   /* Compute best solution */
   std::vector<double> tmpvect(dimension);
   bbob2009_gauss(tmpvect.data(), dimension, rseed);
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     lunacek->xopt[i] = 0.5 * mu0;
     if (tmpvect[i] < 0.0) {
       lunacek->xopt[i] *= -1.0;
@@ -197,7 +192,6 @@ f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
                             f_lunacek_bi_rastrigin_shared_data_t *shared) {
 
   coco_problem_t *problem_sub_mu0, *problem_sub_mu1;
-  size_t i;
   double result = 0.0;
   double y0, y1;
   double *x_hat;
@@ -212,7 +206,7 @@ f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
 
   result += (double)number_of_variables;
 
-  for (i = 0; i < number_of_variables; i++) {
+  for (size_t i = 0; i < number_of_variables; i++) {
     result -= cos(2 * coco_pi * x[i]);
   }
   result *= 10.0;
@@ -263,7 +257,6 @@ f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
 static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const char *problem_id_template, const char *problem_name_template) {
-  size_t i;
   double fopt;
   double penalty_factor = 1e4;
   coco_problem_ptr_t problem;
@@ -310,7 +303,7 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
 
   std::vector<double> mu0_vector(dimension);
   std::vector<double> mu1_vector(dimension);
-  for (i = 0; i < dimension; i++) {
+  for (size_t i = 0; i < dimension; i++) {
     mu0_vector[i] = mu0;
     mu1_vector[i] = mu1;
   }
@@ -324,7 +317,7 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
   std::vector<double> tmp_normal(dimension);
   bbob2009_gauss(tmp_normal.data(), dimension, rseed);
   std::vector<double> sign_vector(dimension); /* Wassim sign vector designate the 1^+_- vector*/
-  for (i = 0; i < dimension; i++) { /* set sign(x_opt)*/
+  for (size_t i = 0; i < dimension; i++) {    /* set sign(x_opt)*/
     if (tmp_normal[i] < 0.0) {      /* Wassim: noraml is used here but unif for Schweffel!!! */
       sign_vector[i] = -1.0;
     } else {
@@ -359,12 +352,9 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
   problem = transform_obj_shift(std::move(problem), fopt);
 
   /* set best_parameter and best value*/
-  for (i = 0; i < dimension; i++) {                          /* Wassim: to silence warning about best_parameter*/
+  for (size_t i = 0; i < dimension; i++) {                   /* Wassim: to silence warning about best_parameter*/
     problem->best_parameter[i] = 0.5 * mu0 * sign_vector[i]; /* TODO: Documentation no 0.5 in documentation! */
   }
-
-  /* f_lunacek_bi_rastrigin_evaluate_core(problem.get(), problem->best_parameter, problem->best_value);
-  printf("\n %f , x_opt[0]= %f\n", problem->best_value[0], problem->best_parameter[0]);*/ /* Wassim: for testing purposes, might end up being the one kept though*/
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);

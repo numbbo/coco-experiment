@@ -36,9 +36,8 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
  */
 struct c_sum_variables_t final : public coco_problem_s {
   explicit c_sum_variables_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 0, 1) {
-    size_t i;
     set_id("%s_d%02lu", "linearconstraint", number_of_variables);
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       smallest_values_of_interest[i] = -5.0;
       largest_values_of_interest[i] = 5.0;
     }
@@ -108,7 +107,6 @@ static c_linear_t *c_linear_get(const coco_problem_t *problem) {
  */
 static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem, const double *feasible_direction) {
 
-  size_t i;
   c_linear_t *data;
   double constraint_value = 0.0;
 
@@ -125,7 +123,7 @@ static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem,
    * is not feasible w.r.t. the constraint in "problem".
    */
   if (constraint_value > 0)
-    for (i = 0; i < problem->number_of_variables; ++i)
+    for (size_t i = 0; i < problem->number_of_variables; ++i)
       data->gradient[i] *= -1.0;
 
   problem->initial_solution.assign(feasible_direction, feasible_direction + problem->number_of_variables);
@@ -171,7 +169,6 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
     const double factor1, const char *problem_id_template, const char *problem_name_template, double *gradient,
     const double x_shift_factor, const double *feasible_direction) {
 
-  size_t i;
 
   coco_problem_ptr_t problem;
   long seed_cons_i;
@@ -210,7 +207,7 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
     /* Generate a pseudorandom vector with distribution N_i(0, I)
      * and scale it with 'factor1' and 'factor2' (see comments above)
      */
-    for (i = 0; i < dimension; ++i)
+    for (size_t i = 0; i < dimension; ++i)
       gradient_linear_constraint[i] = factor1 * random_generator.normal() * factor2 / sqrt((double)dimension);
 
     problem = c_linear_transform(std::move(problem), gradient_linear_constraint.data(), x_shift_factor);
@@ -237,7 +234,6 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
  *
  */
 static void con_update_linear_combination(double *linear_combination, const coco_problem_t *problem, double weight) {
-  size_t i;
   const c_linear_t *data;
 
   data = c_linear_get(problem);
@@ -254,7 +250,7 @@ static void con_update_linear_combination(double *linear_combination, const coco
       return; /* nothing to add */
     if (weight < 0)
       coco_warning("con_update_linear_combination: weight=%f < 0, should be > 0", weight);
-    for (i = 0; i < problem->number_of_variables; ++i)
+    for (size_t i = 0; i < problem->number_of_variables; ++i)
       linear_combination[i] += weight * data->gradient[i];
   }
 }

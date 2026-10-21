@@ -30,9 +30,8 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
   transform_vars_round_step_t(coco_problem_ptr_t inner, const double alpha, f_step_ellipsoid_shared_data_t *shared)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_round_step"), alpha(alpha),
         rounded_x(inner_problem->number_of_variables + 1), shared(shared) {
-    size_t i;
     /* Compute best parameter */
-    for (i = 0; i < number_of_variables; i++) {
+    for (size_t i = 0; i < number_of_variables; i++) {
       if (fabs(best_parameter[i]) > 0.5) {
         best_parameter[i] = coco_double_round(best_parameter[i]);
       } else {
@@ -45,7 +44,6 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
 
     /* multiplication by d to counter-balance the normalization by d*/
     shared->zhat_1 =
@@ -54,7 +52,7 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
             ->number_of_variables; /* TODO: Discuss: consider not pre-imptively multiplying by dim to not change the
                                       outcome of the max in the core function even though we might want to keep it as it
                                       is since otherwise, the sum part of the max may take over as dim increases */
-    for (i = 0; i < inner_problem->number_of_variables; ++i) {
+    for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
       if (fabs(x[i]) > 0.5) {
         rounded_x[i] = coco_double_round(x[i]);
       } else {

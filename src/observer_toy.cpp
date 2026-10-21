@@ -33,7 +33,7 @@ struct observer_toy_t final : public coco_observer_s {
 
     log_file = fopen(path.c_str(), "a");
     if (log_file == nullptr) {
-      coco_error("observer_toy(): failed to open file %s.", path.c_str());
+      coco_error("observer_toy_t(): failed to open file %s.", path.c_str());
       return; /* Never reached */
     }
   }

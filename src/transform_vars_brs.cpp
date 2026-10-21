@@ -28,7 +28,6 @@ struct transform_vars_brs_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
     double factor;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
@@ -36,7 +35,7 @@ struct transform_vars_brs_t final : public coco_problem_transformed_t {
       return;
     }
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       /* Function documentation says we should compute 10^(0.5 *
        * (i-1)/(D-1)). Instead we compute the equivalent
        * sqrt(10)^((i-1)/(D-1)) just like the legacy code.

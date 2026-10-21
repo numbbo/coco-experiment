@@ -11,9 +11,6 @@
 #include <assert.h>
 #include "coco.h"
 
-/** @brief Maximal dimension used in BBOB2009. */
-#define SUITE_BBOB2009_MAX_DIM 40
-
 /** @brief Computes the minimum of the two values. */
 static double bbob2009_fmin(double a, double b) { return (a < b) ? a : b; }
 
@@ -32,14 +29,13 @@ static void bbob2009_unif(double *r, size_t N, long inseed) {
   long tmp;
   long rgrand[32];
   long aktrand;
-  long i;
 
   if (inseed < 0)
     inseed = -inseed;
   if (inseed < 1)
     inseed = 1;
   aktseed = inseed;
-  for (i = 39; i >= 0; i--) {
+  for (long i = 39; i >= 0; i--) {
     tmp = (int)floor((double)aktseed / (double)127773);
     aktseed = 16807 * (aktseed - tmp * 127773) - 2836 * tmp;
     if (aktseed < 0)
@@ -48,7 +44,7 @@ static void bbob2009_unif(double *r, size_t N, long inseed) {
       rgrand[i] = aktseed;
   }
   aktrand = rgrand[0];
-  for (i = 0; i < (long)N; i++) {
+  for (long i = 0; i < (long)N; i++) {
     tmp = (int)floor((double)aktseed / (double)127773);
     aktseed = 16807 * (aktseed - tmp * 127773) - 2836 * tmp;
     if (aktseed < 0)
@@ -68,9 +64,8 @@ static void bbob2009_unif(double *r, size_t N, long inseed) {
  * @brief Converts from packed (column-major) storage to a matrix.
  */
 static void bbob2009_reshape(coco_matrix_t &B, const double *vector, const size_t m, const size_t n) {
-  size_t i, j;
-  for (i = 0; i < m; i++) {
-    for (j = 0; j < n; j++) {
+  for (size_t i = 0; i < m; i++) {
+    for (size_t j = 0; j < n; j++) {
       B(i, j) = vector[j * m + i];
     }
   }
@@ -80,12 +75,10 @@ static void bbob2009_reshape(coco_matrix_t &B, const double *vector, const size_
  * @brief Generates N Gaussian random numbers using the given seed and stores them in g.
  */
 static void bbob2009_gauss(double *g, const size_t N, const long seed) {
-  size_t i;
-  double uniftmp[6000];
-  assert(2 * N < 6000);
-  bbob2009_unif(uniftmp, 2 * N, seed);
+  std::vector<double> uniftmp(2 * N);
+  bbob2009_unif(uniftmp.data(), 2 * N, seed);
 
-  for (i = 0; i < N; i++) {
+  for (size_t i = 0; i < N; i++) {
     g[i] = sqrt(-2 * log(uniftmp[i])) * cos(2 * coco_pi * uniftmp[N + i]);
     if (g[i] == 0.)
       g[i] = 1e-99;
@@ -98,29 +91,25 @@ static void bbob2009_gauss(double *g, const size_t N, const long seed) {
  */
 static coco_matrix_t bbob2009_compute_rotation(const long seed, const size_t DIM) {
   coco_matrix_t B(DIM, DIM);
-  /* To ensure temporary data fits into gvec */
   double prod;
-  double gvect[2000];
-  size_t i, j, k; /* Loop over pairs of column vectors. */
+  std::vector<double> gvect(DIM * DIM);
 
-  assert(DIM * DIM < 2000);
-
-  bbob2009_gauss(gvect, DIM * DIM, seed);
-  bbob2009_reshape(B, gvect, DIM, DIM);
+  bbob2009_gauss(gvect.data(), DIM * DIM, seed);
+  bbob2009_reshape(B, gvect.data(), DIM, DIM);
   /*1st coordinate is row, 2nd is column.*/
 
-  for (i = 0; i < DIM; i++) {
-    for (j = 0; j < i; j++) {
+  for (size_t i = 0; i < DIM; i++) {
+    for (size_t j = 0; j < i; j++) {
       prod = 0;
-      for (k = 0; k < DIM; k++)
+      for (size_t k = 0; k < DIM; k++)
         prod += B(k, i) * B(k, j);
-      for (k = 0; k < DIM; k++)
+      for (size_t k = 0; k < DIM; k++)
         B(k, i) -= prod * B(k, j);
     }
     prod = 0;
-    for (k = 0; k < DIM; k++)
+    for (size_t k = 0; k < DIM; k++)
       prod += B(k, i) * B(k, i);
-    for (k = 0; k < DIM; k++)
+    for (size_t k = 0; k < DIM; k++)
       B(k, i) /= sqrt(prod);
   }
   return B;
@@ -130,9 +119,8 @@ static coco_matrix_t bbob2009_compute_rotation(const long seed, const size_t DIM
  * @brief Randomly computes the location of the global optimum.
  */
 static void bbob2009_compute_xopt(double *xopt, const long seed, const size_t DIM) {
-  size_t i;
   bbob2009_unif(xopt, DIM, seed);
-  for (i = 0; i < DIM; i++) {
+  for (size_t i = 0; i < DIM; i++) {
     xopt[i] = 8 * floor(1e4 * xopt[i]) / 1e4 - 4;
     if (xopt[i] == 0.0)
       xopt[i] = -1e-5;
@@ -144,13 +132,30 @@ static void bbob2009_compute_xopt(double *xopt, const long seed, const size_t DI
  * of [-5, 5]^DIM compared to `bbob2009_compute_xopt`.
  */
 static void sbox_cost_compute_xopt(double *xopt, const long seed, const size_t DIM) {
-  size_t i;
   bbob2009_unif(xopt, DIM, seed);
-  for (i = 0; i < DIM; i++) {
+  for (size_t i = 0; i < DIM; i++) {
     xopt[i] = 10 * floor(1e4 * xopt[i]) / 1e4 - 5;
     if (xopt[i] == 0.0)
       xopt[i] = -1e-5;
   }
+}
+
+/**
+ * @brief The suite a bbob function is created for.
+ *
+ * The functions differ slightly between the suites: bbob-boxed places the optimum in [-5, 5]^DIM and
+ * bbob-largescale normalizes the objective value by the dimension and scales by the block size.
+ */
+enum class coco_bbob_variant_t { bbob, boxed, largescale };
+
+/**
+ * @brief Randomly computes the location of the global optimum for the given suite variant.
+ */
+static void bbob_compute_xopt(double *xopt, const long seed, const size_t DIM, const coco_bbob_variant_t variant) {
+  if (variant == coco_bbob_variant_t::boxed)
+    sbox_cost_compute_xopt(xopt, seed, DIM);
+  else
+    bbob2009_compute_xopt(xopt, seed, DIM);
 }
 
 /**

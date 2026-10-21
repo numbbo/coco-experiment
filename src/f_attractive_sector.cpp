@@ -54,14 +54,13 @@ struct f_attractive_sector_t final : public coco_problem_s {
  * COCO structures.
  */
 double f_attractive_sector_t::raw(const double *x) const {
-  size_t i;
   double result;
 
   if (coco_vector_contains_nan(x, number_of_variables))
     return NAN;
 
   result = 0.0;
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     if (xopt[i] * x[i] > 0.0) {
       result += 100.0 * 100.0 * x[i] * x[i];
     } else {
@@ -83,27 +82,23 @@ static coco_problem_ptr_t f_attractive_sector_allocate(const size_t number_of_va
  */
 static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance, const long rseed,
+                                                                    const coco_bbob_variant_t variant,
                                                                     const char *problem_id_template,
                                                                     const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t k;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   /* Compute affine transformation M from two rotation matrices */
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
   std::vector<double> scales(dimension);
-  for (k = 0; k < dimension; ++k) {
+  for (size_t k = 0; k < dimension; ++k) {
     const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
     scales[k] = pow(sqrt(10.0), exponent);
   }
@@ -125,7 +120,7 @@ static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t
 
 static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
-    const char *problem_id_template, const char *problem_name_template) {
+    const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
 
   double fopt;
   coco_problem_ptr_t problem;
@@ -137,11 +132,7 @@ static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocat
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
   std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");

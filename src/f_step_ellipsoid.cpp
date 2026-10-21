@@ -67,7 +67,6 @@ double f_step_ellipsoid_t::raw(const double *x) {
 
   static const double condition = 100;
   static const double alpha = 10.0;
-  size_t i, j;
   double penalty = 0.0, x1;
   double result;
 
@@ -76,24 +75,24 @@ double f_step_ellipsoid_t::raw(const double *x) {
   if (coco_vector_contains_nan(x, number_of_variables))
     return NAN;
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double tmp;
     tmp = fabs(x[i]) - 5.0;
     if (tmp > 0.0)
       penalty += tmp * tmp;
   }
   penalty = penalty * (penalty_scale);
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double c1;
     z_hat[i] = 0.0;
     c1 = sqrt(pow(condition / 10., (double)i / (double)(number_of_variables - 1)));
-    for (j = 0; j < number_of_variables; ++j) {
+    for (size_t j = 0; j < number_of_variables; ++j) {
       z_hat[i] += c1 * rot2(i, j) * (x[j] - xopt[j]);
     }
   }
   x1 = z_hat[0];
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     if (fabs(z_hat[i]) > 0.5) /* TODO: Documentation: no fabs() in documentation */
       z_hat[i] = coco_double_round(z_hat[i]);
     else
@@ -104,7 +103,7 @@ double f_step_ellipsoid_t::raw(const double *x) {
 
   /* Computation core */
   result = 0.0;
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double exponent;
     exponent = (double)(long)i / ((double)(long)number_of_variables - 1.0);
     result += pow(condition, exponent) * z[i] * z[i];
@@ -119,22 +118,16 @@ double f_step_ellipsoid_t::raw(const double *x) {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_ptr_t f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                 const size_t instance, const long rseed,
-                                                                 const double penalty_scale,
-                                                                 const char *problem_id_template,
-                                                                 const char *problem_name_template) {
+static coco_problem_ptr_t
+f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
+                                       const long rseed, const coco_bbob_variant_t variant, const double penalty_scale,
+                                       const char *problem_id_template, const char *problem_name_template) {
 
-  size_t i;
   std::unique_ptr<f_step_ellipsoid_t> problem = std::make_unique<f_step_ellipsoid_t>(dimension);
 
   problem->fopt = bbob2009_compute_fopt(function, instance);
   problem->penalty_scale = penalty_scale;
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(problem->xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(problem->xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(problem->xopt.data(), rseed, dimension, variant);
   problem->rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   problem->rot2 = bbob2009_compute_rotation(rseed, dimension);
 
@@ -143,7 +136,7 @@ static coco_problem_ptr_t f_step_ellipsoid_bbob_problem_allocate(const size_t fu
    * OME: Dirty hack for now because I did not want to invert the
    * transformations to find the best_parameter :/
    */
-  for (i = 0; i < problem->number_of_variables; i++) {
+  for (size_t i = 0; i < problem->number_of_variables; i++) {
     problem->best_parameter[i] = problem->xopt[i];
   }
   problem->best_value[0] = problem->fopt;
@@ -162,11 +155,10 @@ static double f_step_ellipsoid_core(const double *x, const size_t number_of_vari
                                     f_step_ellipsoid_shared_data_t *shared) {
 
   static const double condition = 100;
-  size_t i;
   double result;
   result = 0.0;
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double exponent;
     exponent = (double)(long)i / ((double)(long)number_of_variables - 1.0);
     result += pow(condition, exponent) * x[i] * x[i];
@@ -220,11 +212,9 @@ static std::unique_ptr<f_step_ellipsoid_permblock_t> f_step_ellipsoid_allocate(c
  * Wassim: TODO: make the zhat1 value default to x1 when no transformation is
  * applied and the data type defined here
  */
-static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function,
-                                                                               const size_t dimension,
-                                                                               const size_t instance, const long rseed,
-                                                                               const char *problem_id_template,
-                                                                               const char *problem_name_template) {
+static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(
+    const size_t function, const size_t dimension, const size_t instance, const long rseed,
+    const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
   double alpha = 10.; /*parameter of rounding*/
   double fopt;
   coco_problem_ptr_t problem;
@@ -233,11 +223,7 @@ static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(c
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
   std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");

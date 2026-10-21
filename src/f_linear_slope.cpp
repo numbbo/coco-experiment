@@ -20,13 +20,12 @@
 static double f_linear_slope_raw(const double *x, const size_t number_of_variables, const double *best_parameter) {
 
   static const double alpha = 100.0;
-  size_t i;
   double result = 0.0;
 
   if (coco_vector_contains_nan(x, number_of_variables))
     return NAN;
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double base, exponent, si;
 
     base = sqrt(alpha);
@@ -53,13 +52,12 @@ static double f_linear_slope_raw(const double *x, const size_t number_of_variabl
 struct f_linear_slope_t final : public coco_problem_s {
   f_linear_slope_t(const size_t number_of_variables, const double *best_parameter)
       : coco_problem_s(number_of_variables, 1, 0) {
-    size_t i;
     /* best_parameter will be overwritten below */
     init_from_scalars("linear slope function", -5.0, 5.0, 0.0);
     set_id("%s_d%02lu", "linear_slope", number_of_variables);
 
     /* Compute best solution */
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       if (best_parameter[i] < 0.0) {
         this->best_parameter[i] = smallest_values_of_interest[i];
       } else {
@@ -84,10 +82,9 @@ struct f_linear_slope_t final : public coco_problem_s {
   void evaluate_gradient(const double *x, double *y) override {
     static const double alpha = 100.0;
     double base, exponent, si;
-    size_t i;
 
     (void)x; /* silence (C89) compiliers */
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       base = sqrt(alpha);
       exponent = (double)(long)i / ((double)(long)number_of_variables - 1);
       if (best_parameter[i] > 0.0) {
@@ -112,23 +109,20 @@ static coco_problem_ptr_t f_linear_slope_allocate(const size_t number_of_variabl
  */
 static coco_problem_ptr_t f_linear_slope_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                const size_t instance, const long rseed,
+                                                               const coco_bbob_variant_t variant,
                                                                const char *problem_id_template,
                                                                const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_linear_slope_allocate(dimension, xopt.data());
 
   /*if large scale test-bed, normalize by dim*/
-  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
+  if (variant == coco_bbob_variant_t::largescale) {
     problem = transform_obj_norm_by_dim(std::move(problem));
   }
   problem = transform_obj_shift(std::move(problem), fopt);

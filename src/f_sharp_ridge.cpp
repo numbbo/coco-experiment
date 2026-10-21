@@ -77,26 +77,22 @@ static coco_problem_ptr_t f_sharp_ridge_allocate(const size_t number_of_variable
  */
 static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                               const size_t instance, const long rseed,
+                                                              const coco_bbob_variant_t variant,
                                                               const char *problem_id_template,
                                                               const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t k;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
   std::vector<double> scales(dimension);
-  for (k = 0; k < dimension; ++k) {
+  for (size_t k = 0; k < dimension; ++k) {
     const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
     scales[k] = pow(sqrt(10), exponent);
   }

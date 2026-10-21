@@ -88,7 +88,6 @@ static coco_problem_ptr_t f_schwefel_bbob_problem_allocate(const size_t function
                                                            const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t i;
 
   const double condition = 10.;
 
@@ -98,11 +97,11 @@ static coco_problem_ptr_t f_schwefel_bbob_problem_allocate(const size_t function
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
   bbob2009_unif(tmp1.data(), dimension, rseed);
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     xopt[i] = (tmp1[i] < 0.5 ? -1 : 1) * 0.5 * 4.2096874637;
   }
 
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     tmp1[i] = -2 * fabs(xopt[i]);
     tmp2[i] = 2 * fabs(xopt[i]);
   }
@@ -110,7 +109,6 @@ static coco_problem_ptr_t f_schwefel_bbob_problem_allocate(const size_t function
   problem = f_schwefel_allocate(dimension);
   problem = transform_vars_scale(std::move(problem), 100);
   problem = transform_vars_shift(std::move(problem), tmp1.data(), 0);
-  /* problem = transform_vars_affine(std::move(problem), M, b, dimension); */
   problem = transform_vars_conditioning(std::move(problem), condition);
   problem = transform_vars_shift(std::move(problem), tmp2.data(), 0);
   problem = transform_vars_z_hat(std::move(problem),

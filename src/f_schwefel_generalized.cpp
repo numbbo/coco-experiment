@@ -44,7 +44,6 @@ static double f_schwefel_generalized_raw(const double *x,
     sum += x[i] * sin(sqrt(fabs(x[i])));
   }
   result = 0.01 * (penalty + Schwefel_constant * 100. - sum / (double)number_of_variables);
-  /*result = 0.01 * (penalty - sum);*/
 
   return result;
 }
@@ -87,23 +86,20 @@ static coco_problem_ptr_t f_schwefel_generalized_bbob_problem_allocate(const siz
                                                                        const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t i;
-  /*const double Schwefel_constant = 4.189828872724339;*/ /* Wassim: now inside
-                                                             the raw function*/
   std::vector<double> tmp1(dimension);
   std::vector<double> tmp2(dimension);
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
   bbob2009_unif(tmp1.data(), dimension, rseed);
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     xopt[i] = 0.5 * 4.2096874637;
     if (tmp1[i] - 0.5 < 0) {
       xopt[i] *= -1;
     }
   }
 
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     tmp1[i] = -2 * fabs(xopt[i]);
     tmp2[i] = 2 * fabs(xopt[i]);
   }
@@ -116,13 +112,6 @@ static coco_problem_ptr_t f_schwefel_generalized_bbob_problem_allocate(const siz
   problem = transform_vars_z_hat(std::move(problem), xopt.data());
   problem = transform_vars_scale(std::move(problem), 2);
   problem = transform_vars_x_hat(std::move(problem), rseed);
-  /*problem = transform_obj_norm_by_dim(std::move(problem));*/              /* Wassim: there is already
-                                                                    a normalization by
-                                                                    dimension*/
-  /*problem = transform_obj_shift(std::move(problem), Schwefel_constant);*/ /* Wassim: now
-                                                                    in the raw
-                                                                    definition
-                                                                  */
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);

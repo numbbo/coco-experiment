@@ -54,161 +54,167 @@ static coco_problem_ptr_t coco_get_bbob_noisy_problem(const size_t function, con
 
   if (function == 101) {
     rseed = rseed_1;
-    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                   problem_id_template, problem_name_template);
     double beta = 0.01;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 102) {
     rseed = rseed_1;
-    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                   problem_id_template, problem_name_template);
     double alpha = 0.01 * (0.49 + 1 / (double)dimension);
     double beta = 0.01;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 103) {
     rseed = rseed_1;
-    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                   problem_id_template, problem_name_template);
     double alpha = 0.01;
     double p = 0.05;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 104) {
     rseed = rseed_8;
-    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                       problem_name_template);
+    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                       problem_id_template, problem_name_template);
     double beta = 0.01;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 105) {
     rseed = rseed_8;
-    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                       problem_name_template);
+    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                       problem_id_template, problem_name_template);
     double alpha = 0.01 * (0.49 + 1 / (double)dimension);
     double beta = 0.01;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 106) {
     rseed = rseed_8;
-    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                       problem_name_template);
+    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                       problem_id_template, problem_name_template);
     double alpha = 0.01;
     double p = 0.05;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 107) {
     rseed = rseed_1;
-    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                   problem_id_template, problem_name_template);
     double beta = 1.0;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 108) {
     rseed = rseed_1;
-    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                   problem_id_template, problem_name_template);
     double alpha = 0.49 + 1.0 / (double)dimension;
     double beta = 1.0;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 109) {
     rseed = rseed_1;
-    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+    inner_problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                   problem_id_template, problem_name_template);
     double alpha = 1.0;
     double p = 0.2;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 110) {
     rseed = rseed_8;
-    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                       problem_name_template);
+    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                       problem_id_template, problem_name_template);
     double beta = 1.0;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 111) {
     rseed = rseed_8;
-    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                       problem_name_template);
+    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                       problem_id_template, problem_name_template);
     double alpha = 0.49 + 1.0 / (double)dimension;
     double beta = 1.0;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 112) {
     rseed = rseed_8;
-    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                       problem_name_template);
+    inner_problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                       problem_id_template, problem_name_template);
     double alpha = 1.0;
     double p = 0.2;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 113) {
     rseed = rseed_7;
-    inner_problem = f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, 0.0,
-                                                           problem_id_template, problem_name_template);
+    inner_problem =
+        f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob, 0.0,
+                                               problem_id_template, problem_name_template);
     double beta = 1.0;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 114) {
     rseed = rseed_7;
-    inner_problem = f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, 0.0,
-                                                           problem_id_template, problem_name_template);
+    inner_problem =
+        f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob, 0.0,
+                                               problem_id_template, problem_name_template);
     double alpha = 0.49 + 1.0 / (double)dimension;
     double beta = 1.0;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 115) {
     rseed = rseed_7;
-    inner_problem = f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, 0.0,
-                                                           problem_id_template, problem_name_template);
+    inner_problem =
+        f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob, 0.0,
+                                               problem_id_template, problem_name_template);
     double alpha = 1.0;
     double p = 0.2;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 116) {
     rseed = rseed_10;
-    inner_problem = f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, 1.0e4,
-                                                              problem_id_template, problem_name_template);
+    inner_problem =
+        f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                  1.0e4, problem_id_template, problem_name_template);
     double beta = 1.0;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 117) {
     rseed = rseed_10;
-    inner_problem = f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, 1.0e4,
-                                                              problem_id_template, problem_name_template);
+    inner_problem =
+        f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                  1.0e4, problem_id_template, problem_name_template);
     double alpha = 0.49 + 1.0 / (double)dimension;
     double beta = 1.0;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 118) {
     rseed = rseed_10;
-    inner_problem = f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, 1.0e4,
-                                                              problem_id_template, problem_name_template);
+    inner_problem =
+        f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                  1.0e4, problem_id_template, problem_name_template);
     double alpha = 1.0;
     double p = 0.2;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 119) {
     rseed = rseed_14;
-    inner_problem = f_different_powers_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                             problem_name_template);
+    inner_problem = f_different_powers_bbob_problem_allocate(
+        function, dimension, instance, rseed, coco_bbob_variant_t::bbob, problem_id_template, problem_name_template);
     double beta = 1.0;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 120) {
     rseed = rseed_14;
-    inner_problem = f_different_powers_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                             problem_name_template);
+    inner_problem = f_different_powers_bbob_problem_allocate(
+        function, dimension, instance, rseed, coco_bbob_variant_t::bbob, problem_id_template, problem_name_template);
     double alpha = 0.49 + 1.0 / (double)dimension;
     double beta = 1.0;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 121) {
     rseed = rseed_14;
-    inner_problem = f_different_powers_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                             problem_name_template);
+    inner_problem = f_different_powers_bbob_problem_allocate(
+        function, dimension, instance, rseed, coco_bbob_variant_t::bbob, problem_id_template, problem_name_template);
     double alpha = 1.0;
     double p = 0.2;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 122) {
     rseed = rseed_17;
-    inner_problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, 10.0, 0.0,
-                                                      problem_id_template, problem_name_template);
+    inner_problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                      10.0, 0.0, problem_id_template, problem_name_template);
     double beta = 1.0;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 123) {
     rseed = rseed_17;
-    inner_problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, 10.0, 0.0,
-                                                      problem_id_template, problem_name_template);
+    inner_problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                      10.0, 0.0, problem_id_template, problem_name_template);
     double alpha = 0.49 + 1.0 / (double)dimension;
     double beta = 1.0;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 124) {
     rseed = rseed_17;
-    inner_problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, 10.0, 0.0,
-                                                      problem_id_template, problem_name_template);
+    inner_problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                      10.0, 0.0, problem_id_template, problem_name_template);
     double alpha = 1.0;
     double p = 0.2;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
@@ -234,21 +240,21 @@ static coco_problem_ptr_t coco_get_bbob_noisy_problem(const size_t function, con
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);
   } else if (function == 128) {
     rseed = rseed_21;
-    inner_problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, (size_t)101, 0.0,
-                                                      problem_id_template, problem_name_template);
+    inner_problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                      (size_t)101, 0.0, problem_id_template, problem_name_template);
     double beta = 1.0;
     problem = transform_obj_gaussian_noise(std::move(inner_problem), beta);
   } else if (function == 129) {
     rseed = rseed_21;
-    inner_problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, (size_t)101, 0.0,
-                                                      problem_id_template, problem_name_template);
+    inner_problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                      (size_t)101, 0.0, problem_id_template, problem_name_template);
     double alpha = 0.49 + 1.0 / (double)dimension;
     double beta = 1.0;
     problem = transform_obj_uniform_noise(std::move(inner_problem), alpha, beta);
   } else if (function == 130) {
     rseed = rseed_21;
-    inner_problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, (size_t)101, 0.0,
-                                                      problem_id_template, problem_name_template);
+    inner_problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                      (size_t)101, 0.0, problem_id_template, problem_name_template);
     double alpha = 1.0;
     double p = 0.2;
     problem = transform_obj_cauchy_noise(std::move(inner_problem), alpha, p);

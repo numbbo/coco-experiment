@@ -32,7 +32,6 @@ struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
@@ -41,7 +40,7 @@ struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
 
     bbob2009_unif(x_hat.data(), number_of_variables, seed);
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       if (x_hat[i] < 0.5) {
         x_hat[i] = -x[i];
       } else {

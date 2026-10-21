@@ -51,7 +51,7 @@ struct f_discus_generalized_t final : public coco_problem_s {
 double f_discus_generalized_t::raw(const double *x) const {
 
   static const double condition = 1.0e6;
-  size_t i, nb_short_axes;
+  size_t nb_short_axes;
   double result;
   result = 0;
   nb_short_axes = number_of_variables / proportion_short_axes_denom;
@@ -59,12 +59,12 @@ double f_discus_generalized_t::raw(const double *x) const {
     nb_short_axes += 1;
   }
 
-  for (i = 0; i < nb_short_axes; ++i) {
+  for (size_t i = 0; i < nb_short_axes; ++i) {
     result += x[i] * x[i];
   }
   result *= condition;
 
-  for (i = nb_short_axes; i < number_of_variables; ++i) {
+  for (size_t i = nb_short_axes; i < number_of_variables; ++i) {
     result += x[i] * x[i];
   }
 
@@ -84,7 +84,7 @@ static coco_problem_ptr_t f_discus_generalized_allocate(const size_t number_of_v
  */
 static coco_problem_ptr_t f_discus_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
-    const char *problem_id_template, const char *problem_name_template) {
+    const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
   std::vector<size_t> P1(dimension);
@@ -100,11 +100,7 @@ static coco_problem_ptr_t f_discus_generalized_permblockdiag_bbob_problem_alloca
   nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
   fopt = bbob2009_compute_fopt(function, instance);
 
   const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);

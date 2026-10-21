@@ -36,7 +36,6 @@ struct logger_toy_t final : public coco_problem_transformed_t {
  * targets that have been hit.
  */
 void logger_toy_t::evaluate_function(const double *x, double *y) {
-  size_t i;
 
   coco_evaluate_function(inner_problem.get(), x, y);
   number_of_evaluations++;
@@ -45,7 +44,7 @@ void logger_toy_t::evaluate_function(const double *x, double *y) {
   if (targets.trigger(y[0])) {
     fprintf(log_file, "%lu\t%.*e\t%.*e", (unsigned long)number_of_evaluations, precision_f, y[0], precision_f,
             targets.value);
-    for (i = 0; i < number_of_variables; i++) {
+    for (size_t i = 0; i < number_of_variables; i++) {
       fprintf(log_file, "\t%.*e", precision_x, x[i]);
     }
     fprintf(log_file, "\n");
@@ -61,7 +60,7 @@ void logger_toy_t::evaluate_function(const double *x, double *y) {
 logger_toy_t::logger_toy_t(observer_toy_t &observer, coco_problem_ptr_t inner)
     : coco_problem_transformed_t(std::move(inner), observer.observer_name) {
   if (inner_problem->number_of_objectives != 1) {
-    coco_warning("logger_toy(): The toy logger shouldn't be used to log a problem with %lu objectives",
+    coco_warning("logger_toy_t(): The toy logger shouldn't be used to log a problem with %lu objectives",
                  (unsigned long)inner_problem->number_of_objectives);
   }
 

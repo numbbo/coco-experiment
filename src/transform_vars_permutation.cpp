@@ -24,14 +24,13 @@ struct transform_vars_permutation_t final : public coco_problem_transformed_t {
         inverse(inverse), permuted_x(number_of_variables), P(P, P + number_of_variables) {}
 
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
 
     if (inverse) {
-      for (i = 0; i < inner_problem->number_of_variables; ++i) {
+      for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
         permuted_x[P[i]] = x[i];
       }
     } else {
-      for (i = 0; i < inner_problem->number_of_variables; ++i) {
+      for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
         permuted_x[i] = x[P[i]];
       }
     }

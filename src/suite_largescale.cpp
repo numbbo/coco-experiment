@@ -50,58 +50,72 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
   const long rseed_17 = (long)(17 + 10000 * instance);
 
   if (function == 1) {
-    problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                             problem_name_template);
+    problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
+                                             problem_id_template, problem_name_template);
   } else if (function == 2) {
-    problem = f_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                problem_name_template);
+    problem = f_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
+                                                problem_id_template, problem_name_template);
   } else if (function == 3) {
-    problem = f_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                problem_name_template);
+    problem = f_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
+                                                problem_id_template, problem_name_template);
   } else if (function == 4) {
-    problem = f_bueche_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed_3, problem_id_template,
+    problem = f_bueche_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed_3,
+                                                       coco_bbob_variant_t::largescale, problem_id_template,
                                                        problem_name_template);
   } else if (function == 5) {
-    problem = f_linear_slope_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+    problem =
+        f_linear_slope_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
+                                             problem_id_template, problem_name_template);
   } else if (function == 6) {
     problem = f_attractive_sector_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                                      coco_bbob_variant_t::largescale,
                                                                       problem_id_template, problem_name_template);
   } else if (function == 7) {
     problem = f_step_ellipsoid_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                                   problem_id_template, problem_name_template);
+                                                                   coco_bbob_variant_t::largescale, problem_id_template,
+                                                                   problem_name_template);
   } else if (function == 8) {
-    problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                 problem_name_template);
+    problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
+                                                 problem_id_template, problem_name_template);
   } else if (function == 9) {
     problem = f_rosenbrock_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                               problem_id_template, problem_name_template);
+                                                               coco_bbob_variant_t::largescale, problem_id_template,
+                                                               problem_name_template);
   } else if (function == 10) {
-    problem = f_ellipsoid_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+    problem = f_ellipsoid_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                              coco_bbob_variant_t::largescale, problem_id_template,
                                                               problem_name_template);
   } else if (function == 11) {
     problem = f_discus_generalized_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                                       coco_bbob_variant_t::largescale,
                                                                        problem_id_template, problem_name_template);
   } else if (function == 12) {
     problem = f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                                           coco_bbob_variant_t::largescale,
                                                                            problem_id_template, problem_name_template);
   } else if (function == 13) {
     problem = f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                                            coco_bbob_variant_t::largescale,
                                                                             problem_id_template, problem_name_template);
   } else if (function == 14) {
     problem = f_different_powers_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                                     coco_bbob_variant_t::largescale,
                                                                      problem_id_template, problem_name_template);
   } else if (function == 15) {
-    problem = f_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+    problem = f_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                              coco_bbob_variant_t::largescale, problem_id_template,
                                                               problem_name_template);
   } else if (function == 16) {
     problem = f_weierstrass_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                                problem_id_template, problem_name_template);
+                                                                coco_bbob_variant_t::largescale, problem_id_template,
+                                                                problem_name_template);
   } else if (function == 17) {
-    problem = f_schaffers_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, 10,
-                                                              problem_id_template, problem_name_template);
+    problem = f_schaffers_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                              coco_bbob_variant_t::largescale, 10, problem_id_template,
+                                                              problem_name_template);
   } else if (function == 18) {
-    problem = f_schaffers_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed_17, 1000,
+    problem = f_schaffers_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed_17,
+                                                              coco_bbob_variant_t::largescale, 1000,
                                                               problem_id_template, problem_name_template);
   } else if (function == 19) {
     problem = f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
@@ -116,7 +130,8 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
     problem = f_gallagher_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, 21,
                                                               problem_id_template, problem_name_template);
   } else if (function == 23) {
-    problem = f_katsuura_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
+    problem = f_katsuura_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
+                                                             coco_bbob_variant_t::largescale, problem_id_template,
                                                              problem_name_template);
   } else if (function == 24) {
     problem = f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,

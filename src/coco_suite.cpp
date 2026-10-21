@@ -27,7 +27,7 @@
 #include "suite_toy.cpp"
 
 /** @brief The maximum number of different instances in a suite. */
-#define COCO_MAX_INSTANCES 1000
+static constexpr size_t COCO_MAX_INSTANCES = 1000;
 
 /**
  * @brief Calls the initializer of the given suite.
@@ -93,12 +93,11 @@ coco_problem_ptr_t coco_suite_s::get_problem_from_indices(const size_t function_
 coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite_t *suite, const size_t function,
                                                                       const size_t dimension, const size_t instance) {
 
-  size_t i;
   int function_idx, dimension_idx, instance_idx;
   int found;
 
   found = 0;
-  for (i = 0; i < suite->functions.size(); i++) {
+  for (size_t i = 0; i < suite->functions.size(); i++) {
     if (suite->functions[i] == function) {
       function_idx = (int)i;
       found = 1;
@@ -109,7 +108,7 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
     return nullptr;
 
   found = 0;
-  for (i = 0; i < suite->dimensions.size(); i++) {
+  for (size_t i = 0; i < suite->dimensions.size(); i++) {
     if (suite->dimensions[i] == dimension) {
       dimension_idx = (int)i;
       found = 1;
@@ -120,7 +119,7 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
     return nullptr;
 
   found = 0;
-  for (i = 0; i < suite->instances.size(); i++) {
+  for (size_t i = 0; i < suite->instances.size(); i++) {
     if (suite->instances[i] == instance) {
       instance_idx = (int)i;
       found = 1;
@@ -141,11 +140,10 @@ coco_suite_s::coco_suite_s(std::string_view suite_name, const size_t number_of_f
       /* Will be set to the first valid dimension, function and instance index by coco_suite_get_next_problem() */
       current_dimension_idx(-1), current_function_idx(-1), current_instance_idx(-1) {
 
-  size_t i;
 
   assert(number_of_dimensions > 0);
   assert(number_of_functions > 0);
-  for (i = 0; i < number_of_functions; i++) {
+  for (size_t i = 0; i < number_of_functions; i++) {
     this->functions[i] = i + 1;
     if (this->suite_name == "bbob-noisy")
       this->functions[i] = this->functions[i] + 100;
@@ -162,7 +160,7 @@ coco_suite_s::~coco_suite_s() {
 
 std::string_view coco_suite_s::get_instances_by_year(const int year) const {
   (void)year;
-  coco_error("coco_suite_get_instances_by_year(): suite '%s' has no years defined", suite_name.c_str());
+  coco_error("coco_suite_s::get_instances_by_year(): suite '%s' has no years defined", suite_name.c_str());
   return {};
 }
 
@@ -187,9 +185,7 @@ static void coco_suite_set_instance(coco_suite_t *suite, const std::vector<size_
  */
 static void coco_suite_filter_indices(std::vector<size_t> &items, const std::vector<size_t> &indices) {
 
-  size_t i;
-
-  for (i = 1; i <= items.size(); i++) {
+  for (size_t i = 1; i <= items.size(); i++) {
     if (std::find(indices.begin(), indices.end(), i) == indices.end())
       items[i - 1] = 0;
   }

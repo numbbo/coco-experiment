@@ -29,10 +29,9 @@ static const double mo_discretization = 5 * 1e-13;
  */
 static double mo_get_norm(const double *first, const double *second, const size_t dim) {
 
-  size_t i;
   double norm = 0;
 
-  for (i = 0; i < dim; i++) {
+  for (size_t i = 0; i < dim; i++) {
     norm += pow(first[i] - second[i], 2);
   }
 
@@ -47,10 +46,9 @@ static double mo_get_norm(const double *first, const double *second, const size_
 static std::vector<double> mo_normalize(const double *y, const double *ideal, const double *nadir,
                                         const size_t num_obj) {
 
-  size_t i;
   std::vector<double> normalized_y(num_obj);
 
-  for (i = 0; i < num_obj; i++) {
+  for (size_t i = 0; i < num_obj; i++) {
     assert((nadir[i] - ideal[i]) > mo_discretization);
     normalized_y[i] = (y[i] - ideal[i]) / (nadir[i] - ideal[i]);
     normalized_y[i] = coco_double_round(normalized_y[i] / mo_discretization) * mo_discretization;
@@ -60,7 +58,7 @@ static std::vector<double> mo_normalize(const double *y, const double *ideal, co
     }
   }
 
-  for (i = 0; i < num_obj; i++) {
+  for (size_t i = 0; i < num_obj; i++) {
     assert(num_obj == 2);
     if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) && (normalized_y[1 - i] < 1)) {
       coco_warning("mo_normalize(): Adjusting %.15e to %.15e", y[1 - i], nadir[1 - i]);
@@ -85,11 +83,10 @@ static std::vector<double> mo_normalize(const double *y, const double *ideal, co
  */
 static int mo_get_dominance(const double *normalized_y1, const double *normalized_y2, const size_t num_obj) {
 
-  size_t i;
   int flag1 = 0;
   int flag2 = 0;
 
-  for (i = 0; i < num_obj; i++) {
+  for (size_t i = 0; i < num_obj; i++) {
     if (coco_double_almost_equal(normalized_y1[i], normalized_y2[i], mo_precision)) {
       continue;
     } else if (normalized_y1[i] < normalized_y2[i]) {
@@ -115,10 +112,9 @@ static int mo_get_dominance(const double *normalized_y1, const double *normalize
  */
 static int mo_is_within_ROI(const double *normalized_y, const size_t num_obj) {
 
-  size_t i;
   int within = 1;
 
-  for (i = 0; i < num_obj; i++) {
+  for (size_t i = 0; i < num_obj; i++) {
     if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) ||
         coco_double_almost_equal(normalized_y[i], 1, mo_precision) || (normalized_y[i] > 0 && normalized_y[i] < 1))
       continue;

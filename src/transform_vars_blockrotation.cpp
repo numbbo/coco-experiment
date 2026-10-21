@@ -49,15 +49,14 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
    * @brief test blockrotation on its own rows and raise coco_error in case
    */
   void test(double precision) const {
-    size_t i, j;
     std::vector<double> row(number_of_variables), y(number_of_variables);
-    for (i = 0; i < number_of_variables; ++i) { /* for each row */
-      for (j = 0; j < number_of_variables; ++j)
+    for (size_t i = 0; i < number_of_variables; ++i) { /* for each row */
+      for (size_t j = 0; j < number_of_variables; ++j)
         row[j] = B(i, j);
       B.multiply(row.data(), y.data());
-      for (j = 0; j < number_of_variables; ++j) { /* check result */
+      for (size_t j = 0; j < number_of_variables; ++j) { /* check result */
         if (!coco_double_almost_equal(y[j], (i == j) ? 1.0 : 0.0, precision)) {
-          coco_error("transform_vars_blockrotation_test() with precision %e "
+          coco_error("transform_vars_blockrotation_t::test() with precision %e "
                      "failed on row %lu",
                      precision, (unsigned long)i);
         }

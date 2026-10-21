@@ -59,9 +59,7 @@ struct f_sphere_t final : public coco_problem_s {
    */
   void evaluate_gradient(const double *x, double *y) override {
 
-    size_t i;
-
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       y[i] = 2.0 * x[i];
     }
   }
@@ -79,6 +77,7 @@ static coco_problem_ptr_t f_sphere_allocate(const size_t number_of_variables) {
  */
 static coco_problem_ptr_t f_sphere_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                          const size_t instance, const long rseed,
+                                                         const coco_bbob_variant_t variant,
                                                          const char *problem_id_template,
                                                          const char *problem_name_template) {
 
@@ -86,22 +85,14 @@ static coco_problem_ptr_t f_sphere_bbob_problem_allocate(const size_t function, 
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-      sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-    } else {
-      bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-    }
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_sphere_allocate(dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
-  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
+  if (variant == coco_bbob_variant_t::largescale) {
     problem = transform_obj_norm_by_dim(std::move(problem));
   }
   problem = transform_obj_shift(std::move(problem), fopt);

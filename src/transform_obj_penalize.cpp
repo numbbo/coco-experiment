@@ -27,14 +27,13 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
     const double *lower_bounds = smallest_values_of_interest.data();
     const double *upper_bounds = largest_values_of_interest.data();
     double penalty = 0.0;
-    size_t i;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
       return;
     }
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       const double c1 = x[i] - upper_bounds[i];
       const double c2 = lower_bounds[i] - x[i];
       assert(lower_bounds[i] < upper_bounds[i]);
@@ -47,7 +46,7 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
     assert(inner_problem != nullptr);
     coco_evaluate_function(inner_problem.get(), x, y);
 
-    for (i = 0; i < number_of_objectives; ++i) {
+    for (size_t i = 0; i < number_of_objectives; ++i) {
       y[i] += factor * penalty;
     }
     assert(y[0] + 1e-13 >= best_value[0]);

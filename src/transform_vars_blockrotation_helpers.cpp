@@ -32,20 +32,18 @@ static size_t coco_rotation_matrix_block_size(size_t const dimension) {
  * rotation based on seed.
  */
 static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, const size_t *block_sizes, size_t nb_blocks) {
-  size_t i, j;
-  size_t idx_block, current_blocksize, cumsum_prev_block_sizes;
+  size_t current_blocksize, cumsum_prev_block_sizes;
   coco_block_diagonal_matrix_t B(block_sizes, nb_blocks);
 
   cumsum_prev_block_sizes = 0; /* shift in rows to account for the previous blocks */
-  for (idx_block = 0; idx_block < nb_blocks; idx_block++) {
+  for (size_t idx_block = 0; idx_block < nb_blocks; idx_block++) {
     current_blocksize = block_sizes[idx_block];
-    assert(current_blocksize <= 44);
     const coco_matrix_t current_block =
         bbob2009_compute_rotation(seed + (long)1000000 * (long)idx_block, current_blocksize);
 
     /* now fill the block matrix*/
-    for (i = 0; i < current_blocksize; i++) {
-      for (j = 0; j < current_blocksize; j++) {
+    for (size_t i = 0; i < current_blocksize; i++) {
+      for (size_t j = 0; j < current_blocksize; j++) {
         B.in_block(i + cumsum_prev_block_sizes, j) = current_block(i, j);
       }
     }
@@ -63,15 +61,12 @@ static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, const 
 static std::vector<size_t> coco_get_block_sizes(size_t *nb_blocks, size_t dimension, std::string_view suite_name) {
   std::vector<size_t> block_sizes;
   size_t block_size;
-  size_t i;
 
   if (suite_name == "bbob-largescale") {
-    /*block_size = coco_double_to_size_t(bbob2009_fmin((double)dimension / 4, 100));*/ /*old value*/
-    /*block_size = coco_double_to_size_t(bbob2009_fmin((double)dimension, 40));*/
     block_size = coco_rotation_matrix_block_size(dimension);
     *nb_blocks = dimension / block_size + ((dimension % block_size) > 0);
     block_sizes.resize(*nb_blocks);
-    for (i = 0; i < *nb_blocks - 1; i++) {
+    for (size_t i = 0; i < *nb_blocks - 1; i++) {
       block_sizes[i] = block_size;
     }
     block_sizes[*nb_blocks - 1] = dimension - (*nb_blocks - 1) * block_size; /*add rest*/

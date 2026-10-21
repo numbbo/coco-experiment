@@ -28,15 +28,14 @@
  */
 void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   /* implements a safer version of problem->evaluate(problem, x, y) */
-  size_t i, j;
   int feasible;
 
   assert(problem != nullptr);
 
   /* Set objective vector to INFINITY if the decision vector contains any INFINITY values */
-  for (i = 0; i < coco_problem_get_dimension(problem); i++) {
+  for (size_t i = 0; i < coco_problem_get_dimension(problem); i++) {
     if (coco_is_inf(x[i])) {
-      for (j = 0; j < coco_problem_get_number_of_objectives(problem); j++) {
+      for (size_t j = 0; j < coco_problem_get_number_of_objectives(problem); j++) {
         y[j] = fabs(x[i]);
       }
       return;
@@ -77,13 +76,12 @@ void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y)
  */
 void coco_evaluate_constraint_optional_update(coco_problem_t *problem, const double *x, double *y, int update_counter) {
   /* implements a safer version of problem->evaluate(problem, x, y) */
-  size_t i, j;
   assert(problem != nullptr);
 
   /* Set constraints vector to INFINITY if the decision vector contains any INFINITY values */
-  for (i = 0; i < coco_problem_get_dimension(problem); i++) {
+  for (size_t i = 0; i < coco_problem_get_dimension(problem); i++) {
     if (coco_is_inf(x[i])) {
-      for (j = 0; j < coco_problem_get_number_of_constraints(problem); j++) {
+      for (size_t j = 0; j < coco_problem_get_number_of_constraints(problem); j++) {
         y[j] = fabs(x[i]);
       }
       return;
@@ -235,13 +233,12 @@ void coco_problem_s::copy_properties_from(const coco_problem_s &other) {
  */
 void coco_problem_s::init_from_scalars(std::string_view name, const double smallest, const double largest,
                                        const double best) {
-  size_t i;
 
   assert(number_of_objectives == 1);
   assert(number_of_constraints == 0);
   problem_name = name;
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     smallest_values_of_interest[i] = smallest;
     largest_values_of_interest[i] = largest;
     best_parameter[i] = best;
@@ -464,20 +461,19 @@ const double *coco_problem_get_largest_fvalues_of_interest(const coco_problem_t 
  */
 void coco_problem_get_initial_solution(const coco_problem_t *problem, double *initial_solution) {
 
-  size_t i;
 
   assert(problem != nullptr);
   if (!problem->initial_solution.empty()) {
-    for (i = 0; i < problem->number_of_variables; ++i)
+    for (size_t i = 0; i < problem->number_of_variables; ++i)
       initial_solution[i] = problem->initial_solution[i];
   } else {
     assert(!problem->smallest_values_of_interest.empty());
     assert(!problem->largest_values_of_interest.empty());
-    for (i = 0; i < problem->number_of_variables; ++i)
+    for (size_t i = 0; i < problem->number_of_variables; ++i)
       initial_solution[i] = problem->smallest_values_of_interest[i] +
                             0.5 * (problem->largest_values_of_interest[i] - problem->smallest_values_of_interest[i]);
     if (problem->number_of_integer_variables > 0) {
-      for (i = 0; i < problem->number_of_integer_variables; ++i) {
+      for (size_t i = 0; i < problem->number_of_integer_variables; ++i) {
         initial_solution[i] = coco_double_round(initial_solution[i]);
       }
     }
@@ -512,7 +508,6 @@ static size_t coco_problem_get_suite_dep_instance(const coco_problem_t *problem)
  * @returns true if successful, otherwise false.
  */
 int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parameter) {
-  size_t i;
   assert(problem != nullptr);
 
   if (problem->best_parameter.empty() || problem->number_of_objectives != 1) {
@@ -522,7 +517,7 @@ int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parame
   // No more benchmarking on this problem!
   problem->is_tainted = 1;
 
-  for (i = 0; i < problem->number_of_variables; ++i) {
+  for (size_t i = 0; i < problem->number_of_variables; ++i) {
     best_parameter[i] = problem->best_parameter[i];
   }
 
@@ -539,13 +534,12 @@ int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parame
 int coco_problem_is_tainted(const coco_problem_t *problem) { return problem->is_tainted; }
 
 void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
-  size_t i;
   FILE *file;
   assert(problem != nullptr);
   assert(!problem->best_parameter.empty());
   file = fopen("._bbob_problem_best_parameter.txt", "w");
   if (file != nullptr) {
-    for (i = 0; i < problem->number_of_variables; ++i)
+    for (size_t i = 0; i < problem->number_of_variables; ++i)
       fprintf(file, " %.16f ", problem->best_parameter[i]);
     fclose(file);
   }
@@ -555,7 +549,6 @@ void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
 static coco_problem_stacked_t *coco_problem_as_stacked(const coco_problem_t *problem);
 
 void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
-  size_t i;
   FILE *file;
   coco_problem_t *problem1, *problem2;
 
@@ -583,10 +576,10 @@ void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
 
   file = fopen("._bbob_biobj_problem_best_parameter.txt", "w");
   if (file != nullptr) {
-    for (i = 0; i < problem->number_of_variables; ++i)
+    for (size_t i = 0; i < problem->number_of_variables; ++i)
       fprintf(file, " %.16f ", problem1->best_parameter[i]);
     fprintf(file, "\n");
-    for (i = 0; i < problem->number_of_variables; ++i)
+    for (size_t i = 0; i < problem->number_of_variables; ++i)
       fprintf(file, " %.16f ", problem2->best_parameter[i]);
     fclose(file);
   }
@@ -690,7 +683,6 @@ coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_pr
           coco_problem_get_number_of_constraints(first.get()) + coco_problem_get_number_of_constraints(second.get())),
       problem1(std::move(first)), problem2(std::move(second)) {
 
-  size_t i;
 
   assert(problem1);
   assert(problem2);
@@ -705,7 +697,7 @@ coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_pr
   if (largest_values_of_interest == nullptr)
     largest_values_of_interest = problem2->largest_values_of_interest.data();
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     this->smallest_values_of_interest[i] = smallest_values_of_interest[i];
     this->largest_values_of_interest[i] = largest_values_of_interest[i];
   }

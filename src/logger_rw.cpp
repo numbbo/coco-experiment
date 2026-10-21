@@ -37,15 +37,15 @@ struct logger_rw_t final : public coco_problem_transformed_t {
   double best_found_value{}; /**< @brief The best-so-far value. */
   double current_value{};    /**< @brief The current value. */
 
-  int log_vars{};        /**< @brief Whether to log the decision values. */
-  int log_cons{};        /**< @brief Whether to log the constraints. */
-  int log_only_better{}; /**< @brief Whether to log only solutions that are better than previous ones. */
-  int log_time{};        /**< @brief Whether to log evaluation time. */
+  bool log_vars{};        /**< @brief Whether to log the decision values. */
+  bool log_cons{};        /**< @brief Whether to log the constraints. */
+  bool log_only_better{}; /**< @brief Whether to log only solutions that are better than previous ones. */
+  bool log_time{};        /**< @brief Whether to log evaluation time. */
 
   int precision_x{};         /**< @brief Precision for outputting decision values. */
   int precision_f{};         /**< @brief Precision for outputting objective values. */
   int precision_g{};         /**< @brief Precision for outputting constraint values. */
-  int log_discrete_as_int{}; /**< @brief Whether to output discrete variables in int or double format. */
+  bool log_discrete_as_int{}; /**< @brief Whether to output discrete variables in int or double format. */
 
   logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner);
 
@@ -60,8 +60,7 @@ struct logger_rw_t final : public coco_problem_transformed_t {
  */
 void logger_rw_t::evaluate_function(const double *x, double *y) {
   std::vector<double> constraints(number_of_constraints);
-  size_t i;
-  int log_this_time = 1;
+  bool log_this_time = true;
   time_t start, end;
 
   /* Time the evaluations */
@@ -92,10 +91,10 @@ void logger_rw_t::evaluate_function(const double *x, double *y) {
   if ((num_func_evaluations == 1) || log_this_time) {
     fprintf(out_file, "%lu\t", (unsigned long)num_func_evaluations);
     fprintf(out_file, "%lu\t", (unsigned long)num_cons_evaluations);
-    for (i = 0; i < number_of_objectives; i++)
+    for (size_t i = 0; i < number_of_objectives; i++)
       fprintf(out_file, "%+.*e\t", precision_f, y[i]);
     if (log_vars) {
-      for (i = 0; i < number_of_variables; i++) {
+      for (size_t i = 0; i < number_of_variables; i++) {
         if ((i < number_of_integer_variables) && (log_discrete_as_int))
           fprintf(out_file, "%d\t", coco_double_to_int(x[i]));
         else
@@ -103,7 +102,7 @@ void logger_rw_t::evaluate_function(const double *x, double *y) {
       }
     }
     if (log_cons) {
-      for (i = 0; i < number_of_constraints; i++)
+      for (size_t i = 0; i < number_of_constraints; i++)
         fprintf(out_file, "%+.*e\t", precision_g, constraints[i]);
     }
     /* Log time in seconds */
@@ -169,7 +168,7 @@ logger_rw_t::logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner)
   /* Open and initialize the output file */
   out_file = fopen(path_name.c_str(), "a");
   if (out_file == nullptr) {
-    coco_error("logger_rw() failed to open file '%s'.", path_name.c_str());
+    coco_error("logger_rw_t() failed to open file '%s'.", path_name.c_str());
     return; /* Never reached */
   }
 

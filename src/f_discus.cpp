@@ -20,14 +20,13 @@
 static double f_discus_raw(const double *x, const size_t number_of_variables) {
 
   static const double condition = 1.0e6;
-  size_t i;
   double result;
 
   if (coco_vector_contains_nan(x, number_of_variables))
     return NAN;
 
   result = condition * x[0] * x[0];
-  for (i = 1; i < number_of_variables; ++i) {
+  for (size_t i = 1; i < number_of_variables; ++i) {
     result += x[i] * x[i];
   }
 
@@ -61,10 +60,9 @@ struct f_discus_t final : public coco_problem_s {
   void evaluate_gradient(const double *x, double *y) override {
 
     static const double condition = 1.0e6;
-    size_t i;
 
     y[0] = condition * 2.0 * x[0];
-    for (i = 1; i < number_of_variables; ++i)
+    for (size_t i = 1; i < number_of_variables; ++i)
       y[i] = 2.0 * x[i];
   }
 };
@@ -81,6 +79,7 @@ static coco_problem_ptr_t f_discus_allocate(const size_t number_of_variables) {
  */
 static coco_problem_ptr_t f_discus_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                          const size_t instance, const long rseed,
+                                                         const coco_bbob_variant_t variant,
                                                          const char *problem_id_template,
                                                          const char *problem_name_template) {
 
@@ -92,11 +91,7 @@ static coco_problem_ptr_t f_discus_bbob_problem_allocate(const size_t function, 
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   M = rot1;
@@ -119,6 +114,7 @@ static coco_problem_ptr_t f_discus_bbob_problem_allocate(const size_t function, 
  */
 static coco_problem_ptr_t f_discus_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                               const size_t instance, const long rseed,
+                                                              const coco_bbob_variant_t variant,
                                                               const char *problem_id_template,
                                                               const char *problem_name_template) {
 
@@ -130,11 +126,7 @@ static coco_problem_ptr_t f_discus_cons_bbob_problem_allocate(const size_t funct
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   M = rot1;

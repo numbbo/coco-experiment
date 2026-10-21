@@ -74,11 +74,11 @@ struct observer_rw_t final : public coco_observer_s {
     if (coco_options_read_size_t(options, "low_dim_cons", &low_dim_cons) == 0)
       low_dim_cons = 10;
 
-    if (coco_options_read_int(options, "log_only_better", &log_only_better) == 0)
-      log_only_better = 0;
+    if (coco_options_read_flag(options, "log_only_better", &log_only_better) == 0)
+      log_only_better = false;
 
-    if (coco_options_read_int(options, "log_time", &log_time) == 0)
-      log_time = 0;
+    if (coco_options_read_flag(options, "log_time", &log_time) == 0)
+      log_time = false;
   }
 
   coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
@@ -87,8 +87,8 @@ struct observer_rw_t final : public coco_observer_s {
   observer_rw_log_e log_cons_mode; /**< @brief When the constraints are logged. */
   size_t low_dim_vars;             /**< @brief "Low dimension" for decision variables. */
   size_t low_dim_cons;             /**< @brief "Low dimension" for constraints. */
-  int log_only_better;             /**< @brief Whether to log only solutions that are better than previous
-                                               ones (only for the single-objective problems). */
-  int log_time;                    /**< @brief Whether to log time. */
+  bool log_only_better = false;    /**< @brief Whether to log only solutions that are better than previous
+                                      ones (only for the single-objective problems). */
+  bool log_time = false;           /**< @brief Whether to log time. */
 };
 

@@ -15,12 +15,12 @@
  * 
  * Changing this number currently breaks the test_logger_bbob.cpp unit-test
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS 20
+static constexpr size_t OBSERVER_DEFAULT_NUMBER_OF_EVALUATION_TRIGGERS = 20;
 
 /**
  * @brief Number of triggers per decade of decreasing Df values (20), was: 5, then 100
  */
-#define OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS 20
+static constexpr size_t OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS = 20;
 
 /**
  * @brief The type for triggers based on logarithmic target values (targets that
@@ -79,7 +79,7 @@ struct coco_observer_targets_t {
   /** @brief Returns the last triggered target. */
   double last_target() const;
 
-  int use_log_targets = 0;
+  bool use_log_targets = false;
   coco_observer_lin_targets_t lin_targets;
   coco_observer_log_targets_t log_targets; /**< @brief Only used if use_log_targets is set. */
 };
@@ -126,7 +126,7 @@ private:
  * @note This is not the maximal evaluation number to be logged, but the maximal
  * number of times logging is triggered by the number of evaluations.
  */
-#define COCO_MAX_EVALS_TO_LOG 1000
+static constexpr size_t COCO_MAX_EVALS_TO_LOG = 1000;
 
 /***********************************************************************************************************/
 
@@ -305,7 +305,7 @@ coco_observer_evaluations_t::coco_observer_evaluations_t(const size_t number_eva
       dimension(dimension) {
 
   if (this->base_evaluations.empty())
-    coco_error("coco_observer_evaluations(): cannot parse base evaluations '%.*s'", (int)base_evaluations.size(),
+    coco_error("coco_observer_evaluations_t(): cannot parse base evaluations '%.*s'", (int)base_evaluations.size(),
                base_evaluations.data());
   value2 = dimension * this->base_evaluations[0];
 }

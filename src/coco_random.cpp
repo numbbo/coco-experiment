@@ -15,8 +15,8 @@
 
 #define COCO_NORMAL_POLAR /* Use polar transformation method */
 
-#define COCO_SHORT_LAG 273
-#define COCO_LONG_LAG 607
+static constexpr size_t COCO_SHORT_LAG = 273;
+static constexpr size_t COCO_LONG_LAG = 607;
 
 /**
  * @brief A structure containing the state of the COCO random generator.
@@ -44,14 +44,13 @@ private:
  * lags (607 and 273) lead to a generator with a period in excess of 2^607-1.
  */
 void coco_random_state_s::generate() {
-  size_t i;
-  for (i = 0; i < COCO_SHORT_LAG; ++i) {
+  for (size_t i = 0; i < COCO_SHORT_LAG; ++i) {
     double t = x[i] + x[i + (COCO_LONG_LAG - COCO_SHORT_LAG)];
     if (t >= 1.0)
       t -= 1.0;
     x[i] = t;
   }
-  for (i = COCO_SHORT_LAG; i < COCO_LONG_LAG; ++i) {
+  for (size_t i = COCO_SHORT_LAG; i < COCO_LONG_LAG; ++i) {
     double t = x[i] + x[i - COCO_SHORT_LAG];
     if (t >= 1.0)
       t -= 1.0;
@@ -61,9 +60,8 @@ void coco_random_state_s::generate() {
 }
 
 coco_random_state_s::coco_random_state_s(uint32_t seed) {
-  size_t i;
   /* Expand seed to fill initial state array. */
-  for (i = 0; i < COCO_LONG_LAG; ++i) {
+  for (size_t i = 0; i < COCO_LONG_LAG; ++i) {
     /* Uses uint64_t to silence the compiler ("shift count negative or too big, undefined behavior" warning) */
     x[i] = ((double)seed) / (double)(((uint64_t)1UL << 32) - 1);
     /* Advance seed based on simple RNG from TAOCP */
@@ -98,9 +96,8 @@ double coco_random_state_s::normal() {
   const double u2 = uniform();
   result = sqrt(-2 * log(u1)) * cos(2 * coco_pi * u2);
 #else
-  int i;
   result = 0.0;
-  for (i = 0; i < 12; ++i) {
+  for (int i = 0; i < 12; ++i) {
     result += uniform();
   }
   result -= 6.0;
@@ -110,6 +107,3 @@ double coco_random_state_s::normal() {
 
 double coco_random_normal(coco_random_state_t *state) { return state->normal(); }
 
-/* Be hygienic (for amalgamation) and undef lags. */
-#undef COCO_SHORT_LAG
-#undef COCO_LONG_LAG

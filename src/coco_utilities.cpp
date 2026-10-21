@@ -405,7 +405,6 @@ static coco_option_keys_t coco_option_keys_get_redundant(const coco_option_keys_
  */
 static coco_option_keys_t coco_option_keys(std::string_view option_string) {
 
-  size_t i;
   coco_option_keys_t option_keys;
   std::string cleaned_option_string;
 
@@ -416,7 +415,7 @@ static coco_option_keys_t coco_option_keys(std::string_view option_string) {
 
   /* Construct the cleaned_option_string by replacing any string between two quotation marks with "STR" */
   const std::vector<std::string> parts = coco_string_split(option_string, '\"');
-  for (i = 0; i < parts.size(); i++) {
+  for (size_t i = 0; i < parts.size(); i++) {
     /* Even parts are outside of a pair of quotation marks */
     cleaned_option_string += (i % 2 == 0) ? parts[i] : "STR";
   }
@@ -426,7 +425,7 @@ static coco_option_keys_t coco_option_keys(std::string_view option_string) {
 
   /* Keys now contain something like this: "values_of_previous_key this_key" except for the first, which
    * contains only the key and the last, which contains only the previous values */
-  for (i = 0; i < keys.size(); i++) {
+  for (size_t i = 0; i < keys.size(); i++) {
     /* Remove any leading and trailing spaces */
     const std::string string_to_parse = coco_string_trim(keys[i]);
 
@@ -531,6 +530,19 @@ static int coco_options_read(std::string_view options, std::string_view name, co
  */
 static int coco_options_read_int(std::string_view options, std::string_view name, int *pointer) {
   return coco_options_read(options, name, " %i", pointer);
+}
+
+/**
+ * @brief Reads a flag (an integer, nonzero meaning true) from options using the form "name1: value1 name2: value2".
+ *
+ * @return The number of successful assignments. The flag is left unchanged if nothing was read.
+ */
+static int coco_options_read_flag(std::string_view options, std::string_view name, bool *pointer) {
+  int value = 0;
+  const int result = coco_options_read_int(options, name, &value);
+  if (result == 1)
+    *pointer = (value != 0);
+  return result;
 }
 
 /**
@@ -733,8 +745,7 @@ static int coco_is_nan(const double x) {
  * @brief Returns 1 if the input vector of dimension dim contains any NAN values and 0 otherwise.
  */
 static int coco_vector_contains_nan(const double *x, const size_t dim) {
-  size_t i;
-  for (i = 0; i < dim; i++) {
+  for (size_t i = 0; i < dim; i++) {
     if (COCO_UNLIKELY(coco_is_nan(x[i])))
       return 1;
   }
@@ -745,8 +756,7 @@ static int coco_vector_contains_nan(const double *x, const size_t dim) {
  * @brief Sets all dim values of y to NAN.
  */
 static void coco_vector_set_to_nan(double *y, const size_t dim) {
-  size_t i;
-  for (i = 0; i < dim; i++) {
+  for (size_t i = 0; i < dim; i++) {
     y[i] = NAN;
   }
 }
@@ -764,8 +774,7 @@ static int coco_is_inf(const double x) {
  * @brief Sets all dim values of y to Inf.
  */
 static void coco_vector_set_to_inf(double *y, const size_t dim) {
-  size_t i;
-  for (i = 0; i < dim; i++) {
+  for (size_t i = 0; i < dim; i++) {
     y[i] = INFINITY;
   }
 }
@@ -774,8 +783,7 @@ static void coco_vector_set_to_inf(double *y, const size_t dim) {
  * @brief Returns 1 if the input vector of dimension dim contains no NaN of inf values, and 0 otherwise.
  */
 static int coco_vector_isfinite(const double *x, const size_t dim) {
-  size_t i;
-  for (i = 0; i < dim; i++) {
+  for (size_t i = 0; i < dim; i++) {
     if (COCO_UNLIKELY(coco_is_nan(x[i])) || COCO_UNLIKELY(coco_is_inf(x[i])))
       return 0;
   }
@@ -800,7 +808,6 @@ static int coco_vector_isfinite(const double *x, const size_t dim) {
  */
 int coco_problem_s::is_feasible(const double *x, double *constraint_values) {
 
-  size_t i;
   double *cons_values = constraint_values;
   std::vector<double> buffer;
   int ret_val = 1;
@@ -819,7 +826,7 @@ int coco_problem_s::is_feasible(const double *x, double *constraint_values) {
 
   evaluate_constraint(x, cons_values, 0);
 
-  for (i = 0; i < coco_problem_get_number_of_constraints(this); ++i) {
+  for (size_t i = 0; i < coco_problem_get_number_of_constraints(this); ++i) {
     if (cons_values[i] > 0.0) {
       ret_val = 0;
       break;
@@ -861,14 +868,13 @@ static std::string coco_current_time_get_string(void) {
  */
 static double coco_vector_scale(double *x, size_t dimension, double nom, double denom) {
 
-  size_t i;
 
   assert(x);
 
   if (denom != 0)
     nom /= denom;
 
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     x[i] *= nom;
   return nom;
 }
@@ -879,12 +885,11 @@ static double coco_vector_scale(double *x, size_t dimension, double nom, double 
  */
 static double coco_vector_norm(const double *x, size_t dimension) {
 
-  size_t i;
   double ssum = 0.0;
 
   assert(x);
 
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     ssum += x[i] * x[i];
 
   return sqrt(ssum);
@@ -896,13 +901,12 @@ static double coco_vector_norm(const double *x, size_t dimension) {
  */
 static double coco_vector_scalar_product(const double *x, const double *y, size_t dimension) {
 
-  size_t i;
   double ssum = 0.0;
 
   assert(x);
   assert(y);
 
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     ssum += x[i] * y[i];
 
   return ssum;
@@ -913,17 +917,16 @@ static double coco_vector_scalar_product(const double *x, const double *y, size_
  * close enough to the identity matrix (up to chosen_precision).
  */
 bool coco_matrix_t::is_orthogonal() const {
-  size_t i, j, z;
   double sum;
 
   if (number_of_rows_ != number_of_columns_)
     return false;
 
-  for (i = 0; i < number_of_rows_; ++i) {
-    for (j = 0; j < number_of_rows_; ++j) {
+  for (size_t i = 0; i < number_of_rows_; ++i) {
+    for (size_t j = 0; j < number_of_rows_; ++j) {
       /* Compute the dot product of the ith row of M and the jth column of M^T (i.e. jth row of M) */
       sum = 0.0;
-      for (z = 0; z < number_of_columns_; ++z) {
+      for (size_t z = 0; z < number_of_columns_; ++z) {
         sum += (*this)(i, z) * (*this)(j, z);
       }
 
@@ -943,7 +946,7 @@ bool coco_matrix_t::is_orthogonal() const {
  */
 static int coco_vector_is_zero(const double *x, const size_t dim) {
   size_t i = 0;
-  int is_zero = 1;
+  bool is_zero = true;
 
   if (coco_vector_contains_nan(x, dim))
     return 0;

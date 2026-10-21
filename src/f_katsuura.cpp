@@ -24,7 +24,6 @@
 static double f_katsuura_raw(const double *x,
                              const size_t number_of_variables) {
 
-  size_t i, j;
   double tmp, tmp2;
   double result;
 
@@ -33,18 +32,15 @@ static double f_katsuura_raw(const double *x,
 
   /* Computation core */
   result = 1.0;
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     tmp = 0;
-    for (j = 1; j < 33; ++j) {
+    for (size_t j = 1; j < 33; ++j) {
       tmp2 = pow(2., (double)j);
       tmp += fabs(tmp2 * x[i] - coco_double_round(tmp2 * x[i])) / tmp2;
     }
     tmp = 1.0 + ((double)(long)i + 1) * tmp;
-    /*result *= tmp;*/ /* Wassim TODO: delete once consistency check passed*/
     result *= pow(tmp, 10. / pow((double)number_of_variables, 1.2));
   }
-  /*result = 10. / ((double) number_of_variables) / ((double) number_of_variables)
-   * (-1. + pow(result, 10. / pow((double) number_of_variables, 1.2)));*/
   result = 10. / ((double)number_of_variables) / ((double)number_of_variables) * (-1. + result);
 
   return result;
@@ -84,11 +80,11 @@ static coco_problem_ptr_t f_katsuura_allocate(const size_t number_of_variables) 
  */
 static coco_problem_ptr_t f_katsuura_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                            const size_t instance, const long rseed,
+                                                           const coco_bbob_variant_t variant,
                                                            const char *problem_id_template,
                                                            const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t k;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
@@ -96,17 +92,13 @@ static coco_problem_ptr_t f_katsuura_bbob_problem_allocate(const size_t function
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
 
   std::vector<double> scales(dimension);
-  for (k = 0; k < dimension; ++k) {
+  for (size_t k = 0; k < dimension; ++k) {
     const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
     scales[k] = pow(sqrt(100), exponent);
   }
@@ -130,6 +122,7 @@ static coco_problem_ptr_t f_katsuura_bbob_problem_allocate(const size_t function
  */
 static coco_problem_ptr_t f_katsuura_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                          const size_t instance, const long rseed,
+                                                                         const coco_bbob_variant_t variant,
                                                                          const char *problem_id_template,
                                                                          const char *problem_name_template) {
   double fopt;
@@ -155,11 +148,7 @@ static coco_problem_ptr_t f_katsuura_permblockdiag_bbob_problem_allocate(const s
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
   const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
@@ -183,8 +172,6 @@ static coco_problem_ptr_t f_katsuura_permblockdiag_bbob_problem_allocate(const s
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  /*problem = transform_obj_norm_by_dim(std::move(problem));*/ /* Wassim: does not seem to
-                                                       be needed*/
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem),
                                 fopt); /*TODO: documentation, there is no fopt in the definition of this function*/

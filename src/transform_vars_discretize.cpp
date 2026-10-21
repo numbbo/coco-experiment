@@ -37,12 +37,11 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
     double outer_xopt, inner_xopt, inner_approx_xopt;
     const double precision_offset = 1e-7; /* Needed to avoid issues with rounding doubles */
     int n;
-    size_t i;
 
     assert(number_of_integer_variables > 0);
     this->number_of_integer_variables = number_of_integer_variables;
 
-    for (i = 0; i < number_of_variables; i++) {
+    for (size_t i = 0; i < number_of_variables; i++) {
       assert(smallest_values_of_interest[i] < largest_values_of_interest[i]);
       this->smallest_values_of_interest[i] = smallest_values_of_interest[i];
       this->largest_values_of_interest[i] = largest_values_of_interest[i];
@@ -82,7 +81,6 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective function.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
     double l, u, inner_l, inner_u, outer_l, outer_u;
     int n;
 
@@ -98,7 +96,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
 
     /* Transform x to fit in the discretized space */
     std::vector<double> discretized_x(x, x + number_of_variables);
-    for (i = 0; i < number_of_integer_variables; ++i) {
+    for (size_t i = 0; i < number_of_integer_variables; ++i) {
       outer_l = smallest_values_of_interest[i];
       outer_u = largest_values_of_interest[i];
       l = inner_problem->smallest_values_of_interest[i];

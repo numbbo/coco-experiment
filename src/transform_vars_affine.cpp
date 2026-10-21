@@ -26,7 +26,6 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
   transform_vars_affine_t(coco_problem_ptr_t inner, coco_matrix_t M, std::vector<double> b)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_affine"), M(std::move(M)), b(std::move(b)),
         transformed_x(inner_problem->number_of_variables) {
-    size_t i, j;
     /* Update the best parameter by computing
        problem->best_parameter = M^T * (inner_problem->best_parameter - b).
 
@@ -38,12 +37,12 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
       if (!this->M.is_orthogonal())
         coco_warning("transform_vars_affine(): rotation matrix is not orthogonal. Best parameter not updated");
       else {
-        for (i = 0; i < inner_problem->number_of_variables; ++i) {
+        for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
           transformed_x[i] = inner_problem->best_parameter[i] - this->b[i];
         }
-        for (i = 0; i < this->number_of_variables; ++i) {
+        for (size_t i = 0; i < this->number_of_variables; ++i) {
           best_parameter[i] = 0;
-          for (j = 0; j < inner_problem->number_of_variables; ++j) {
+          for (size_t j = 0; j < inner_problem->number_of_variables; ++j) {
             best_parameter[i] += this->M(j, i) * transformed_x[j];
           }
         }
@@ -106,7 +105,6 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
    * @brief Evaluates the gradient of the transformed function.
    */
   void evaluate_gradient(const double *x, double *y) override {
-    size_t i, j;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
@@ -121,12 +119,12 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     /* grad_(f o g )(x), where g(x) = M * x + b, equals to
      * M^T * grad_f(M *x + b)
      */
-    for (j = 0; j < inner_problem->number_of_variables; ++j) {
-      for (i = 0; i < inner_problem->number_of_variables; ++i) {
+    for (size_t j = 0; j < inner_problem->number_of_variables; ++j) {
+      for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
         gradient[j] += y[i] * M(i, j);
       }
     }
-    for (i = 0; i < inner_problem->number_of_variables; ++i)
+    for (size_t i = 0; i < inner_problem->number_of_variables; ++i)
       y[i] = gradient[i];
   }
 };

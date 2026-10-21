@@ -91,7 +91,6 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
                                                                       const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t i, j;
 
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
@@ -100,14 +99,14 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
   double tmp; /* Wassim: will serve to set the optimal solution "manually"*/
 
   fopt = bbob2009_compute_fopt(function, instance);
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     shift[i] = -0.5;
   }
 
   coco_matrix_t rot1 = bbob2009_compute_rotation(rseed, dimension);
   scales = coco_double_max(1., sqrt((double)dimension) / 8.);
-  for (i = 0; i < dimension; ++i) {
-    for (j = 0; j < dimension; ++j) {
+  for (size_t i = 0; i < dimension; ++i) {
+    for (size_t j = 0; j < dimension; ++j) {
       rot1(i, j) *= scales;
     }
   }
@@ -117,16 +116,16 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
   problem = transform_vars_shift(std::move(problem), shift.data(), 0);
   M = rot1;
 
-  for (i = 0; i < dimension; i++) {
+  for (size_t i = 0; i < dimension; i++) {
     problem->best_parameter[i] =
         0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine():
               'best_parameter' not updated, set to NAN")*/
   }
   problem = transform_vars_affine(std::move(problem), M, b);
-  for (j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T
+  for (size_t j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T
                                        ones(dimension)/(2*factor) */
     tmp = 0;
-    for (i = 0; i < dimension; ++i) {
+    for (size_t i = 0; i < dimension; ++i) {
       tmp += rot1(i, j);
     }
     problem->best_parameter[j] = tmp / (2. * scales);
@@ -148,7 +147,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   double fopt;
   coco_problem_ptr_t problem;
   double scales;
-  size_t i, j, k, next_bs_change;
+  size_t next_bs_change;
 
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
@@ -167,7 +166,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   fopt = bbob2009_compute_fopt(function, instance);
   scales = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
   std::vector<double> shift(dimension);
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     shift[i] = -0.5;
   }
 
@@ -182,16 +181,15 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   problem = transform_vars_blockrotation(std::move(problem), B);
   problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
 
-  /*problem = transform_obj_norm_by_dim(std::move(problem));*/ /* Wassim: there is already a normalization by
-                                                                  dimension*/
   problem = transform_obj_shift(std::move(problem), fopt);
 
   /* Manh: manually set xopt = rot1^T ones(dimension)/(2*scales) */
   next_bs_change = 0;
-  for (k = 0; k < nb_blocks; ++k) {
-    for (j = 0; j < block_sizes[k]; ++j) { /* Manh: firstly, set xopt_1 = (B^T)*(P_2^T)*ones(dimension)/(2*scales) */
+  for (size_t k = 0; k < nb_blocks; ++k) {
+    for (size_t j = 0; j < block_sizes[k];
+         ++j) { /* Manh: firstly, set xopt_1 = (B^T)*(P_2^T)*ones(dimension)/(2*scales) */
       tmp = 0;
-      for (i = 0; i < block_sizes[k]; ++i) {
+      for (size_t i = 0; i < block_sizes[k]; ++i) {
         tmp += B.in_block(next_bs_change + i, j);
       }
       best_parameter[next_bs_change + j] = tmp / (2. * scales);
@@ -199,8 +197,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
     next_bs_change += block_sizes[k];
   }
 
-  for (j = 0; j < dimension;
-       ++j) { /* Manh: secondly, set xopt = (P_1^T)* xopt_1 */
+  for (size_t j = 0; j < dimension; ++j) { /* Manh: secondly, set xopt = (P_1^T)* xopt_1 */
     problem->best_parameter[P1[j]] = best_parameter[j];
   }
 

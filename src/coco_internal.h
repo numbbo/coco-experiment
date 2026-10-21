@@ -24,20 +24,20 @@ extern "C" {
  * Problems are created and passed around as coco_problem_ptr_t inside COCO. Ownership is only handed out as a
  * raw pointer at the C interface.
  */
-typedef std::unique_ptr<coco_problem_t> coco_problem_ptr_t;
+using coco_problem_ptr_t = std::unique_ptr<coco_problem_t>;
 
 /**
  * @brief The get problem function type.
  *
  * This is a template for functions that return a problem based on function, dimension and instance.
  */
-typedef coco_problem_ptr_t (*coco_get_problem_function_t)(const size_t function, const size_t dimension,
-                                                          const size_t instance);
+using coco_get_problem_function_t = coco_problem_ptr_t (*)(const size_t function, const size_t dimension,
+                                                           const size_t instance);
 
 /**
  * @brief The option keys data type (a set of option keys used by suites and observers).
  */
-typedef std::vector<std::string> coco_option_keys_t;
+using coco_option_keys_t = std::vector<std::string>;
 
 /***********************************************************************************************************/
 
@@ -117,16 +117,16 @@ struct coco_problem_s {
   size_t number_of_integer_variables;  /**< @brief Number of integer variables (if > 0, all integer variables come
                                        before any continuous ones). */
 
-  int is_noisy;                   /**< @brief*/
+  bool is_noisy;                              /**< @brief*/
   std::vector<double> last_noise_free_values; /**< @brief Empty if the problem has no objectives. */
 
   std::vector<double> initial_solution; /**< @brief Initial feasible solution (empty if not defined). */
-  int is_opt_known;         /**< @brief Whether the optimal (best) value is actually known for this problem. */
+  bool is_opt_known;              /**< @brief Whether the optimal (best) value is actually known for this problem. */
   std::vector<double> best_value; /**< @brief Optimal (smallest) function value if known, otherwise a reference
                                        value defined in the problem construction. */
   std::vector<double> nadir_value; /**< @brief The nadir point (empty unless number_of_objectives > 1) */
   std::vector<double> best_parameter; /**< @brief Optimal decision vector (empty unless unique) */
-  int is_tainted; /**< @brief Is the problem tainted, i.e. has the optimal parameter setting been retrieved? */
+  bool is_tainted; /**< @brief Is the problem tainted, i.e. has the optimal parameter setting been retrieved? */
 
   std::string problem_name; /**< @brief Problem name. */
   std::string problem_id;   /**< @brief Problem ID (unique in the containing suite) */
@@ -167,7 +167,7 @@ struct coco_problem_transformed_s : public coco_problem_s {
 
   coco_problem_ptr_t inner_problem; /**< @brief The inner problem, owned by this problem */
 };
-typedef struct coco_problem_transformed_s coco_problem_transformed_t;
+using coco_problem_transformed_t = coco_problem_transformed_s;
 
 /**
  * @brief A problem constructed by stacking two problems.
@@ -190,7 +190,7 @@ struct coco_problem_stacked_s : public coco_problem_s {
   coco_problem_ptr_t problem1; /**< @brief The first problem (objective) */
   coco_problem_ptr_t problem2; /**< @brief The second problem (objective or constraints) */
 };
-typedef struct coco_problem_stacked_s coco_problem_stacked_t;
+using coco_problem_stacked_t = coco_problem_stacked_s;
 
 /**
  * @brief The settings shared by all observers (read from the observer options in coco_observer()).
@@ -213,7 +213,7 @@ struct coco_observer_settings_s {
   int precision_x;         /**< @brief Output precision for decision variables. */
   int precision_f;         /**< @brief Output precision for function values. */
   int precision_g;         /**< @brief Output precision for constraint values. */
-  int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
+  bool log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
 };
 
 /**
@@ -247,7 +247,7 @@ struct coco_observer_s : public coco_observer_settings_s {
    */
   coco_problem_ptr_t observe(coco_problem_ptr_t problem);
 
-  int is_active; /**< @brief Whether the observer is active (the logger will log some output). */
+  bool is_active; /**< @brief Whether the observer is active (the logger will log some output). */
 };
 
 /**
@@ -310,7 +310,7 @@ struct coco_suite_s {
   std::string default_instances;  /**< @brief The instances contained in the suite by default. */
   std::vector<size_t> instances; /**< @brief The instances contained in the suite (0 if filtered out). */
 
-  int known_optima; /**< @brief Whether the problems of the suite have known optimal values */
+  bool known_optima; /**< @brief Whether the problems of the suite have known optimal values */
 
   coco_problem_ptr_t current_problem; /**< @brief The currently tackled problem. */
   long current_dimension_idx;      /**< @brief The dimension index of the currently tackled problem. */

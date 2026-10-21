@@ -18,10 +18,9 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
   transform_vars_scale_t(coco_problem_ptr_t inner, const double factor)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_scale"), factor(factor),
         scaled_x(inner_problem->number_of_variables) {
-    size_t i;
     /* Compute best parameter */
     if (factor != 0.) {
-      for (i = 0; i < number_of_variables; i++) {
+      for (size_t i = 0; i < number_of_variables; i++) {
         best_parameter[i] /= factor;
       }
     } /* else error? */
@@ -31,14 +30,13 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
       return;
     }
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       scaled_x[i] = factor * x[i];
     }
     coco_evaluate_function(inner_problem.get(), scaled_x.data(), y);

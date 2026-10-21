@@ -54,7 +54,7 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
   std::vector<double> largest_values_of_interest(dimension);
   std::string inner_problem_id;
 
-  size_t i, j;
+  size_t j;
   size_t cardinality = 0;
   size_t num_integer = dimension;
   if (dimension % 5 != 0)
@@ -65,7 +65,7 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
 
   /* Set the ROI of the outer problem according to the given cardinality of variables and the ROI of the
    * inner problem to [-4, 4] for variables that will be discretized */
-  for (i = 0; i < dimension; i++) {
+  for (size_t i = 0; i < dimension; i++) {
     j = i / (dimension / 5);
     cardinality = variable_cardinality[j];
     if (cardinality == 0) {

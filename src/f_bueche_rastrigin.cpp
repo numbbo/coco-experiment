@@ -23,14 +23,13 @@
 static double f_bueche_rastrigin_raw(const double *x,
                                      const size_t number_of_variables) {
   double tmp = 0., tmp2 = 0.;
-  size_t i;
   double result;
 
   if (coco_vector_contains_nan(x, number_of_variables)) {
     return NAN;
   }
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     tmp += cos(2 * coco_pi * x[i]);
     tmp2 += x[i] * x[i];
   }
@@ -72,25 +71,21 @@ static coco_problem_ptr_t f_bueche_rastrigin_allocate(const size_t number_of_var
  */
 static coco_problem_ptr_t f_bueche_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                    const size_t instance, const long rseed,
+                                                                   const coco_bbob_variant_t variant,
                                                                    const char *problem_id_template,
                                                                    const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
 
   const double penalty_factor = 100.0;
-  size_t i;
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   /* OME: This step is in the legacy C code but _not_ in the function
    * description. */
-  for (i = 0; i < dimension; i += 2) {
+  for (size_t i = 0; i < dimension; i += 2) {
     xopt[i] = fabs(xopt[i]);
   }
 
@@ -100,7 +95,7 @@ static coco_problem_ptr_t f_bueche_rastrigin_bbob_problem_allocate(const size_t 
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
-  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
+  if (variant == coco_bbob_variant_t::largescale) {
     problem = transform_obj_norm_by_dim(std::move(problem));
   }
   problem = transform_obj_shift(std::move(problem), fopt);

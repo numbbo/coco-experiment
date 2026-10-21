@@ -30,11 +30,10 @@ static void coco_sort_indices_by_values(size_t *P, const double *values, const s
  * Wassim: move to coco_utilities?
  */
 static void coco_compute_random_permutation(size_t *P, long seed, size_t n) {
-  size_t i;
 
   std::vector<double> random_data(n);
   bbob2009_gauss(random_data.data(), n, seed);
-  for (i = 0; i < n; i++) {
+  for (size_t i = 0; i < n; i++) {
     P[i] = i;
   }
   coco_sort_indices_by_values(P, random_data.data(), n);
@@ -44,9 +43,8 @@ static void coco_compute_random_permutation(size_t *P, long seed, size_t n) {
  * @brief generates a permutation by sorting a sequence and puts it in P
  */
 static void coco_compute_permutation_from_sequence(size_t *P, const double *seq, size_t length) {
-  size_t i;
 
-  for (i = 0; i < length; i++) {
+  for (size_t i = 0; i < length; i++) {
     P[i] = i;
   }
   coco_sort_indices_by_values(P, seq, length);
@@ -74,12 +72,11 @@ static long coco_random_unif_integer(long lower_bound, long upper_bound, long se
  */
 static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed, size_t n, size_t nb_swaps,
                                                             size_t swap_range) {
-  size_t i, idx_swap;
   size_t lower_bound, upper_bound, first_swap_var, second_swap_var, tmp;
 
   if (n <= 40) {
     /* Do an identity permutation for dimensions <= 40 */
-    for (i = 0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
       P[i] = i;
     return;
   }
@@ -88,7 +85,7 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
   bbob2009_unif(random_data.data(), n, seed);
 
   std::vector<size_t> idx_order(n);
-  for (i = 0; i < n; i++) {
+  for (size_t i = 0; i < n; i++) {
     P[i] = i;
     idx_order[i] = i;
   }
@@ -97,7 +94,7 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
     /*sort the random data in random_data and arrange idx_order accordingly*/
     /*did not use coco_compute_random_permutation to only use the seed once*/
     coco_sort_indices_by_values(idx_order.data(), random_data.data(), n);
-    for (idx_swap = 0; idx_swap < nb_swaps; idx_swap++) {
+    for (size_t idx_swap = 0; idx_swap < nb_swaps; idx_swap++) {
       first_swap_var = idx_order[idx_swap];
       if (first_swap_var < swap_range) {
         lower_bound = 0;

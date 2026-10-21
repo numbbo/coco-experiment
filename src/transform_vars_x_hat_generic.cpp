@@ -40,9 +40,8 @@ struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t 
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i;
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       x_hat[i] = 2.0 * sign_vector[i] * x[i];
       shared->x_hat[i] = x_hat[i];
     }

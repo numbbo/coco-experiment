@@ -44,7 +44,7 @@
 
 #include <math.h>
 
-typedef double (*callback_type)(double, void *);
+using callback_type = double (*)(double, void *);
 
 static double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter,
                      void *func_data);
@@ -95,7 +95,6 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
   /* the tolerance is 2*delta */
   double delta;
   double stry, dpre, dblk;
-  int i;
 
   fpre = (*f)(xpre, func_data) - y;
   fcur = (*f)(xcur, func_data) - y;
@@ -112,7 +111,7 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
     return xcur;
   }
 
-  for (i = 0; i < iter; i++) {
+  for (int i = 0; i < iter; i++) {
     if (fpre != 0 && fcur != 0 && (signbit(fpre) != signbit(fcur))) {
       xblk = xpre;
       fblk = fpre;

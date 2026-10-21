@@ -66,13 +66,12 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
    * @brief Multivariate, coordinate-wise, asymmetric non-linear transformation.
    */
   void tasy(const double *x) {
-    size_t i;
     tasy_data d;
 
     d.beta = beta;
     d.n = number_of_variables;
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       d.i = i;
       asymmetric_x[i] = tasy_uv(x[i], &d);
     }
@@ -111,7 +110,6 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed constraint.
    */
   void evaluate_constraint(const double *x, double *y, int update_counter) override {
-    size_t i;
     double exponent;
 
     if (inner_problem->number_of_constraints == 0) {
@@ -129,7 +127,7 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
 
     coco_evaluate_constraint(inner_problem.get(), asymmetric_x, y);
     */
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       if (x[i] > 0.0) {
         exponent = 1.0 + ((beta * (double)(long)i) / ((double)(long)number_of_variables - 1.0)) * sqrt(x[i]);
         asymmetric_x[i] = pow(x[i], exponent);
@@ -165,9 +163,8 @@ static transform_vars_asymmetric_t *transform_vars_asymmetric_get(coco_problem_t
  *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
  */
 static void transform_inv_initial_asymmetric(coco_problem_t *problem, const double *xopt) {
-  size_t i;
   size_t j;
-  int is_in_bounds;
+  bool is_in_bounds;
   double di;
   double xi;
   double halving_factor = .5;
@@ -182,11 +179,11 @@ static void transform_inv_initial_asymmetric(coco_problem_t *problem, const doub
   j = 0;
   while (1) {
 
-    for (i = 0; i < problem->number_of_variables; ++i) {
+    for (size_t i = 0; i < problem->number_of_variables; ++i) {
       d.i = i;
       di = tasy_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), &d);
       xi = di + xopt[i];
-      is_in_bounds = (int)(-5.0 < xi && xi < 5.0);
+      is_in_bounds = (-5.0 < xi && xi < 5.0);
       /* Line search for the inverse-transformed feasible initial solution
          to remain within the bounds
         */
@@ -203,7 +200,7 @@ static void transform_inv_initial_asymmetric(coco_problem_t *problem, const doub
     }
   }
   if (!coco_vector_contains_nan(sol.data(), problem->number_of_variables)) {
-    for (i = 0; i < problem->number_of_variables; ++i) {
+    for (size_t i = 0; i < problem->number_of_variables; ++i) {
       problem->initial_solution[i] = sol[i];
     }
   }

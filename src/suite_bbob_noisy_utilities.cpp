@@ -86,9 +86,8 @@ double coco_sample_uniform_noise(void) {
 /**@{*/
 double coco_problem_s::boundary_penalty(const double *x) const {
   double penalty, lower_bound, upper_bound;
-  size_t dimension;
   penalty = 0.0;
-  for (dimension = 0; dimension < number_of_variables; dimension++) {
+  for (size_t dimension = 0; dimension < number_of_variables; dimension++) {
     lower_bound = smallest_values_of_interest[dimension];
     upper_bound = largest_values_of_interest[dimension];
     if (x[dimension] > upper_bound) {

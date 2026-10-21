@@ -23,14 +23,13 @@
 static double f_different_powers_raw(const double *x,
                                      const size_t number_of_variables) {
 
-  size_t i;
   double sum = 0.0;
   double result;
 
   if (coco_vector_contains_nan(x, number_of_variables))
     return NAN;
 
-  for (i = 0; i < number_of_variables; ++i) {
+  for (size_t i = 0; i < number_of_variables; ++i) {
     double exponent = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
     sum += pow(fabs(x[i]), exponent);
   }
@@ -77,16 +76,15 @@ struct f_different_powers_t final : public coco_problem_s {
    */
   void evaluate_gradient(const double *x, double *y) override {
 
-    size_t i;
     double sum = 0.0;
     double aux;
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
       sum += pow(fabs(x[i]), aux);
     }
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
       y[i] = 0.5 * (aux) / (sum);
       aux -= 1.0;
@@ -107,6 +105,7 @@ static coco_problem_ptr_t f_different_powers_allocate(const size_t number_of_var
  */
 static coco_problem_ptr_t f_different_powers_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                    const size_t instance, const long rseed,
+                                                                   const coco_bbob_variant_t variant,
                                                                    const char *problem_id_template,
                                                                    const char *problem_name_template) {
 
@@ -118,11 +117,7 @@ static coco_problem_ptr_t f_different_powers_bbob_problem_allocate(const size_t 
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   M = rot1;
@@ -142,11 +137,9 @@ static coco_problem_ptr_t f_different_powers_bbob_problem_allocate(const size_t 
 /**
  * @brief Creates the bbob-constrained different powers problem.
  */
-static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(const size_t function,
-                                                                               const size_t dimension,
-                                                                               const size_t instance, const long rseed,
-                                                                               const char *problem_id_template,
-                                                                               const char *problem_name_template) {
+static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(
+    const size_t function, const size_t dimension, const size_t instance, const long rseed,
+    const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
   /* Different powers function used in bbob-constrained test suite.
    * In this version, the (unconstrained) optimum, xopt, is set to
    * a distance of 1e-2 to the origin. By doing so, the optimum of
@@ -154,7 +147,6 @@ static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(c
    * the unconstrained one and, hence, the constrained problem is not too easy.
    */
 
-  size_t i;
   double fopt, result;
   coco_problem_ptr_t problem;
 
@@ -163,22 +155,18 @@ static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(c
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   /* Compute Euclidean norm of xopt */
   /* CAVEAT: this implementation is not ideal for large dimensions */
   result = 0.0;
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     result += xopt[i] * xopt[i];
   }
   result = sqrt(result);
 
   /* Scale xopt such that the distance to the origin is 1e-2 */
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     xopt[i] *= 1e-2 / result;
   }
 
@@ -203,7 +191,7 @@ static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(c
  */
 static coco_problem_ptr_t f_different_powers_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
-    const char *problem_id_template, const char *problem_name_template) {
+    const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
 
@@ -220,11 +208,7 @@ static coco_problem_ptr_t f_different_powers_permblockdiag_bbob_problem_allocate
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
 

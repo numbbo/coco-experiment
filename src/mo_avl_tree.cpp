@@ -50,12 +50,12 @@
  *    0  if a = b
  *    1  if a > b
  */
-typedef int (*avl_compare_t)(const void *a, const void *b, void *userdata);
+using avl_compare_t = int (*)(const void *a, const void *b, void *userdata);
 
 /* User supplied function to delete an item when a node is free()d.
  * If NULL, the item is not free()d.
  */
-typedef void (*avl_free_t)(void *item, void *userdata);
+using avl_free_t = void (*)(void *item, void *userdata);
 
 #define AVL_CMP(a, b) ((a) < (b) ? -1 : (a) != (b))
 
@@ -476,7 +476,7 @@ struct avl_tree_deleter_t {
 };
 
 /* An AVL tree that is destroyed (including its items, if it has a free function) with its owner. */
-typedef std::unique_ptr<avl_tree_t, avl_tree_deleter_t> avl_tree_ptr_t;
+using avl_tree_ptr_t = std::unique_ptr<avl_tree_t, avl_tree_deleter_t>;
 
 static void avl_node_clear(avl_node_t *newnode) {
   newnode->left = newnode->right = nullptr;

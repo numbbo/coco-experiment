@@ -16,14 +16,12 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
 
   transform_obj_scale_t(coco_problem_ptr_t inner, const double factor)
       : coco_problem_transformed_t(std::move(inner), "transform_obj_scale"), factor(factor) {
-    size_t i;
-    for (i = 0; i < number_of_objectives; ++i)
+    for (size_t i = 0; i < number_of_objectives; ++i)
       best_value[i] *= factor;
   }
 
   void evaluate_function(const double *x, double *y) override {
     int feasible;
-    size_t i;
 
     if (number_of_objectives == 0) {
       coco_evaluate_function(inner_problem.get(), x, y);
@@ -37,7 +35,7 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
 
     coco_evaluate_function(inner_problem.get(), x, y);
 
-    for (i = 0; i < number_of_objectives; i++)
+    for (size_t i = 0; i < number_of_objectives; i++)
       y[i] *= factor;
 
     if (number_of_constraints > 0) {
@@ -50,7 +48,6 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
   }
 
   void evaluate_gradient(const double *x, double *y) override {
-    size_t i;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
@@ -59,7 +56,7 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
 
     inner_problem->evaluate_gradient(x, y);
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       y[i] *= factor;
     }
   }

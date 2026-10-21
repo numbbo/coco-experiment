@@ -29,7 +29,7 @@ static const size_t suite_biobj_instances[][3] = {{1, 2, 4},    {2, 3, 5},    {3
  * @brief The new instances (triples equal in form to suite_biobj_instances) that are computed when an
  * instance that is not in suite_biobj_instances is being invoked.
  */
-typedef std::vector<std::array<size_t, 3>> suite_biobj_new_instances_t;
+using suite_biobj_new_instances_t = std::vector<std::array<size_t, 3>>;
 
 /**
  * @brief  Performs a few checks and returns whether the two given problem instances should break the search
@@ -98,7 +98,6 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
   size_t num_tries = 0;
   const size_t max_tries = 1000;
   int appropriate_instance_found = 0, break_search, warning_produced = 0;
-  size_t d, f1, f2;
   size_t function1, function2, dimension;
 
   while ((!appropriate_instance_found) && (num_tries < max_tries)) {
@@ -110,11 +109,11 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
      * extreme optimal points in the decisions space are apart enough for all problems (all dimensions
      * and function combinations); therefore iterate over all dimensions and function combinations */
 
-    for (f1 = 0; (f1 < num_bbob_functions - 1) && !break_search; f1++) {
+    for (size_t f1 = 0; (f1 < num_bbob_functions - 1) && !break_search; f1++) {
       function1 = bbob_functions[f1];
-      for (f2 = f1 + 1; (f2 < num_bbob_functions) && !break_search; f2++) {
+      for (size_t f2 = f1 + 1; (f2 < num_bbob_functions) && !break_search; f2++) {
         function2 = bbob_functions[f2];
-        for (d = 0; (d < num_dimensions) && !break_search; d++) {
+        for (size_t d = 0; (d < num_dimensions) && !break_search; d++) {
           dimension = dimensions[d];
 
           if (dimension == 0) {
@@ -131,10 +130,10 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
     }
 
     /* Finally, check all functions (f,f) with f in {f1, f2, f6, f8, f13, f14, f15, f17, f20, f21}: */
-    for (f1 = 0; (f1 < num_sel_bbob_functions) && !break_search; f1++) {
+    for (size_t f1 = 0; (f1 < num_sel_bbob_functions) && !break_search; f1++) {
       function1 = sel_bbob_functions[f1];
       function2 = sel_bbob_functions[f1];
-      for (d = 0; (d < num_dimensions) && !break_search; d++) {
+      for (size_t d = 0; (d < num_dimensions) && !break_search; d++) {
         dimension = dimensions[d];
 
         if (dimension == 0) {
@@ -214,7 +213,6 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
   size_t function1_idx, function2_idx;
   const size_t function_idx = function - 1;
 
-  size_t i;
   const size_t num_existing_instances = sizeof(suite_biobj_instances) / sizeof(suite_biobj_instances[0]);
   int instance_found = 0;
 
@@ -345,7 +343,7 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
   /* Determine the instances */
 
   /* First search for the instance in suite_biobj_instances */
-  for (i = 0; i < num_existing_instances; i++) {
+  for (size_t i = 0; i < num_existing_instances; i++) {
     if (suite_biobj_instances[i][0] == instance) {
       /* The instance has been found in suite_biobj_instances */
       instance1 = suite_biobj_instances[i][1];
@@ -418,13 +416,13 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
 static void suite_biobj_get_best_hyp_value(const int known_optima, const std::string &key, double *value) {
 
   static const double default_value = 1.0;
-  size_t i, count;
+  size_t count;
   *value = default_value;
 
   if (known_optima) {
     std::vector<char> curr_key;
     count = sizeof(suite_biobj_best_values_hyp) / sizeof(char *);
-    for (i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
       curr_key.resize(strlen(suite_biobj_best_values_hyp[i]) + 1); /* The key cannot be longer than the entry */
       sscanf(suite_biobj_best_values_hyp[i], "%s %lf", curr_key.data(), value);
       if (key == curr_key.data()) {

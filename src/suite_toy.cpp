@@ -37,7 +37,7 @@ struct suite_toy_t final : public coco_suite_s {
     } else if (function == 6) {
       problem = f_rosenbrock_allocate(dimension);
     } else {
-      coco_error("suite_toy_get_problem(): function %lu does not exist in this suite", (unsigned long)function);
+      coco_error("suite_toy_t::get_problem(): function %lu does not exist in this suite", (unsigned long)function);
       return nullptr; /* Never reached */
     }
 

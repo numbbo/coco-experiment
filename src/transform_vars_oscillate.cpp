@@ -64,12 +64,11 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
    * @brief Multivariate, coordinate-wise, oscillating non-linear transformation.
    */
   void tosz(const double *x) {
-    size_t i;
     tosz_data d;
 
     d.alpha = alpha;
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       oscillated_x[i] = tosz_uv(x[i], &d);
     }
   }
@@ -108,7 +107,6 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
    */
   void evaluate_constraint(const double *x, double *y, int update_counter) override {
     double tmp, base;
-    size_t i;
 
     if (inner_problem->number_of_constraints == 0) {
       coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
@@ -120,7 +118,7 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
       return;
     }
 
-    for (i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables; ++i) {
       if (x[i] > 0.0) {
         tmp = log(x[i]) / alpha;
         base = exp(tmp + 0.49 * (sin(tmp) + sin(0.79 * tmp)));
@@ -161,9 +159,8 @@ static transform_vars_oscillate_t *transform_vars_oscillate_get(coco_problem_t *
  *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
  */
 static void transform_inv_initial_oscillate(coco_problem_t *problem, const double *xopt) {
-  size_t i;
   size_t j;
-  int is_in_bounds;
+  bool is_in_bounds;
   double di = 0.0;
   double xi;
   double halving_factor = .5;
@@ -177,10 +174,10 @@ static void transform_inv_initial_oscillate(coco_problem_t *problem, const doubl
   j = 0;
   while (1) {
 
-    for (i = 0; i < problem->number_of_variables; ++i) {
+    for (size_t i = 0; i < problem->number_of_variables; ++i) {
       di = tosz_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), &d);
       xi = di + xopt[i];
-      is_in_bounds = (int)(-5.0 < xi && xi < 5.0);
+      is_in_bounds = (-5.0 < xi && xi < 5.0);
       /* Line search for the inverse-transformed feasible initial solution
          to remain within the bounds
         */
@@ -197,7 +194,7 @@ static void transform_inv_initial_oscillate(coco_problem_t *problem, const doubl
     }
   }
   if (!coco_vector_contains_nan(sol.data(), problem->number_of_variables)) {
-    for (i = 0; i < problem->number_of_variables; ++i) {
+    for (size_t i = 0; i < problem->number_of_variables; ++i) {
       problem->initial_solution[i] = sol[i];
     }
   }

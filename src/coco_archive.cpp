@@ -40,14 +40,14 @@ struct coco_archive_s {
 
   size_t number_of_objectives; /**< @brief Number of objectives (clearly equal to 2). */
 
-  int is_up_to_date;          /**< @brief Whether archive fields have been updated since last addition. */
+  bool is_up_to_date;         /**< @brief Whether archive fields have been updated since last addition. */
   size_t number_of_solutions; /**< @brief Number of solutions in the archive. */
   double hypervolume;         /**< @brief Hypervolume of the solutions in the archive. */
 
   avl_node_t *current_solution;  /**< @brief Current solution (to return). */
   avl_node_t *extreme1;          /**< @brief Pointer to the first extreme solution. */
   avl_node_t *extreme2;          /**< @brief Pointer to the second extreme solution. */
-  int extremes_already_returned; /**< @brief Whether the extreme solutions have already been returned. */
+  bool extremes_already_returned; /**< @brief Whether the extreme solutions have already been returned. */
 
 private:
   /** @brief Updates the fields returned by the getters. */

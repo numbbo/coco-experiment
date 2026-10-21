@@ -142,11 +142,10 @@ static void feasible_direction_set_length(double *feasible_direction, const doub
   const double feas_shrink = 0.75; /* scale randomly between 0.75 and 1.0 */
   const double feas_bound = 5.0;
 
-  size_t i;
   double r[1], maxabs, maxrel;
 
   maxabs = maxrel = 0.0;
-  for (i = 0; i < dimension; ++i) {
+  for (size_t i = 0; i < dimension; ++i) {
     maxabs = coco_double_max(maxabs, fabs(xopt[i]));
     maxrel = coco_double_max(maxrel, feasible_direction[i] / (feas_bound - xopt[i]));
     maxrel = coco_double_max(maxrel, feasible_direction[i] / (-feas_bound - xopt[i]));
@@ -170,15 +169,14 @@ f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t
                                              double *feasible_direction, const double *xopt,
                                              const char *problem_id_template, const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
   /* Create the objective function */
-  problem =
-      f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template, problem_name_template);
+  problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                           problem_id_template, problem_name_template);
 
   problem->evaluate_gradient(all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
@@ -196,7 +194,7 @@ f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -227,15 +225,14 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
                                                 double *feasible_direction, const double *xopt,
                                                 const char *problem_id_template, const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
   /* Create the objective function */
-  problem = f_ellipsoid_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                   problem_name_template);
+  problem = f_ellipsoid_cons_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                   problem_id_template, problem_name_template);
 
   problem->evaluate_gradient(all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
@@ -257,7 +254,7 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -291,15 +288,14 @@ static coco_problem_ptr_t f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocat
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
   /* Create the objective function */
-  problem = f_ellipsoid_rotated_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                           problem_name_template);
+  problem = f_ellipsoid_rotated_cons_bbob_problem_allocate(
+      function, dimension, instance, rseed, coco_bbob_variant_t::bbob, problem_id_template, problem_name_template);
 
   problem->evaluate_gradient(all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
@@ -321,7 +317,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocat
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -355,15 +351,14 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
                                                    double *feasible_direction, const double *xopt,
                                                    const char *problem_id_template, const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
   /* Create the objective function */
-  problem = f_linear_slope_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                 problem_name_template);
+  problem = f_linear_slope_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                 problem_id_template, problem_name_template);
 
   problem->evaluate_gradient(all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
@@ -385,7 +380,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
 
   /* Apply a translation to the whole problem so that the constrained
@@ -417,15 +412,14 @@ f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t
                                              double *feasible_direction, const double *xopt,
                                              const char *problem_id_template, const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
   /* Create the objective function */
-  problem = f_discus_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                problem_name_template);
+  problem = f_discus_cons_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                problem_id_template, problem_name_template);
 
   problem->evaluate_gradient(all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
@@ -447,7 +441,7 @@ f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -481,15 +475,14 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
                                                  double *feasible_direction, const double *xopt,
                                                  const char *problem_id_template, const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
   /* Create the objective function */
-  problem = f_bent_cigar_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
-                                                    problem_name_template);
+  problem = f_bent_cigar_cons_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::bbob,
+                                                    problem_id_template, problem_name_template);
 
   problem->evaluate_gradient(all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
@@ -511,7 +504,7 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -544,15 +537,14 @@ static coco_problem_ptr_t f_different_powers_c_linear_cons_bbob_problem_allocate
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
   /* Create the objective function */
-  problem = f_different_powers_bbob_constrained_problem_allocate(function, dimension, instance, rseed,
-                                                                 problem_id_template, problem_name_template);
+  problem = f_different_powers_bbob_constrained_problem_allocate(
+      function, dimension, instance, rseed, coco_bbob_variant_t::bbob, problem_id_template, problem_name_template);
 
   problem->evaluate_gradient(all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
@@ -574,7 +566,7 @@ static coco_problem_ptr_t f_different_powers_c_linear_cons_bbob_problem_allocate
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -605,7 +597,6 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
                                                 double *feasible_direction, const double *xopt,
                                                 const char *problem_id_template, const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
@@ -635,7 +626,7 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -669,7 +660,6 @@ static coco_problem_ptr_t f_rastrigin_rotated_c_linear_cons_bbob_problem_allocat
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
 
-  size_t i;
   coco_problem_ptr_t problem;
   coco_problem_ptr_t problem_c;
 
@@ -699,7 +689,7 @@ static coco_problem_ptr_t f_rastrigin_rotated_c_linear_cons_bbob_problem_allocat
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
    */
-  for (i = 0; i < dimension; ++i)
+  for (size_t i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 

@@ -50,8 +50,8 @@ struct observer_biobj_t final : public coco_observer_s {
   observer_biobj_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                    coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings), observed_problem(nullptr), log_nondom_mode(LOG_NONDOM_ALL),
-        log_vars_mode(LOG_VARS_LOW_DIM), compute_indicators(1), produce_all_data(0), large_mdat_file_warning(0),
-        previous_function(-1), previous_dimension(-1) {
+        log_vars_mode(LOG_VARS_LOW_DIM), compute_indicators(true), produce_all_data(false),
+        large_mdat_file_warning(false), previous_function(-1), previous_dimension(-1) {
 
     std::string string_value;
 
@@ -79,11 +79,11 @@ struct observer_biobj_t final : public coco_observer_s {
         log_vars_mode = LOG_VARS_LOW_DIM;
     }
 
-    if (coco_options_read_int(options, "compute_indicators", &compute_indicators) == 0)
-      compute_indicators = 1;
+    if (coco_options_read_flag(options, "compute_indicators", &compute_indicators) == 0)
+      compute_indicators = true;
 
-    if (coco_options_read_int(options, "produce_all_data", &produce_all_data) == 0)
-      produce_all_data = 0;
+    if (coco_options_read_flag(options, "produce_all_data", &produce_all_data) == 0)
+      produce_all_data = false;
 
     if (produce_all_data) {
       compute_indicators = 1;
@@ -108,9 +108,9 @@ struct observer_biobj_t final : public coco_observer_s {
   observer_biobj_log_nondom_e log_nondom_mode; /**< @brief Handling of the nondominated solutions. */
   observer_biobj_log_vars_e log_vars_mode;     /**< @brief When the decision variables are logged. */
 
-  int compute_indicators;      /**< @brief Whether to compute indicators. */
-  int produce_all_data;        /**< @brief Whether to produce all data. */
-  int large_mdat_file_warning; /**< @brief Whether the large mdat file warning has already been output. */
+  bool compute_indicators;      /**< @brief Whether to compute indicators. */
+  bool produce_all_data;        /**< @brief Whether to produce all data. */
+  bool large_mdat_file_warning; /**< @brief Whether the large mdat file warning has already been output. */
 
   long previous_function;  /**< @brief Function of the previous logged problem. */
   long previous_dimension; /**< @brief Dimension of the previous logged problem */

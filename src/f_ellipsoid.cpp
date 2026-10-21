@@ -94,6 +94,7 @@ static coco_problem_ptr_t f_ellipsoid_allocate(const size_t number_of_variables,
  */
 static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                             const size_t instance, const long rseed,
+                                                            const coco_bbob_variant_t variant,
                                                             const char *problem_id_template,
                                                             const char *problem_name_template) {
   double fopt;
@@ -101,18 +102,14 @@ static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t functio
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
   problem = transform_vars_oscillate(std::move(problem));
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
-  if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
+  if (variant == coco_bbob_variant_t::largescale) {
     problem = transform_obj_norm_by_dim(std::move(problem));
   }
   problem = transform_obj_shift(std::move(problem), fopt);
@@ -129,6 +126,7 @@ static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t functio
  */
 static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance, const long rseed,
+                                                                    const coco_bbob_variant_t variant,
                                                                     const double conditioning,
                                                                     const char *problem_id_template,
                                                                     const char *problem_name_template) {
@@ -139,11 +137,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
   fopt = bbob2009_compute_fopt(function, instance);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -165,6 +159,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t
  */
 static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                           const size_t instance, const long rseed,
+                                                                          const coco_bbob_variant_t variant,
                                                                           const char *problem_id_template,
                                                                           const char *problem_name_template) {
   double fopt;
@@ -180,11 +175,7 @@ static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const 
   nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
   
   std::vector<double> xopt(dimension);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
   fopt = bbob2009_compute_fopt(function, instance);
 
   const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
@@ -214,6 +205,7 @@ static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const 
  */
 static coco_problem_ptr_t f_ellipsoid_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                  const size_t instance, const long rseed,
+                                                                 const coco_bbob_variant_t variant,
                                                                  const char *problem_id_template,
                                                                  const char *problem_name_template) {
   double fopt;
@@ -221,11 +213,7 @@ static coco_problem_ptr_t f_ellipsoid_cons_bbob_problem_allocate(const size_t fu
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
 
@@ -246,6 +234,7 @@ static coco_problem_ptr_t f_ellipsoid_cons_bbob_problem_allocate(const size_t fu
  */
 static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                          const size_t instance, const long rseed,
+                                                                         const coco_bbob_variant_t variant,
                                                                          const char *problem_id_template,
                                                                          const char *problem_name_template) {
   double fopt;
@@ -255,11 +244,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const s
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
-  } else {
-    bbob2009_compute_xopt(xopt.data(), rseed, dimension);
-  }
+  bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
   fopt = bbob2009_compute_fopt(function, instance);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);

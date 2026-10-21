@@ -16,14 +16,12 @@ struct transform_obj_shift_t final : public coco_problem_transformed_t {
 
   transform_obj_shift_t(coco_problem_ptr_t inner, const double offset)
       : coco_problem_transformed_t(std::move(inner), "transform_obj_shift"), offset(offset) {
-    size_t i;
-    for (i = 0; i < number_of_objectives; i++)
+    for (size_t i = 0; i < number_of_objectives; i++)
       best_value[i] += offset;
   }
 
   void evaluate_function(const double *x, double *y) override {
     int feasible;
-    size_t i;
 
     if (number_of_objectives == 0) {
       coco_evaluate_function(inner_problem.get(), x, y);
@@ -37,7 +35,7 @@ struct transform_obj_shift_t final : public coco_problem_transformed_t {
 
     coco_evaluate_function(inner_problem.get(), x, y);
 
-    for (i = 0; i < number_of_objectives; i++)
+    for (size_t i = 0; i < number_of_objectives; i++)
       y[i] += offset;
 
     if (number_of_constraints > 0) {

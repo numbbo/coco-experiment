@@ -58,7 +58,7 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
   std::vector<double> smallest_values_of_interest(dimension);
   std::vector<double> largest_values_of_interest(dimension);
 
-  size_t i, j;
+  size_t j;
   size_t num_integer = dimension;
   /* The cardinality of variables (0 = continuous variables should always come last) */
   const size_t variable_cardinality[] = {2, 4, 8, 16, 0};
@@ -79,7 +79,7 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
 
   /* Set the ROI of the outer problem according to the given cardinality of variables and the ROI of the
    * inner problems to [-4, 4] for variables that will be discretized */
-  for (i = 0; i < dimension; i++) {
+  for (size_t i = 0; i < dimension; i++) {
     j = i / (dimension / 5);
     if (variable_cardinality[j] == 0) {
       /* Continuous variables */
