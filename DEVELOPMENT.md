@@ -160,6 +160,32 @@ Check [PyPI](https://pypi.org/project/coco-experiment/), it should list the new 
 [twine]: https://twine.readthedocs.io/en/stable/
 
 
+### Building additional wheels for an existing release
+
+PyPI does not allow replacing files of a release, but it does allow adding new ones.
+This lets you add wheels for new Python versions or platforms to a release after the fact.
+
+1. Add the new build targets to the `python` (and, if needed, `buildplat`) matrix of the `python-wheels-build` job in `.github/workflows/test_python.yml`.
+   The third column of each `python` entry is the `cibuildwheel` version used to build it.
+   Do not change it for existing entries, otherwise the rebuilt wheels may get different file names (e.g. a different `musllinux` tag) and would be uploaded as additional wheels.
+   Also add the new Python versions to the `python-wheels-test` and `python-wheels-example` jobs so the new wheels get tested.
+
+1. Merge the change into `main`.
+
+1. Start the `tag-release` workflow manually for the release tag, either from the [Actions](https://github.com/numbbo/coco-experiment/actions/workflows/tag_release.yml) tab (*Run workflow*, branch `main`, tag e.g. `v2.8.2`) or with the [GitHub CLI](https://cli.github.com/):
+
+   ```sh
+   gh workflow run tag_release.yml -f tag=vX.Y.Z
+   ```
+
+   The workflow file is taken from `main`, the release itself is identified by the `tag` input.
+
+1. Approve the deployment to the `release` environment once the wheels have been built and tested.
+
+Instead of rebuilding the source package, the workflow downloads the sdist of that release from PyPI (checking its SHA256 digest) and builds all wheels in the matrix from it.
+Before publishing, it drops every file PyPI already has for that version, so only the new wheels are uploaded to PyPI and attached to the existing GitHub release.
+If nothing is new, nothing is uploaded.
+
 ### Other languages
 
 TBD - probably as downloads on the new website.

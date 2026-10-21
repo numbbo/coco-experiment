@@ -5,6 +5,14 @@ on:
     # Pattern matched against refs/tags
     tags:        
       - 'v*' # This includes only tags starting with v
+  workflow_dispatch:
+    # Backfill wheels for an existing release: build wheels from the sdist
+    # already on PyPI and upload only the wheels PyPI does not have yet.
+    inputs:
+      tag:
+        description: "Existing release tag to build additional wheels for (e.g. v2.8.2)"
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -12,16 +20,44 @@ concurrency:
    
 jobs:
   source-build:
+    if: github.event_name == 'push'
     uses: ./.github/workflows/source_build.yml
 
+  fetch-sdist:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Python source package from PyPI
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          mkdir dist
+          curl -sSf "https://pypi.org/pypi/coco-experiment/${VERSION}/json" \
+            | jq -r '.urls[] | select(.packagetype == "sdist") | "\(.url) \(.digests.sha256) \(.filename)"' \
+            > sdist.txt
+          test "$(wc -l < sdist.txt)" -eq 1 || { echo "Expected exactly one sdist for ${VERSION} on PyPI"; exit 1; }
+          read -r URL SHA256 FILENAME < sdist.txt
+          curl -sSfL -o "dist/${FILENAME}" "${URL}"
+          echo "${SHA256}  dist/${FILENAME}" | sha256sum -c -
+      - name: Archive cocoex Python source package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-python-sdist
+          path: dist/coco_experiment*.tar.gz
+
   python-wheels:
-    needs: source-build
+    needs: [source-build, fetch-sdist]
+    # One of the two sdist jobs is always skipped.
+    if: ${{ !failure() && !cancelled() }}
     uses: ./.github/workflows/test_python.yml
     with:
       build_only: "true"
+      ref: ${{ inputs.tag }}
 
   release-python:
     needs: python-wheels
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -33,26 +69,40 @@ jobs:
       # url: https://pypi.org/p/YOURPROJECT
     steps:
       - name: Download Python source package
+        if: github.event_name == 'push'
         uses: actions/download-artifact@v4
         with:
           name: dist-python-sdist
           path: ./dist/
-      - name: Download Python source package
+      - name: Download Python wheels
         uses: actions/download-artifact@v4
         with:
           name: dist-python-wheels
           path: ./dist/          
+      - name: Drop wheels already on PyPI
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          curl -sSf "https://pypi.org/pypi/coco-experiment/${VERSION}/json" \
+            | jq -r '.urls[].filename' \
+            | while read -r f; do rm -fv "dist/${f}"; done
+          ls -l dist/
       - name: Publish release distributions to PyPI
+        if: hashFiles('dist/*') != ''
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Download remaining source packages
+        if: github.event_name == 'push'
         uses: actions/download-artifact@v4
         with:
           path: ./dist/
           pattern: dist-*
           merge-multiple: true    
       - name: Release
+        if: hashFiles('dist/*') != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: |
             ./dist/**
-

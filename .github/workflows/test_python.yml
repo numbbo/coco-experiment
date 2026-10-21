@@ -8,6 +8,11 @@ on:
         required: false
         default: "false"
         type: string
+      ref:
+        description: "git ref to check out for the example experiment (default: triggering ref)"
+        required: false
+        default: ""
+        type: string
 
 jobs:
   python-wheels-build:
@@ -122,6 +127,8 @@ jobs:
         working-directory: ${{github.workspace}}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/download-artifact@v4
         with:
           name: dist-python-wheels-${{ matrix.python }}-${{ matrix.buildplat[1] }}
