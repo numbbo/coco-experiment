@@ -7,7 +7,7 @@ description = "Rust bindings for COCO benchmarking framework"
 repository = "https://github.com/numbbo/coco"
 keywords = ["coco", "benchmark", "blackbox", "bindings"]
 categories = ["science"]
-edition = "2021"
+edition = "2024"
 
 [workspace]
 members = ["coco-sys"]
