@@ -506,5 +506,5 @@ MU_TEST_SUITE(test_all_coco_api) {
 int main(void) {
   MU_RUN_SUITE(test_all_coco_api);
   MU_REPORT();
-  return minunit_status;
+  return MU_EXIT_CODE;
 }

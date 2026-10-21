@@ -31,7 +31,9 @@ public:
                                  f_lunacek_bi_rastrigin_shared_data_t *shared)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_x_hat_generic"),
         sign_vector(sign_vector, sign_vector + inner_problem->get_number_of_variables()),
-        x_hat(inner_problem->get_number_of_variables()), shared(shared) {}
+        x_hat(inner_problem->get_number_of_variables()), shared(shared) {
+    update_best_parameter();
+  }
 
   /**
    * @brief Evaluates the transformation.

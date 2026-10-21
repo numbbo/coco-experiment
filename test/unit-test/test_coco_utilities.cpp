@@ -418,6 +418,32 @@ MU_TEST(test_coco_is_inf) {
 }
 
 /**
+ * Tests coco_matrix_t::solve().
+ */
+MU_TEST(test_coco_matrix_solve) {
+  /* Needs a row exchange because of the zero in the upper left corner */
+  coco_matrix_t M(3, 3);
+  const double values[3][3] = {{0., 2., 1.}, {1., 1., 0.}, {4., 0., 2.}};
+  for (size_t i = 0; i < 3; ++i)
+    for (size_t j = 0; j < 3; ++j)
+      M(i, j) = values[i][j];
+  const double x_expected[3] = {1., -2., 3.};
+  double y[3], x[3];
+  M.multiply(x_expected, y);
+  mu_check(M.solve(y, x));
+  for (size_t i = 0; i < 3; ++i)
+    mu_check(fabs(x[i] - x_expected[i]) < 1e-14);
+
+  /* A singular matrix */
+  for (size_t j = 0; j < 3; ++j)
+    M(2, j) = M(0, j) + M(1, j);
+  mu_check(!M.solve(y, x));
+
+  /* A non-square matrix */
+  mu_check(!coco_matrix_t(2, 3).solve(y, x));
+}
+
+/**
  * Tests coco_matrix_t::is_orthogonal().
  */
 MU_TEST(test_coco_matrix_is_orthogonal) {
@@ -534,6 +560,7 @@ int main(void) {
   MU_RUN_TEST(test_coco_create_remove_directory);
   MU_RUN_TEST(test_coco_directories_and_files);
   MU_RUN_TEST(test_coco_matrix_is_orthogonal);
+  MU_RUN_TEST(test_coco_matrix_solve);
 
   MU_REPORT();
 

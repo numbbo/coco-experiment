@@ -56,8 +56,8 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
     problem = f_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
                                                 problem_id_template, problem_name_template);
   } else if (function == 3) {
-    problem = f_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
-                                                problem_id_template, problem_name_template);
+    problem = std::make_unique<bbob_rastrigin_t>(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
+                                                 problem_id_template, problem_name_template);
   } else if (function == 4) {
     problem = f_bueche_rastrigin_bbob_problem_allocate(function, dimension, instance, rseed_3,
                                                        coco_bbob_variant_t::largescale, problem_id_template,
@@ -71,9 +71,9 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
                                                                       coco_bbob_variant_t::largescale,
                                                                       problem_id_template, problem_name_template);
   } else if (function == 7) {
-    problem = f_step_ellipsoid_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                                   coco_bbob_variant_t::largescale, problem_id_template,
-                                                                   problem_name_template);
+    problem = std::make_unique<bbob_step_ellipsoid_permblockdiag_t>(function, dimension, instance, rseed,
+                                                                    coco_bbob_variant_t::largescale,
+                                                                    problem_id_template, problem_name_template);
   } else if (function == 8) {
     problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
                                                  problem_id_template, problem_name_template);
@@ -102,9 +102,9 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
                                                                      coco_bbob_variant_t::largescale,
                                                                      problem_id_template, problem_name_template);
   } else if (function == 15) {
-    problem = f_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
-                                                              coco_bbob_variant_t::largescale, problem_id_template,
-                                                              problem_name_template);
+    problem = std::make_unique<bbob_rastrigin_rotated_permblockdiag_t>(function, dimension, instance, rseed,
+                                                                       coco_bbob_variant_t::largescale,
+                                                                       problem_id_template, problem_name_template);
   } else if (function == 16) {
     problem = f_weierstrass_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                 coco_bbob_variant_t::largescale, problem_id_template,

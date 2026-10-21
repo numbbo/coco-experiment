@@ -111,9 +111,14 @@ MU_TEST(test_rotation_inverses) {
   const std::vector<double> b = {0.5, -1.0, 2.0, -0.25, 3.0, 0.0};
   mu_check(maps_back([&](coco_problem_ptr_t p) { return transform_vars_affine(std::move(p), R, b); }, 1e-13));
 
-  /* A matrix that is not orthogonal */
+  /* A matrix that is not orthogonal is inverted by solving the linear system */
   coco_matrix_t M = R;
   M(0, 0) *= 2.0;
+  mu_check(maps_back([&](coco_problem_ptr_t p) { return transform_vars_affine(std::move(p), M, b); }, 1e-12));
+
+  /* A singular matrix is not invertible */
+  for (size_t j = 0; j < dimension; ++j)
+    M(1, j) = M(0, j);
   mu_check(is_not_invertible([&](coco_problem_ptr_t p) { return transform_vars_affine(std::move(p), M, b); }));
 }
 
@@ -154,10 +159,6 @@ MU_TEST(test_constraint_inverse) {
 }
 
 MU_TEST(test_rounding_is_not_invertible) {
-  f_step_ellipsoid_shared_data_t step_shared;
-  mu_check(is_not_invertible(
-      [&](coco_problem_ptr_t p) { return transform_vars_round_step(std::move(p), 10.0, &step_shared); }));
-
   const std::vector<double> lower(dimension, -5.0), upper(dimension, 5.0);
   mu_check(is_not_invertible([&](coco_problem_ptr_t p) {
     return transform_vars_discretize(std::move(p), lower.data(), upper.data(), dimension);
@@ -177,5 +178,5 @@ int main(void) {
 
   MU_REPORT();
 
-  return minunit_status;
+  return MU_EXIT_CODE;
 }

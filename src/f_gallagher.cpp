@@ -359,6 +359,19 @@ public:
   /** @brief The data shared with the transformations and sub problems of this function. */
   f_gallagher_shared_data_t &shared_data() { return shared; }
 
+  /**
+   * @brief Sets the best value to the value at the first peak, which is the best parameter of the first sub
+   * problem, and the best parameter to first_peak_unrotated, the location of the first peak before the block
+   * rotation that wraps this problem and keeps its best parameter.
+   *
+   * Computing the best parameter with the inverse of the rotation would add rounding errors (about 1e-11),
+   * which move the nadir points of the bi-objective mixed-integer suite away from their reference values.
+   */
+  void set_optimum_at_first_peak(const std::vector<double> &first_peak_unrotated) {
+    evaluate_function(shared.sub_problems[0]->get_best_parameter().data(), best_value.data());
+    best_parameter = first_peak_unrotated;
+  }
+
 private:
   f_gallagher_shared_data_t shared;
 };
@@ -411,7 +424,6 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
 
   std::unique_ptr<f_gallagher_ls_t> gallagher = f_gallagher_problem_allocate(dimension, number_of_peaks);
   shared = &gallagher->shared_data(); /* shortcut */
-  coco_problem_ptr_t problem = std::move(gallagher);
 
   std::vector<double> alpha_i_vals(number_of_peaks - 1);
   for (size_t i = 0; i < number_of_peaks - 1; i++) {
@@ -423,9 +435,8 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
   std::vector<size_t> P_alpha_i(number_of_peaks - 1);
   coco_compute_permutation_from_sequence(P_alpha_i.data(), tmp_uniform.data(), number_of_peaks - 1);
   bbob2009_unif(tmp_uniform.data(), dimension * number_of_peaks, rseed);
-  std::vector<double> best_param_before_rotation(dimension);
-  std::vector<double> best_param_after_rotation(dimension);
   std::vector<double> tmp_uniform2(dimension);
+  std::vector<double> first_peak_unrotated;
   for (size_t peak_index = 0; peak_index < number_of_peaks; peak_index++) {
     problem_i = &(shared->sub_problems[peak_index]);
 
@@ -434,18 +445,13 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
     std::vector<double> y_i(dimension);
     for (size_t i = 0; i < dimension; i++) {
       y_i[i] = b * tmp_uniform[i + peak_index * dimension] - c;
-      if (peak_index == 0) {
+      if (peak_index == 0)
         y_i[i] *= a;
-        best_param_before_rotation[i] = y_i[i];
-      }
     }
     const std::vector<double> y_i_unrotated = y_i;
+    if (peak_index == 0)
+      first_peak_unrotated = y_i_unrotated;
     B.multiply(y_i_unrotated.data(), y_i.data());
-    if (peak_index == 0) {
-      for (size_t i = 0; i < dimension; i++) {
-        best_param_after_rotation[i] = y_i[i];
-      }
-    }
 
     if (peak_index == 0) {
       alpha_i = first_condition;
@@ -467,9 +473,8 @@ static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const 
     *problem_i = transform_vars_shift(std::move(*problem_i), y_i.data(), 0);
   }
 
-  problem->evaluate_best_value(best_param_after_rotation.data());
-  problem = transform_vars_blockrotation(std::move(problem), B);
-  problem->set_best_parameter(best_param_before_rotation.data());
+  gallagher->set_optimum_at_first_peak(first_peak_unrotated);
+  coco_problem_ptr_t problem = transform_vars_blockrotation(std::move(gallagher), B, true);
 
   /*transform global objective function*/
   problem = transform_obj_oscillate(std::move(problem));

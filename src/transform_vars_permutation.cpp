@@ -7,6 +7,7 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "transform_functions.cpp"
 #include "transform_vars_permutation_helpers.cpp"
 
 /**
@@ -18,38 +19,25 @@ public:
                                const bool inverse)
       : coco_problem_transformed_t(std::move(inner),
                                    inverse ? "transform_vars_inverse_permutation" : "transform_vars_permutation"),
-        is_inverse(inverse), permuted_x(number_of_variables), P(P, P + number_of_variables) {}
+        permutation(P, number_of_variables, inverse), permuted_x(number_of_variables) {
+    update_best_parameter();
+  }
 
   void evaluate_function(const double *x, double *y) override {
-
-    if (is_inverse) {
-      for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i) {
-        permuted_x[P[i]] = x[i];
-      }
-    } else {
-      for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i) {
-        permuted_x[i] = x[P[i]];
-      }
-    }
+    permutation.apply(x, permuted_x.data());
     inner_problem->evaluate_function(permuted_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /** @brief Applies the inverse permutation. */
   bool inverse(const double *inner_x, double *x) const override {
-    for (size_t i = 0; i < number_of_variables; ++i) {
-      if (is_inverse)
-        x[i] = inner_x[P[i]];
-      else
-        x[P[i]] = inner_x[i];
-    }
+    permutation.inverse(inner_x, x);
     return true;
   }
 
 private:
-  const bool is_inverse;
+  const vars_permutation_t permutation;
   std::vector<double> permuted_x; /**< @brief The permuted decision values */
-  std::vector<size_t> P;          /**< @brief the permutation matrices*/
 };
 
 /**

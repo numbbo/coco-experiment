@@ -7,6 +7,7 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "transform_functions.cpp"
 
 /**
  * @brief Shifts all decision values by an offset.
@@ -19,17 +20,14 @@ public:
    */
   transform_vars_shift_t(coco_problem_ptr_t inner, const double *offset, const bool shift_constraint_only)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_shift"),
-        offset(offset, offset + inner_problem->get_number_of_variables()),
-        shifted_x(inner_problem->get_number_of_variables()), shift_constraint_only(shift_constraint_only) {
+        shift(offset, inner_problem->get_number_of_variables()), shifted_x(inner_problem->get_number_of_variables()),
+        shift_constraint_only(shift_constraint_only) {
 
-    /* Update the best parameter */
-    for (size_t i = 0; i < number_of_variables; i++)
-      best_parameter[i] += this->offset[i];
+    update_best_parameter();
 
     /* Update the initial solution if any */
     if (!initial_solution.empty())
-      for (size_t i = 0; i < number_of_variables; i++)
-        initial_solution[i] += this->offset[i];
+      shift.inverse(initial_solution.data(), initial_solution.data());
   }
 
   /**
@@ -41,10 +39,7 @@ public:
       return;
     }
 
-    for (size_t i = 0; i < number_of_variables; ++i) {
-      shifted_x[i] = x[i] - offset[i];
-    }
-
+    shift.apply(x, shifted_x.data());
     inner_problem->evaluate_function(shifted_x.data(), y);
 
     assert_not_below_best_value(x, y);
@@ -60,9 +55,7 @@ public:
       return;
     }
 
-    for (size_t i = 0; i < number_of_variables; ++i) {
-      shifted_x[i] = x[i] - offset[i];
-    }
+    shift.apply(x, shifted_x.data());
     inner_problem->evaluate_constraint(shifted_x.data(), y, update_counter);
   }
 
@@ -70,22 +63,18 @@ public:
    * @brief Evaluates the gradient of the transformed function at x
    */
   void evaluate_gradient(const double *x, double *y) override {
-
-    for (size_t i = 0; i < number_of_variables; ++i) {
-      shifted_x[i] = x[i] - offset[i];
-    }
+    shift.apply(x, shifted_x.data());
     inner_problem->evaluate_gradient(shifted_x.data(), y);
   }
 
-  /** @brief Adds the offset. */
+  /** @brief Adds the offset again. */
   bool inverse(const double *inner_x, double *x) const override {
-    for (size_t i = 0; i < number_of_variables; ++i)
-      x[i] = inner_x[i] + offset[i];
+    shift.inverse(inner_x, x);
     return true;
   }
 
 private:
-  const std::vector<double> offset;
+  const vars_shift_t shift;
   std::vector<double> shifted_x;
   const bool shift_constraint_only;
 };

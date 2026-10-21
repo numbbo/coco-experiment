@@ -16,12 +16,7 @@ public:
   transform_vars_scale_t(coco_problem_ptr_t inner, const double factor)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_scale"), factor(factor),
         scaled_x(inner_problem->get_number_of_variables()) {
-    /* Compute best parameter */
-    if (factor != 0.) {
-      for (size_t i = 0; i < number_of_variables; i++) {
-        best_parameter[i] /= factor;
-      }
-    } /* else error? */
+    update_best_parameter();
   }
 
   /**

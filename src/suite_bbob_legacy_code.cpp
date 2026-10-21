@@ -157,6 +157,15 @@ static void bbob_compute_xopt(double *xopt, const long seed, const size_t DIM, c
 }
 
 /**
+ * @brief Returns the location of the global optimum for the given suite variant, see bbob_compute_xopt().
+ */
+static std::vector<double> bbob_xopt(const long seed, const size_t DIM, const coco_bbob_variant_t variant) {
+  std::vector<double> xopt(DIM);
+  bbob_compute_xopt(xopt.data(), seed, DIM, variant);
+  return xopt;
+}
+
+/**
  * @brief Randomly chooses the objective offset for the given function and instance.
  */
 static double bbob2009_compute_fopt(const size_t function, const size_t instance) {

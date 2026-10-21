@@ -8,6 +8,7 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "transform_functions.cpp"
 
 /**
  * @brief Adds a penalty for solutions outside of the region of interest to the objective value(s).
@@ -23,20 +24,8 @@ public:
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    const double *lower_bounds = smallest_values_of_interest.data();
-    const double *upper_bounds = largest_values_of_interest.data();
-    double penalty = 0.0;
-
-    for (size_t i = 0; i < number_of_variables; ++i) {
-      const double c1 = x[i] - upper_bounds[i];
-      const double c2 = lower_bounds[i] - x[i];
-      assert(lower_bounds[i] < upper_bounds[i]);
-      if (c1 > 0.0) {
-        penalty += c1 * c1;
-      } else if (c2 > 0.0) {
-        penalty += c2 * c2;
-      }
-    }
+    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest.data(),
+                                                 largest_values_of_interest.data(), number_of_variables);
     inner_problem->evaluate_function(x, y);
 
     for (size_t i = 0; i < number_of_objectives; ++i) {

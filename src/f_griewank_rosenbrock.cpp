@@ -92,7 +92,6 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
   std::vector<double> shift(dimension);
-  double tmp; /* Wassim: will serve to set the optimal solution "manually"*/
 
   double fopt = bbob2009_compute_fopt(function, instance);
   for (size_t i = 0; i < dimension; ++i) {
@@ -112,21 +111,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
   problem = transform_vars_shift(std::move(problem), shift.data(), 0);
   M = rot1;
 
-  /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine(): 'best_parameter'
-   * not updated, set to NAN") */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem = transform_vars_affine(std::move(problem), M, b);
-  std::vector<double> xopt(dimension);
-  for (size_t j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T
-                                       ones(dimension)/(2*factor) */
-    tmp = 0;
-    for (size_t i = 0; i < dimension; ++i) {
-      tmp += rot1(i, j);
-    }
-    xopt[j] = tmp / (2. * scales);
-  }
-  problem->set_best_parameter(xopt.data());
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
@@ -146,8 +131,6 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
   size_t nb_blocks;
-  double tmp;                                               /* Manh: will serve to set the optimal solution "manually"*/
-  std::vector<double> best_parameter(dimension); /* Manh: will serve to set the optimal solution "manually"*/
 
   std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
   size_t block_size = coco_rotation_matrix_block_size(dimension);
@@ -173,26 +156,6 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
 
   problem = transform_obj_shift(std::move(problem), fopt);
-
-  /* Manh: manually set xopt = rot1^T ones(dimension)/(2*scales) */
-  size_t next_bs_change = 0;
-  for (size_t k = 0; k < nb_blocks; ++k) {
-    for (size_t j = 0; j < block_sizes[k];
-         ++j) { /* Manh: firstly, set xopt_1 = (B^T)*(P_2^T)*ones(dimension)/(2*scales) */
-      tmp = 0;
-      for (size_t i = 0; i < block_sizes[k]; ++i) {
-        tmp += B.in_block(next_bs_change + i, j);
-      }
-      best_parameter[next_bs_change + j] = tmp / (2. * scales);
-    }
-    next_bs_change += block_sizes[k];
-  }
-
-  std::vector<double> xopt(dimension);
-  for (size_t j = 0; j < dimension; ++j) { /* Manh: secondly, set xopt = (P_1^T)* xopt_1 */
-    xopt[P1[j]] = best_parameter[j];
-  }
-  problem->set_best_parameter(xopt.data());
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);

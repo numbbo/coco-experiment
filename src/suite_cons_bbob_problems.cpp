@@ -226,11 +226,9 @@ f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations
@@ -285,11 +283,9 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations
@@ -346,11 +342,9 @@ static coco_problem_ptr_t f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocat
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations
@@ -408,11 +402,9 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
@@ -468,11 +460,9 @@ f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
-   * objective function value into problem->best_value
+  /* The best parameter of the stacked problem is the origin, store its
+   * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations
@@ -530,11 +520,9 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations
@@ -591,11 +579,9 @@ static coco_problem_ptr_t f_different_powers_c_linear_cons_bbob_problem_allocate
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations
@@ -650,11 +636,9 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations
@@ -712,11 +696,9 @@ static coco_problem_ptr_t f_rastrigin_rotated_c_linear_cons_bbob_problem_allocat
   const std::string problem_type_constraints = problem_c->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
-  /* Define problem->best_parameter as the origin and store its
+  /* The best parameter of the stacked problem is the origin, store its
    * objective function value into problem->best_value.
    */
-  const std::vector<double> origin(dimension, 0.0);
-  problem->set_best_parameter(origin.data());
   problem->evaluate_best_value();
 
   /* To be sure that everything is correct, reset the f-evaluations

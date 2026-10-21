@@ -233,8 +233,6 @@ void coco_problem_s::count_evaluation(const double *x, const double *y) {
   }
 }
 
-void coco_problem_s::set_best_parameter_to_nan() { coco_vector_set_to_nan(best_parameter.data(), number_of_variables); }
-
 void coco_problem_s::set_suite_dependent(coco_suite_t *suite, const size_t index, const size_t function,
                                          const size_t instance) {
   this->suite = suite;
@@ -335,24 +333,6 @@ size_t coco_problem_get_evaluations(const coco_problem_t *problem) {
 size_t coco_problem_get_evaluations_constraints(const coco_problem_t *problem) {
   assert(problem != nullptr);
   return problem->get_evaluations_constraints();
-}
-
-/**
- * @brief Returns whether the best parameter is not (close to) zero.
- */
-bool coco_problem_s::best_parameter_not_zero() const {
-  size_t i = 0;
-  bool best_is_zero = true;
-
-  if (coco_vector_contains_nan(best_parameter.data(), number_of_variables))
-    return true;
-
-  while (i < number_of_variables && best_is_zero) {
-    best_is_zero = coco_double_almost_equal(best_parameter[i], 0, 1e-9);
-    i++;
-  }
-
-  return !best_is_zero;
 }
 
 /**
@@ -658,6 +638,15 @@ void coco_problem_transformed_s::recommend_solution(const double *x) { coco_reco
 bool coco_problem_transformed_s::from_base_coordinates(const double *base_x, double *x) const {
   std::vector<double> inner_x(inner_problem->get_number_of_variables());
   return inner_problem->from_base_coordinates(base_x, inner_x.data()) && inverse(inner_x.data(), x);
+}
+
+void coco_problem_transformed_s::update_best_parameter() {
+  if (best_parameter.empty())
+    return;
+  if (!inverse(inner_problem->get_best_parameter().data(), best_parameter.data())) {
+    coco_warning("%s: the transformation is not invertible, 'best_parameter' set to NAN", get_name().c_str());
+    coco_vector_set_to_nan(best_parameter.data(), number_of_variables);
+  }
 }
 
 bool coco_problem_transformed_s::identity_inverse(const double *inner_x, double *x) const {

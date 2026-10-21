@@ -106,7 +106,8 @@ static coco_problem_ptr_t f_schwefel_generalized_bbob_problem_allocate(const siz
   problem = f_schwefel_generalized_allocate(dimension);
   problem = transform_vars_scale(std::move(problem), 100);
   problem = transform_vars_shift(std::move(problem), tmp1.data(), 0);
-  problem = transform_vars_conditioning(std::move(problem), 10.0);
+  /* Keeps the best parameter in the conditioning, see f_schwefel_bbob_problem_allocate() */
+  problem = transform_vars_conditioning(std::move(problem), 10.0, true);
   problem = transform_vars_shift(std::move(problem), tmp2.data(), 0);
   problem = transform_vars_z_hat(std::move(problem), xopt.data());
   problem = transform_vars_scale(std::move(problem), 2);

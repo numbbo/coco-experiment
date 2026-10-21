@@ -23,10 +23,7 @@ public:
      */
     for (size_t i = 0; i < number_of_variables; ++i)
       factors[i] = pow(sqrt(10.0), static_cast<double>(i) / (static_cast<double>(number_of_variables) - 1.0));
-    if (inner_problem->best_parameter_not_zero()) {
-      coco_warning("transform_vars_brs(): 'best_parameter' not updated, set to NAN");
-      inner_problem->set_best_parameter_to_nan();
-    }
+    update_best_parameter();
   }
 
   /**

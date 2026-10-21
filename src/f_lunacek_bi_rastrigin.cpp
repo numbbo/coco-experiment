@@ -344,13 +344,6 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  /* set best_parameter and best value*/
-  std::vector<double> xopt(dimension);
-  for (size_t i = 0; i < dimension; i++) { /* Wassim: to silence warning about best_parameter*/
-    xopt[i] = 0.5 * mu0 * sign_vector[i];  /* TODO: Documentation no 0.5 in documentation! */
-  }
-  problem->set_best_parameter(xopt.data());
-
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
   problem->set_type("5-weakly-structured");

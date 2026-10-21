@@ -273,6 +273,12 @@ public:
   /** @brief Returns whether the matrix is square and M M^T is the identity up to chosen_precision. */
   bool is_orthogonal() const;
 
+  /**
+   * @brief Solves M x = y by Gaussian elimination with partial pivoting. Returns false if the matrix is not
+   * square or singular.
+   */
+  bool solve(const double *y, double *x) const;
+
   /** @brief Computes y = M x + b; x and y must not overlap (b and y may be the same). */
   void multiply_add(const double *x, const double *b, double *y) const {
     for (size_t i = 0; i < number_of_rows_; ++i) {
@@ -958,6 +964,42 @@ bool coco_matrix_t::is_orthogonal() const {
           ((i != j) && !coco_double_almost_equal(sum, 0, chosen_precision)))
         return false;
     }
+  }
+  return true;
+}
+
+bool coco_matrix_t::solve(const double *y, double *x) const {
+  const size_t n = number_of_rows_;
+  if (n != number_of_columns_)
+    return false;
+
+  coco_matrix_t A = *this;
+  std::vector<double> b(y, y + n);
+  for (size_t k = 0; k < n; ++k) {
+    size_t pivot = k;
+    for (size_t i = k + 1; i < n; ++i) {
+      if (fabs(A(i, k)) > fabs(A(pivot, k)))
+        pivot = i;
+    }
+    if (A(pivot, k) == 0.0)
+      return false;
+    if (pivot != k) {
+      for (size_t j = k; j < n; ++j)
+        std::swap(A(k, j), A(pivot, j));
+      std::swap(b[k], b[pivot]);
+    }
+    for (size_t i = k + 1; i < n; ++i) {
+      const double factor = A(i, k) / A(k, k);
+      for (size_t j = k; j < n; ++j)
+        A(i, j) -= factor * A(k, j);
+      b[i] -= factor * b[k];
+    }
+  }
+  for (size_t i = n; i-- > 0;) {
+    double sum = b[i];
+    for (size_t j = i + 1; j < n; ++j)
+      sum -= A(i, j) * x[j];
+    x[i] = sum / A(i, i);
   }
   return true;
 }

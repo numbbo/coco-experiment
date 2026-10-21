@@ -98,6 +98,7 @@ set_property(TEST test_tainted-bbob PROPERTY WILL_FAIL YES)
 add_test(NAME test_tainted-bbob-largescale COMMAND $<TARGET_FILE:test_tainted_problem> bbob-largescale)
 set_property(TEST test_tainted-bbob-largescale PROPERTY WILL_FAIL YES)
 
+minunit_test(test_best_parameter)
 minunit_test(test_biobj_utilities)
 minunit_test(test_brentq)
 minunit_test(test_coco_archive)

@@ -172,5 +172,5 @@ int main(void) {
 
   MU_REPORT();
 
-  int MU_EXIT_CODE;
+  return MU_EXIT_CODE;
 }

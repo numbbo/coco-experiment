@@ -130,9 +130,6 @@ struct coco_problem_s {
   /** @brief Copies the properties of the other problem, i.e. everything except its behaviour. */
   void copy_properties_from(const coco_problem_s &other);
 
-  /** @brief Returns whether the best parameter is not (close to) the origin or contains NaN. */
-  bool best_parameter_not_zero() const;
-
   /**
    * @brief Returns whether x is finite and satisfies all constraints. Stores the constraint values
    * in constraint_values unless it is nullptr.
@@ -184,20 +181,8 @@ struct coco_problem_s {
   /** @brief Sets whether the optimal (best) value is actually known for this problem. */
   void set_opt_known(const bool known) { opt_known = known; }
 
-  /**
-   * @brief Sets the best parameter, for the problem constructions that compute it after applying the
-   * transformations.
-   */
-  void set_best_parameter(const double *x) { best_parameter.assign(x, x + number_of_variables); }
-
-  /** @brief Sets the best parameter to NaN, for transformations that cannot map it. */
-  void set_best_parameter_to_nan();
-
   /** @brief Sets the best value to the objective value(s) at the best parameter. */
-  void evaluate_best_value() { evaluate_best_value(best_parameter.data()); }
-
-  /** @brief Sets the best value to the objective value(s) at x. */
-  void evaluate_best_value(const double *x) { evaluate_function(x, best_value.data()); }
+  void evaluate_best_value() { evaluate_function(best_parameter.data(), best_value.data()); }
 
   /** @brief Sets the initial solution, which should be feasible. */
   void set_initial_solution(const double *x) { initial_solution.assign(x, x + number_of_variables); }
@@ -312,6 +297,13 @@ struct coco_problem_transformed_s : public coco_problem_s {
 protected:
   /** @brief The inverse of a transformation that does not change the decision values. */
   bool identity_inverse(const double *inner_x, double *x) const;
+
+  /**
+   * @brief Sets the best parameter to the inverse of the best parameter of the inner problem, or to NaN if the
+   * transformation is not invertible. The transformations of the decision values call it at the end of their
+   * constructors.
+   */
+  void update_best_parameter();
 
   coco_problem_ptr_t inner_problem; /**< @brief The inner problem, owned by this problem */
 };
