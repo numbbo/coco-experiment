@@ -81,10 +81,9 @@ static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t funct
                                                               const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t i, j, k;
-  std::vector<double> M(dimension * dimension);
+  size_t k;
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
-  double *current_row;
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -94,24 +93,17 @@ static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t funct
     bbob2009_compute_xopt(xopt.data(), rseed, dimension);
   }
 
-  coco_matrix_t rot1(dimension, dimension);
-  coco_matrix_t rot2(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_compute_rotation(rot2.rows(), rseed, dimension);
-  for (i = 0; i < dimension; ++i) {
-    b[i] = 0.0;
-    current_row = M.data() + i * dimension;
-    for (j = 0; j < dimension; ++j) {
-      current_row[j] = 0.0;
-      for (k = 0; k < dimension; ++k) {
-        double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
-        current_row[j] += rot1[i][k] * pow(sqrt(10), exponent) * rot2[k][j];
-      }
-    }
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
+  std::vector<double> scales(dimension);
+  for (k = 0; k < dimension; ++k) {
+    const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
+    scales[k] = pow(sqrt(10), exponent);
   }
+  M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
   problem = f_sharp_ridge_allocate(dimension);
   problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);

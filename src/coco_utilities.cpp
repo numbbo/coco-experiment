@@ -246,48 +246,131 @@ double *coco_allocate_vector(const size_t number_of_elements) {
 }
 
 /**
- * @brief A matrix of doubles stored row by row, whose rows may have different lengths.
+ * @brief A dense matrix of doubles, stored row by row (row-major) in a single vector.
  *
- * rows() returns an array of row pointers, as expected by the functions that work on double ** (such as
- * bbob2009_compute_rotation()). Block matrices only store the elements of the blocks, so their rows are
- * shorter than the number of columns. The elements are initialized to 0.
- *
- * The matrix can be moved but not copied, since copies would share the row pointers of the original.
+ * The elements are initialized to 0.
  */
 class coco_matrix_t {
 public:
   coco_matrix_t() = default;
 
-  /** @brief A dense matrix with the given number of rows and columns. */
+  /** @brief A matrix with the given number of rows and columns. */
   coco_matrix_t(const size_t number_of_rows, const size_t number_of_columns)
-      : coco_matrix_t(std::vector<size_t>(number_of_rows, number_of_columns)) {}
+      : number_of_rows_(number_of_rows), number_of_columns_(number_of_columns),
+        values_(number_of_rows * number_of_columns) {}
 
-  /** @brief A matrix whose row i has row_lengths[i] elements. */
-  explicit coco_matrix_t(const std::vector<size_t> &row_lengths) : rows_(row_lengths.size()) {
-    size_t i, offset = 0;
-    for (i = 0; i < row_lengths.size(); ++i)
-      offset += row_lengths[i];
-    values_.resize(offset);
-    for (i = 0, offset = 0; i < row_lengths.size(); ++i) {
-      rows_[i] = values_.data() + offset;
-      offset += row_lengths[i];
+  size_t number_of_rows() const { return number_of_rows_; }
+  size_t number_of_columns() const { return number_of_columns_; }
+
+  /** @brief The element in row i and column j. */
+  double &operator()(const size_t i, const size_t j) { return values_[i * number_of_columns_ + j]; }
+  double operator()(const size_t i, const size_t j) const { return values_[i * number_of_columns_ + j]; }
+
+  /** @brief The elements of row i. */
+  double *row(const size_t i) { return values_.data() + i * number_of_columns_; }
+  const double *row(const size_t i) const { return values_.data() + i * number_of_columns_; }
+
+  /** @brief Returns whether the matrix is square and M M^T is the identity up to chosen_precision. */
+  bool is_orthogonal() const;
+
+  /** @brief Computes y = M x + b; x and y must not overlap (b and y may be the same). */
+  void multiply_add(const double *x, const double *b, double *y) const {
+    for (size_t i = 0; i < number_of_rows_; ++i) {
+      const double *current_row = row(i);
+      y[i] = b[i];
+      for (size_t j = 0; j < number_of_columns_; ++j)
+        y[i] += current_row[j] * x[j];
     }
   }
 
-  coco_matrix_t(const coco_matrix_t &) = delete;
-  coco_matrix_t &operator=(const coco_matrix_t &) = delete;
-  coco_matrix_t(coco_matrix_t &&) = default;
-  coco_matrix_t &operator=(coco_matrix_t &&) = default;
+  /** @brief Computes y = M x; x and y must not overlap. */
+  void multiply(const double *x, double *y) const {
+    for (size_t i = 0; i < number_of_rows_; ++i) {
+      const double *current_row = row(i);
+      y[i] = 0;
+      for (size_t j = 0; j < number_of_columns_; ++j)
+        y[i] += current_row[j] * x[j];
+    }
+  }
 
-  double **rows() { return rows_.data(); }
-  const double *const *rows() const { return rows_.data(); }
-  double *operator[](const size_t i) { return rows_[i]; }
-  const double *operator[](const size_t i) const { return rows_[i]; }
-  size_t number_of_rows() const { return rows_.size(); }
+private:
+  size_t number_of_rows_ = 0;
+  size_t number_of_columns_ = 0;
+  std::vector<double> values_;
+};
+
+/**
+ * @brief Returns A diag(d) B, with every element computed as the sum over k of (A(i, k) * d[k]) * B(k, j) in the
+ * order of k.
+ */
+static coco_matrix_t coco_matrix_product_with_diagonal(const coco_matrix_t &A, const std::vector<double> &d,
+                                                       const coco_matrix_t &B) {
+  coco_matrix_t result(A.number_of_rows(), B.number_of_columns());
+  assert(A.number_of_columns() == d.size() && B.number_of_rows() == d.size());
+  for (size_t i = 0; i < result.number_of_rows(); ++i) {
+    for (size_t j = 0; j < result.number_of_columns(); ++j) {
+      for (size_t k = 0; k < d.size(); ++k)
+        result(i, j) += A(i, k) * d[k] * B(k, j);
+    }
+  }
+  return result;
+}
+
+/**
+ * @brief A square block-diagonal matrix of which only the blocks on the diagonal are stored.
+ *
+ * Row i holds the block_size(i) elements of its block, which lie in the columns first_column(i), ...,
+ * first_column(i) + block_size(i) - 1; all other elements are 0. The elements are initialized to 0.
+ */
+class coco_block_diagonal_matrix_t {
+public:
+  coco_block_diagonal_matrix_t() = default;
+
+  /** @brief A matrix with number_of_blocks blocks of the given sizes. */
+  coco_block_diagonal_matrix_t(const size_t *block_sizes, const size_t number_of_blocks) {
+    size_t first_column = 0, number_of_values = 0;
+    for (size_t k = 0; k < number_of_blocks; ++k) {
+      for (size_t r = 0; r < block_sizes[k]; ++r) {
+        block_size_.push_back(block_sizes[k]);
+        first_column_.push_back(first_column);
+        row_start_.push_back(number_of_values);
+        number_of_values += block_sizes[k];
+      }
+      first_column += block_sizes[k];
+    }
+    values_.resize(number_of_values);
+  }
+
+  /** @brief The number of rows (and columns). */
+  size_t dimension() const { return block_size_.size(); }
+  /** @brief The size of the block that row i belongs to. */
+  size_t block_size(const size_t i) const { return block_size_[i]; }
+  /** @brief The first column of the block that row i belongs to. */
+  size_t first_column(const size_t i) const { return first_column_[i]; }
+
+  /** @brief The element in row i and column first_column(i) + k. */
+  double &in_block(const size_t i, const size_t k) { return values_[row_start_[i] + k]; }
+  double in_block(const size_t i, const size_t k) const { return values_[row_start_[i] + k]; }
+
+  /** @brief The element in row i and column j (0 outside the blocks). */
+  double operator()(const size_t i, const size_t j) const {
+    return (j < first_column_[i] || j >= first_column_[i] + block_size_[i]) ? 0 : in_block(i, j - first_column_[i]);
+  }
+
+  /** @brief Computes y = B x; x and y must not overlap. */
+  void multiply(const double *x, double *y) const {
+    for (size_t i = 0; i < dimension(); ++i) {
+      y[i] = 0;
+      for (size_t j = first_column_[i]; j < first_column_[i] + block_size_[i]; ++j)
+        y[i] += in_block(i, j - first_column_[i]) * x[j];
+    }
+  }
 
 private:
   std::vector<double> values_;
-  std::vector<double *> rows_;
+  std::vector<size_t> block_size_;
+  std::vector<size_t> first_column_;
+  std::vector<size_t> row_start_;
 };
 /**@}*/
 
@@ -826,27 +909,22 @@ static double coco_vector_scalar_product(const double *x, const double *y, size_
 }
 
 /**
- * @brief Checks if a given matrix M is orthogonal by (partially) computing M * M^T.
- * If M is a square matrix and M * M^T is close enough to the identity matrix
- * (up to a chosen precision), the function returns 1. Otherwise, it returns 0.
- * The matrix M must be represented as an array of doubles.
+ * @brief Checks whether the matrix is orthogonal by computing M * M^T. Returns true if M is square and M * M^T is
+ * close enough to the identity matrix (up to chosen_precision).
  */
-static int coco_is_orthogonal(const double *M, const size_t nb_rows, const size_t nb_columns) {
-
+bool coco_matrix_t::is_orthogonal() const {
   size_t i, j, z;
   double sum;
 
-  if (nb_rows != nb_columns)
-    return 0;
+  if (number_of_rows_ != number_of_columns_)
+    return false;
 
-  for (i = 0; i < nb_rows; ++i) {
-    for (j = 0; j < nb_rows; ++j) {
-      /* Compute the dot product of the ith row of M
-       * and the jth column of M^T (i.e. jth row of M)
-       */
+  for (i = 0; i < number_of_rows_; ++i) {
+    for (j = 0; j < number_of_rows_; ++j) {
+      /* Compute the dot product of the ith row of M and the jth column of M^T (i.e. jth row of M) */
       sum = 0.0;
-      for (z = 0; z < nb_rows; ++z) {
-        sum += M[i * nb_rows + z] * M[j * nb_rows + z];
+      for (z = 0; z < number_of_columns_; ++z) {
+        sum += (*this)(i, z) * (*this)(j, z);
       }
 
       /* Check if the dot product is 1 (resp. 0) when the row and the column
@@ -854,10 +932,10 @@ static int coco_is_orthogonal(const double *M, const size_t nb_rows, const size_
        */
       if (((i == j) && !coco_double_almost_equal(sum, 1, chosen_precision)) ||
           ((i != j) && !coco_double_almost_equal(sum, 0, chosen_precision)))
-        return 0;
+        return false;
     }
   }
-  return 1;
+  return true;
 }
 
 /**

@@ -93,7 +93,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
   coco_problem_ptr_t problem;
   size_t i, j;
 
-  std::vector<double> M(dimension * dimension);
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
   std::vector<double> shift(dimension);
   double scales;
@@ -104,31 +104,30 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
     shift[i] = -0.5;
   }
 
-  coco_matrix_t rot1(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed, dimension);
+  coco_matrix_t rot1 = bbob2009_compute_rotation(rseed, dimension);
   scales = coco_double_max(1., sqrt((double)dimension) / 8.);
   for (i = 0; i < dimension; ++i) {
     for (j = 0; j < dimension; ++j) {
-      rot1[i][j] *= scales;
+      rot1(i, j) *= scales;
     }
   }
 
   problem = f_griewank_rosenbrock_allocate(dimension, facftrue);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem = transform_vars_shift(std::move(problem), shift.data(), 0);
-  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
+  M = rot1;
 
   for (i = 0; i < dimension; i++) {
     problem->best_parameter[i] =
         0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine():
               'best_parameter' not updated, set to NAN")*/
   }
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   for (j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T
                                        ones(dimension)/(2*factor) */
     tmp = 0;
     for (i = 0; i < dimension; ++i) {
-      tmp += rot1[i][j];
+      tmp += rot1(i, j);
     }
     problem->best_parameter[j] = tmp / (2. * scales);
   }
@@ -172,9 +171,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
     shift[i] = -0.5;
   }
 
-  coco_matrix_t B = coco_block_matrix(dimension, block_sizes.data(), nb_blocks);
-
-  coco_compute_blockrotation(B.rows(), rseed, dimension, block_sizes.data(), nb_blocks);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed, block_sizes.data(), nb_blocks);
   coco_compute_truncated_uniform_swap_permutation(P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
   coco_compute_truncated_uniform_swap_permutation(P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
 
@@ -182,7 +179,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   problem = transform_vars_shift(std::move(problem), shift.data(), 0);
   problem = transform_vars_scale(std::move(problem), scales);
   problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_blockrotation(std::move(problem), B);
   problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
 
   /*problem = transform_obj_norm_by_dim(std::move(problem));*/ /* Wassim: there is already a normalization by
@@ -195,7 +192,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
     for (j = 0; j < block_sizes[k]; ++j) { /* Manh: firstly, set xopt_1 = (B^T)*(P_2^T)*ones(dimension)/(2*scales) */
       tmp = 0;
       for (i = 0; i < block_sizes[k]; ++i) {
-        tmp += B[next_bs_change + i][j];
+        tmp += B.in_block(next_bs_change + i, j);
       }
       best_parameter[next_bs_change + j] = tmp / (2. * scales);
     }

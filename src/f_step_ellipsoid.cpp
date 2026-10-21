@@ -88,7 +88,7 @@ double f_step_ellipsoid_t::raw(const double *x) {
     z_hat[i] = 0.0;
     c1 = sqrt(pow(condition / 10., (double)i / (double)(number_of_variables - 1)));
     for (j = 0; j < number_of_variables; ++j) {
-      z_hat[i] += c1 * rot2[i][j] * (x[j] - xopt[j]);
+      z_hat[i] += c1 * rot2(i, j) * (x[j] - xopt[j]);
     }
   }
   x1 = z_hat[0];
@@ -100,12 +100,7 @@ double f_step_ellipsoid_t::raw(const double *x) {
       z_hat[i] = coco_double_round(alpha * z_hat[i]) / alpha;
   }
 
-  for (i = 0; i < number_of_variables; ++i) {
-    z[i] = 0.0;
-    for (j = 0; j < number_of_variables; ++j) {
-      z[i] += rot1[i][j] * z_hat[j];
-    }
-  }
+  rot1.multiply(z_hat.data(), z.data());
 
   /* Computation core */
   result = 0.0;
@@ -140,8 +135,8 @@ static coco_problem_ptr_t f_step_ellipsoid_bbob_problem_allocate(const size_t fu
   } else {
     bbob2009_compute_xopt(problem->xopt.data(), rseed, dimension);
   }
-  bbob2009_compute_rotation(problem->rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_compute_rotation(problem->rot2.rows(), rseed, dimension);
+  problem->rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  problem->rot2 = bbob2009_compute_rotation(rseed, dimension);
 
   /* Compute best solution
    *
@@ -251,11 +246,8 @@ static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(c
   nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
   nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  coco_matrix_t B1 = coco_block_matrix(dimension, block_sizes1.data(), nb_blocks1);
-  coco_matrix_t B2 = coco_block_matrix(dimension, block_sizes2.data(), nb_blocks2);
-  coco_compute_blockrotation(B1.rows(), rseed + 1000000, dimension, block_sizes1.data(),
-                             nb_blocks1);
-  coco_compute_blockrotation(B2.rows(), rseed, dimension, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
 
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P12(dimension);
@@ -275,13 +267,13 @@ static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(c
   problem = std::move(step_ellipsoid);
 
   problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_blockrotation(std::move(problem), B1);
   problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
   problem = transform_vars_round_step(std::move(problem), alpha, &raw_problem->shared);
 
   problem = transform_vars_conditioning(std::move(problem), 10.0);
   problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_blockrotation(std::move(problem), B2);
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 

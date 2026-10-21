@@ -28,99 +28,31 @@ static size_t coco_rotation_matrix_block_size(size_t const dimension) {
 }
 
 /**
- * @brief Returns the lengths of the rows of an n by n block diagonal matrix with nb_blocks blocks of sizes
- * block_sizes, of which only the blocks are stored.
+ * @brief Computes a block-diagonal rotation matrix with nb_blocks blocks of sizes block_sizes, each a random
+ * rotation based on seed.
  */
-static std::vector<size_t> coco_block_matrix_row_lengths(const size_t n, const size_t *block_sizes,
-                                                         const size_t nb_blocks) {
-  std::vector<size_t> row_lengths(n);
-  size_t next_bs_change;
-  size_t idx_blocksize;
-  size_t i;
-  COCO_UNUSED size_t sum_block_sizes;
-
-  sum_block_sizes = 0;
-  for (i = 0; i < nb_blocks; i++) {
-    sum_block_sizes += block_sizes[i];
-  }
-  assert(sum_block_sizes == n);
-
-  idx_blocksize = 0;
-  next_bs_change = block_sizes[idx_blocksize];
-  for (i = 0; i < n; ++i) {
-    if (i >= next_bs_change) {
-      idx_blocksize++;
-      next_bs_change += block_sizes[idx_blocksize];
-    }
-    row_lengths[i] = block_sizes[idx_blocksize];
-  }
-  return row_lengths;
-}
-
-/**
- * @brief Allocates an n by n block diagonal matrix with nb_blocks blocks of sizes block_sizes.
- *
- * Each row only contains the block_sizes[i] possibly non-zero elements.
- */
-static coco_matrix_t coco_block_matrix(const size_t n, const size_t *block_sizes, const size_t nb_blocks) {
-  return coco_matrix_t(coco_block_matrix_row_lengths(n, block_sizes, nb_blocks));
-}
-
-/**
- * @brief Compute a ${DIM}x${DIM} block-diagonal matrix based on ${seed} and block_sizes and stores it in ${B}.
- * B is a 2D vector with DIM lines and each line has blocksize(line) elements (the zeros are not stored)
- */
-static void coco_compute_blockrotation(double **B, long seed, COCO_UNUSED size_t n, const size_t *block_sizes,
-                                       size_t nb_blocks) {
+static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, const size_t *block_sizes, size_t nb_blocks) {
   size_t i, j;
   size_t idx_block, current_blocksize, cumsum_prev_block_sizes;
-  COCO_UNUSED size_t sum_block_sizes;
-  sum_block_sizes = 0;
-  for (i = 0; i < nb_blocks; i++) {
-    sum_block_sizes += block_sizes[i];
-  }
-  assert(sum_block_sizes == n);
+  coco_block_diagonal_matrix_t B(block_sizes, nb_blocks);
 
   cumsum_prev_block_sizes = 0; /* shift in rows to account for the previous blocks */
   for (idx_block = 0; idx_block < nb_blocks; idx_block++) {
     current_blocksize = block_sizes[idx_block];
-    coco_matrix_t current_block(current_blocksize, current_blocksize);
     assert(current_blocksize <= 44);
-    bbob2009_compute_rotation(current_block.rows(), seed + (long)1000000 * (long)idx_block, current_blocksize);
+    const coco_matrix_t current_block =
+        bbob2009_compute_rotation(seed + (long)1000000 * (long)idx_block, current_blocksize);
 
     /* now fill the block matrix*/
     for (i = 0; i < current_blocksize; i++) {
       for (j = 0; j < current_blocksize; j++) {
-        B[i + cumsum_prev_block_sizes][j] = current_block[i][j];
+        B.in_block(i + cumsum_prev_block_sizes, j) = current_block(i, j);
       }
     }
 
     cumsum_prev_block_sizes += current_blocksize;
   }
-}
-
-/**
- * @brief makes a copy of a block_matrix
- */
-static coco_matrix_t coco_copy_block_matrix(const double *const *B, const size_t dimension, const size_t *block_sizes,
-                                            const size_t nb_blocks) {
-  size_t i, j, idx_blocksize, current_blocksize, next_bs_change;
-  coco_matrix_t dest = coco_block_matrix(dimension, block_sizes, nb_blocks);
-
-  idx_blocksize = 0;
-  next_bs_change = block_sizes[idx_blocksize];
-  assert(nb_blocks != 0); /*tmp*/ /*to silence warning*/
-  for (i = 0; i < dimension; i++) {
-    if (i >= next_bs_change) {
-      idx_blocksize++;
-      next_bs_change += block_sizes[idx_blocksize];
-    }
-    current_blocksize = block_sizes[idx_blocksize];
-    for (j = 0; j < current_blocksize; j++) {
-      dest[i][j] = B[i][j];
-    }
-  }
-  return dest;
+  return B;
 }
 
 /**

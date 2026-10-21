@@ -90,15 +90,10 @@ double f_lunacek_bi_rastrigin_t::raw(const double *x) {
     tmpvect[i] = 0.0;
     c1 = pow(sqrt(condition), ((double)i) / (double)(number_of_variables - 1));
     for (j = 0; j < number_of_variables; ++j) {
-      tmpvect[i] += c1 * rot2[i][j] * (x_hat[j] - mu0);
+      tmpvect[i] += c1 * rot2(i, j) * (x_hat[j] - mu0);
     }
   }
-  for (i = 0; i < number_of_variables; ++i) {
-    z[i] = 0;
-    for (j = 0; j < number_of_variables; ++j) {
-      z[i] += rot1[i][j] * tmpvect[j];
-    }
-  }
+  rot1.multiply(tmpvect.data(), z.data());
   /* Computation core */
   for (i = 0; i < number_of_variables; ++i) {
     sum1 += (x_hat[i] - mu0) * (x_hat[i] - mu0);
@@ -138,8 +133,8 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_bbob_problem_allocate(const siz
   } else {
     bbob2009_compute_xopt(lunacek->xopt.data(), rseed, dimension);
   }
-  bbob2009_compute_rotation(lunacek->rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_compute_rotation(lunacek->rot2.rows(), rseed, dimension);
+  lunacek->rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  lunacek->rot2 = bbob2009_compute_rotation(rseed, dimension);
 
   /* Compute best solution */
   std::vector<double> tmpvect(dimension);
@@ -293,11 +288,8 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
   nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
   nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  coco_matrix_t B1 = coco_block_matrix(dimension, block_sizes1.data(), nb_blocks1);
-  coco_matrix_t B2 = coco_block_matrix(dimension, block_sizes2.data(), nb_blocks2);
-  coco_compute_blockrotation(B1.rows(), rseed + 1000000, dimension, block_sizes1.data(),
-                             nb_blocks1);
-  coco_compute_blockrotation(B2.rows(), rseed, dimension, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
 
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P12(dimension);
@@ -352,12 +344,12 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
 
   /* transformations on main problem */
   problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_blockrotation(std::move(problem), B1);
   problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
   problem = transform_vars_conditioning(std::move(problem), condition);
 
   problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_blockrotation(std::move(problem), B2);
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_shift(std::move(problem), mu0_vector.data(), 0);
   problem = transform_vars_x_hat_generic(std::move(problem), sign_vector.data(), &raw_problem->shared);

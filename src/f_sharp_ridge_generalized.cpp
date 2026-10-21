@@ -119,11 +119,8 @@ static coco_problem_ptr_t f_sharp_ridge_generalized_permblockdiag_bbob_problem_a
     bbob2009_compute_xopt(xopt.data(), rseed, dimension);
   }
 
-  coco_matrix_t B1 = coco_block_matrix(dimension, block_sizes1.data(), nb_blocks1);
-  coco_matrix_t B2 = coco_block_matrix(dimension, block_sizes2.data(), nb_blocks2);
-
-  coco_compute_blockrotation(B1.rows(), rseed + 1000000, dimension, block_sizes1.data(), nb_blocks1);
-  coco_compute_blockrotation(B2.rows(), rseed, dimension, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
 
   coco_compute_truncated_uniform_swap_permutation(P11.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
   coco_compute_truncated_uniform_swap_permutation(P21.data(), rseed + 4000000, dimension, nb_swaps, swap_range);
@@ -132,12 +129,12 @@ static coco_problem_ptr_t f_sharp_ridge_generalized_permblockdiag_bbob_problem_a
 
   problem = f_sharp_ridge_generalized_allocate(dimension, proportion_of_linear_dims);
   problem = transform_vars_permutation(std::move(problem), P21.data(), dimension); /* LIFO */
-  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_blockrotation(std::move(problem), B1);
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_conditioning(std::move(problem), 10.0);
   problem = transform_vars_permutation(std::move(problem), P22.data(),
                                        dimension); /*Consider replacing P11 and 22 by a single permutation P3*/
-  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_blockrotation(std::move(problem), B2);
   problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 

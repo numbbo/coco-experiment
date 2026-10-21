@@ -2,8 +2,7 @@
  * @file transform_vars_affine.cpp
  * @brief Implementation of performing an affine transformation on decision values.
  *
- * x |-> Mx + b <br>
- * The matrix M is stored in row-major format.
+ * x |-> Mx + b
  *
  * Currently, the best parameter is transformed correctly only in the simple
  * cases where M is orthogonal which is always the case for the `bbob`
@@ -20,14 +19,13 @@
  * @brief Applies the affine transformation x |-> Mx + b to the decision values.
  */
 struct transform_vars_affine_t final : public coco_problem_transformed_t {
-  const std::vector<double> M; /**< @brief Has number_of_variables columns and inner number of variables rows */
+  const coco_matrix_t M; /**< @brief Has number_of_variables columns and inner number of variables rows */
   const std::vector<double> b;
   std::vector<double> transformed_x; /**< @brief The transformed decision values */
 
-  transform_vars_affine_t(coco_problem_ptr_t inner, const double *M, const double *b, const size_t number_of_variables)
-      : coco_problem_transformed_t(std::move(inner), "transform_vars_affine"),
-        M(M, M + inner_problem->number_of_variables * number_of_variables),
-        b(b, b + inner_problem->number_of_variables), transformed_x(inner_problem->number_of_variables) {
+  transform_vars_affine_t(coco_problem_ptr_t inner, coco_matrix_t M, std::vector<double> b)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_affine"), M(std::move(M)), b(std::move(b)),
+        transformed_x(inner_problem->number_of_variables) {
     size_t i, j;
     /* Update the best parameter by computing
        problem->best_parameter = M^T * (inner_problem->best_parameter - b).
@@ -37,7 +35,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     */
     if (inner_problem->best_parameter_not_zero() ||
         !coco_vector_is_zero(this->b.data(), inner_problem->number_of_variables)) {
-      if (!coco_is_orthogonal(this->M.data(), this->number_of_variables, inner_problem->number_of_variables))
+      if (!this->M.is_orthogonal())
         coco_warning("transform_vars_affine(): rotation matrix is not orthogonal. Best parameter not updated");
       else {
         for (i = 0; i < inner_problem->number_of_variables; ++i) {
@@ -46,7 +44,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
         for (i = 0; i < this->number_of_variables; ++i) {
           best_parameter[i] = 0;
           for (j = 0; j < inner_problem->number_of_variables; ++j) {
-            best_parameter[i] += this->M[j * this->number_of_variables + i] * transformed_x[j];
+            best_parameter[i] += this->M(j, i) * transformed_x[j];
           }
         }
       }
@@ -56,16 +54,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
   /**
    * @brief Computes Mx + b and stores it in transformed_x.
    */
-  void transform(const double *x) {
-    size_t i, j;
-    for (i = 0; i < inner_problem->number_of_variables; ++i) {
-      const double *current_row = M.data() + i * number_of_variables;
-      transformed_x[i] = b[i];
-      for (j = 0; j < number_of_variables; ++j) {
-        transformed_x[i] += x[j] * current_row[j];
-      }
-    }
-  }
+  void transform(const double *x) { M.multiply_add(x, b.data(), transformed_x.data()); }
 
   /**
    * @brief Evaluates the transformed objective function.
@@ -118,7 +107,6 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
    */
   void evaluate_gradient(const double *x, double *y) override {
     size_t i, j;
-    const double *current_row;
 
     if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
@@ -135,8 +123,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
      */
     for (j = 0; j < inner_problem->number_of_variables; ++j) {
       for (i = 0; i < inner_problem->number_of_variables; ++i) {
-        current_row = M.data() + i * number_of_variables;
-        gradient[j] += y[i] * current_row[j];
+        gradient[j] += y[i] * M(i, j);
       }
     }
     for (i = 0; i < inner_problem->number_of_variables; ++i)
@@ -147,12 +134,13 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_ptr_t transform_vars_affine(coco_problem_ptr_t inner_problem, const double *M, const double *b,
-                                                const size_t number_of_variables) {
+static coco_problem_ptr_t transform_vars_affine(coco_problem_ptr_t inner_problem, coco_matrix_t M,
+                                                std::vector<double> b) {
   /*
    * TODOs:
    * - Calculate new smallest/largest values of interest?
    * - Resize bounds vectors if input and output dimensions do not match
    */
-  return std::make_unique<transform_vars_affine_t>(std::move(inner_problem), M, b, number_of_variables);
+  assert(M.number_of_rows() == inner_problem->number_of_variables && b.size() == M.number_of_rows());
+  return std::make_unique<transform_vars_affine_t>(std::move(inner_problem), std::move(M), std::move(b));
 }

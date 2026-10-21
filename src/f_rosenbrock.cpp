@@ -133,21 +133,19 @@ static coco_problem_ptr_t f_rosenbrock_rotated_bbob_problem_allocate(const size_
   double fopt;
   coco_problem_ptr_t problem;
   size_t row, column;
-  std::vector<double> M(dimension * dimension);
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
-  double *current_row, factor;
+  double factor;
   double tmp; /* Wassim: will serve to set the optimal solution "manually"*/
 
   fopt = bbob2009_compute_fopt(function, instance);
-  coco_matrix_t rot1(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed, dimension);
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed, dimension);
 
   factor = coco_double_max(1.0, sqrt((double)dimension) / 8.0);
   /* Compute affine transformation */
   for (row = 0; row < dimension; ++row) {
-    current_row = M.data() + row * dimension;
     for (column = 0; column < dimension; ++column) {
-      current_row[column] = factor * rot1[row][column];
+      M(row, column) = factor * rot1(row, column);
     }
     b[row] = 0.5;
   }
@@ -158,14 +156,14 @@ static coco_problem_ptr_t f_rosenbrock_rotated_bbob_problem_allocate(const size_
         0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine():
               'best_parameter' not updated, set to NAN")*/
   }
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_obj_shift(std::move(problem), fopt);
   for (column = 0; column < dimension;
        ++column) { /* Wassim: manually set xopt = rot1^T
                       ones(dimension)/(2*factor) */
     tmp = 0;
     for (row = 0; row < dimension; ++row) {
-      tmp += rot1[row][column];
+      tmp += rot1(row, column);
     }
     problem->best_parameter[column] = tmp / (2. * factor);
   }
@@ -219,9 +217,7 @@ static coco_problem_ptr_t f_rosenbrock_permblockdiag_bbob_problem_allocate(const
     xopt[i] *= 0.75;
   }
 
-  coco_matrix_t B = coco_block_matrix(dimension, block_sizes.data(), nb_blocks);
-
-  coco_compute_blockrotation(B.rows(), rseed, dimension, block_sizes.data(), nb_blocks);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed, block_sizes.data(), nb_blocks);
   coco_compute_truncated_uniform_swap_permutation(
       P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
   coco_compute_truncated_uniform_swap_permutation(
@@ -231,7 +227,7 @@ static coco_problem_ptr_t f_rosenbrock_permblockdiag_bbob_problem_allocate(const
   problem = transform_vars_shift(std::move(problem), minus_one.data(), 0);
   problem = transform_vars_scale(std::move(problem), factor);
   problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_blockrotation(std::move(problem), B);
   problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
 
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);

@@ -135,7 +135,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t
   double fopt;
   coco_problem_ptr_t problem;
 
-  std::vector<double> M(dimension * dimension);
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
@@ -146,12 +146,11 @@ static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t
   }
   fopt = bbob2009_compute_fopt(function, instance);
 
-  coco_matrix_t rot1(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  M = rot1;
   problem = f_ellipsoid_allocate(dimension, conditioning);
   problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -188,8 +187,7 @@ static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const 
   }
   fopt = bbob2009_compute_fopt(function, instance);
 
-  coco_matrix_t B = coco_block_matrix(dimension, block_sizes.data(), nb_blocks);
-  coco_compute_blockrotation(B.rows(), rseed + 1000000, dimension, block_sizes.data(), nb_blocks);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
 
   coco_compute_truncated_uniform_swap_permutation(P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
   coco_compute_truncated_uniform_swap_permutation(P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
@@ -197,7 +195,7 @@ static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
   problem = transform_vars_oscillate(std::move(problem));
   problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_blockrotation(std::move(problem), B);
   problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
@@ -253,7 +251,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const s
   double fopt;
   coco_problem_ptr_t problem;
 
-  std::vector<double> M(dimension * dimension);
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
@@ -264,12 +262,11 @@ static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const s
   }
   fopt = bbob2009_compute_fopt(function, instance);
 
-  coco_matrix_t rot1(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  M = rot1;
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
   problem = transform_obj_shift(std::move(problem), fopt);
 

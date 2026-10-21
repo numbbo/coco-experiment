@@ -19,8 +19,7 @@ struct f_gallagher_shared_data_t {
   size_t number_of_peaks = 0;
   std::vector<coco_problem_ptr_t> sub_problems; /**< @brief Owned by the large-scale Gallagher problem */
   std::vector<double> rotated_x;
-  std::vector<size_t> block_sizes, block_size_map, first_non_zero_map;
-  coco_matrix_t B;
+  coco_block_diagonal_matrix_t B;
 };
 
 /**
@@ -38,14 +37,10 @@ struct transform_vars_gallagher_blockrotation_t final : public coco_problem_tran
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    size_t i, j;
+    size_t i;
 
+    shared->B.multiply(x, shared->rotated_x.data());
     for (i = 0; i < inner_problem->number_of_variables; ++i) {
-      shared->rotated_x[i] = 0;
-      for (j = shared->first_non_zero_map[i]; j < shared->first_non_zero_map[i] + shared->block_size_map[i]; ++j) {
-        shared->rotated_x[i] += shared->B[i][j - shared->first_non_zero_map[i]] * x[j];
-      }
-      /*shared->rotated_x[i] = x[i];*/
       x_copy[i] = x[i]; /* to avoid pointer problems*/
     }
     coco_evaluate_function(

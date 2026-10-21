@@ -88,7 +88,7 @@ static coco_problem_ptr_t f_bent_cigar_bbob_problem_allocate(const size_t functi
   double fopt;
   coco_problem_ptr_t problem;
 
-  std::vector<double> M(dimension * dimension);
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
@@ -99,15 +99,14 @@ static coco_problem_ptr_t f_bent_cigar_bbob_problem_allocate(const size_t functi
     bbob2009_compute_xopt(xopt.data(), rseed + 1000000, dimension);
   }
 
-  coco_matrix_t rot1(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  M = rot1;
 
   problem = f_bent_cigar_allocate(dimension);
   problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_asymmetric(std::move(problem), 0.5);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -128,7 +127,7 @@ static coco_problem_ptr_t f_bent_cigar_cons_bbob_problem_allocate(const size_t f
   double fopt;
   coco_problem_ptr_t problem;
 
-  std::vector<double> M(dimension * dimension);
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
@@ -139,13 +138,12 @@ static coco_problem_ptr_t f_bent_cigar_cons_bbob_problem_allocate(const size_t f
     bbob2009_compute_xopt(xopt.data(), rseed + 1000000, dimension);
   }
 
-  coco_matrix_t rot1(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  M = rot1;
 
   problem = f_bent_cigar_allocate(dimension);
   problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);

@@ -65,16 +65,15 @@ static void bbob2009_unif(double *r, size_t N, long inseed) {
 }
 
 /**
- * @brief Converts from packed matrix storage to an array of array of double representation.
+ * @brief Converts from packed (column-major) storage to a matrix.
  */
-static double **bbob2009_reshape(double **B, double *vector, const size_t m, const size_t n) {
+static void bbob2009_reshape(coco_matrix_t &B, const double *vector, const size_t m, const size_t n) {
   size_t i, j;
   for (i = 0; i < m; i++) {
     for (j = 0; j < n; j++) {
-      B[i][j] = vector[j * m + i];
+      B(i, j) = vector[j * m + i];
     }
   }
-  return B;
 }
 
 /**
@@ -95,9 +94,10 @@ static void bbob2009_gauss(double *g, const size_t N, const long seed) {
 }
 
 /**
- * @brief Computes a DIM by DIM rotation matrix based on seed and stores it in B.
+ * @brief Computes a DIM by DIM rotation matrix based on seed.
  */
-static void bbob2009_compute_rotation(double **B, const long seed, const size_t DIM) {
+static coco_matrix_t bbob2009_compute_rotation(const long seed, const size_t DIM) {
+  coco_matrix_t B(DIM, DIM);
   /* To ensure temporary data fits into gvec */
   double prod;
   double gvect[2000];
@@ -113,29 +113,17 @@ static void bbob2009_compute_rotation(double **B, const long seed, const size_t 
     for (j = 0; j < i; j++) {
       prod = 0;
       for (k = 0; k < DIM; k++)
-        prod += B[k][i] * B[k][j];
+        prod += B(k, i) * B(k, j);
       for (k = 0; k < DIM; k++)
-        B[k][i] -= prod * B[k][j];
+        B(k, i) -= prod * B(k, j);
     }
     prod = 0;
     for (k = 0; k < DIM; k++)
-      prod += B[k][i] * B[k][i];
+      prod += B(k, i) * B(k, i);
     for (k = 0; k < DIM; k++)
-      B[k][i] /= sqrt(prod);
+      B(k, i) /= sqrt(prod);
   }
-}
-
-static void bbob2009_copy_rotation_matrix(double **rot, double *M, double *b, const size_t DIM) {
-  size_t row, column;
-  double *current_row;
-
-  for (row = 0; row < DIM; ++row) {
-    current_row = M + row * DIM;
-    for (column = 0; column < DIM; ++column) {
-      current_row[column] = rot[row][column];
-    }
-    b[row] = 0.0;
-  }
+  return B;
 }
 
 /**

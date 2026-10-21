@@ -418,65 +418,88 @@ MU_TEST(test_coco_is_inf) {
 }
 
 /**
- * Tests the function coco_is_orthogonal.
+ * Tests coco_matrix_t::is_orthogonal().
  */
-MU_TEST(test_coco_is_orthogonal) {
+MU_TEST(test_coco_matrix_is_orthogonal) {
 
-  double *M;
+  /* The identity matrix */
+  coco_matrix_t M(2, 2);
+  M(0, 0) = 1.;
+  M(1, 1) = 1.;
+  mu_check(M.is_orthogonal());
 
-  M = coco_allocate_vector(4);
+  /* A square matrix that is not orthogonal */
+  M(0, 1) = 0.01;
+  mu_check(!M.is_orthogonal());
 
-  /* Case of an orthogonal diagonal matrix (identity matrix) */
-  M[0] = 1.;
-  M[1] = 0.;
-  M[2] = 0.;
-  M[3] = 1.;
-  mu_check(coco_is_orthogonal(M, 2, 2));
+  /* Close enough to the identity matrix (tests the use of coco_double_almost_equal()) */
+  M(0, 0) = 1. + 1e-10;
+  M(0, 1) = 0.;
+  M(1, 1) = 1. + 1e-10;
+  mu_check(M.is_orthogonal());
 
-  /* Case of a non-orthogonal square matrix */
-  M[0] = 1.;
-  M[1] = 0.01;
-  M[2] = 0.;
-  M[3] = 1.;
-  mu_check(!coco_is_orthogonal(M, 2, 2));
+  /* A rotation by 90 degrees is orthogonal, a scaled one is not */
+  M(0, 0) = 0.;
+  M(0, 1) = -1.;
+  M(1, 0) = 1.;
+  M(1, 1) = 0.;
+  mu_check(M.is_orthogonal());
+  M(1, 0) = 2.;
+  mu_check(!M.is_orthogonal());
 
-  /* Case of an orthogonal diagonal matrix (almost identity matrix)
-   * such that the function "coco_double_almost_equal()" is tested
-   */
-  M[0] = 1. + 1e-10;
-  M[1] = 0.;
-  M[2] = 0.;
-  M[3] = 1. + 1e-10;
-  mu_check(coco_is_orthogonal(M, 2, 2));
+  /* A non-square matrix is never orthogonal, even with orthonormal rows */
+  coco_matrix_t rows(2, 3);
+  rows(0, 0) = 1.;
+  rows(1, 1) = 1.;
+  mu_check(!rows.is_orthogonal());
 
-  coco_free_memory(M);
+  /* The rotations used by the bbob functions are orthogonal */
+  mu_check(bbob2009_compute_rotation(42, 10).is_orthogonal());
 }
 
 /**
  * Tests coco_matrix_t.
  */
 MU_TEST(test_coco_matrix) {
-  coco_matrix_t dense(2, 3);
-  std::vector<size_t> row_lengths = {1, 3, 2};
-  coco_matrix_t blocks(row_lengths);
-  coco_matrix_t moved;
-  double **rows;
+  coco_matrix_t matrix(2, 3);
+  const double x[3] = {1.0, 2.0, 3.0};
+  double y[2];
 
-  mu_check(dense.number_of_rows() == 2);
-  mu_check(dense[1][2] == 0.0);
-  dense[1][2] = 5.0;
-  rows = dense.rows();
-  mu_check(rows[1][2] == 5.0);
-  mu_check(rows[1] == rows[0] + 3);
+  mu_check(matrix.number_of_rows() == 2 && matrix.number_of_columns() == 3);
+  mu_check(matrix(1, 2) == 0.0);
+  matrix(0, 0) = 1.0;
+  matrix(1, 2) = 5.0;
+  mu_check(matrix.row(1)[2] == 5.0);
+  mu_check(matrix.row(1) == matrix.row(0) + 3); /* row-major */
 
-  mu_check(blocks.number_of_rows() == 3);
-  mu_check(blocks[1] == blocks[0] + 1);
-  mu_check(blocks[2] == blocks[1] + 3);
+  matrix.multiply(x, y);
+  mu_check(y[0] == 1.0 && y[1] == 15.0);
 
-  /* Moving keeps the storage and therefore the row pointers */
-  moved = std::move(dense);
-  mu_check(moved.rows() == rows);
-  mu_check(moved[1][2] == 5.0);
+  /* Copies are independent */
+  coco_matrix_t copy = matrix;
+  copy(1, 2) = 7.0;
+  mu_check(matrix(1, 2) == 5.0);
+}
+
+/**
+ * Tests coco_block_diagonal_matrix_t.
+ */
+MU_TEST(test_coco_block_diagonal_matrix) {
+  const size_t block_sizes[2] = {1, 2};
+  coco_block_diagonal_matrix_t matrix(block_sizes, 2);
+  const double x[3] = {1.0, 2.0, 3.0};
+  double y[3];
+
+  mu_check(matrix.dimension() == 3);
+  mu_check(matrix.block_size(0) == 1 && matrix.block_size(2) == 2);
+  mu_check(matrix.first_column(0) == 0 && matrix.first_column(1) == 1 && matrix.first_column(2) == 1);
+  matrix.in_block(0, 0) = 2.0;
+  matrix.in_block(1, 1) = 3.0;
+  matrix.in_block(2, 0) = 4.0;
+  mu_check(matrix(1, 2) == 3.0 && matrix(2, 1) == 4.0 && matrix(0, 1) == 0.0 && matrix(1, 0) == 0.0);
+
+  matrix.multiply(x, y);
+  mu_check(y[0] == 2.0 && y[1] == 9.0 && y[2] == 8.0);
 }
 
 /**
@@ -496,6 +519,7 @@ MU_TEST(test_coco_string_format) {
  */
 int main(void) {
   MU_RUN_TEST(test_coco_matrix);
+  MU_RUN_TEST(test_coco_block_diagonal_matrix);
   MU_RUN_TEST(test_coco_string_format);
   MU_RUN_TEST(test_coco_is_nan);
   MU_RUN_TEST(test_coco_is_inf);
@@ -509,7 +533,7 @@ int main(void) {
   MU_RUN_TEST(test_coco_options_read);
   MU_RUN_TEST(test_coco_create_remove_directory);
   MU_RUN_TEST(test_coco_directories_and_files);
-  MU_RUN_TEST(test_coco_is_orthogonal);
+  MU_RUN_TEST(test_coco_matrix_is_orthogonal);
 
   MU_REPORT();
 

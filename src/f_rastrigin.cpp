@@ -135,10 +135,9 @@ static coco_problem_ptr_t f_rastrigin_rotated_bbob_problem_allocate(const size_t
                                                                     const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
-  size_t i, j, k;
-  std::vector<double> M(dimension * dimension);
+  size_t k;
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
-  double *current_row;
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -148,29 +147,22 @@ static coco_problem_ptr_t f_rastrigin_rotated_bbob_problem_allocate(const size_t
     bbob2009_compute_xopt(xopt.data(), rseed, dimension);
   }
 
-  coco_matrix_t rot1(dimension, dimension);
-  coco_matrix_t rot2(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_compute_rotation(rot2.rows(), rseed, dimension);
-  for (i = 0; i < dimension; ++i) {
-    b[i] = 0.0;
-    current_row = M.data() + i * dimension;
-    for (j = 0; j < dimension; ++j) {
-      current_row[j] = 0.0;
-      for (k = 0; k < dimension; ++k) {
-        double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
-        current_row[j] += rot1[i][k] * pow(sqrt(10), exponent) * rot2[k][j];
-      }
-    }
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
+  std::vector<double> scales(dimension);
+  for (k = 0; k < dimension; ++k) {
+    const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
+    scales[k] = pow(sqrt(10), exponent);
   }
+  M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
 
   problem = f_rastrigin_allocate(dimension);
   problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_asymmetric(std::move(problem), 0.2);
   problem = transform_vars_oscillate(std::move(problem));
-  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  M = rot1;
+  problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -212,12 +204,8 @@ static coco_problem_ptr_t f_rastrigin_permblockdiag_bbob_problem_allocate(const 
     bbob2009_compute_xopt(xopt.data(), rseed, dimension);
   }
 
-  coco_matrix_t B1 = coco_block_matrix(dimension, block_sizes1.data(), nb_blocks1);
-  coco_matrix_t B2 = coco_block_matrix(dimension, block_sizes2.data(), nb_blocks2);
-
-  coco_compute_blockrotation(B1.rows(), rseed + 1000000, dimension, block_sizes1.data(),
-                             nb_blocks1);
-  coco_compute_blockrotation(B2.rows(), rseed, dimension, block_sizes2.data(), nb_blocks2);
+  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
+  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2.data(), nb_blocks2);
 
   coco_compute_truncated_uniform_swap_permutation(P11.data(), rseed + 3000000, dimension, nb_swaps1, swap_range1);
   coco_compute_truncated_uniform_swap_permutation(P12.data(), rseed + 4000000, dimension, nb_swaps1, swap_range1);
@@ -226,16 +214,16 @@ static coco_problem_ptr_t f_rastrigin_permblockdiag_bbob_problem_allocate(const 
 
   problem = f_rastrigin_allocate(dimension);
   problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_blockrotation(std::move(problem), B1);
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_conditioning(std::move(problem), 10.0);
   problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_blockrotation(std::move(problem), B2);
   problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
   problem = transform_vars_asymmetric(std::move(problem), 0.2);
   problem = transform_vars_oscillate(std::move(problem));
   problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_blockrotation(std::move(problem), B1);
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
@@ -309,12 +297,11 @@ static coco_problem_ptr_t f_rastrigin_rotated_cons_bbob_problem_allocate(const s
   double fopt;
   coco_problem_ptr_t problem;
 
-  std::vector<double> M(dimension * dimension);
+  coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
-  coco_matrix_t rot1(dimension, dimension);
-  bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
+  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  M = rot1;
 
   std::vector<double> xopt(dimension);
   f_rastrigin_cons_compute_xopt(xopt.data(), rseed, dimension);
@@ -322,8 +309,7 @@ static coco_problem_ptr_t f_rastrigin_rotated_cons_bbob_problem_allocate(const s
 
   problem = f_rastrigin_allocate(dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
-  problem = transform_vars_affine(std::move(problem), M.data(), b.data(),
-                                  dimension); /* Rotate after shifting so R dot xopt is also rotated */
+  problem = transform_vars_affine(std::move(problem), M, b); /* Rotate after shifting so R dot xopt is also rotated */
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);

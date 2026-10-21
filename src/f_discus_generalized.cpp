@@ -107,10 +107,7 @@ static coco_problem_ptr_t f_discus_generalized_permblockdiag_bbob_problem_alloca
   }
   fopt = bbob2009_compute_fopt(function, instance);
 
-  coco_matrix_t B = coco_block_matrix(dimension, block_sizes.data(), nb_blocks);
-
-  coco_compute_blockrotation(B.rows(), rseed + 1000000, dimension, block_sizes.data(),
-                             nb_blocks);
+  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
   coco_compute_truncated_uniform_swap_permutation(
       P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
   coco_compute_truncated_uniform_swap_permutation(
@@ -120,7 +117,7 @@ static coco_problem_ptr_t f_discus_generalized_permblockdiag_bbob_problem_alloca
       f_discus_generalized_allocate(dimension, proportion_short_axes_denom);
   problem = transform_vars_oscillate(std::move(problem));
   problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
-  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_blockrotation(std::move(problem), B);
   problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
