@@ -1,6 +1,6 @@
 /**
  * @file transform_vars_permutation_helpers.cpp
- * @brief implements functions needed by transform_vars_permutation.cpp
+ * @brief Implements the random permutations of the large-scale suite.
  */
 
 #include <stdio.h>

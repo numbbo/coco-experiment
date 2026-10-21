@@ -49,7 +49,7 @@ static bool suite_biobj_check_inst_consistency(const size_t dimension, size_t fu
   const std::vector<double> largest_values_of_interest(dimension, 100);
   const coco_problem_t *problem1_view = problem1.get();
   const coco_problem_t *problem2_view = problem2.get();
-  const coco_problem_ptr_t problem = coco_problem_stacked_allocate(
+  const coco_problem_ptr_t problem = std::make_unique<coco_problem_stacked_t>(
       std::move(problem1), std::move(problem2), smallest_values_of_interest, largest_values_of_interest);
 
   /* Check whether the ideal and nadir points are too close in the objective space */
@@ -391,8 +391,8 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
 
   const std::string problem_type1 = problem1->get_type();
   const std::string problem_type2 = problem2->get_type();
-  problem = coco_problem_stacked_allocate(std::move(problem1), std::move(problem2), smallest_values_of_interest,
-                                          largest_values_of_interest);
+  problem = std::make_unique<coco_problem_stacked_t>(std::move(problem1), std::move(problem2),
+                                                     smallest_values_of_interest, largest_values_of_interest);
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   problem->set_name("%s", problem->get_id().c_str());

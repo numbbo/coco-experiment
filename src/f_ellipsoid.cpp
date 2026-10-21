@@ -9,12 +9,9 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
-#include "transform_obj_norm_by_dim.cpp"
+#include "bbob_problem.cpp"
 #include "transform_obj_shift.cpp"
 #include "transform_vars_affine.cpp"
-#include "transform_vars_blockrotation.cpp"
-#include "transform_vars_oscillate.cpp"
-#include "transform_vars_permutation.cpp"
 
 /**
  * @brief The ellipsoid function.
@@ -74,117 +71,118 @@ double f_ellipsoid_t::raw(std::span<const double> x) const {
 }
 
 /**
- * @brief Allocates the basic ellipsoid problem.
+ * @brief The BBOB ellipsoid function f2, also in the bbob-boxed and bbob-largescale suites.
+ *
+ * f(x) = f_ellipsoid^1e6(T_osz(x - xopt)) + fopt, normalized by the dimension before fopt is added in the
+ * large-scale suite.
  */
-static coco_problem_ptr_t f_ellipsoid_allocate(const size_t number_of_variables, const double conditioning) {
-  return std::make_unique<f_ellipsoid_t>(number_of_variables, conditioning);
-}
-
-/**
- * @brief Creates the BBOB ellipsoid problem.
- */
-static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                            const size_t instance, const long rseed,
-                                                            const coco_bbob_variant_t variant,
-                                                            const char *problem_id_template,
-                                                            const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  problem = f_ellipsoid_allocate(dimension, 1.0e6);
-  problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-
-  /*if large scale test-bed, normalize by dim*/
-  if (variant == coco_bbob_variant_t::largescale) {
-    problem = transform_obj_norm_by_dim(std::move(problem));
+class bbob_ellipsoid_t final : public bbob_problem_t<bbob_ellipsoid_t> {
+public:
+  bbob_ellipsoid_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                   const coco_bbob_variant_t variant, const char *problem_id_template,
+                   const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)), ellipsoid(dimension, 1.0e6),
+        fopt(bbob2009_compute_fopt(function, instance)), normalize(variant == coco_bbob_variant_t::largescale),
+        z(dimension) {
+    /* The optimum of the ellipsoid is the origin, map it back through the transformations */
+    oscillate.inverse(best_parameter, z);
+    shift.inverse(z, best_parameter);
+    set_best_value_at_best_parameter();
   }
-  problem = transform_obj_shift(std::move(problem), fopt);
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("1-separable");
+  double operator()(std::span<const double> x) {
+    shift.apply(x, z);
+    oscillate.apply(z, z);
+    double y = ellipsoid.raw(z);
+    if (normalize)
+      y *= coco_norm_by_dim_factor(number_of_variables);
+    return y + fopt;
+  }
 
-  return problem;
-}
-
-/**
- * @brief Creates the BBOB rotated ellipsoid problem.
- */
-static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                    const size_t instance, const long rseed,
-                                                                    const coco_bbob_variant_t variant,
-                                                                    const double conditioning,
-                                                                    const char *problem_id_template,
-                                                                    const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-
-  coco_matrix_t M(dimension, dimension);
-  std::vector<double> b(dimension);
-
-  std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt, rseed, variant);
-  double fopt = bbob2009_compute_fopt(function, instance);
-
-  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
-  M = rot1;
-  problem = f_ellipsoid_allocate(dimension, conditioning);
-  problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_obj_shift(std::move(problem), fopt);
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("3-ill-conditioned");
-
-  return problem;
-}
+private:
+  const vars_shift_t shift;
+  const vars_oscillate_t oscillate{};
+  const f_ellipsoid_t ellipsoid;
+  const double fopt;
+  const bool normalize;
+  std::vector<double> z; /**< @brief The transformed decision values */
+};
 
 /**
- * @brief Creates the BBOB permuted block-rotated ellipsoid problem.
+ * @brief The BBOB rotated ellipsoid function f10, also in the bbob-boxed and bbob-noisy suites.
+ *
+ * f(x) = f_ellipsoid^conditioning(T_osz(R (x - xopt))) + fopt.
  */
-static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                          const size_t instance, const long rseed,
-                                                                          const coco_bbob_variant_t variant,
-                                                                          const char *problem_id_template,
-                                                                          const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  std::vector<size_t> P1(dimension);
-  std::vector<size_t> P2(dimension);
-  size_t nb_blocks;
+class bbob_ellipsoid_rotated_t final : public bbob_problem_t<bbob_ellipsoid_rotated_t> {
+public:
+  bbob_ellipsoid_rotated_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                           const coco_bbob_variant_t variant, const double conditioning,
+                           const char *problem_id_template, const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)),
+        rotation(bbob2009_compute_rotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
+        ellipsoid(dimension, conditioning), fopt(bbob2009_compute_fopt(function, instance)), z1(dimension),
+        z2(dimension) {
+    /* The optimum of the ellipsoid is the origin, map it back through the transformations */
+    oscillate.inverse(best_parameter, z1);
+    rotation.inverse(z1, z2);
+    shift.inverse(z2, best_parameter);
+    set_best_value_at_best_parameter();
+  }
 
-  std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
-  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  double operator()(std::span<const double> x) {
+    shift.apply(x, z1);
+    rotation.apply(z1, z2);
+    oscillate.apply(z2, z2);
+    return ellipsoid.raw(z2) + fopt;
+  }
 
-  std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt, rseed, variant);
-  double fopt = bbob2009_compute_fopt(function, instance);
+private:
+  const vars_shift_t shift;
+  const vars_affine_t rotation;
+  const vars_oscillate_t oscillate{};
+  const f_ellipsoid_t ellipsoid;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};
 
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes);
+/**
+ * @brief The rotated ellipsoid function f10 of the bbob-largescale suite, with a permuted block rotation.
+ *
+ * f(x) = f_ellipsoid^1e6(T_osz(R (x - xopt))) / n + fopt with the permuted block rotation R.
+ */
+class bbob_ellipsoid_permblockdiag_t final : public bbob_problem_t<bbob_ellipsoid_permblockdiag_t> {
+public:
+  bbob_ellipsoid_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                                 const coco_bbob_variant_t variant, const char *problem_id_template,
+                                 const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)),
+        rotation(dimension, rseed + 2000000, rseed + 1000000, rseed + 3000000), ellipsoid(dimension, 1.0e6),
+        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+    /* The optimum of the ellipsoid is the origin, map it back through the transformations */
+    oscillate.inverse(best_parameter, z1);
+    rotation.inverse(z1, z2);
+    shift.inverse(z2, best_parameter);
+    set_best_value_at_best_parameter();
+  }
 
-  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, nb_swaps, swap_range);
+  double operator()(std::span<const double> x) {
+    shift.apply(x, z1);
+    rotation.apply(z1, z2);
+    oscillate.apply(z2, z2);
+    return ellipsoid.raw(z2) * coco_norm_by_dim_factor(number_of_variables) + fopt;
+  }
 
-  problem = f_ellipsoid_allocate(dimension, 1.0e6);
-  problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_permutation(std::move(problem), P2);
-  problem = transform_vars_blockrotation(std::move(problem), B);
-  problem = transform_vars_permutation(std::move(problem), P1);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-
-  problem = transform_obj_norm_by_dim(std::move(problem));
-  problem = transform_obj_shift(std::move(problem), fopt);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("3-ill-conditioned");
-
-  return problem;
-}
+private:
+  const vars_shift_t shift;
+  const vars_permblockdiag_t rotation;
+  const vars_oscillate_t oscillate{};
+  const f_ellipsoid_t ellipsoid;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};
 
 /**
  * @brief Creates the ellipsoid problem for the constrained BBOB suite
@@ -200,7 +198,7 @@ static coco_problem_ptr_t f_ellipsoid_cons_bbob_problem_allocate(const size_t fu
   double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt, rseed, variant);
 
-  problem = f_ellipsoid_allocate(dimension, 1.0e6);
+  problem = std::make_unique<f_ellipsoid_t>(dimension, 1.0e6);
 
   /* TODO (NH): fopt -= problem->evaluate(all_zeros(dimension)) */
   problem = transform_vars_shift(std::move(problem), xopt, 0);
@@ -234,7 +232,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const s
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   M = rot1;
 
-  problem = f_ellipsoid_allocate(dimension, 1.0e6);
+  problem = std::make_unique<f_ellipsoid_t>(dimension, 1.0e6);
   problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_vars_shift(std::move(problem), xopt, 0);
   problem = transform_obj_shift(std::move(problem), fopt);

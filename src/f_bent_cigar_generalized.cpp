@@ -8,14 +8,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_asymmetric.cpp"
-#include "transform_vars_blockrotation.cpp"
-#include "transform_vars_permutation.cpp"
-#include "transform_vars_shift.cpp"
 
 /**
  * @brief The generalized bent cigar function.
@@ -70,54 +64,42 @@ double f_bent_cigar_generalized_t::raw(std::span<const double> x) const {
 }
 
 /**
- * @brief Allocates the basic generalized bent cigar problem.
+ * @brief The bent cigar function f12 of the bbob-largescale suite, generalized to n / 40 long axes and with a
+ * permuted block rotation.
+ *
+ * f(x) = f_bent_cigar_generalized(R T_asy^0.5(R (x - xopt))) / n + fopt with the permuted block rotation R.
  */
-static coco_problem_ptr_t f_bent_cigar_generalized_allocate(const size_t number_of_variables,
-                                                            size_t proportion_long_axes_denom) {
-  return std::make_unique<f_bent_cigar_generalized_t>(number_of_variables, proportion_long_axes_denom);
-}
+class bbob_bent_cigar_generalized_permblockdiag_t final
+    : public bbob_problem_t<bbob_bent_cigar_generalized_permblockdiag_t> {
+public:
+  bbob_bent_cigar_generalized_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
+                                              const long rseed, const coco_bbob_variant_t variant,
+                                              const char *problem_id_template, const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed + 1000000, dimension, variant)),
+        rotation(dimension, rseed + 2000000, rseed + 1000000, rseed + 3000000), asymmetric(0.5, dimension),
+        bent_cigar(dimension, 40), fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+    /* The optimum of the bent cigar function is the origin, map it back through the transformations */
+    rotation.inverse(best_parameter, z1);
+    asymmetric.inverse(z1, z1);
+    rotation.inverse(z1, z2);
+    shift.inverse(z2, best_parameter);
+    set_best_value_at_best_parameter();
+  }
 
-/**
- * @brief Creates the BBOB generalized permuted block-rotated bent cigar
- * problem.
- */
-static coco_problem_ptr_t f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(
-    const size_t function, const size_t dimension, const size_t instance, const long rseed,
-    const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  std::vector<size_t> P1(dimension);
-  std::vector<size_t> P2(dimension);
-  size_t nb_blocks;
-  const size_t proportion_long_axes_denom = 40;
+  double operator()(std::span<const double> x) {
+    shift.apply(x, z1);
+    rotation.apply(z1, z2);
+    asymmetric.apply(z2, z2);
+    rotation.apply(z2, z1);
+    return bent_cigar.raw(z1) * coco_norm_by_dim_factor(number_of_variables) + fopt;
+  }
 
-  std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
-  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
-
-  std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt, rseed + 1000000, variant);
-  double fopt = bbob2009_compute_fopt(function, instance);
-
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes);
-  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, nb_swaps, swap_range);
-
-  problem =
-      f_bent_cigar_generalized_allocate(dimension, proportion_long_axes_denom);
-  problem = transform_vars_permutation(std::move(problem), P2);
-  problem = transform_vars_blockrotation(std::move(problem), B);
-  problem = transform_vars_permutation(std::move(problem), P1);
-  problem = transform_vars_asymmetric(std::move(problem), 0.5);
-  problem = transform_vars_permutation(std::move(problem), P2);
-  problem = transform_vars_blockrotation(std::move(problem), B);
-  problem = transform_vars_permutation(std::move(problem), P1);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-
-  problem = transform_obj_norm_by_dim(std::move(problem));
-  problem = transform_obj_shift(std::move(problem), fopt);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("3-ill-conditioned");
-  return problem;
-}
+private:
+  const vars_shift_t shift;
+  const vars_permblockdiag_t rotation;
+  const vars_asymmetric_t asymmetric;
+  const f_bent_cigar_generalized_t bent_cigar;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};

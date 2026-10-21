@@ -16,8 +16,6 @@
 static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem,
                                                      std::span<const double> feasible_point);
 
-static coco_problem_ptr_t c_sum_variables_allocate(const size_t number_of_variables);
-
 static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, std::span<const double> gradient,
                                              const double x_shift_factor);
 
@@ -176,13 +174,6 @@ static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem,
 }
 
 /**
- * @brief Allocates a linear constraint coco_problem_t with all-ones gradient.
- */
-static coco_problem_ptr_t c_sum_variables_allocate(const size_t number_of_variables) {
-  return std::make_unique<c_sum_variables_t>(number_of_variables);
-}
-
-/**
  * @brief Transforms a linear constraint with all-ones gradient
  *        into a linear constraint whose gradient is passed
  *        as argument and with the feasible domain extended by
@@ -216,7 +207,7 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
   coco_problem_ptr_t problem;
   double factor2;
 
-  problem = c_sum_variables_allocate(dimension);
+  problem = std::make_unique<c_sum_variables_t>(dimension);
 
   long seed_cons_i = static_cast<long>(function + 10000 * instance + 50000 * constraint_number);
   coco_random_state_t random_generator(static_cast<uint32_t>(seed_cons_i));
@@ -260,7 +251,7 @@ static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
    * this constraint and set it as the initial solution.
    * The initial solution will be copied later to the constrained function
    * coco_problem_t object once the objective function and the constraint(s)
-   * are stacked together in coco_problem_stacked_allocate().
+   * are stacked together in a coco_problem_stacked_t.
    */
   if (!feasible_direction.empty())
     problem = c_guarantee_feasible_point(std::move(problem), feasible_direction);
@@ -411,7 +402,7 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
     }
 
     const std::string problem_type_c2 = problem_c2->get_type();
-    problem_c = coco_problem_stacked_allocate(std::move(problem_c), std::move(problem_c2));
+    problem_c = std::make_unique<coco_problem_stacked_t>(std::move(problem_c), std::move(problem_c2));
 
     /* Use the standard stacked problem_id as problem_name and
      * construct a new suite-specific problem_id

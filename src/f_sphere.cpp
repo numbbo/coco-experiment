@@ -8,8 +8,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
 #include "transform_obj_shift.cpp"
 #include "transform_vars_shift.cpp"
 
@@ -64,34 +64,52 @@ public:
 };
 
 /**
- * @brief Allocates the basic sphere problem.
+ * @brief The BBOB sphere function f1, also in the bbob-boxed, bbob-largescale and bbob-noisy suites.
+ *
+ * f(x) = f_sphere(x - xopt) + fopt, normalized by the dimension before fopt is added in the large-scale suite.
  */
-static coco_problem_ptr_t f_sphere_allocate(const size_t number_of_variables) {
-  return std::make_unique<f_sphere_t>(number_of_variables);
-}
+class bbob_sphere_t final : public bbob_problem_t<bbob_sphere_t> {
+public:
+  bbob_sphere_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)), fopt(bbob2009_compute_fopt(function, instance)),
+        normalize(variant == coco_bbob_variant_t::largescale), z(dimension) {
+    /* The optimum of the sphere function is the origin, map it back through the transformation */
+    shift.inverse(best_parameter, best_parameter);
+    set_best_value_at_best_parameter();
+  }
+
+  double operator()(std::span<const double> x) {
+    shift.apply(x, z);
+    double y = f_sphere_raw(z);
+    if (normalize)
+      y *= coco_norm_by_dim_factor(number_of_variables);
+    return y + fopt;
+  }
+
+private:
+  const vars_shift_t shift;
+  const double fopt;
+  const bool normalize;
+  std::vector<double> z; /**< @brief The transformed decision values */
+};
 
 /**
- * @brief Creates the BBOB sphere problem.
+ * @brief Creates the sphere problem for the constrained BBOB suite.
  */
-static coco_problem_ptr_t f_sphere_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                         const size_t instance, const long rseed,
-                                                         const coco_bbob_variant_t variant,
-                                                         const char *problem_id_template,
-                                                         const char *problem_name_template) {
-
+static coco_problem_ptr_t f_sphere_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                              const size_t instance, const long rseed,
+                                                              const char *problem_id_template,
+                                                              const char *problem_name_template) {
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt, rseed, variant);
+  bbob_compute_xopt(xopt, rseed, coco_bbob_variant_t::bbob);
   double fopt = bbob2009_compute_fopt(function, instance);
 
-  problem = f_sphere_allocate(dimension);
+  problem = std::make_unique<f_sphere_t>(dimension);
   problem = transform_vars_shift(std::move(problem), xopt, 0);
-
-  /*if large scale test-bed, normalize by dim*/
-  if (variant == coco_bbob_variant_t::largescale) {
-    problem = transform_obj_norm_by_dim(std::move(problem));
-  }
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);

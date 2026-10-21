@@ -8,13 +8,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
-#include "transform_obj_penalize.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_brs.cpp"
-#include "transform_vars_oscillate.cpp"
-#include "transform_vars_shift.cpp"
 
 /**
  * @brief Implements the Bueche-Rastrigin function without connections to any
@@ -56,49 +51,56 @@ public:
 };
 
 /**
- * @brief Allocates the basic Bueche-Rastrigin problem.
+ * @brief The BBOB Bueche-Rastrigin function f4, also in the bbob-boxed and bbob-largescale suites.
+ *
+ * f(x) = f_rastrigin(s T_osz(x - xopt)) + fopt + 100 f_pen(x) with the 's_i scaling' s, normalized by the
+ * dimension before fopt is added in the large-scale suite.
  */
-static coco_problem_ptr_t f_bueche_rastrigin_allocate(const size_t number_of_variables) {
-  return std::make_unique<f_bueche_rastrigin_t>(number_of_variables);
-}
-
-/**
- * @brief Creates the BBOB Bueche-Rastrigin problem.
- */
-static coco_problem_ptr_t f_bueche_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                   const size_t instance, const long rseed,
-                                                                   const coco_bbob_variant_t variant,
-                                                                   const char *problem_id_template,
-                                                                   const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-
-  const double penalty_factor = 100.0;
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  /* OME: This step is in the legacy C code but _not_ in the function
-   * description. */
-  for (size_t i = 0; i < dimension; i += 2) {
-    xopt[i] = fabs(xopt[i]);
+class bbob_bueche_rastrigin_t final : public bbob_problem_t<bbob_bueche_rastrigin_t> {
+public:
+  bbob_bueche_rastrigin_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                          const coco_bbob_variant_t variant, const char *problem_id_template,
+                          const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        shift(xopt(rseed, dimension, variant)), brs(dimension), fopt(bbob2009_compute_fopt(function, instance)),
+        normalize(variant == coco_bbob_variant_t::largescale), z(dimension) {
+    /* The optimum of the Bueche-Rastrigin function is the origin, map it back through the transformations */
+    brs.inverse(best_parameter, z);
+    oscillate.inverse(z, z);
+    shift.inverse(z, best_parameter);
+    set_best_value_at_best_parameter();
   }
 
-  problem = f_bueche_rastrigin_allocate(dimension);
-  problem = transform_vars_brs(std::move(problem));
-  problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-
-  /*if large scale test-bed, normalize by dim*/
-  if (variant == coco_bbob_variant_t::largescale) {
-    problem = transform_obj_norm_by_dim(std::move(problem));
+  double operator()(std::span<const double> x) {
+    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
+    shift.apply(x, z);
+    oscillate.apply(z, z);
+    brs.apply(z, z);
+    double y = f_bueche_rastrigin_raw(z);
+    if (normalize)
+      y *= coco_norm_by_dim_factor(number_of_variables);
+    y += fopt;
+    return y + penalty_factor * penalty;
   }
-  problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_obj_penalize(std::move(problem), penalty_factor);
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("1-separable");
+private:
+  /** @brief The location of the optimum: xopt with the absolute value of every other component. */
+  static std::vector<double> xopt(const long rseed, const size_t dimension, const coco_bbob_variant_t variant) {
+    std::vector<double> xopt = bbob_xopt(rseed, dimension, variant);
+    /* OME: This step is in the legacy C code but _not_ in the function
+     * description. */
+    for (size_t i = 0; i < dimension; i += 2) {
+      xopt[i] = fabs(xopt[i]);
+    }
+    return xopt;
+  }
 
-  return problem;
-}
+  static constexpr double penalty_factor = 100.0;
+
+  const vars_shift_t shift;
+  const vars_oscillate_t oscillate{};
+  const vars_brs_t brs;
+  const double fopt;
+  const bool normalize;
+  std::vector<double> z; /**< @brief The transformed decision values */
+};

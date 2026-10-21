@@ -75,6 +75,34 @@ private:
 };
 
 /**
+ * @brief Scales the decision values: y = factor x.
+ */
+class vars_scale_t {
+public:
+  vars_scale_t(const double factor, const size_t n) : factor(factor), n(n) {}
+
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == n && y.size() == n);
+    for (size_t i = 0; i < n; ++i)
+      y[i] = factor * x[i];
+  }
+
+  /** @brief Divides by the factor. Returns false if the factor is 0. */
+  bool inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == n && x.size() == n);
+    if (factor == 0.)
+      return false;
+    for (size_t i = 0; i < n; ++i)
+      x[i] = y[i] / factor;
+    return true;
+  }
+
+private:
+  double factor;
+  size_t n;
+};
+
+/**
  * @brief Scales the decision values by alpha^(0.5 i / (n - 1)).
  */
 class vars_conditioning_t {
@@ -272,6 +300,107 @@ private:
 };
 
 /**
+ * @brief The 's_i scaling' of the Bueche-Rastrigin function: y_i = s_i x_i with s_i = sqrt(10)^(i / (n - 1)),
+ * multiplied by 10 for positive x_i with even i.
+ */
+class vars_brs_t {
+public:
+  explicit vars_brs_t(const size_t n) : factors(n) {
+    /* Function documentation says we should compute 10^(0.5 *
+     * (i-1)/(D-1)). Instead we compute the equivalent
+     * sqrt(10)^((i-1)/(D-1)) just like the legacy code.
+     */
+    for (size_t i = 0; i < n; ++i)
+      factors[i] = pow(sqrt(10.0), static_cast<double>(i) / (static_cast<double>(n) - 1.0));
+  }
+
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == factors.size() && y.size() == factors.size());
+    for (size_t i = 0; i < factors.size(); ++i) {
+      double factor = factors[i];
+      /* Documentation specifies odd indices and starts indexing
+       * from 1, we use all even indices since C starts indexing
+       * with 0.
+       */
+      if (x[i] > 0.0 && i % 2 == 0) {
+        factor *= 10.0;
+      }
+      y[i] = factor * x[i];
+    }
+  }
+
+  /** @brief Divides by the factor; the factor is positive, so y has the sign of x. */
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == factors.size() && x.size() == factors.size());
+    for (size_t i = 0; i < factors.size(); ++i) {
+      double factor = factors[i];
+      if (y[i] > 0.0 && i % 2 == 0) {
+        factor *= 10.0;
+      }
+      x[i] = y[i] / factor;
+    }
+  }
+
+private:
+  std::vector<double> factors; /**< @brief sqrt(10)^(i / (n - 1)) */
+};
+
+/**
+ * @brief Flips the signs of randomly chosen decision values: y_i = -x_i if the i-th of n uniform random numbers drawn
+ * with the seed is below 0.5 and y_i = x_i otherwise. The transformation is its own inverse.
+ */
+class vars_x_hat_t {
+public:
+  vars_x_hat_t(const long seed, const size_t n) : flip(n) {
+    std::vector<double> random_numbers(n);
+    bbob2009_unif(random_numbers, seed);
+    for (size_t i = 0; i < n; ++i)
+      flip[i] = random_numbers[i] < 0.5;
+  }
+
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == flip.size() && y.size() == flip.size());
+    for (size_t i = 0; i < flip.size(); ++i)
+      y[i] = flip[i] ? -x[i] : x[i];
+  }
+
+  void inverse(std::span<const double> y, std::span<double> x) const { apply(y, x); }
+
+private:
+  std::vector<bool> flip;
+};
+
+/**
+ * @brief The z^hat transformation of the Schwefel functions: y_1 = x_1 and
+ * y_i = x_i + 0.25 (x_(i-1) - 2 |xopt_(i-1)|); x and y must not be the same array.
+ */
+class vars_z_hat_t {
+public:
+  explicit vars_z_hat_t(std::span<const double> xopt) : xopt(xopt.begin(), xopt.end()) {}
+
+  void apply(std::span<const double> x, std::span<double> y) const {
+    assert(x.size() == xopt.size() && y.size() == xopt.size() && !xopt.empty());
+    y[0] = x[0];
+    for (size_t i = 1; i < xopt.size(); ++i) {
+      y[i] = x[i] + 0.25 * (x[i - 1] - 2.0 * fabs(xopt[i - 1]));
+    }
+  }
+
+  /** @brief Solves for x by forward substitution. */
+  void inverse(std::span<const double> y, std::span<double> x) const {
+    assert(y.size() == xopt.size() && x.size() == xopt.size());
+    if (xopt.empty())
+      return;
+    x[0] = y[0];
+    for (size_t i = 1; i < xopt.size(); ++i)
+      x[i] = y[i] - 0.25 * (x[i - 1] - 2.0 * fabs(xopt[i - 1]));
+  }
+
+private:
+  std::vector<double> xopt;
+};
+
+/**
  * @brief Rounds the decision values for the step ellipsoid: to integers where |x| > 0.5 and to multiples of
  * 1 / alpha otherwise. Not invertible.
  */
@@ -311,6 +440,19 @@ static double coco_boundary_penalty(std::span<const double> x, std::span<const d
     }
   }
   return penalty;
+}
+
+/**
+ * @brief The oscillating transformation T_osz of an objective value.
+ */
+static double coco_oscillate_objective(const double y) {
+  static const double factor = 0.1;
+  if (y == 0)
+    return y;
+  const double log_y = log(fabs(y)) / factor;
+  if (y > 0)
+    return pow(exp(log_y + 0.49 * (sin(log_y) + sin(0.79 * log_y))), factor);
+  return -pow(exp(log_y + 0.49 * (sin(0.55 * log_y) + sin(0.31 * log_y))), factor);
 }
 
 /**

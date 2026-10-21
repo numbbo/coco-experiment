@@ -9,15 +9,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
-#include "transform_obj_penalize.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_blockrotation.cpp"
-#include "transform_vars_oscillate.cpp"
-#include "transform_vars_permutation.cpp"
-#include "transform_vars_shift.cpp"
 
 /** @brief Number of summands in the Weierstrass problem. */
 static constexpr size_t F_WEIERSTRASS_SUMMANDS = 12;
@@ -80,112 +73,111 @@ double f_weierstrass_t::raw(std::span<const double> x) const {
 }
 
 /**
- * @brief Allocates the basic Weierstrass problem.
+ * @brief The BBOB Weierstrass function f16, also in the bbob-boxed suite.
+ *
+ * f(x) = f_weierstrass(R Λ^(1/100) Q T_osz(R (x - xopt))) + fopt + 10 / n f_pen(x).
  */
-static coco_problem_ptr_t f_weierstrass_allocate(const size_t number_of_variables) {
-  return std::make_unique<f_weierstrass_t>(number_of_variables);
-}
-
-/**
- * @brief Creates the BBOB Weierstrass problem.
- */
-static coco_problem_ptr_t f_weierstrass_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                              const size_t instance, const long rseed,
-                                                              const coco_bbob_variant_t variant,
-                                                              const char *problem_id_template,
-                                                              const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  coco_matrix_t M(dimension, dimension);
-  std::vector<double> b(dimension);
-
-  const double condition = 100.0;
-  const double penalty_factor = 10.0 / static_cast<double>(dimension);
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
-  const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
-  std::vector<double> scales(dimension);
-  for (size_t k = 0; k < dimension; ++k) {
-    const double base = 1.0 / sqrt(condition);
-    const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
-    scales[k] = pow(base, exponent);
+class bbob_weierstrass_t final : public bbob_problem_t<bbob_weierstrass_t> {
+public:
+  bbob_weierstrass_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                     const coco_bbob_variant_t variant, const char *problem_id_template,
+                     const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)),
+        rotation(bbob2009_compute_rotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
+        conditioned_rotation(conditioned_rotation_matrix(rseed, dimension), std::vector<double>(dimension)),
+        weierstrass(dimension), fopt(bbob2009_compute_fopt(function, instance)),
+        penalty_factor(10.0 / static_cast<double>(dimension)), z1(dimension), z2(dimension) {
+    /* The optimum of the Weierstrass function is the origin, map it back through the transformations */
+    conditioned_rotation.inverse(best_parameter, z1);
+    oscillate.inverse(z1, z1);
+    rotation.inverse(z1, z2);
+    shift.inverse(z2, best_parameter);
+    set_best_value_at_best_parameter();
   }
-  M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
 
-  problem = f_weierstrass_allocate(dimension);
-  problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_oscillate(std::move(problem));
-  M = rot1;
-  problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_obj_penalize(std::move(problem), penalty_factor);
+  double operator()(std::span<const double> x) {
+    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
+    shift.apply(x, z1);
+    rotation.apply(z1, z2);
+    oscillate.apply(z2, z2);
+    conditioned_rotation.apply(z2, z1);
+    const double y = weierstrass.raw(z1) + fopt;
+    return y + penalty_factor * penalty;
+  }
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("4-multi-modal");
+private:
+  /** @brief Returns R Λ^(1/100) Q with the rotations R and Q. */
+  static coco_matrix_t conditioned_rotation_matrix(const long rseed, const size_t dimension) {
+    const double condition = 100.0;
+    const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+    const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
+    std::vector<double> scales(dimension);
+    for (size_t k = 0; k < dimension; ++k) {
+      const double base = 1.0 / sqrt(condition);
+      const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
+      scales[k] = pow(base, exponent);
+    }
+    return coco_matrix_product_with_diagonal(rot1, scales, rot2);
+  }
 
-  return problem;
-}
+  const vars_shift_t shift;
+  const vars_affine_t rotation;
+  const vars_oscillate_t oscillate{};
+  const vars_affine_t conditioned_rotation;
+  const f_weierstrass_t weierstrass;
+  const double fopt;
+  const double penalty_factor;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};
 
 /**
- * @brief Creates the BBOB permuted block-rotated Weierstrass problem.
+ * @brief The Weierstrass function f16 of the bbob-largescale suite, with permuted block rotations.
+ *
+ * f(x) = f_weierstrass(R Λ^(1/100) Q T_osz(R (x - xopt))) + 10 / n f_pen(x) + fopt with the permuted block rotations
+ * R and Q.
  */
-static coco_problem_ptr_t
-f_weierstrass_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
-                                                  const long rseed, const coco_bbob_variant_t variant,
-                                                  const char *problem_id_template, const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  std::vector<size_t> P11(dimension);
-  std::vector<size_t> P21(dimension);
-  std::vector<size_t> P12(dimension);
-  std::vector<size_t> P22(dimension);
-  size_t nb_blocks1;
-  size_t nb_blocks2;
-  const double condition = 100.0, penalty_factor = 10.0 / static_cast<double>(dimension);
+class bbob_weierstrass_permblockdiag_t final : public bbob_problem_t<bbob_weierstrass_permblockdiag_t> {
+public:
+  bbob_weierstrass_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
+                                   const long rseed, const coco_bbob_variant_t variant, const char *problem_id_template,
+                                   const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)),
+        rotation1(dimension, rseed + 5000000, rseed + 1000000, rseed + 6000000),
+        rotation2(dimension, rseed + 3000000, rseed, rseed + 4000000), conditioning(1.0 / 100.0, dimension),
+        weierstrass(dimension), fopt(bbob2009_compute_fopt(function, instance)),
+        penalty_factor(10.0 / static_cast<double>(dimension)), z1(dimension), z2(dimension) {
+    /* The optimum of the Weierstrass function is the origin, map it back through the transformations */
+    rotation1.inverse(best_parameter, z1);
+    conditioning.inverse(z1, z1);
+    rotation2.inverse(z1, z2);
+    oscillate.inverse(z2, z2);
+    rotation1.inverse(z2, z1);
+    shift.inverse(z1, best_parameter);
+    set_best_value_at_best_parameter();
+  }
 
-  std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
-  std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
-  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  double operator()(std::span<const double> x) {
+    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
+    shift.apply(x, z1);
+    rotation1.apply(z1, z2);
+    oscillate.apply(z2, z2);
+    rotation2.apply(z2, z1);
+    conditioning.apply(z1, z1);
+    rotation1.apply(z1, z2);
+    const double y = weierstrass.raw(z2) + penalty_factor * penalty;
+    return y + fopt;
+  }
 
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1);
-  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2);
-
-  coco_compute_truncated_uniform_swap_permutation(P11, rseed + 3000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P21, rseed + 4000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P12, rseed + 5000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P22, rseed + 6000000, nb_swaps, swap_range);
-
-  problem = f_weierstrass_allocate(dimension);
-  problem = transform_vars_permutation(std::move(problem), P22);
-  problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P12);
-
-  problem = transform_vars_conditioning(std::move(problem), 1.0 / condition);
-  problem = transform_vars_permutation(std::move(problem), P21);
-  problem = transform_vars_blockrotation(std::move(problem), B2);
-  problem = transform_vars_permutation(std::move(problem), P11);
-
-  problem = transform_vars_oscillate(std::move(problem));
-  problem = transform_vars_permutation(std::move(problem), P22);
-  problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P12);
-
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_obj_penalize(std::move(problem), penalty_factor);
-  problem = transform_obj_shift(std::move(problem), fopt);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("4-multi-modal");
-
-  return problem;
-}
+private:
+  const vars_shift_t shift;
+  const vars_permblockdiag_t rotation1;
+  const vars_oscillate_t oscillate{};
+  const vars_permblockdiag_t rotation2;
+  const vars_conditioning_t conditioning;
+  const f_weierstrass_t weierstrass;
+  const double fopt;
+  const double penalty_factor;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};

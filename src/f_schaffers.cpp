@@ -10,13 +10,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
-#include "transform_obj_penalize.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_asymmetric.cpp"
-#include "transform_vars_blockrotation.cpp"
 
 /**
  * @brief Implements the Schaffer's F7 function without connections to any COCO
@@ -44,133 +39,106 @@ static double f_schaffers_raw(std::span<const double> x) {
 }
 
 /**
- * @brief The Schaffer's function.
+ * @brief The BBOB Schaffer's F7 functions f17 and f18, also in the bbob-boxed and bbob-noisy suites.
+ *
+ * f(x) = f_schaffers(Λ^conditioning Q T_asy^0.5(R (x - xopt))) + fopt + penalty_scale f_pen(x).
  */
-class f_schaffers_t final : public coco_problem_s {
+class bbob_schaffers_t final : public bbob_problem_t<bbob_schaffers_t> {
 public:
-  explicit f_schaffers_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("Schaffer's function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02zu", "schaffers", number_of_variables);
-
-    /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+  bbob_schaffers_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                   const coco_bbob_variant_t variant, const double conditioning, const double penalty_scale,
+                   const char *problem_id_template, const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)),
+        rotation(bbob2009_compute_rotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
+        asymmetric(0.5, dimension), conditioned_rotation(conditioned_rotation_matrix(rseed, dimension, conditioning),
+                                                         std::vector<double>(dimension)),
+        fopt(bbob2009_compute_fopt(function, instance)), penalty_scale(penalty_scale), z1(dimension), z2(dimension) {
+    /* The optimum of Schaffer's function is the origin, map it back through the transformations */
+    conditioned_rotation.inverse(best_parameter, z1);
+    asymmetric.inverse(z1, z1);
+    rotation.inverse(z1, z2);
+    shift.inverse(z2, best_parameter);
+    set_best_value_at_best_parameter();
   }
 
-  /**
-   * @brief Uses the raw function to evaluate the COCO problem.
-   */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_schaffers_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  double operator()(std::span<const double> x) {
+    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
+    shift.apply(x, z1);
+    rotation.apply(z1, z2);
+    asymmetric.apply(z2, z2);
+    conditioned_rotation.apply(z2, z1);
+    const double y = f_schaffers_raw(z1) + fopt;
+    return y + penalty_scale * penalty;
   }
+
+private:
+  /** @brief Returns Λ^conditioning Q with the rotation Q. */
+  static coco_matrix_t conditioned_rotation_matrix(const long rseed, const size_t dimension,
+                                                   const double conditioning) {
+    coco_matrix_t M = bbob2009_compute_rotation(rseed, dimension);
+    for (size_t i = 0; i < dimension; ++i) {
+      for (size_t j = 0; j < dimension; ++j) {
+        double exponent = 1.0 * static_cast<int>(i) / (static_cast<double>(dimension) - 1.0);
+        M(i, j) = M(i, j) * pow(sqrt(conditioning), exponent);
+      }
+    }
+    return M;
+  }
+
+  const vars_shift_t shift;
+  const vars_affine_t rotation;
+  const vars_asymmetric_t asymmetric;
+  const vars_affine_t conditioned_rotation;
+  const double fopt;
+  const double penalty_scale;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
 };
 
 /**
- * @brief Allocates the basic Schaffer's F7 problem.
+ * @brief The Schaffer's F7 functions f17 and f18 of the bbob-largescale suite, with permuted block rotations.
+ *
+ * f(x) = f_schaffers(Λ^conditioning Q T_asy^0.5(R (x - xopt))) + 10 f_pen(x) + fopt with the permuted block rotations
+ * R and Q.
  */
-static coco_problem_ptr_t f_schaffers_allocate(const size_t number_of_variables) {
-  return std::make_unique<f_schaffers_t>(number_of_variables);
-}
-
-/**
- * @brief Creates the BBOB Schaffer's F7 problem.
- */
-static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                            const size_t instance, const long rseed,
-                                                            const coco_bbob_variant_t variant,
-                                                            const double conditioning, const double penalty_scale,
-                                                            const char *problem_id_template,
-                                                            const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  coco_matrix_t M(dimension, dimension);
-  std::vector<double> b(dimension);
-
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
-  const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
-  for (size_t i = 0; i < dimension; ++i) {
-    b[i] = 0.0;
-    for (size_t j = 0; j < dimension; ++j) {
-      double exponent = 1.0 * static_cast<int>(i) / (static_cast<double>(dimension) - 1.0);
-      M(i, j) = rot2(i, j) * pow(sqrt(conditioning), exponent);
-    }
+class bbob_schaffers_permblockdiag_t final : public bbob_problem_t<bbob_schaffers_permblockdiag_t> {
+public:
+  bbob_schaffers_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                                 const coco_bbob_variant_t variant, const double condition,
+                                 const char *problem_id_template, const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)),
+        rotation1(dimension, rseed + 5000000, rseed + 1000000, rseed + 6000000), asymmetric(0.5, dimension),
+        rotation2(dimension, rseed + 3000000, rseed, rseed + 4000000), conditioning(condition, dimension),
+        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+    /* The optimum of Schaffer's function is the origin, map it back through the transformations */
+    conditioning.inverse(best_parameter, z1);
+    rotation2.inverse(z1, z2);
+    asymmetric.inverse(z2, z2);
+    rotation1.inverse(z2, z1);
+    shift.inverse(z1, best_parameter);
+    set_best_value_at_best_parameter();
   }
 
-  problem = f_schaffers_allocate(dimension);
-  problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_asymmetric(std::move(problem), 0.5);
-  M = rot1;
-  problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_obj_penalize(std::move(problem), penalty_scale);
+  double operator()(std::span<const double> x) {
+    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
+    shift.apply(x, z1);
+    rotation1.apply(z1, z2);
+    asymmetric.apply(z2, z2);
+    rotation2.apply(z2, z1);
+    conditioning.apply(z1, z1);
+    const double y = f_schaffers_raw(z1) + penalty_factor * penalty;
+    return y + fopt;
+  }
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("4-multi-modal");
+private:
+  static constexpr double penalty_factor = 10.0;
 
-  return problem;
-}
-
-/**
- * @brief Creates the BBOB permuted block-rotated Schaffer's F7 problem.
- */
-static coco_problem_ptr_t f_schaffers_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                          const size_t instance, const long rseed,
-                                                                          const coco_bbob_variant_t variant,
-                                                                          const double conditioning,
-                                                                          const char *problem_id_template,
-                                                                          const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  std::vector<size_t> P11(dimension);
-  std::vector<size_t> P21(dimension);
-  std::vector<size_t> P12(dimension);
-  std::vector<size_t> P22(dimension);
-  size_t nb_blocks1;
-  size_t nb_blocks2;
-
-  const double penalty_factor = 10.0;
-
-  std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
-  std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
-  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1);
-  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2);
-
-  coco_compute_truncated_uniform_swap_permutation(P11, rseed + 3000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P21, rseed + 4000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P12, rseed + 5000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P22, rseed + 6000000, nb_swaps, swap_range);
-
-  problem = f_schaffers_allocate(dimension);
-  problem = transform_vars_conditioning(std::move(problem), conditioning);
-  problem = transform_vars_permutation(std::move(problem), P21);
-  problem = transform_vars_blockrotation(std::move(problem), B2);
-  problem = transform_vars_permutation(std::move(problem), P11);
-
-  problem = transform_vars_asymmetric(std::move(problem), 0.5);
-  problem = transform_vars_permutation(std::move(problem), P22);
-  problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P12);
-
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_obj_penalize(std::move(problem), penalty_factor);
-  problem = transform_obj_shift(std::move(problem), fopt);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("4-multi-modal");
-
-  return problem;
-}
+  const vars_shift_t shift;
+  const vars_permblockdiag_t rotation1;
+  const vars_asymmetric_t asymmetric;
+  const vars_permblockdiag_t rotation2;
+  const vars_conditioning_t conditioning;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};

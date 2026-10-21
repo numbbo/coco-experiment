@@ -782,21 +782,6 @@ void coco_problem_stacked_s::evaluate_constraint(std::span<const double> x, std:
 
 /* TODO: Missing coco_problem_stacked_recommend_solution function! */
 
-/**
- * @brief Allocates a problem constructed by stacking two COCO problems.
- *
- * This is particularly useful for generating multi-objective problems, e.g. a bi-objective problem from two
- * single-objective problems. The stacked problem must behave like a normal COCO problem accepting the same
- * input. Without a region of interest, the one of the second problem is used.
- *
- * @note Best parameter becomes somewhat meaningless, but the nadir value make sense now.
- */
-static coco_problem_ptr_t coco_problem_stacked_allocate(coco_problem_ptr_t first, coco_problem_ptr_t second,
-                                                        std::span<const double> smallest_values_of_interest = {},
-                                                        std::span<const double> largest_values_of_interest = {}) {
-  return std::make_unique<coco_problem_stacked_t>(std::move(first), std::move(second), smallest_values_of_interest,
-                                                  largest_values_of_interest);
-}
 /**@}*/
 
 /***********************************************************************************************************/

@@ -9,8 +9,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
 #include "transform_obj_shift.cpp"
 
 /**
@@ -62,12 +62,15 @@ public:
     evaluate_function(this->best_parameter, best_value);
   }
 
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(std::span<const double> x) const { return f_linear_slope_raw(x, best_parameter, slopes); }
+
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
   void evaluate_function(std::span<const double> x, std::span<double> y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_linear_slope_raw(x, best_parameter, slopes);
+    y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
@@ -84,33 +87,50 @@ private:
 };
 
 /**
- * @brief Allocates the basic linear slope problem.
+ * @brief The BBOB linear slope function f5, also in the bbob-boxed and bbob-largescale suites.
+ *
+ * f(x) = f_linear_slope(x) + fopt with the optimum at the corner of the region of interest given by the signs of
+ * xopt, normalized by the dimension before fopt is added in the large-scale suite.
  */
-static coco_problem_ptr_t f_linear_slope_allocate(const size_t number_of_variables,
-                                                  std::span<const double> best_parameter) {
-  return std::make_unique<f_linear_slope_t>(number_of_variables, best_parameter);
-}
+class bbob_linear_slope_t final : public bbob_problem_t<bbob_linear_slope_t> {
+public:
+  bbob_linear_slope_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                      const coco_bbob_variant_t variant, const char *problem_id_template,
+                      const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        linear_slope(dimension, bbob_xopt(rseed, dimension, variant)), fopt(bbob2009_compute_fopt(function, instance)),
+        normalize(variant == coco_bbob_variant_t::largescale) {
+    best_parameter = linear_slope.get_best_parameter();
+    set_best_value_at_best_parameter();
+  }
+
+  double operator()(std::span<const double> x) {
+    double y = linear_slope.raw(x);
+    if (normalize)
+      y *= coco_norm_by_dim_factor(number_of_variables);
+    return y + fopt;
+  }
+
+private:
+  const f_linear_slope_t linear_slope;
+  const double fopt;
+  const bool normalize;
+};
 
 /**
- * @brief Creates the BBOB linear slope problem.
+ * @brief Creates the linear slope problem for the constrained BBOB suite.
  */
-static coco_problem_ptr_t f_linear_slope_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                               const size_t instance, const long rseed,
-                                                               const coco_bbob_variant_t variant,
-                                                               const char *problem_id_template,
-                                                               const char *problem_name_template) {
+static coco_problem_ptr_t f_linear_slope_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                    const size_t instance, const long rseed,
+                                                                    const char *problem_id_template,
+                                                                    const char *problem_name_template) {
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt, rseed, variant);
+  bbob_compute_xopt(xopt, rseed, coco_bbob_variant_t::bbob);
   double fopt = bbob2009_compute_fopt(function, instance);
 
-  problem = f_linear_slope_allocate(dimension, xopt);
-
-  /*if large scale test-bed, normalize by dim*/
-  if (variant == coco_bbob_variant_t::largescale) {
-    problem = transform_obj_norm_by_dim(std::move(problem));
-  }
+  problem = std::make_unique<f_linear_slope_t>(dimension, xopt);
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);

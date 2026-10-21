@@ -25,18 +25,18 @@ public:
     coco_problem_ptr_t problem;
 
     if (function == 1) {
-      problem = f_sphere_allocate(dimension);
+      problem = std::make_unique<f_sphere_t>(dimension);
     } else if (function == 2) {
-      problem = f_ellipsoid_allocate(dimension, 1.0e6);
+      problem = std::make_unique<f_ellipsoid_t>(dimension, 1.0e6);
     } else if (function == 3) {
-      problem = f_rastrigin_allocate(dimension);
+      problem = std::make_unique<f_rastrigin_t>(dimension);
     } else if (function == 4) {
-      problem = f_bueche_rastrigin_allocate(dimension);
+      problem = std::make_unique<f_bueche_rastrigin_t>(dimension);
     } else if (function == 5) {
       double xopt[40] = {5.0};
-      problem = f_linear_slope_allocate(dimension, std::span(xopt).first(dimension));
+      problem = std::make_unique<f_linear_slope_t>(dimension, std::span(xopt).first(dimension));
     } else if (function == 6) {
-      problem = f_rosenbrock_allocate(dimension);
+      problem = std::make_unique<f_rosenbrock_t>(dimension);
     } else {
       coco_error("suite_toy_t::get_problem(): function %zu does not exist in this suite", function);
       return nullptr; /* Never reached */

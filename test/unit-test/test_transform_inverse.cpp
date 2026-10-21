@@ -74,34 +74,44 @@ template <typename Make> static int is_not_invertible(Make make) {
   return !problem->from_base_coordinates(base_x, x);
 }
 
+/**
+ * Checks that the inverse of the transformation maps the image of some point back to the point, up to the given
+ * relative precision (0 means exactly).
+ */
+template <typename Transformation> static int inverts(const Transformation &transformation, const double precision) {
+  const std::vector<double> x = base_point();
+  std::vector<double> y(dimension), inverse_y(dimension);
+  transformation.apply(x, y);
+  transformation.inverse(y, inverse_y);
+  for (size_t i = 0; i < dimension; ++i) {
+    if (fabs(inverse_y[i] - x[i]) > precision * coco_double_max(1.0, fabs(x[i])))
+      return 0;
+  }
+  return 1;
+}
+
 MU_TEST(test_exact_inverses) {
   const std::vector<double> offset = {0.5, -1.0, 2.0, -0.25, 3.0, 0.0};
-  const std::vector<double> signs = {1, -1, -1, 1, 1, -1};
   const size_t permutation[] = {3, 0, 5, 1, 4, 2};
 
   mu_check(maps_back([&](coco_problem_ptr_t p) { return transform_vars_shift(std::move(p), offset, 0); }, 1e-15));
-  mu_check(maps_back([](coco_problem_ptr_t p) { return transform_vars_scale(std::move(p), 2.5); }, 1e-15));
-  mu_check(maps_back([](coco_problem_ptr_t p) { return transform_vars_conditioning(std::move(p), 100.0); }, 1e-15));
-  mu_check(maps_back([&](coco_problem_ptr_t p) { return transform_vars_permutation(std::move(p), permutation); }, 0));
-  mu_check(maps_back(
-      [&](coco_problem_ptr_t p) { return transform_vars_inverse_permutation(std::move(p), permutation); }, 0));
-  mu_check(maps_back([](coco_problem_ptr_t p) { return transform_vars_x_hat(std::move(p), 4711); }, 0));
-  mu_check(maps_back([](coco_problem_ptr_t p) { return transform_vars_brs(std::move(p)); }, 1e-15));
-  mu_check(maps_back([&](coco_problem_ptr_t p) { return transform_vars_z_hat(std::move(p), offset); }, 1e-15));
   mu_check(maps_back([](coco_problem_ptr_t p) { return transform_vars_enforce_box(std::move(p)); }, 0));
   mu_check(maps_back([](coco_problem_ptr_t p) { return transform_obj_shift(std::move(p), 10.0); }, 0));
 
-  f_lunacek_bi_rastrigin_shared_data_t lunacek_shared;
-  lunacek_shared.x_hat.resize(dimension);
-  mu_check(maps_back(
-      [&](coco_problem_ptr_t p) { return transform_vars_x_hat_generic(std::move(p), signs, &lunacek_shared); }, 0));
+  mu_check(inverts(vars_scale_t(2.5, dimension), 1e-15));
+  mu_check(inverts(vars_conditioning_t(100.0, dimension), 1e-15));
+  mu_check(inverts(vars_permutation_t(permutation, false), 0));
+  mu_check(inverts(vars_permutation_t(permutation, true), 0));
+  mu_check(inverts(vars_x_hat_t(4711, dimension), 0));
+  mu_check(inverts(vars_brs_t(dimension), 1e-15));
+  mu_check(inverts(vars_z_hat_t(offset), 1e-15));
 }
 
 MU_TEST(test_rotation_inverses) {
   size_t number_of_blocks;
   const std::vector<size_t> block_sizes = coco_get_block_sizes(&number_of_blocks, dimension, "bbob-largescale");
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(12345, block_sizes);
-  mu_check(maps_back([&](coco_problem_ptr_t p) { return transform_vars_blockrotation(std::move(p), B); }, 1e-13));
+  mu_check(inverts(vars_blockrotation_t(coco_compute_blockrotation(12345, block_sizes)), 1e-13));
+  mu_check(inverts(vars_permblockdiag_t(dimension, 1, 2, 3), 1e-13));
 
   const coco_matrix_t R = bbob2009_compute_rotation(12345, dimension);
   const std::vector<double> b = {0.5, -1.0, 2.0, -0.25, 3.0, 0.0};
@@ -131,16 +141,15 @@ MU_TEST(test_numerical_inverses) {
 
 MU_TEST(test_chain_inverse) {
   const std::vector<double> offset = {0.5, -1.0, 2.0, -0.25, 3.0, 0.0};
-  const size_t permutation[] = {3, 0, 5, 1, 4, 2};
+  const coco_matrix_t R = bbob2009_compute_rotation(12345, dimension);
   mu_check(maps_back(
       [&](coco_problem_ptr_t p) {
-        p = transform_vars_permutation(std::move(p), permutation);
-        p = transform_vars_conditioning(std::move(p), 10.0);
+        p = transform_vars_affine(std::move(p), R, offset);
         p = transform_obj_shift(std::move(p), 1.0);
-        p = transform_vars_brs(std::move(p));
+        p = transform_vars_asymmetric(std::move(p), 0.2);
         return transform_vars_shift(std::move(p), offset, 0);
       },
-      1e-14));
+      1e-9));
 }
 
 MU_TEST(test_constraint_inverse) {

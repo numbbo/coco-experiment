@@ -8,10 +8,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_shift.cpp"
 
 /**
  * @brief Implements the sharp ridge function without connections to any COCO
@@ -40,67 +38,46 @@ static double f_sharp_ridge_raw(std::span<const double> x) {
 }
 
 /**
- * @brief The sharp ridge function.
+ * @brief The BBOB sharp ridge function f13, also in the bbob-boxed suite.
+ *
+ * f(x) = f_sharp_ridge(Q Λ^10 R (x - xopt)) + fopt.
  */
-class f_sharp_ridge_t final : public coco_problem_s {
+class bbob_sharp_ridge_t final : public bbob_problem_t<bbob_sharp_ridge_t> {
 public:
-  explicit f_sharp_ridge_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("sharp ridge function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02zu", "sharp_ridge", number_of_variables);
-
-    /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+  bbob_sharp_ridge_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                     const coco_bbob_variant_t variant, const char *problem_id_template,
+                     const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)),
+        conditioned_rotation(conditioned_rotation_matrix(rseed, dimension), std::vector<double>(dimension)),
+        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+    /* The optimum of the sharp ridge function is the origin, map it back through the transformations */
+    conditioned_rotation.inverse(best_parameter, z1);
+    shift.inverse(z1, best_parameter);
+    set_best_value_at_best_parameter();
   }
 
-  /**
-   * @brief Uses the raw function to evaluate the COCO problem.
-   */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_sharp_ridge_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  double operator()(std::span<const double> x) {
+    shift.apply(x, z1);
+    conditioned_rotation.apply(z1, z2);
+    return f_sharp_ridge_raw(z2) + fopt;
   }
+
+private:
+  /** @brief Returns Q Λ^10 R with the rotations Q and R. */
+  static coco_matrix_t conditioned_rotation_matrix(const long rseed, const size_t dimension) {
+    const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+    const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
+    std::vector<double> scales(dimension);
+    for (size_t k = 0; k < dimension; ++k) {
+      const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
+      scales[k] = pow(sqrt(10), exponent);
+    }
+    return coco_matrix_product_with_diagonal(rot1, scales, rot2);
+  }
+
+  const vars_shift_t shift;
+  const vars_affine_t conditioned_rotation;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
 };
-
-/**
- * @brief Allocates the basic sharp ridge problem.
- */
-static coco_problem_ptr_t f_sharp_ridge_allocate(const size_t number_of_variables) {
-  return std::make_unique<f_sharp_ridge_t>(number_of_variables);
-}
-
-/**
- * @brief Creates the BBOB sharp ridge problem.
- */
-static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                              const size_t instance, const long rseed,
-                                                              const coco_bbob_variant_t variant,
-                                                              const char *problem_id_template,
-                                                              const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  coco_matrix_t M(dimension, dimension);
-  std::vector<double> b(dimension);
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
-  const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
-  std::vector<double> scales(dimension);
-  for (size_t k = 0; k < dimension; ++k) {
-    const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
-    scales[k] = pow(sqrt(10), exponent);
-  }
-  M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
-  problem = f_sharp_ridge_allocate(dimension);
-  problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("3-ill-conditioned");
-
-  return problem;
-}

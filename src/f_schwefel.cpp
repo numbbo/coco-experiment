@@ -8,15 +8,8 @@
 #include <stdio.h>
 
 #include "coco.h"
-#include "coco_problem.cpp"
-#include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_conditioning.cpp"
-#include "transform_vars_scale.cpp"
-#include "transform_vars_shift.cpp"
-#include "transform_vars_x_hat.cpp"
-#include "transform_vars_z_hat.cpp"
+#include "bbob_problem.cpp"
+#include "f_schwefel_generalized.cpp"
 
 /**
  * @brief Implements the Schwefel function without connections to any COCO
@@ -47,78 +40,83 @@ static double f_schwefel_raw(std::span<const double> x) {
 }
 
 /**
- * @brief The Schwefel function.
+ * @brief The BBOB Schwefel function f20, also in the bbob-boxed and bbob-largescale suites; the large-scale suite
+ * uses f_schwefel_generalized_raw().
+ *
+ * f(x) = f_schwefel(100 (Λ^10 (ẑ - 2 |xopt|) + 2 |xopt|)) + fopt with ẑ = z^hat(2 x^hat), where x^hat flips the
+ * signs of x at random, and xopt = ±4.2096874637 / 2 with the same signs.
  */
-class f_schwefel_t final : public coco_problem_s {
+class bbob_schwefel_t final : public bbob_problem_t<bbob_schwefel_t> {
 public:
-  explicit f_schwefel_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("Schwefel function", -5.0, 5.0, 420.96874633);
-    set_id("%s_d%02zu", "schwefel", number_of_variables);
+  bbob_schwefel_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                  const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template)
+      : bbob_schwefel_t(function, dimension, instance, rseed, variant, schwefel_xopt(rseed, dimension),
+                        problem_id_template, problem_name_template) {}
 
-    /* Compute best solution: best_parameter[i] = 200 * fabs(xopt[i]) */
-    evaluate_function(best_parameter, best_value);
+  double operator()(std::span<const double> x) {
+    x_hat.apply(x, z1);
+    doubling.apply(z1, z1);
+    z_hat.apply(z1, z2);
+    shift.apply(z2, z2);
+    conditioning.apply(z2, z2);
+    shift_back.apply(z2, z2);
+    scale.apply(z2, z2);
+    return raw(z2) + fopt;
   }
 
-  /**
-   * @brief Uses the raw function to evaluate the COCO problem.
-   */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_schwefel_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+private:
+  bbob_schwefel_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                  const coco_bbob_variant_t variant, const std::vector<double> &xopt, const char *problem_id_template,
+                  const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "5-weakly-structured", problem_id_template,
+                       problem_name_template),
+        x_hat(rseed, dimension), doubling(2, dimension), z_hat(xopt), shift(two_abs(xopt, 1.0)),
+        conditioning(10.0, dimension), shift_back(two_abs(xopt, -1.0)), scale(100, dimension),
+        fopt(bbob2009_compute_fopt(function, instance)), generalized(variant == coco_bbob_variant_t::largescale),
+        z1(dimension), z2(dimension) {
+    /* The best parameter of the Schwefel function (420.96874633 / 100) and the shift (2 |xopt[i]| = 4.2096874637)
+     * differ by 4e-10. The best parameter is mapped back through the transformations except the conditioning and
+     * the z^hat transformation, which would change it by about 1e-10: the bi-objective suites evaluate their other
+     * objective at this point to compute the nadir, which has to stay the same for the existing reference data. At
+     * the optimum, the z^hat transformation is the identity. */
+    const std::vector<double> optimum(dimension, 420.96874633);
+    scale.inverse(optimum, z1);
+    shift_back.inverse(z1, z1);
+    shift.inverse(z1, z1);
+    doubling.inverse(z1, z1);
+    x_hat.inverse(z1, best_parameter);
+    best_value[0] = raw(optimum) + fopt;
   }
+
+  /** @brief Returns xopt = ±4.2096874637 / 2 with random signs. */
+  static std::vector<double> schwefel_xopt(const long rseed, const size_t dimension) {
+    std::vector<double> xopt(dimension);
+    bbob2009_unif(xopt, rseed);
+    for (size_t i = 0; i < dimension; ++i)
+      xopt[i] = (xopt[i] < 0.5 ? -1 : 1) * 0.5 * 4.2096874637;
+    return xopt;
+  }
+
+  /** @brief Returns sign 2 |xopt|. */
+  static std::vector<double> two_abs(const std::vector<double> &xopt, const double sign) {
+    std::vector<double> result(xopt.size());
+    for (size_t i = 0; i < xopt.size(); ++i)
+      result[i] = sign * 2 * fabs(xopt[i]);
+    return result;
+  }
+
+  double raw(std::span<const double> x) const {
+    return generalized ? f_schwefel_generalized_raw(x) : f_schwefel_raw(x);
+  }
+
+  const vars_x_hat_t x_hat;
+  const vars_scale_t doubling;
+  const vars_z_hat_t z_hat;
+  const vars_shift_t shift; /**< @brief Subtracts 2 |xopt| */
+  const vars_conditioning_t conditioning;
+  const vars_shift_t shift_back; /**< @brief Adds 2 |xopt| */
+  const vars_scale_t scale;
+  const double fopt;
+  const bool generalized;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
 };
-
-/**
- * @brief Allocates the basic Schwefel problem.
- */
-static coco_problem_ptr_t f_schwefel_allocate(const size_t number_of_variables) {
-  return std::make_unique<f_schwefel_t>(number_of_variables);
-}
-
-/**
- * @brief Creates the BBOB Schwefel problem.
- */
-static coco_problem_ptr_t f_schwefel_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                           const size_t instance, const long rseed,
-                                                           const char *problem_id_template,
-                                                           const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-
-  const double condition = 10.;
-
-  std::vector<double> tmp1(dimension);
-  std::vector<double> tmp2(dimension);
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob2009_unif(tmp1, rseed);
-  for (size_t i = 0; i < dimension; ++i) {
-    xopt[i] = (tmp1[i] < 0.5 ? -1 : 1) * 0.5 * 4.2096874637;
-  }
-
-  for (size_t i = 0; i < dimension; ++i) {
-    tmp1[i] = -2 * fabs(xopt[i]);
-    tmp2[i] = 2 * fabs(xopt[i]);
-  }
-
-  problem = f_schwefel_allocate(dimension);
-  problem = transform_vars_scale(std::move(problem), 100);
-  problem = transform_vars_shift(std::move(problem), tmp1, 0);
-  /* The best parameter of the Schwefel function (420.96874633 / 100) and the shift (2 |xopt[i]| = 4.2096874637)
-   * differ by 4e-10. The conditioning and the z^hat transformation keep the best parameter instead of computing it
-   * with inverse(), which would change it by about 1e-10: the bi-objective suites evaluate their other objective
-   * at this point to compute the nadir, which has to stay the same for the existing reference data. */
-  problem = transform_vars_conditioning(std::move(problem), condition, true);
-  problem = transform_vars_shift(std::move(problem), tmp2, 0);
-  problem = transform_vars_z_hat(std::move(problem), xopt);
-  problem = transform_vars_scale(std::move(problem), 2);
-  problem = transform_vars_x_hat(std::move(problem), rseed);
-  problem = transform_obj_shift(std::move(problem), fopt);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("5-weakly-structured");
-
-  return problem;
-}

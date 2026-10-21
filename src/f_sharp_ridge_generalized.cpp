@@ -8,14 +8,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_blockrotation.cpp"
-#include "transform_vars_conditioning.cpp"
-#include "transform_vars_permutation.cpp"
-#include "transform_vars_shift.cpp"
 
 /**
  * @brief The sharp ridge function.
@@ -77,64 +71,43 @@ double f_sharp_ridge_generalized_t::raw(std::span<const double> x) const {
 }
 
 /**
- * @brief Allocates the basic sharp ridge problem.
+ * @brief The sharp ridge function f13 of the bbob-largescale suite, generalized to n / 40 linear dimensions and
+ * with permuted block rotations.
+ *
+ * f(x) = f_sharp_ridge_generalized(Q Λ^10 R (x - xopt)) / n + fopt with the permuted block rotations R and Q.
  */
-static coco_problem_ptr_t f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
-                                                             size_t proportion_of_linear_dims) {
-  return std::make_unique<f_sharp_ridge_generalized_t>(number_of_variables, proportion_of_linear_dims);
-}
+class bbob_sharp_ridge_generalized_permblockdiag_t final
+    : public bbob_problem_t<bbob_sharp_ridge_generalized_permblockdiag_t> {
+public:
+  bbob_sharp_ridge_generalized_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
+                                               const long rseed, const coco_bbob_variant_t variant,
+                                               const char *problem_id_template, const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift(bbob_xopt(rseed, dimension, variant)), rotation1(dimension, rseed + 5000000, rseed, rseed + 6000000),
+        conditioning(10.0, dimension), rotation2(dimension, rseed + 3000000, rseed + 1000000, rseed + 4000000),
+        sharp_ridge(dimension, 40), fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+    /* The optimum of the sharp ridge function is the origin, map it back through the transformations */
+    rotation2.inverse(best_parameter, z1);
+    conditioning.inverse(z1, z1);
+    rotation1.inverse(z1, z2);
+    shift.inverse(z2, best_parameter);
+    set_best_value_at_best_parameter();
+  }
 
-/**
- * @brief Creates the BBOB permuted block-rotated generalized sharp ridge
- * problem
- */
-static coco_problem_ptr_t f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
-    const size_t function, const size_t dimension, const size_t instance, const long rseed,
-    const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-  std::vector<size_t> P11(dimension);
-  std::vector<size_t> P21(dimension);
-  std::vector<size_t> P12(dimension);
-  std::vector<size_t> P22(dimension);
-  size_t nb_blocks1;
-  size_t nb_blocks2;
+  double operator()(std::span<const double> x) {
+    shift.apply(x, z1);
+    rotation1.apply(z1, z2);
+    conditioning.apply(z2, z2);
+    rotation2.apply(z2, z1);
+    return sharp_ridge.raw(z1) * coco_norm_by_dim_factor(number_of_variables) + fopt;
+  }
 
-  const size_t proportion_of_linear_dims = 40;
-
-  std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
-  std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
-  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
-
-  std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed, variant);
-
-  const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1);
-  const coco_block_diagonal_matrix_t B2 = coco_compute_blockrotation(rseed, block_sizes2);
-
-  coco_compute_truncated_uniform_swap_permutation(P11, rseed + 3000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P21, rseed + 4000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P12, rseed + 5000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P22, rseed + 6000000, nb_swaps, swap_range);
-
-  problem = f_sharp_ridge_generalized_allocate(dimension, proportion_of_linear_dims);
-  problem = transform_vars_permutation(std::move(problem), P21); /* LIFO */
-  problem = transform_vars_blockrotation(std::move(problem), B1);
-  problem = transform_vars_permutation(std::move(problem), P11);
-  problem = transform_vars_conditioning(std::move(problem), 10.0);
-  problem =
-      transform_vars_permutation(std::move(problem), P22); /*Consider replacing P11 and 22 by a single permutation P3*/
-  problem = transform_vars_blockrotation(std::move(problem), B2);
-  problem = transform_vars_permutation(std::move(problem), P12);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-
-  problem = transform_obj_norm_by_dim(std::move(problem));
-  problem = transform_obj_shift(std::move(problem), fopt);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("3-ill-conditioned");
-
-  return problem;
-}
+private:
+  const vars_shift_t shift;
+  const vars_permblockdiag_t rotation1;
+  const vars_conditioning_t conditioning;
+  const vars_permblockdiag_t rotation2;
+  const f_sharp_ridge_generalized_t sharp_ridge;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};

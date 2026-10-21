@@ -9,14 +9,8 @@
 
 #include "coco.h"
 #include "coco_problem.cpp"
+#include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_norm_by_dim.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_blockrotation.cpp"
-#include "transform_vars_permutation.cpp"
-#include "transform_vars_scale.cpp"
-#include "transform_vars_shift.cpp"
 
 /**
  * @brief The Griewank-Rosenbrock function.
@@ -73,93 +67,89 @@ double f_griewank_rosenbrock_t::raw(std::span<const double> x) const {
 }
 
 /**
- * @brief Allocates the basic Griewank-Rosenbrock problem.
+ * @brief The BBOB Griewank-Rosenbrock function f19, also in the bbob-boxed and bbob-noisy suites.
+ *
+ * f(x) = f_griewank_rosenbrock(s R x + 0.5) + fopt with s = max(1, sqrt(n) / 8).
  */
-static coco_problem_ptr_t f_griewank_rosenbrock_allocate(const size_t number_of_variables, double facftrue) {
-  return std::make_unique<f_griewank_rosenbrock_t>(number_of_variables, facftrue);
-}
-
-/**
- * @brief Creates the BBOB Griewank-Rosenbrock problem.
- */
-static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                      const size_t instance, const long rseed,
-                                                                      const double facftrue,
-                                                                      const char *problem_id_template,
-                                                                      const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-
-  coco_matrix_t M(dimension, dimension);
-  std::vector<double> b(dimension);
-  std::vector<double> shift(dimension);
-
-  double fopt = bbob2009_compute_fopt(function, instance);
-  for (size_t i = 0; i < dimension; ++i) {
-    shift[i] = -0.5;
+class bbob_griewank_rosenbrock_t final : public bbob_problem_t<bbob_griewank_rosenbrock_t> {
+public:
+  bbob_griewank_rosenbrock_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                             const double facftrue, const char *problem_id_template, const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        rotation(scaled_rotation_matrix(rseed, dimension), std::vector<double>(dimension)),
+        shift(std::vector<double>(dimension, -0.5)), griewank_rosenbrock(dimension, facftrue),
+        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+    /* The optimum of the Griewank-Rosenbrock function is (1, ..., 1), map it back through the transformations */
+    const std::vector<double> ones(dimension, 1.0);
+    shift.inverse(ones, z1);
+    rotation.inverse(z1, best_parameter);
+    /* Evaluating at the best parameter could add rounding errors */
+    best_value[0] = griewank_rosenbrock.raw(ones) + fopt;
   }
 
-  coco_matrix_t rot1 = bbob2009_compute_rotation(rseed, dimension);
-  double scales = coco_double_max(1., sqrt(static_cast<double>(dimension)) / 8.);
-  for (size_t i = 0; i < dimension; ++i) {
-    for (size_t j = 0; j < dimension; ++j) {
-      rot1(i, j) *= scales;
+  double operator()(std::span<const double> x) {
+    rotation.apply(x, z1);
+    shift.apply(z1, z2);
+    return griewank_rosenbrock.raw(z2) + fopt;
+  }
+
+private:
+  /** @brief Returns s R with the rotation R. */
+  static coco_matrix_t scaled_rotation_matrix(const long rseed, const size_t dimension) {
+    coco_matrix_t M = bbob2009_compute_rotation(rseed, dimension);
+    const double scales = coco_double_max(1., sqrt(static_cast<double>(dimension)) / 8.);
+    for (size_t i = 0; i < dimension; ++i) {
+      for (size_t j = 0; j < dimension; ++j)
+        M(i, j) *= scales;
     }
+    return M;
   }
 
-  problem = f_griewank_rosenbrock_allocate(dimension, facftrue);
-  problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_shift(std::move(problem), shift, 0);
-  M = rot1;
-
-  problem = transform_vars_affine(std::move(problem), M, b);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("4-multi-modal");
-
-  return problem;
-}
+  const vars_affine_t rotation;
+  const vars_shift_t shift; /**< @brief Adds 0.5 */
+  const f_griewank_rosenbrock_t griewank_rosenbrock;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};
 
 /**
- * @brief Creates the BBOB permuted block-rotated Griewank-Rosenbrock problem.
+ * @brief The Griewank-Rosenbrock function f19 of the bbob-largescale suite, with a permuted block rotation.
+ *
+ * f(x) = f_griewank_rosenbrock(s R x + 0.5) + fopt with the permuted block rotation R and
+ * s = max(1, sqrt(block size) / 8).
  */
-static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
-    const size_t function, const size_t dimension, const size_t instance, const long rseed, const double facftrue,
-    const char *problem_id_template, const char *problem_name_template) {
-  coco_problem_ptr_t problem;
-
-  std::vector<size_t> P1(dimension);
-  std::vector<size_t> P2(dimension);
-  size_t nb_blocks;
-
-  std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
-  size_t block_size = coco_rotation_matrix_block_size(dimension);
-  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
-
-  double fopt = bbob2009_compute_fopt(function, instance);
-  double scales = coco_double_max(1.0, sqrt(static_cast<double>(block_size)) / 8.0);
-  std::vector<double> shift(dimension);
-  for (size_t i = 0; i < dimension; ++i) {
-    shift[i] = -0.5;
+class bbob_griewank_rosenbrock_permblockdiag_t final : public bbob_problem_t<bbob_griewank_rosenbrock_permblockdiag_t> {
+public:
+  bbob_griewank_rosenbrock_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
+                                           const long rseed, const double facftrue, const char *problem_id_template,
+                                           const char *problem_name_template)
+      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        rotation(dimension, rseed + 2000000, rseed, rseed + 3000000),
+        scale(coco_double_max(1.0, sqrt(static_cast<double>(coco_rotation_matrix_block_size(dimension))) / 8.0),
+              dimension),
+        shift(std::vector<double>(dimension, -0.5)), griewank_rosenbrock(dimension, facftrue),
+        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+    /* The optimum of the Griewank-Rosenbrock function is (1, ..., 1), map it back through the transformations */
+    const std::vector<double> ones(dimension, 1.0);
+    shift.inverse(ones, z1);
+    scale.inverse(z1, z1);
+    rotation.inverse(z1, best_parameter);
+    /* Evaluating at the best parameter could add rounding errors */
+    best_value[0] = griewank_rosenbrock.raw(ones) + fopt;
   }
 
-  const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed, block_sizes);
-  coco_compute_truncated_uniform_swap_permutation(P1, rseed + 2000000, nb_swaps, swap_range);
-  coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000, nb_swaps, swap_range);
+  double operator()(std::span<const double> x) {
+    rotation.apply(x, z1);
+    scale.apply(z1, z1);
+    shift.apply(z1, z2);
+    return griewank_rosenbrock.raw(z2) + fopt;
+  }
 
-  problem = f_griewank_rosenbrock_allocate(dimension, facftrue);
-  problem = transform_vars_shift(std::move(problem), shift, 0);
-  problem = transform_vars_scale(std::move(problem), scales);
-  problem = transform_vars_permutation(std::move(problem), P2);
-  problem = transform_vars_blockrotation(std::move(problem), B);
-  problem = transform_vars_permutation(std::move(problem), P1);
-
-  problem = transform_obj_shift(std::move(problem), fopt);
-
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("4-multi-modal");
-
-  return problem;
-}
+private:
+  const vars_permblockdiag_t rotation;
+  const vars_scale_t scale;
+  const vars_shift_t shift; /**< @brief Adds 0.5 */
+  const f_griewank_rosenbrock_t griewank_rosenbrock;
+  const double fopt;
+  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+};

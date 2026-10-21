@@ -1,6 +1,6 @@
 /**
  * @file transform_vars_blockrotation_helpers.cpp
- * @brief implements functions needed by transform_vars_blockrotation.cpp
+ * @brief Implements the block rotations of the large-scale suite.
  */
 
 #include <stdio.h>

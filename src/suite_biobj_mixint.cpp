@@ -110,8 +110,8 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
   problem2_mixint = transform_obj_scale(std::move(problem2_mixint), suite_bbob_mixint_scaling_factors[function2 - 1]);
 
   /* Fourth, combine the problems in a bi-objective mixed-integer problem */
-  problem = coco_problem_stacked_allocate(std::move(problem1_mixint), std::move(problem2_mixint),
-                                          smallest_values_of_interest, largest_values_of_interest);
+  problem = std::make_unique<coco_problem_stacked_t>(std::move(problem1_mixint), std::move(problem2_mixint),
+                                                     smallest_values_of_interest, largest_values_of_interest);
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   problem->set_name("%s", problem->get_id().c_str());
