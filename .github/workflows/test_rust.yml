@@ -15,7 +15,7 @@ jobs:
         working-directory: ${{github.workspace}}
     steps:
     - name: Download Rust source package
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: dist-rust
     - name: Unpack
@@ -37,7 +37,7 @@ jobs:
         working-directory: ${{github.workspace}}
     steps:
     - name: Download Rust source package
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: dist-rust
     - name: Unpack
@@ -49,7 +49,7 @@ jobs:
       working-directory: ${{github.workspace}}/cocoex-rust/
       run: cargo run --example example-experiment
     - name: Archive Rust example experiment results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: rust-example-${{matrix.os}}
         path: cocoex-rust/exdata/*
@@ -59,7 +59,7 @@ jobs:
     needs: [rust-example]
     steps:
       - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v7
         with:
           name: rust-examples
           pattern: rust-example-*

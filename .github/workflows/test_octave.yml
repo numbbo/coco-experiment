@@ -15,7 +15,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y octave octave-dev
       - name: Download Octave source package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist-octave
       - name: Unpack
@@ -27,7 +27,7 @@ jobs:
         working-directory: ${{github.workspace}}/cocoex-octave/
         run: octave --no-gui exampleexperiment.m
       - name: Archive Octave example experiment results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: octave-example
           path: cocoex-octave/exdata/*

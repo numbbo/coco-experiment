@@ -33,25 +33,25 @@ jobs:
       # url: https://pypi.org/p/YOURPROJECT
     steps:
       - name: Download Python source package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist-python-sdist
           path: ./dist/
       - name: Download Python source package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist-python-wheels
           path: ./dist/          
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Download remaining source packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: ./dist/
           pattern: dist-*
           merge-multiple: true    
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ./dist/**

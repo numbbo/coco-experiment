@@ -17,11 +17,11 @@ jobs:
         working-directory: ${{github.workspace}}
     steps:
     - name: Download Java source package
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: dist-java
     - name: Setup java
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v6
       with:
         distribution: 'temurin'
         java-version: ${{ matrix.java }}
@@ -34,7 +34,7 @@ jobs:
       working-directory: ${{github.workspace}}/cocoex-java/
       run: java -classpath build/coco.jar -Djava.library.path=build/ ExampleExperiment 
     - name: Archive Java example experiment results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: java-example-${{matrix.os}}-${{matrix.java}}
         path: cocoex-java/exdata/*
@@ -44,7 +44,7 @@ jobs:
     needs: [java-example]
     steps:
       - name: Merge Artifacts
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v7
         with:
           name: java-examples
           pattern: java-example-*
