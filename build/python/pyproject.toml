@@ -1,5 +1,5 @@
 [build-system]
-requires = ["meson-python", "Cython >= 3.0.6", "wheel", "numpy"]
+requires = ["meson-python >= 0.22", "Cython >= 3.3", "wheel", "numpy >= 2.5"]
 build-backend = 'mesonpy'
 
 [project]
@@ -76,5 +76,5 @@ path = "src/cocoex/_version.py"
 
 [dependency-groups]
 dev = [
-    "build>=1.2",
+    "build>=1.6",
 ]
