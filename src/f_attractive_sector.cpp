@@ -23,7 +23,7 @@
  * @brief Data type for the attractive sector problem.
  */
 typedef struct {
-  double *xopt;
+  std::vector<double> xopt;
 } f_attractive_sector_data_t;
 
 /**
@@ -50,49 +50,37 @@ static double f_attractive_sector_raw(const double *x, const size_t number_of_va
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The attractive sector function.
  */
-static void f_attractive_sector_evaluate(coco_problem_t *problem,
-                                         const double *x, double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_attractive_sector_raw(x, problem->number_of_variables,
-                                 (f_attractive_sector_data_t *)problem->data);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_attractive_sector_t final : public coco_problem_s {
+  f_attractive_sector_data_t params;
 
-/**
- * @brief Frees the attractive sector data object.
- */
-static void f_attractive_sector_free(coco_problem_t *problem) {
-  f_attractive_sector_data_t *data;
-  data = (f_attractive_sector_data_t *)problem->data;
-  coco_free_memory(data->xopt);
-  problem->problem_free_function = NULL;
-  coco_problem_free(problem);
-}
+  f_attractive_sector_t(const size_t number_of_variables, const double *xopt)
+      : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "attractive sector function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "attractive_sector", number_of_variables);
+
+    params.xopt.assign(xopt, xopt + number_of_variables);
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_attractive_sector_raw(x, number_of_variables, &params);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Allocates the basic attractive sector problem.
  */
-static coco_problem_t *
-f_attractive_sector_allocate(const size_t number_of_variables,
-                             const double *xopt) {
-
-  f_attractive_sector_data_t *data;
-  coco_problem_t *problem = coco_problem_allocate_from_scalars(
-      "attractive sector function", f_attractive_sector_evaluate,
-      f_attractive_sector_free, number_of_variables, -5.0, 5.0, 0.0);
-  coco_problem_set_id(problem, "%s_d%02lu", "attractive_sector",
-                      number_of_variables);
-
-  data = (f_attractive_sector_data_t *)coco_allocate_memory(sizeof(*data));
-  data->xopt = coco_duplicate_vector(xopt, number_of_variables);
-  problem->data = data;
-
-  /* Compute best solution */
-  f_attractive_sector_evaluate(problem, problem->best_parameter.data(),
-                               problem->best_value.data());
-  return problem;
+static coco_problem_t *f_attractive_sector_allocate(const size_t number_of_variables, const double *xopt) {
+  return new f_attractive_sector_t(number_of_variables, xopt);
 }
 
 /**

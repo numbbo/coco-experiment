@@ -49,27 +49,32 @@ static double f_schaffers_raw(const double *x,
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The Schaffer's function.
  */
-static void f_schaffers_evaluate(coco_problem_t *problem, const double *x,
-                                 double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_schaffers_raw(x, problem->number_of_variables);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_schaffers_t final : public coco_problem_s {
+  explicit f_schaffers_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "Schaffer's function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "schaffers", number_of_variables);
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_schaffers_raw(x, number_of_variables);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Allocates the basic Schaffer's F7 problem.
  */
 static coco_problem_t *f_schaffers_allocate(const size_t number_of_variables) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("Schaffer's function", f_schaffers_evaluate, NULL,
-                                                               number_of_variables, -5.0, 5.0, 0.0);
-  coco_problem_set_id(problem, "%s_d%02lu", "schaffers", number_of_variables);
-
-  /* Compute best solution */
-  f_schaffers_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+  return new f_schaffers_t(number_of_variables);
 }
 
 /**

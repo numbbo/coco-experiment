@@ -34,10 +34,7 @@ static void transform_inv_initial_composed(coco_problem_t *problem, const double
   double *sol = NULL;
   double halving_factor = .5;
 
-  transform_vars_asymmetric_data_t *data_asy;
   tasy_data *dasy;
-
-  transform_vars_oscillate_data_t *data_osz;
   tosz_data *dosz;
 
   coco_problem_t *inner_problem;
@@ -47,12 +44,9 @@ static void transform_inv_initial_composed(coco_problem_t *problem, const double
   dasy = (tasy_data *)coco_allocate_memory(sizeof(*dasy));
   dosz = (tosz_data *)coco_allocate_memory(sizeof(*dosz));
 
-  data_asy = (transform_vars_asymmetric_data_t *)coco_problem_transformed_get_data(inner_problem);
-  data_osz = (transform_vars_oscillate_data_t *)coco_problem_transformed_get_data(problem);
-
-  dasy->beta = data_asy->beta;
+  dasy->beta = transform_vars_asymmetric_get(inner_problem)->beta;
   dasy->n = problem->number_of_variables;
-  dosz->alpha = data_osz->alpha;
+  dosz->alpha = transform_vars_oscillate_get(problem)->alpha;
 
   j = 0;
   while (1) {

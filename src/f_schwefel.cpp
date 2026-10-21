@@ -51,27 +51,32 @@ static double f_schwefel_raw(const double *x,
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The Schwefel function.
  */
-static void f_schwefel_evaluate(coco_problem_t *problem, const double *x,
-                                double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_schwefel_raw(x, problem->number_of_variables);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_schwefel_t final : public coco_problem_s {
+  explicit f_schwefel_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "Schwefel function", -5.0, 5.0, 420.96874633);
+    coco_problem_set_id(this, "%s_d%02lu", "schwefel", number_of_variables);
+
+    /* Compute best solution: best_parameter[i] = 200 * fabs(xopt[i]) */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_schwefel_raw(x, number_of_variables);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Allocates the basic Schwefel problem.
  */
 static coco_problem_t *f_schwefel_allocate(const size_t number_of_variables) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("Schwefel function", f_schwefel_evaluate, NULL,
-                                                               number_of_variables, -5.0, 5.0, 420.96874633);
-  coco_problem_set_id(problem, "%s_d%02lu", "schwefel", number_of_variables);
-
-  /* Compute best solution: best_parameter[i] = 200 * fabs(xopt[i]) */
-  f_schwefel_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+  return new f_schwefel_t(number_of_variables);
 }
 
 /**

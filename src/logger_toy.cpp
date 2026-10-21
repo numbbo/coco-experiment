@@ -27,6 +27,8 @@ typedef struct {
   int precision_f;                      /**< @brief Precision for outputting objective values. */
 } logger_toy_data_t;
 
+static logger_toy_data_t *logger_toy_get_data(const coco_problem_t *problem);
+
 /**
  * @brief Frees the memory of the given toy logger.
  */
@@ -49,7 +51,7 @@ static void logger_toy_free(void *stuff) {
  */
 static void logger_toy_evaluate(coco_problem_t *problem, const double *x, double *y) {
 
-  logger_toy_data_t *logger = (logger_toy_data_t *)coco_problem_transformed_get_data(problem);
+  logger_toy_data_t *logger = logger_toy_get_data(problem);
   size_t i;
 
   coco_evaluate_function(coco_problem_transformed_get_inner_problem(problem), x, y);
@@ -70,28 +72,49 @@ static void logger_toy_evaluate(coco_problem_t *problem, const double *x, double
 }
 
 /**
+ * @brief The toy logger, which wraps the observed problem.
+ */
+struct logger_toy_t final : public coco_problem_transformed_t {
+  logger_toy_data_t data;
+
+  logger_toy_t(coco_problem_t *inner_problem, const char *observer_name)
+      : coco_problem_transformed_t(inner_problem, observer_name), data() {}
+
+  ~logger_toy_t() override { logger_toy_free(&data); }
+
+  void evaluate_function(const double *x, double *y) override { logger_toy_evaluate(this, x, y); }
+};
+
+/**
+ * @brief Returns the data of the toy logger.
+ */
+static logger_toy_data_t *logger_toy_get_data(const coco_problem_t *problem) {
+  assert(dynamic_cast<const logger_toy_t *>(problem) != NULL);
+  return &static_cast<logger_toy_t *>(const_cast<coco_problem_t *>(problem))->data;
+}
+
+/**
  * @brief Initializes the toy logger.
  */
 static coco_problem_t *logger_toy(coco_observer_t *observer, coco_problem_t *inner_problem) {
 
   logger_toy_data_t *logger_data;
-  coco_problem_t *problem;
+  logger_toy_t *problem;
 
   if (inner_problem->number_of_objectives != 1) {
     coco_warning("logger_toy(): The toy logger shouldn't be used to log a problem with %d objectives",
                  inner_problem->number_of_objectives);
   }
 
+  problem = new logger_toy_t(inner_problem, observer->observer_name.c_str());
+
   /* Initialize the logger_toy_data_t object instance */
-  logger_data = (logger_toy_data_t *)coco_allocate_memory(sizeof(*logger_data));
+  logger_data = &problem->data;
   logger_data->number_of_evaluations = 0;
   logger_data->targets = coco_observer_log_targets(observer->number_target_triggers, observer->log_target_precision);
   logger_data->log_file = ((observer_toy_data_t *)observer->data)->log_file;
   logger_data->precision_x = observer->precision_x;
   logger_data->precision_f = observer->precision_f;
-
-  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_toy_free, observer->observer_name.c_str());
-  problem->evaluate_function = logger_toy_evaluate;
 
   /* Output initial information */
   assert(coco_problem_get_suite(inner_problem));

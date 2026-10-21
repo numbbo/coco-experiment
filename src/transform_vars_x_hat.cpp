@@ -10,71 +10,52 @@
 #include "suite_bbob_legacy_code.cpp"
 
 /**
- * @brief Data type for transform_vars_x_hat.
+ * @brief Multiplies the decision values by a random vector of 1 and -1.
  */
-typedef struct {
-  long seed;
-  double *x;
-  coco_problem_free_function_t old_free_problem;
-} transform_vars_x_hat_data_t;
+struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
+  const long seed;
+  std::vector<double> x_hat; /**< @brief The transformed decision values */
 
-/**
- * @brief Evaluates the transformation.
- */
-static void transform_vars_x_hat_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  size_t i;
-  transform_vars_x_hat_data_t *data;
-  coco_problem_t *inner_problem;
-
-  if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-    coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
-    return;
+  transform_vars_x_hat_t(coco_problem_t *inner_problem, const long seed)
+      : coco_problem_transformed_t(inner_problem, "transform_vars_x_hat"), seed(seed),
+        x_hat(inner_problem->number_of_variables) {
+    size_t i;
+    if (coco_problem_best_parameter_not_zero(this)) {
+      bbob2009_unif(x_hat.data(), number_of_variables, seed);
+      for (i = 0; i < number_of_variables; ++i)
+        if (x_hat[i] < 0.5) /* with probability 1/2 */
+          best_parameter[i] *= -1;
+    }
   }
 
-  data = (transform_vars_x_hat_data_t *)coco_problem_transformed_get_data(problem);
-  inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  do {
-    bbob2009_unif(data->x, problem->number_of_variables, data->seed);
+  /**
+   * @brief Evaluates the transformation.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    size_t i;
 
-    for (i = 0; i < problem->number_of_variables; ++i) {
-      if (data->x[i] < 0.5) {
-        data->x[i] = -x[i];
+    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
+      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      return;
+    }
+
+    bbob2009_unif(x_hat.data(), number_of_variables, seed);
+
+    for (i = 0; i < number_of_variables; ++i) {
+      if (x_hat[i] < 0.5) {
+        x_hat[i] = -x[i];
       } else {
-        data->x[i] = x[i];
+        x_hat[i] = x[i];
       }
     }
-    coco_evaluate_function(inner_problem, data->x, y);
-    assert(y[0] + 1e-13 >= problem->best_value[0]);
-  } while (0);
-}
-
-/**
- * @brief Frees the data object.
- */
-static void transform_vars_x_hat_free(void *thing) {
-  transform_vars_x_hat_data_t *data = (transform_vars_x_hat_data_t *)thing;
-  coco_free_memory(data->x);
-}
+    coco_evaluate_function(inner_problem, x_hat.data(), y);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Creates the transformation.
  */
 static coco_problem_t *transform_vars_x_hat(coco_problem_t *inner_problem, const long seed) {
-  transform_vars_x_hat_data_t *data;
-  coco_problem_t *problem;
-  size_t i;
-
-  data = (transform_vars_x_hat_data_t *)coco_allocate_memory(sizeof(*data));
-  data->seed = seed;
-  data->x = coco_allocate_vector(inner_problem->number_of_variables);
-
-  problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_x_hat_free, "transform_vars_x_hat");
-  problem->evaluate_function = transform_vars_x_hat_evaluate;
-  if (coco_problem_best_parameter_not_zero(problem)) {
-    bbob2009_unif(data->x, problem->number_of_variables, data->seed);
-    for (i = 0; i < problem->number_of_variables; ++i)
-      if (data->x[i] < 0.5) /* with probability 1/2 */
-        problem->best_parameter[i] *= -1;
-  }
-  return problem;
+  return new transform_vars_x_hat_t(inner_problem, seed);
 }

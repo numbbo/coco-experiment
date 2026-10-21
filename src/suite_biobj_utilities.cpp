@@ -105,7 +105,7 @@ static int suite_biobj_check_inst_consistency(const size_t dimension, size_t fun
 
   /* Clean up */
   if (problem) {
-    coco_problem_stacked_free(problem);
+    coco_problem_free(problem);
     problem = NULL;
   }
 

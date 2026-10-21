@@ -18,7 +18,7 @@ typedef enum { LOG_VARS_NEVER, LOG_VARS_LOW_DIM, LOG_VARS_ALWAYS } observer_biob
 static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *problem);
 static void logger_biobj_free(void *logger);
 static void logger_biobj_signal_restart(coco_problem_t *problem);
-static void logger_biobj_data_nullify_observer(void *logger_data);
+static void logger_biobj_detach_observer(coco_problem_t *problem);
 
 /**
  * @brief The bbob-biobj observer data type.
@@ -55,9 +55,7 @@ static void observer_biobj_data_free(void *stuff) {
   /* Make sure that the observed problem's pointer to the observer points to NULL */
   if (data->observed_problem != NULL) {
     problem = (coco_problem_t *)data->observed_problem;
-    if (problem->data != NULL) {
-      logger_biobj_data_nullify_observer(coco_problem_transformed_get_data(problem));
-    }
+    logger_biobj_detach_observer(problem);
     data->observed_problem = NULL;
   }
 

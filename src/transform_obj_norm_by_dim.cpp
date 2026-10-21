@@ -10,24 +10,27 @@
 #include "coco_problem.cpp"
 
 /**
- * @brief Evaluates the transformation.
+ * @brief Normalizes the objective value of the inner problem by the dimension.
  */
-static void transform_obj_norm_by_dim_evaluate(coco_problem_t *problem, const double *x, double *y) {
+struct transform_obj_norm_by_dim_t final : public coco_problem_transformed_t {
+  explicit transform_obj_norm_by_dim_t(coco_problem_t *inner_problem)
+      : coco_problem_transformed_t(inner_problem, "transform_obj_norm_by_dim") {}
 
-  coco_evaluate_function(coco_problem_transformed_get_inner_problem(problem), x, y);
-  y[0] *= bbob2009_fmin(1, 40. / ((double)problem->number_of_variables));
-  /* Wassim: might want to use a function (with no 40) here that we can put in a helpers file */
+  /**
+   * @brief Evaluates the transformation.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    coco_evaluate_function(inner_problem, x, y);
+    y[0] *= bbob2009_fmin(1, 40. / ((double)number_of_variables));
+    /* Wassim: might want to use a function (with no 40) here that we can put in a helpers file */
 
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Creates the transformation.
  */
 static coco_problem_t *transform_obj_norm_by_dim(coco_problem_t *inner_problem) {
-  coco_problem_t *problem;
-
-  problem = coco_problem_transformed_allocate(inner_problem, NULL, NULL, "transform_obj_norm_by_dim");
-  problem->evaluate_function = transform_obj_norm_by_dim_evaluate;
-  return problem;
+  return new transform_obj_norm_by_dim_t(inner_problem);
 }

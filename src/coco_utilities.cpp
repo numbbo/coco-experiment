@@ -1082,12 +1082,11 @@ static int coco_is_feasible(coco_problem_t *problem, const double *x, double *co
     return 1;
 
   assert(problem != NULL);
-  assert(problem->evaluate_constraint != NULL);
 
   if (constraint_values == NULL)
     cons_values = coco_allocate_vector(problem->number_of_constraints);
 
-  problem->evaluate_constraint(problem, x, cons_values, 0);
+  problem->evaluate_constraint(x, cons_values, 0);
 
   for (i = 0; i < coco_problem_get_number_of_constraints(problem); ++i) {
     if (cons_values[i] > 0.0) {

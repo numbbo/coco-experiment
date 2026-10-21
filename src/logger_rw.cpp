@@ -49,6 +49,8 @@ typedef struct {
   int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
 } logger_rw_data_t;
 
+static logger_rw_data_t *logger_rw_get_data(const coco_problem_t *problem);
+
 /**
  * @brief Evaluates the function and constraints and outputs the information according to the
  * observer options.
@@ -62,7 +64,7 @@ static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double 
   int log_this_time = 1;
   time_t start, end;
 
-  logger = (logger_rw_data_t *)coco_problem_transformed_get_data(problem);
+  logger = logger_rw_get_data(problem);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   /* Time the evaluations */
@@ -79,7 +81,7 @@ static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double 
   /* Evaluate the constraints */
   if (problem->number_of_constraints > 0) {
     constraints = coco_allocate_vector(problem->number_of_constraints);
-    inner_problem->evaluate_constraint(inner_problem, x, constraints, 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
   }
   logger->num_cons_evaluations = problem->evaluations_constraints;
 
@@ -137,6 +139,28 @@ static void logger_rw_free(void *stuff) {
 }
 
 /**
+ * @brief The rw logger, which wraps the observed problem.
+ */
+struct logger_rw_t final : public coco_problem_transformed_t {
+  logger_rw_data_t data;
+
+  logger_rw_t(coco_problem_t *inner_problem, const char *observer_name)
+      : coco_problem_transformed_t(inner_problem, observer_name), data() {}
+
+  ~logger_rw_t() override { logger_rw_free(&data); }
+
+  void evaluate_function(const double *x, double *y) override { logger_rw_evaluate(this, x, y); }
+};
+
+/**
+ * @brief Returns the data of the logger.
+ */
+static logger_rw_data_t *logger_rw_get_data(const coco_problem_t *problem) {
+  assert(dynamic_cast<const logger_rw_t *>(problem) != NULL);
+  return &static_cast<logger_rw_t *>(const_cast<coco_problem_t *>(problem))->data;
+}
+
+/**
  * @brief Initializes the rw logger.
  *
  * Copies all observer field values that are needed after initialization into logger field values for two
@@ -147,12 +171,13 @@ static void logger_rw_free(void *stuff) {
  */
 static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inner_problem) {
 
-  coco_problem_t *problem;
+  logger_rw_t *problem;
   logger_rw_data_t *logger_data;
   observer_rw_data_t *observer_data;
   char *path_name, *file_name = NULL;
 
-  logger_data = (logger_rw_data_t *)coco_allocate_memory(sizeof(*logger_data));
+  problem = new logger_rw_t(inner_problem, observer->observer_name.c_str());
+  logger_data = &problem->data;
   logger_data->num_func_evaluations = 0;
   logger_data->num_cons_evaluations = 0;
 
@@ -219,8 +244,6 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
     fprintf(logger_data->out_file, " | evaluation time (s)");
   fprintf(logger_data->out_file, "\n");
 
-  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_rw_free, observer->observer_name.c_str());
-  problem->evaluate_function = logger_rw_evaluate;
 
   return problem;
 }

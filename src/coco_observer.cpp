@@ -869,10 +869,8 @@ coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_obser
   }
   coco_free_memory(prefix);
 
-  /* Keep the inner problem and remove the logger data */
-  problem_unobserved = coco_problem_transformed_get_inner_problem(problem);
-  coco_problem_transformed_free_data(problem);
-  problem = NULL;
+  /* Keep the inner problem and free the logger */
+  problem_unobserved = coco_problem_transformed_free_keep_inner(problem);
 
   return problem_unobserved;
 }

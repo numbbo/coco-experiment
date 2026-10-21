@@ -72,7 +72,6 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, cons
   coco_problem_t *problem_cont = NULL, *problem = NULL;
   coco_problem_t *problem1, *problem2;
   coco_problem_t *problem1_mixint, *problem2_mixint;
-  coco_problem_t *problem1_cont, *problem2_cont;
 
   double *smallest_values_of_interest = coco_allocate_vector(dimension);
   double *largest_values_of_interest = coco_allocate_vector(dimension);
@@ -90,20 +89,13 @@ static coco_problem_t *coco_get_biobj_mixint_problem(const size_t function, cons
   problem_cont = coco_get_biobj_problem(function, dimension, instance, coco_get_problem_function, new_inst_data,
                                         num_new_instances, dimensions, num_dimensions);
   assert(problem_cont != NULL);
-  problem1_cont = ((coco_problem_stacked_data_t *)problem_cont->data)->problem1;
-  problem2_cont = ((coco_problem_stacked_data_t *)problem_cont->data)->problem2;
-  problem1 = coco_problem_duplicate(problem1_cont);
-  problem2 = coco_problem_duplicate(problem2_cont);
+  /* Take the two single-objective problems out of the stacked problem and free only the latter */
+  problem1 = coco_problem_as_stacked(problem_cont)->problem1;
+  problem2 = coco_problem_as_stacked(problem_cont)->problem2;
   assert(problem1);
   assert(problem2);
-  /* Copy also the data of the underlying problems and set all pointers in such a way that
-   * problem_cont can be safely freed */
-  problem1->data = problem1_cont->data;
-  problem2->data = problem2_cont->data;
-  problem1_cont->data = NULL;
-  problem2_cont->data = NULL;
-  problem1_cont->problem_free_function = NULL;
-  problem2_cont->problem_free_function = NULL;
+  coco_problem_as_stacked(problem_cont)->problem1 = NULL;
+  coco_problem_as_stacked(problem_cont)->problem2 = NULL;
   coco_problem_free(problem_cont);
 
   /* Set the ROI of the outer problem according to the given cardinality of variables and the ROI of the

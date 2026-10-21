@@ -10,46 +10,40 @@
 #include "coco_problem.cpp"
 
 /**
- * @brief Data type for transform_obj_power.
+ * @brief Raises the objective value(s) of the inner problem to the power of an exponent.
  */
-typedef struct {
-  double exponent;
-} transform_obj_power_data_t;
+struct transform_obj_power_t final : public coco_problem_transformed_t {
+  const double exponent;
 
-/**
- * @brief Evaluates the transformation.
- */
-static void transform_obj_power_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  transform_obj_power_data_t *data;
-  size_t i;
-
-  if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-    coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
-    return;
+  transform_obj_power_t(coco_problem_t *inner_problem, const double exponent)
+      : coco_problem_transformed_t(inner_problem, "transform_obj_power"), exponent(exponent) {
+    /* Compute best value */
+    evaluate_function(best_parameter.data(), best_value.data());
   }
 
-  data = (transform_obj_power_data_t *)coco_problem_transformed_get_data(problem);
-  coco_evaluate_function(coco_problem_transformed_get_inner_problem(problem), x, y);
+  /**
+   * @brief Evaluates the transformation.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    size_t i;
 
-  for (i = 0; i < problem->number_of_objectives; i++) {
-    y[i] = pow(y[i], data->exponent);
+    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
+      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      return;
+    }
+
+    coco_evaluate_function(inner_problem, x, y);
+
+    for (i = 0; i < number_of_objectives; i++) {
+      y[i] = pow(y[i], exponent);
+    }
+    assert(y[0] + 1e-13 >= best_value[0]);
   }
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+};
 
 /**
  * @brief Creates the transformation.
  */
 static coco_problem_t *transform_obj_power(coco_problem_t *inner_problem, const double exponent) {
-  transform_obj_power_data_t *data;
-  coco_problem_t *problem;
-
-  data = (transform_obj_power_data_t *)coco_allocate_memory(sizeof(*data));
-  data->exponent = exponent;
-
-  problem = coco_problem_transformed_allocate(inner_problem, data, NULL, "transform_obj_power");
-  problem->evaluate_function = transform_obj_power_evaluate;
-  /* Compute best value */
-  transform_obj_power_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+  return new transform_obj_power_t(inner_problem, exponent);
 }

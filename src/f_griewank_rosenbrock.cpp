@@ -53,32 +53,37 @@ static double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The Griewank-Rosenbrock function.
  */
-static void f_griewank_rosenbrock_evaluate(coco_problem_t *problem,
-                                           const double *x, double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_griewank_rosenbrock_raw(x, problem->number_of_variables, (f_griewank_rosenbrock_data_t *)problem->data);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_griewank_rosenbrock_t final : public coco_problem_s {
+  f_griewank_rosenbrock_data_t params;
+
+  f_griewank_rosenbrock_t(const size_t number_of_variables, double facftrue)
+      : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "Griewank Rosenbrock function", -5.0, 5.0, 1);
+    coco_problem_set_id(this, "%s_d%02lu", "griewank_rosenbrock", number_of_variables);
+
+    params.facftrue = facftrue;
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_griewank_rosenbrock_raw(x, number_of_variables, &params);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Allocates the basic Griewank-Rosenbrock problem.
  */
 static coco_problem_t *f_griewank_rosenbrock_allocate(const size_t number_of_variables, double facftrue) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars(
-      "Griewank Rosenbrock function", f_griewank_rosenbrock_evaluate, NULL, number_of_variables, -5.0, 5.0, 1);
-  coco_problem_set_id(problem, "%s_d%02lu", "griewank_rosenbrock", number_of_variables);
-
-  f_griewank_rosenbrock_data_t *data;
-  data = (f_griewank_rosenbrock_data_t *)coco_allocate_memory(sizeof(*data));
-  data->facftrue = facftrue;
-  problem->data = data;
-  /* Compute best solution */
-  f_griewank_rosenbrock_evaluate(problem, problem->best_parameter.data(),
-                                 problem->best_value.data());
-  return problem;
+  return new f_griewank_rosenbrock_t(number_of_variables, facftrue);
 }
 
 /**

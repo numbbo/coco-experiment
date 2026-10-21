@@ -57,43 +57,48 @@ static double f_weierstrass_raw(const double *x,
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The Weierstrass function.
  */
-static void f_weierstrass_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_weierstrass_raw(x, problem->number_of_variables, (f_weierstrass_data_t *)problem->data);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_weierstrass_t final : public coco_problem_s {
+  f_weierstrass_data_t params;
+
+  explicit f_weierstrass_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
+    size_t i;
+    double *non_unique_best_value;
+
+    coco_problem_init_from_scalars(this, "Weierstrass function", -5.0, 5.0, 0.);
+    coco_problem_set_id(this, "%s_d%02lu", "weierstrass", number_of_variables);
+
+    params.f0 = 0.0;
+    for (i = 0; i < F_WEIERSTRASS_SUMMANDS; ++i) {
+      params.ak[i] = pow(0.5, (double)i);
+      params.bk[i] = pow(3., (double)i);
+      params.f0 += params.ak[i] * cos(2 * coco_pi * params.bk[i] * 0.5);
+    }
+
+    /* Compute best solution */
+    non_unique_best_value = coco_allocate_vector(number_of_variables);
+    for (i = 0; i < number_of_variables; i++)
+      non_unique_best_value[i] = 0.0;
+    evaluate_function(non_unique_best_value, best_value.data());
+    coco_free_memory(non_unique_best_value);
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_weierstrass_raw(x, number_of_variables, &params);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Allocates the basic Weierstrass problem.
  */
-static coco_problem_t *
-f_weierstrass_allocate(const size_t number_of_variables) {
-
-  f_weierstrass_data_t *data;
-  size_t i;
-  double *non_unique_best_value;
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("Weierstrass function", f_weierstrass_evaluate, NULL,
-                                                               number_of_variables, -5.0, 5.0, 0.);
-  coco_problem_set_id(problem, "%s_d%02lu", "weierstrass", number_of_variables);
-
-  data = (f_weierstrass_data_t *)coco_allocate_memory(sizeof(*data));
-  data->f0 = 0.0;
-  for (i = 0; i < F_WEIERSTRASS_SUMMANDS; ++i) {
-    data->ak[i] = pow(0.5, (double)i);
-    data->bk[i] = pow(3., (double)i);
-    data->f0 += data->ak[i] * cos(2 * coco_pi * data->bk[i] * 0.5);
-  }
-  problem->data = data;
-
-  /* Compute best solution */
-  non_unique_best_value = coco_allocate_vector(number_of_variables);
-  for (i = 0; i < number_of_variables; i++)
-    non_unique_best_value[i] = 0.0;
-  f_weierstrass_evaluate(problem, non_unique_best_value, problem->best_value.data());
-  coco_free_memory(non_unique_best_value);
-  return problem;
+static coco_problem_t *f_weierstrass_allocate(const size_t number_of_variables) {
+  return new f_weierstrass_t(number_of_variables);
 }
 
 /**

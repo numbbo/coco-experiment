@@ -83,37 +83,6 @@ typedef coco_problem_t *(*coco_get_problem_function_t)(const size_t function, co
                                                        const size_t instance);
 
 /**
- * @brief The transformed COCO problem data type.
- *
- * This is a type of a generic structure for a transformed ("outer") coco_problem. It makes possible the
- * wrapping of problems as layers of an onion. Initialized in the coco_problem_transformed_allocate function,
- * it makes the current ("outer") transformed problem a "derived problem class", which inherits from the
- * "inner" problem, the "base class".
- *
- * From the perspective of the inner problem:
- * - data holds the meta-information to administer the inheritance
- * - data->data holds the additional fields of the derived class (the outer problem)
- * - data->inner_problem points to the inner problem (now we have a linked list)
- */
-typedef struct {
-  coco_problem_t *inner_problem;                /**< @brief Pointer to the inner problem */
-  void *data;                                   /**< @brief Pointer to data, which enables further
-                                                wrapping of the problem */
-  coco_data_free_function_t data_free_function; /**< @brief Function to free the contents of data */
-} coco_problem_transformed_data_t;
-
-/**
- * @brief The stacked COCO problem data type.
- *
- * This is a type of a structure used when stacking two problems (especially useful for constructing
- * multi-objective problems).
- */
-typedef struct {
-  coco_problem_t *problem1; /**< @brief Pointer to the first problem (objective) */
-  coco_problem_t *problem2; /**< @brief Pointer to the second problem (objective) */
-} coco_problem_stacked_data_t;
-
-/**
  * @brief The option keys data type.
  *
  * This is a type of a structure used to contain a set of known option keys (used by suites and observers).
@@ -135,11 +104,37 @@ typedef struct {
  */
 struct coco_problem_s {
 
-  coco_evaluate_function_t evaluate_function;     /**< @brief  The function for evaluating the problem. */
-  coco_evaluate_c_function_t evaluate_constraint; /**< @brief  The function for evaluating the constraints. */
-  coco_evaluate_function_t evaluate_gradient; /**< @brief  The function for evaluating the gradient of the function. */
-  coco_recommend_function_t recommend_solution;       /**< @brief  The function for recommending a solution. */
-  coco_problem_free_function_t problem_free_function; /**< @brief  The function for freeing this problem. */
+  coco_problem_s(const size_t number_of_variables, const size_t number_of_objectives,
+                 const size_t number_of_constraints);
+  virtual ~coco_problem_s() = default;
+
+  /**
+   * @brief Evaluates the objective function(s) at x and stores the result in y.
+   *
+   * Does not check x or update any counters, see coco_evaluate_function() for that.
+   */
+  virtual void evaluate_function(const double *x, double *y);
+
+  /**
+   * @brief Evaluates the constraints at x and stores the result in y.
+   *
+   * Does not check x or update the counter of this problem, see coco_evaluate_constraint_optional_update().
+   */
+  virtual void evaluate_constraint(const double *x, double *y, int update_counter);
+
+  /** @brief Evaluates the gradient of the objective function at x and stores the result in y. */
+  virtual void evaluate_gradient(const double *x, double *y);
+
+  /** @brief Logs the recommended solution x. */
+  virtual void recommend_solution(const double *x);
+
+  /* The functions used by the default implementations of the methods above. They are being replaced by
+   * subclasses overriding the methods and will be removed. */
+  coco_evaluate_function_t legacy_evaluate_function;         /**< @brief The function for evaluating the problem. */
+  coco_evaluate_c_function_t legacy_evaluate_constraint;     /**< @brief The function for evaluating the constraints. */
+  coco_evaluate_function_t legacy_evaluate_gradient;         /**< @brief The function for evaluating the gradient. */
+  coco_recommend_function_t legacy_recommend_solution;       /**< @brief The function for recommending a solution. */
+  coco_problem_free_function_t legacy_problem_free_function; /**< @brief The function for freeing this problem. */
 
   size_t number_of_variables;   /**< @brief Number of variables expected by the function, i.e.
                                 problem dimension */
@@ -189,6 +184,39 @@ struct coco_problem_s {
   void *versatile_data; /* Wassim: *< @brief pointer to eventual additional data that need to be accessed all along the
                            transformations*/
 };
+
+/**
+ * @brief A transformed ("outer") COCO problem that wraps an inner problem.
+ *
+ * Transformations wrap problems like the layers of an onion. A transformed problem starts out as a copy of the
+ * properties of its inner problem and by default forwards all evaluations to it. It owns the inner problem.
+ */
+struct coco_problem_transformed_s : public coco_problem_s {
+  coco_problem_transformed_s(coco_problem_t *inner_problem, const char *name_prefix);
+  ~coco_problem_transformed_s() override;
+
+  coco_problem_t *inner_problem; /**< @brief The inner problem, owned by this problem */
+
+  /* The data of transformations that are not yet subclasses of this class */
+  void *legacy_data;                                   /**< @brief Data of the transformation */
+  coco_data_free_function_t legacy_data_free_function; /**< @brief Function to free the contents of legacy_data */
+};
+typedef struct coco_problem_transformed_s coco_problem_transformed_t;
+
+/**
+ * @brief A problem constructed by stacking two problems.
+ *
+ * Especially useful for constructing multi-objective problems or adding constraints to a problem. It owns
+ * both problems.
+ */
+struct coco_problem_stacked_s : public coco_problem_s {
+  coco_problem_stacked_s(coco_problem_t *problem1, coco_problem_t *problem2);
+  ~coco_problem_stacked_s() override;
+
+  coco_problem_t *problem1; /**< @brief The first problem (objective) */
+  coco_problem_t *problem2; /**< @brief The second problem (objective or constraints) */
+};
+typedef struct coco_problem_stacked_s coco_problem_stacked_t;
 
 /**
  * @brief The COCO observer structure.

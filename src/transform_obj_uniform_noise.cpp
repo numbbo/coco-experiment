@@ -2,55 +2,50 @@
  * @file transform_obj_uniform_noise.cpp
  * @brief Implementation of the Uniform noise model
  */
+
 #include "coco.h"
 #include "suite_bbob_noisy_utilities.cpp"
 
 /**
- @brief Data type for transform_obj_uniform_noise
+ * @brief Applies multiplicative uniform noise to the objective value of the inner problem.
  */
-typedef struct {
-  double alpha;
-  double beta;
-} transform_obj_uniform_noise_data_t;
+struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
+  const double alpha;
+  const double beta;
 
-/**
- * @brief Evaluates the transformed objective function by applying uniform multiplicative noise.
- */
-static void transform_obj_uniform_noise_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
-  double uniform_noise_term1, uniform_noise_term2;
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  double fopt = inner_problem->best_value[0];
-  transform_obj_uniform_noise_data_t *data;
-  data = (transform_obj_uniform_noise_data_t *)coco_problem_transformed_get_data(problem);
-  uniform_noise_term1 = coco_sample_uniform_noise();
-  uniform_noise_term2 = coco_sample_uniform_noise();
-  double uniform_noise_factor = pow(uniform_noise_term1, data->beta);
-  inner_problem->evaluate_function(inner_problem, x, y);
-  for (size_t i = 0; i < problem->number_of_objectives; i++) {
-    problem->last_noise_free_values[i] = y[i];
+  transform_obj_uniform_noise_t(coco_problem_t *inner_problem, const double alpha, const double beta)
+      : coco_problem_transformed_t(inner_problem, "uniform_noise_model"), alpha(alpha), beta(beta) {
+    is_noisy = 1;
   }
-  *(y) = *(y)-fopt;
-  double scaling_factor = 1e9 / (*(y) + 1e-99);
-  scaling_factor = pow(scaling_factor, data->alpha * uniform_noise_term2);
-  scaling_factor = scaling_factor > 1 ? scaling_factor : 1;
-  double uniform_noise = uniform_noise_factor * scaling_factor;
-  double tol = 1e-8;
-  *(y) = *(y)*uniform_noise + 1.01 * tol;
-  *(y) = *(y) + fopt + coco_boundary_handling(problem, x);
-}
+
+  /**
+   * @brief Evaluates the transformed objective function by applying uniform multiplicative noise.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    double uniform_noise_term1, uniform_noise_term2;
+    double fopt = inner_problem->best_value[0];
+    uniform_noise_term1 = coco_sample_uniform_noise();
+    uniform_noise_term2 = coco_sample_uniform_noise();
+    double uniform_noise_factor = pow(uniform_noise_term1, beta);
+    inner_problem->evaluate_function(x, y);
+    for (size_t i = 0; i < number_of_objectives; i++) {
+      last_noise_free_values[i] = y[i];
+    }
+    *(y) = *(y)-fopt;
+    double scaling_factor = 1e9 / (*(y) + 1e-99);
+    scaling_factor = pow(scaling_factor, alpha * uniform_noise_term2);
+    scaling_factor = scaling_factor > 1 ? scaling_factor : 1;
+    double uniform_noise = uniform_noise_factor * scaling_factor;
+    double tol = 1e-8;
+    *(y) = *(y)*uniform_noise + 1.01 * tol;
+    *(y) = *(y) + fopt + coco_boundary_handling(this, x);
+  }
+};
 
 /**
  * @brief Allocates a noisy problem with uniform noise.
  */
 static coco_problem_t *transform_obj_uniform_noise(coco_problem_t *inner_problem, const double alpha,
                                                    const double beta) {
-  coco_problem_t *problem;
-  transform_obj_uniform_noise_data_t *data;
-  data = (transform_obj_uniform_noise_data_t *)coco_allocate_memory(sizeof(*data));
-  data->alpha = alpha;
-  data->beta = beta;
-  problem = coco_problem_transformed_allocate(inner_problem, data, NULL, "uniform_noise_model");
-  problem->evaluate_function = transform_obj_uniform_noise_evaluate_function;
-  problem->is_noisy = 1;
-  return problem;
+  return new transform_obj_uniform_noise_t(inner_problem, alpha, beta);
 }

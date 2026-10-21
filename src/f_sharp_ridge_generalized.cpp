@@ -18,24 +18,11 @@
 #include "transform_vars_shift.cpp"
 
 /**
- * @brief Data type for the versatile_data_t
+ * @brief Parameters of the sharp ridge function.
  */
 typedef struct {
   size_t proportion_of_linear_dims;
-} f_sharp_ridge_generalized_versatile_data_t;
-
-/**
- * @brief allows to free the versatile_data part of the problem.
- */
-static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *problem) {
-
-  f_sharp_ridge_generalized_versatile_data_t *versatile_data =
-      (f_sharp_ridge_generalized_versatile_data_t *)problem->versatile_data;
-  coco_free_memory(versatile_data);
-  problem->versatile_data = NULL;
-  problem->problem_free_function = NULL;
-  coco_problem_free(problem);
-}
+} f_sharp_ridge_generalized_data_t;
 
 /**
  * @brief Implements the generalized sharp ridge function without connections to
@@ -43,7 +30,7 @@ static void f_sharp_ridge_generalized_versatile_data_free(coco_problem_t *proble
  */
 static double
 f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
-                              f_sharp_ridge_generalized_versatile_data_t *f_sharp_ridge_generalized_versatile_data) {
+                              f_sharp_ridge_generalized_data_t *data) {
 
   static const double alpha = 100.0;
   size_t i = 0, number_linear_dimensions;
@@ -57,9 +44,9 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
   result = 0.0;
   number_linear_dimensions =
       number_of_variables /
-      f_sharp_ridge_generalized_versatile_data->proportion_of_linear_dims;
+      data->proportion_of_linear_dims;
   if (number_of_variables %
-          f_sharp_ridge_generalized_versatile_data->proportion_of_linear_dims !=
+          data->proportion_of_linear_dims !=
       0) {
     number_linear_dimensions += 1;
   }
@@ -75,36 +62,38 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The sharp ridge function.
  */
-static void f_sharp_ridge_generalized_evaluate(coco_problem_t *problem,
-                                               const double *x, double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_sharp_ridge_generalized_raw(x, problem->number_of_variables,
-                                       (f_sharp_ridge_generalized_versatile_data_t *)problem->versatile_data);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_sharp_ridge_generalized_t final : public coco_problem_s {
+  f_sharp_ridge_generalized_data_t params;
+
+  f_sharp_ridge_generalized_t(const size_t number_of_variables, size_t proportion_of_linear_dims)
+      : coco_problem_s(number_of_variables, 1, 0) {
+    /* Wassim: proportion_of_linear_dims should probably be allowed to be non-integer */
+    coco_problem_init_from_scalars(this, "sharp ridge function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "sharp_ridge_generalized", number_of_variables);
+    params.proportion_of_linear_dims = proportion_of_linear_dims;
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_sharp_ridge_generalized_raw(x, number_of_variables, &params);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Allocates the basic sharp ridge problem.
  */
 static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
                                                           size_t proportion_of_linear_dims) {
-  /* Wassim: proportion_of_linear_dims should probably be allowed to be non-integer */
-  coco_problem_t *problem = coco_problem_allocate_from_scalars(
-      "sharp ridge function", f_sharp_ridge_generalized_evaluate, f_sharp_ridge_generalized_versatile_data_free,
-      number_of_variables, -5.0, 5.0, 0.0);
-
-  coco_problem_set_id(problem, "%s_d%02lu", "sharp_ridge_generalized", number_of_variables);
-  problem->versatile_data = (f_sharp_ridge_generalized_versatile_data_t *)coco_allocate_memory(
-      sizeof(f_sharp_ridge_generalized_versatile_data_t));
-  ((f_sharp_ridge_generalized_versatile_data_t *)problem->versatile_data)->proportion_of_linear_dims =
-      proportion_of_linear_dims;
-
-  /* Compute best solution */
-  f_sharp_ridge_generalized_evaluate(problem, problem->best_parameter.data(),
-                                     problem->best_value.data());
-  return problem;
+  return new f_sharp_ridge_generalized_t(number_of_variables, proportion_of_linear_dims);
 }
 
 

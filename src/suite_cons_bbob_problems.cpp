@@ -205,8 +205,7 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -276,8 +275,7 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -350,8 +348,7 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -430,8 +427,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
    */
   problem = transform_vars_shift(problem, xopt, 1);
 
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -497,8 +493,7 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -571,8 +566,7 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -644,8 +638,7 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -715,8 +708,7 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.
@@ -789,8 +781,7 @@ static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
    */
   for (i = 0; i < dimension; ++i)
     problem->best_parameter[i] = 0.0;
-  assert(problem->evaluate_function != NULL);
-  problem->evaluate_function(problem, problem->best_parameter.data(), problem->best_value.data());
+  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   /* To be sure that everything is correct, reset the f-evaluations
    * and g-evaluations counters to zero.

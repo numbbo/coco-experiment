@@ -94,6 +94,8 @@ typedef struct {
 
 } logger_bbob_old_data_t;
 
+static logger_bbob_old_data_t *logger_bbob_old_get_data(const coco_problem_t *problem);
+
 /**
  * @brief Discretized constraint value, ~8 + log10(c), in a single digit.
  *
@@ -410,7 +412,7 @@ static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, d
   size_t i;
   double y_logged, max_fvalue, sum_cons;
   double *cons = NULL;
-  logger_bbob_old_data_t *logger = (logger_bbob_old_data_t *)coco_problem_transformed_get_data(problem);
+  logger_bbob_old_data_t *logger = logger_bbob_old_get_data(problem);
   coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
   const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, NULL);
 
@@ -441,7 +443,7 @@ static void logger_bbob_old_evaluate(coco_problem_t *problem, const double *x, d
   /* Evaluate the constraints */
   if (problem->number_of_constraints > 0) {
     cons = coco_allocate_vector(problem->number_of_constraints);
-    inner_problem->evaluate_constraint(inner_problem, x, cons, 0);
+    inner_problem->evaluate_constraint(x, cons, 0);
   }
 
   /* Compute the sum of positive constraint values */
@@ -564,11 +566,34 @@ static void logger_bbob_old_free(void *stuff) {
   bbob_old_logger_is_open = 0;
 }
 
+/**
+ * @brief The bbob-old logger, which wraps the observed problem.
+ */
+struct logger_bbob_old_t final : public coco_problem_transformed_t {
+  logger_bbob_old_data_t data;
+
+  logger_bbob_old_t(coco_problem_t *inner_problem, const char *observer_name)
+      : coco_problem_transformed_t(inner_problem, observer_name), data() {}
+
+  ~logger_bbob_old_t() override { logger_bbob_old_free(&data); }
+
+  void evaluate_function(const double *x, double *y) override { logger_bbob_old_evaluate(this, x, y); }
+};
+
+/**
+ * @brief Returns the data of the logger.
+ */
+static logger_bbob_old_data_t *logger_bbob_old_get_data(const coco_problem_t *problem) {
+  assert(dynamic_cast<const logger_bbob_old_t *>(problem) != NULL);
+  return &static_cast<logger_bbob_old_t *>(const_cast<coco_problem_t *>(problem))->data;
+}
+
 static coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t *inner_problem) {
   logger_bbob_old_data_t *logger_data;
-  coco_problem_t *problem;
+  logger_bbob_old_t *problem;
 
-  logger_data = (logger_bbob_old_data_t *)coco_allocate_memory(sizeof(*logger_data));
+  problem = new logger_bbob_old_t(inner_problem, observer->observer_name.c_str());
+  logger_data = &problem->data;
   logger_data->observer = observer;
 
   if (inner_problem->number_of_objectives != 1) {
@@ -614,10 +639,6 @@ static coco_problem_t *logger_bbob_old(coco_observer_t *observer, coco_problem_t
   logger_data->evaluations = coco_observer_evaluations(
     observer->number_evaluation_triggers, observer->base_evaluation_triggers.c_str(), inner_problem->number_of_variables);
 
-  problem =
-      coco_problem_transformed_allocate(inner_problem, logger_data, logger_bbob_old_free, observer->observer_name.c_str());
-
-  problem->evaluate_function = logger_bbob_old_evaluate;
   bbob_old_logger_is_open = 1;
   return problem;
 }

@@ -45,7 +45,7 @@ MU_TEST(test_logger_bbob_triggers) {
   observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
-  logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);
+  logger = logger_bbob_get_data(problem);
 
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
@@ -96,7 +96,7 @@ MU_TEST(test_logger_bbob_triggers) {
   observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 1e-3 log_target_precision: 1e-5");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
-  logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);
+  logger = logger_bbob_get_data(problem);
 
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
@@ -147,7 +147,7 @@ MU_TEST(test_logger_bbob_triggers) {
   observer = coco_observer("bbob", "number_target_triggers: 1 lin_target_precision: 10 log_target_precision: 1e-5");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
-  logger = (logger_bbob_data_t *) coco_problem_transformed_get_data(problem);
+  logger = logger_bbob_get_data(problem);
 
   x[0] = 0.252; x[1] = -1.156;
   coco_evaluate_function(problem, x, y);

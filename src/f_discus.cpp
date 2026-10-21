@@ -35,41 +35,45 @@ static double f_discus_raw(const double *x, const size_t number_of_variables) {
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The discus function.
  */
-static void f_discus_evaluate(coco_problem_t *problem, const double *x,
-                              double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_discus_raw(x, problem->number_of_variables);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_discus_t final : public coco_problem_s {
+  explicit f_discus_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "discus function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "discus", number_of_variables);
 
-/**
- * @brief Evaluates the gradient of the discus function.
- */
-static void f_discus_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
 
-  static const double condition = 1.0e6;
-  size_t i;
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_discus_raw(x, number_of_variables);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
 
-  y[0] = condition * 2.0 * x[0];
-  for (i = 1; i < problem->number_of_variables; ++i)
-    y[i] = 2.0 * x[i];
-}
+  /**
+   * @brief Evaluates the gradient of the discus function.
+   */
+  void evaluate_gradient(const double *x, double *y) override {
+
+    static const double condition = 1.0e6;
+    size_t i;
+
+    y[0] = condition * 2.0 * x[0];
+    for (i = 1; i < number_of_variables; ++i)
+      y[i] = 2.0 * x[i];
+  }
+};
 
 /**
  * @brief Allocates the basic discus problem.
  */
 static coco_problem_t *f_discus_allocate(const size_t number_of_variables) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("discus function", f_discus_evaluate, NULL,
-                                                               number_of_variables, -5.0, 5.0, 0.0);
-  problem->evaluate_gradient = f_discus_evaluate_gradient;
-  coco_problem_set_id(problem, "%s_d%02lu", "discus", number_of_variables);
-
-  /* Compute best solution */
-  f_discus_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+  return new f_discus_t(number_of_variables);
 }
 
 /**

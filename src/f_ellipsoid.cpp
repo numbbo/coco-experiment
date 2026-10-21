@@ -47,45 +47,50 @@ static double f_ellipsoid_raw(const double *x, const size_t number_of_variables,
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The ellipsoid function.
  */
-static void f_ellipsoid_evaluate(coco_problem_t *problem, const double *x,
-                                 double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_ellipsoid_raw(x, problem->number_of_variables, (f_ellipsoid_data_t *)problem->data);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_ellipsoid_t final : public coco_problem_s {
+  f_ellipsoid_data_t params;
 
-/**
- * @brief Evaluates the gradient of the ellipsoid function.
- */
-static void f_ellipsoid_evaluate_gradient(coco_problem_t *problem, const double *x, double *y) {
+  f_ellipsoid_t(const size_t number_of_variables, const double conditioning)
+      : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "ellipsoid function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "ellipsoid", number_of_variables);
 
-  double exponent;
-  size_t i = 0;
-  
-  for (i = 0; i < problem->number_of_variables; ++i) {
-    exponent = 1.0 * (double)(long)i / ((double)(long)problem->number_of_variables - 1.0);
-    y[i] = 2.0 * pow(((f_ellipsoid_data_t *)problem->data)->conditioning, exponent) * x[i];
+    params.conditioning = conditioning;
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
   }
-}
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_ellipsoid_raw(x, number_of_variables, &params);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+
+  /**
+   * @brief Evaluates the gradient of the ellipsoid function.
+   */
+  void evaluate_gradient(const double *x, double *y) override {
+    double exponent;
+    size_t i = 0;
+
+    for (i = 0; i < number_of_variables; ++i) {
+      exponent = 1.0 * (double)(long)i / ((double)(long)number_of_variables - 1.0);
+      y[i] = 2.0 * pow(params.conditioning, exponent) * x[i];
+    }
+  }
+};
 
 /**
  * @brief Allocates the basic ellipsoid problem.
  */
 static coco_problem_t *f_ellipsoid_allocate(const size_t number_of_variables, const double conditioning) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("ellipsoid function", f_ellipsoid_evaluate, NULL,
-                                                               number_of_variables, -5.0, 5.0, 0.0);
-  problem->evaluate_gradient = f_ellipsoid_evaluate_gradient;
-  coco_problem_set_id(problem, "%s_d%02lu", "ellipsoid", number_of_variables);
-  f_ellipsoid_data_t *data;
-  data = (f_ellipsoid_data_t *)coco_allocate_memory(sizeof(*data));
-  data->conditioning = conditioning;
-  problem->data = data;
-  /* Compute best solution */
-  f_ellipsoid_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+  return new f_ellipsoid_t(number_of_variables, conditioning);
 }
 
 /**

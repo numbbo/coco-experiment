@@ -34,41 +34,44 @@ static double f_sphere_raw(const double *x, const size_t number_of_variables) {
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The sphere function.
  */
-static void f_sphere_evaluate(coco_problem_t *problem, const double *x,
-                              double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_sphere_raw(x, problem->number_of_variables);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_sphere_t final : public coco_problem_s {
+  explicit f_sphere_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "sphere function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "sphere", number_of_variables);
 
-/**
- * @brief Evaluates the gradient of the sphere function.
- */
-static void f_sphere_evaluate_gradient(coco_problem_t *problem, const double *x,
-                                       double *y) {
-
-  size_t i;
-
-  for (i = 0; i < problem->number_of_variables; ++i) {
-    y[i] = 2.0 * x[i];
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
   }
-}
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_sphere_raw(x, number_of_variables);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+
+  /**
+   * @brief Evaluates the gradient of the sphere function.
+   */
+  void evaluate_gradient(const double *x, double *y) override {
+
+    size_t i;
+
+    for (i = 0; i < number_of_variables; ++i) {
+      y[i] = 2.0 * x[i];
+    }
+  }
+};
 
 /**
  * @brief Allocates the basic sphere problem.
  */
 static coco_problem_t *f_sphere_allocate(const size_t number_of_variables) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("sphere function", f_sphere_evaluate, NULL,
-                                                               number_of_variables, -5.0, 5.0, 0.0);
-  problem->evaluate_gradient = f_sphere_evaluate_gradient;
-  coco_problem_set_id(problem, "%s_d%02lu", "sphere", number_of_variables);
-
-  /* Compute best solution */
-  f_sphere_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+  return new f_sphere_t(number_of_variables);
 }
 
 /**

@@ -10,79 +10,50 @@
 #include "transform_vars_permutation_helpers.cpp"
 
 /**
- * @brief Data type for transform_vars_permutation.
+ * @brief Permutes the decision values (or applies the inverse permutation).
  */
-typedef struct {
-  double *x;
-  size_t *P; /**< @brief the permutation matrices*/
-} transform_vars_permutation_t;
+struct transform_vars_permutation_t final : public coco_problem_transformed_t {
+  const bool inverse;
+  std::vector<double> permuted_x;    /**< @brief The permuted decision values */
+  std::vector<size_t> P; /**< @brief the permutation matrices*/
 
-static void transform_vars_permutation_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  size_t i;
-  transform_vars_permutation_t *data;
-  coco_problem_t *inner_problem;
+  transform_vars_permutation_t(coco_problem_t *inner_problem, const size_t *P, const size_t number_of_variables,
+                               const bool inverse)
+      : coco_problem_transformed_t(inner_problem, inverse ? "transform_vars_inverse_permutation"
+                                                          : "transform_vars_permutation"),
+        inverse(inverse), permuted_x(number_of_variables), P(P, P + number_of_variables) {}
 
-  data = (transform_vars_permutation_t *)coco_problem_transformed_get_data(problem);
-  inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  for (i = 0; i < inner_problem->number_of_variables; ++i) {
-    data->x[i] = x[data->P[i]];
+  void evaluate_function(const double *x, double *y) override {
+    size_t i;
+
+    if (inverse) {
+      for (i = 0; i < inner_problem->number_of_variables; ++i) {
+        permuted_x[P[i]] = x[i];
+      }
+    } else {
+      for (i = 0; i < inner_problem->number_of_variables; ++i) {
+        permuted_x[i] = x[P[i]];
+      }
+    }
+    coco_evaluate_function(inner_problem, permuted_x.data(), y);
+    assert(y[0] + 1e-13 >= best_value[0]);
   }
+};
 
-  coco_evaluate_function(inner_problem, data->x, y);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
-
-static void transform_vars_permutation_free(void *thing) {
-  transform_vars_permutation_t *data = (transform_vars_permutation_t *)thing;
-  coco_free_memory(data->x);
-  coco_free_memory(data->P);
-}
-
+/**
+ * @brief Creates the transformation.
+ */
 static coco_problem_t *transform_vars_permutation(coco_problem_t *inner_problem, const size_t *P,
                                                   const size_t number_of_variables) {
-  coco_problem_t *problem;
-  transform_vars_permutation_t *data;
-
   assert(number_of_variables == inner_problem->number_of_variables); /*tmp*/
-
-  data = (transform_vars_permutation_t *)coco_allocate_memory(sizeof(*data));
-  data->x = coco_allocate_vector(number_of_variables);
-  data->P = coco_duplicate_size_t_vector(P, number_of_variables);
-
-  problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_permutation_free,
-                                              "transform_vars_permutation");
-  problem->evaluate_function = transform_vars_permutation_evaluate;
-  return problem;
+  return new transform_vars_permutation_t(inner_problem, P, number_of_variables, false);
 }
 
-static void transform_vars_inverse_permutation_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  size_t i;
-  transform_vars_permutation_t *data;
-  coco_problem_t *inner_problem;
-
-  data = (transform_vars_permutation_t *)coco_problem_transformed_get_data(problem);
-  inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  for (i = 0; i < inner_problem->number_of_variables; ++i) {
-    data->x[data->P[i]] = x[i];
-  }
-
-  coco_evaluate_function(inner_problem, data->x, y);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
-
+/**
+ * @brief Creates the inverse transformation.
+ */
 static coco_problem_t *transform_vars_inverse_permutation(coco_problem_t *inner_problem, const size_t *P,
                                                           const size_t number_of_variables) {
-  coco_problem_t *problem;
-  transform_vars_permutation_t *data;
-
   assert(number_of_variables == inner_problem->number_of_variables);
-
-  data = (transform_vars_permutation_t *)coco_allocate_memory(sizeof(*data));
-  data->x = coco_allocate_vector(number_of_variables);
-  data->P = coco_duplicate_size_t_vector(P, number_of_variables);
-
-  problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_permutation_free,
-                                              "transform_vars_inverse_permutation");
-  problem->evaluate_function = transform_vars_inverse_permutation_evaluate;
-  return problem;
+  return new transform_vars_permutation_t(inner_problem, P, number_of_variables, true);
 }

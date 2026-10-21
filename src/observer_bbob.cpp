@@ -9,7 +9,7 @@
 static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *problem);
 static void logger_bbob_free(void *logger);
 static void logger_bbob_signal_restart(coco_problem_t *problem);
-static void logger_bbob_data_nullify_observer(void *logger_data);
+static void logger_bbob_detach_observer(coco_problem_t *problem);
 
 /**
  * @brief The bbob observer data type.
@@ -52,9 +52,7 @@ static void observer_bbob_data_free(void *stuff) {
   /* Make sure that the observed problem's pointer to the observer points to NULL */
   if (data->observed_problem != NULL) {
     problem = (coco_problem_t *)data->observed_problem;
-    if (problem->data != NULL) {
-      logger_bbob_data_nullify_observer(coco_problem_transformed_get_data(problem));
-    }
+    logger_bbob_detach_observer(problem);
     data->observed_problem = NULL;
   }
 

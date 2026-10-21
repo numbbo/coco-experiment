@@ -10,41 +10,47 @@
 #include "coco_problem.cpp"
 
 /**
- * @brief Evaluates the transformation.
+ * @brief Oscillates the objective value(s) of the inner problem.
  */
-static void transform_obj_oscillate_evaluate(coco_problem_t *problem, const double *x, double *y) {
-  static const double factor = 0.1;
-  size_t i;
-
-  if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-    coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
-    return;
+struct transform_obj_oscillate_t final : public coco_problem_transformed_t {
+  explicit transform_obj_oscillate_t(coco_problem_t *inner_problem)
+      : coco_problem_transformed_t(inner_problem, "transform_obj_oscillate") {
+    /* Compute best value */
+    /* Maybe not the most efficient solution */
+    evaluate_function(best_parameter.data(), best_value.data());
   }
-  coco_evaluate_function(coco_problem_transformed_get_inner_problem(problem), x, y);
 
-  for (i = 0; i < problem->number_of_objectives; i++) {
-    if (y[i] != 0) {
-      double log_y;
-      log_y = log(fabs(y[i])) / factor;
-      if (y[i] > 0) {
-        y[i] = pow(exp(log_y + 0.49 * (sin(log_y) + sin(0.79 * log_y))), factor);
-      } else {
-        y[i] = -pow(exp(log_y + 0.49 * (sin(0.55 * log_y) + sin(0.31 * log_y))), factor);
+  /**
+   * @brief Evaluates the transformation.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    static const double factor = 0.1;
+    size_t i;
+
+    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
+      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      return;
+    }
+    coco_evaluate_function(inner_problem, x, y);
+
+    for (i = 0; i < number_of_objectives; i++) {
+      if (y[i] != 0) {
+        double log_y;
+        log_y = log(fabs(y[i])) / factor;
+        if (y[i] > 0) {
+          y[i] = pow(exp(log_y + 0.49 * (sin(log_y) + sin(0.79 * log_y))), factor);
+        } else {
+          y[i] = -pow(exp(log_y + 0.49 * (sin(0.55 * log_y) + sin(0.31 * log_y))), factor);
+        }
       }
     }
+    assert(y[0] + 1e-13 >= best_value[0]);
   }
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+};
 
 /**
  * @brief Creates the transformation.
  */
 static coco_problem_t *transform_obj_oscillate(coco_problem_t *inner_problem) {
-  coco_problem_t *problem;
-  problem = coco_problem_transformed_allocate(inner_problem, NULL, NULL, "transform_obj_oscillate");
-  problem->evaluate_function = transform_obj_oscillate_evaluate;
-  /* Compute best value */
-  /* Maybe not the most efficient solution */
-  transform_obj_oscillate_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+  return new transform_obj_oscillate_t(inner_problem);
 }

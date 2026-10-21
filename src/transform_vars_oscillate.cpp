@@ -14,14 +14,6 @@
 #include "brentq.cpp"
 
 /**
- * @brief Data type for transform_vars_oscillate.
- */
-typedef struct {
-  double alpha;
-  double *oscillated_x;
-} transform_vars_oscillate_data_t;
-
-/**
  * @brief Data type for univariate function tosz_uv
  */
 typedef struct {
@@ -58,117 +50,108 @@ static double tosz_uv_inv(double yi, tosz_data *d) {
 }
 
 /**
- * @brief Multivariate, coordinate-wise, oscillating non-linear transformation.
+ * @brief Applies the oscillating non-linear transformation to the decision values.
  */
-static void tosz(transform_vars_oscillate_data_t *data, const double *x, size_t number_of_variables) {
-  size_t i;
-  tosz_data *d;
-  d = (tosz_data *)coco_allocate_memory(sizeof(*d));
+struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
+  const double alpha;
+  std::vector<double> oscillated_x;
 
-  d->alpha = data->alpha;
+  explicit transform_vars_oscillate_t(coco_problem_t *inner_problem)
+      : coco_problem_transformed_t(inner_problem, "transform_vars_oscillate"), alpha(0.1),
+        oscillated_x(inner_problem->number_of_variables) {}
 
-  for (i = 0; i < number_of_variables; ++i) {
-    data->oscillated_x[i] = tosz_uv(x[i], d);
-  }
-  coco_free_memory(d);
-}
+  /**
+   * @brief Multivariate, coordinate-wise, oscillating non-linear transformation.
+   */
+  void tosz(const double *x) {
+    size_t i;
+    tosz_data d;
 
-/**
- * @brief Evaluates the transformed objective functions.
- */
-static void transform_vars_oscillate_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
-  double *cons_values;
-  int is_feasible;
-  transform_vars_oscillate_data_t *data;
-  coco_problem_t *inner_problem;
+    d.alpha = alpha;
 
-  if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-    coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(problem));
-    return;
-  }
-
-  data = (transform_vars_oscillate_data_t *)coco_problem_transformed_get_data(problem);
-
-  inner_problem = coco_problem_transformed_get_inner_problem(problem);
-
-  tosz(data, x, problem->number_of_variables);
-
-  coco_evaluate_function(inner_problem, data->oscillated_x, y);
-
-  if (problem->number_of_constraints > 0) {
-    cons_values = coco_allocate_vector(problem->number_of_constraints);
-    is_feasible = coco_is_feasible(problem, x, cons_values);
-    coco_free_memory(cons_values);
-    if (is_feasible)
-      assert(y[0] + 1e-13 >= problem->best_value[0]);
-  } else
-    assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
-
-/**
- * @brief Evaluates the transformed constraints.
- */
-static void transform_vars_oscillate_evaluate_constraint(coco_problem_t *problem, const double *x, double *y,
-                                                         int update_counter) {
-  static const double alpha = 0.1;
-  double tmp, base, *oscillated_x;
-  size_t i;
-  transform_vars_oscillate_data_t *data;
-  coco_problem_t *inner_problem;
-
-  if (coco_vector_contains_nan(x, coco_problem_get_dimension(problem))) {
-    coco_vector_set_to_nan(y, coco_problem_get_number_of_constraints(problem));
-    return;
-  }
-
-  data = (transform_vars_oscillate_data_t *)coco_problem_transformed_get_data(problem);
-  oscillated_x = data->oscillated_x; /* short cut to make code more readable */
-  inner_problem = coco_problem_transformed_get_inner_problem(problem);
-
-  for (i = 0; i < problem->number_of_variables; ++i) {
-    if (x[i] > 0.0) {
-      tmp = log(x[i]) / alpha;
-      base = exp(tmp + 0.49 * (sin(tmp) + sin(0.79 * tmp)));
-      oscillated_x[i] = pow(base, alpha);
-    } else if (x[i] < 0.0) {
-      tmp = log(-x[i]) / alpha;
-      base = exp(tmp + 0.49 * (sin(0.55 * tmp) + sin(0.31 * tmp)));
-      oscillated_x[i] = -pow(base, alpha);
-    } else {
-      oscillated_x[i] = 0.0;
+    for (i = 0; i < number_of_variables; ++i) {
+      oscillated_x[i] = tosz_uv(x[i], &d);
     }
   }
-  inner_problem->evaluate_constraint(inner_problem, oscillated_x, y, update_counter);
-}
 
-/**
- * @brief Frees the data object.
- */
-static void transform_vars_oscillate_free(void *thing) {
-  transform_vars_oscillate_data_t *data = (transform_vars_oscillate_data_t *)thing;
-  coco_free_memory(data->oscillated_x);
-}
+  /**
+   * @brief Evaluates the transformed objective functions.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    double *cons_values;
+    int is_feasible;
+
+    if (inner_problem->number_of_objectives == 0) {
+      coco_evaluate_function(inner_problem, x, y);
+      return;
+    }
+
+    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
+      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      return;
+    }
+
+    tosz(x);
+
+    coco_evaluate_function(inner_problem, oscillated_x.data(), y);
+
+    if (number_of_constraints > 0) {
+      cons_values = coco_allocate_vector(number_of_constraints);
+      is_feasible = coco_is_feasible(this, x, cons_values);
+      coco_free_memory(cons_values);
+      if (is_feasible)
+        assert(y[0] + 1e-13 >= best_value[0]);
+    } else
+      assert(y[0] + 1e-13 >= best_value[0]);
+  }
+
+  /**
+   * @brief Evaluates the transformed constraints.
+   */
+  void evaluate_constraint(const double *x, double *y, int update_counter) override {
+    double tmp, base;
+    size_t i;
+
+    if (inner_problem->number_of_constraints == 0) {
+      coco_evaluate_constraint_optional_update(inner_problem, x, y, update_counter);
+      return;
+    }
+
+    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
+      coco_vector_set_to_nan(y, coco_problem_get_number_of_constraints(this));
+      return;
+    }
+
+    for (i = 0; i < number_of_variables; ++i) {
+      if (x[i] > 0.0) {
+        tmp = log(x[i]) / alpha;
+        base = exp(tmp + 0.49 * (sin(tmp) + sin(0.79 * tmp)));
+        oscillated_x[i] = pow(base, alpha);
+      } else if (x[i] < 0.0) {
+        tmp = log(-x[i]) / alpha;
+        base = exp(tmp + 0.49 * (sin(0.55 * tmp) + sin(0.31 * tmp)));
+        oscillated_x[i] = -pow(base, alpha);
+      } else {
+        oscillated_x[i] = 0.0;
+      }
+    }
+    inner_problem->evaluate_constraint(oscillated_x.data(), y, update_counter);
+  }
+};
 
 /**
  * @brief Creates the transformation.
  */
 static coco_problem_t *transform_vars_oscillate(coco_problem_t *inner_problem) {
-  transform_vars_oscillate_data_t *data;
-  coco_problem_t *problem;
-  data = (transform_vars_oscillate_data_t *)coco_allocate_memory(sizeof(*data));
-  data->alpha = 0.1;
-  data->oscillated_x = coco_allocate_vector(inner_problem->number_of_variables);
+  return new transform_vars_oscillate_t(inner_problem);
+}
 
-  problem =
-      coco_problem_transformed_allocate(inner_problem, data, transform_vars_oscillate_free, "transform_vars_oscillate");
-
-  if (inner_problem->number_of_objectives > 0)
-    problem->evaluate_function = transform_vars_oscillate_evaluate_function;
-
-  if (inner_problem->number_of_constraints > 0)
-    problem->evaluate_constraint = transform_vars_oscillate_evaluate_constraint;
-
-  return problem;
+/**
+ * @brief Returns the oscillating transformation behind the given problem pointer.
+ */
+static transform_vars_oscillate_t *transform_vars_oscillate_get(coco_problem_t *problem) {
+  assert(dynamic_cast<transform_vars_oscillate_t *>(problem) != NULL);
+  return static_cast<transform_vars_oscillate_t *>(problem);
 }
 
 /**
@@ -188,14 +171,12 @@ static void transform_inv_initial_oscillate(coco_problem_t *problem, const doubl
   double *sol = NULL;
   double halving_factor = .5;
 
-  transform_vars_oscillate_data_t *data;
   tosz_data *d;
 
   sol = coco_allocate_vector(problem->number_of_variables);
   d = (tosz_data *)coco_allocate_memory(sizeof(*d));
 
-  data = (transform_vars_oscillate_data_t *)coco_problem_transformed_get_data(problem);
-  d->alpha = data->alpha;
+  d->alpha = transform_vars_oscillate_get(problem)->alpha;
 
   j = 0;
   while (1) {

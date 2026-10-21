@@ -44,28 +44,32 @@ static double f_sharp_ridge_raw(const double *x,
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
+ * @brief The sharp ridge function.
  */
-static void f_sharp_ridge_evaluate(coco_problem_t *problem, const double *x,
-                                   double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_sharp_ridge_raw(x, problem->number_of_variables);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
+struct f_sharp_ridge_t final : public coco_problem_s {
+  explicit f_sharp_ridge_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "sharp ridge function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "sharp_ridge", number_of_variables);
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_sharp_ridge_raw(x, number_of_variables);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
+};
 
 /**
  * @brief Allocates the basic sharp ridge problem.
  */
-static coco_problem_t *
-f_sharp_ridge_allocate(const size_t number_of_variables) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("sharp ridge function", f_sharp_ridge_evaluate, NULL,
-                                                               number_of_variables, -5.0, 5.0, 0.0);
-  coco_problem_set_id(problem, "%s_d%02lu", "sharp_ridge", number_of_variables);
-
-  /* Compute best solution */
-  f_sharp_ridge_evaluate(problem, problem->best_parameter.data(), problem->best_value.data());
-  return problem;
+static coco_problem_t *f_sharp_ridge_allocate(const size_t number_of_variables) {
+  return new f_sharp_ridge_t(number_of_variables);
 }
 
 /**

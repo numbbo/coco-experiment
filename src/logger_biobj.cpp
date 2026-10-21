@@ -148,6 +148,8 @@ typedef struct {
   /**< @brief The implemented indicators. */
 } logger_biobj_data_t;
 
+static logger_biobj_data_t *logger_biobj_get_data(const coco_problem_t *problem);
+
 /**
  * @brief The type for the node's item in the AVL tree as used by the bi-objective logger.
  *
@@ -755,7 +757,7 @@ static void logger_biobj_evaluate(coco_problem_t *problem, const double *x, doub
   coco_problem_t *inner_problem;
   double *constraints = NULL;
 
-  logger = (logger_biobj_data_t *)coco_problem_transformed_get_data(problem);
+  logger = logger_biobj_get_data(problem);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
   /* Evaluate the objectives */
@@ -765,7 +767,7 @@ static void logger_biobj_evaluate(coco_problem_t *problem, const double *x, doub
   /* Evaluate the constraints */
   if (problem->number_of_constraints > 0) {
     constraints = coco_allocate_vector(problem->number_of_constraints);
-    inner_problem->evaluate_constraint(inner_problem, x, constraints, 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
   }
   logger->num_cons_evaluations = problem->evaluations_constraints;
 
@@ -810,7 +812,7 @@ static void logger_biobj_recommend(coco_problem_t *problem, const double *x) {
   double *y = NULL;
   double *constraints = NULL;
 
-  logger = (logger_biobj_data_t *)coco_problem_transformed_get_data(problem);
+  logger = logger_biobj_get_data(problem);
   observer_data = (observer_biobj_data_t *)(((coco_observer_t *)logger->observer)->data);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
 
@@ -821,7 +823,7 @@ static void logger_biobj_recommend(coco_problem_t *problem, const double *x) {
   /* Evaluate the constraints */
   if (problem->number_of_constraints > 0) {
     constraints = coco_allocate_vector(problem->number_of_constraints);
-    inner_problem->evaluate_constraint(inner_problem, x, constraints, 0);
+    inner_problem->evaluate_constraint(x, constraints, 0);
   }
   logger->num_cons_evaluations = problem->evaluations_constraints;
 
@@ -878,7 +880,7 @@ int coco_logger_biobj_feed_solution(coco_problem_t *problem, const size_t evalua
   size_t i;
 
   assert(problem != NULL);
-  logger = (logger_biobj_data_t *)coco_problem_transformed_get_data(problem);
+  logger = logger_biobj_get_data(problem);
   inner_problem = coco_problem_transformed_get_inner_problem(problem);
   assert(logger->log_nondom_mode == LOG_NONDOM_READ);
 
@@ -1004,11 +1006,34 @@ static void logger_biobj_data_nullify_observer(void *stuff) {
  */
 static void logger_biobj_signal_restart(coco_problem_t *problem) {
 
-  logger_biobj_data_t *logger = (logger_biobj_data_t *)coco_problem_transformed_get_data(problem);
+  logger_biobj_data_t *logger = logger_biobj_get_data(problem);
   assert(logger);
 
   if (logger->num_func_evaluations > 0)
     logger->algorithm_restarted = 1;
+}
+
+/**
+ * @brief The biobj logger, which wraps the observed problem.
+ */
+struct logger_biobj_t final : public coco_problem_transformed_t {
+  logger_biobj_data_t data;
+
+  logger_biobj_t(coco_problem_t *inner_problem, const char *observer_name)
+      : coco_problem_transformed_t(inner_problem, observer_name), data() {}
+
+  ~logger_biobj_t() override { logger_biobj_free(&data); }
+
+  void evaluate_function(const double *x, double *y) override { logger_biobj_evaluate(this, x, y); }
+  void recommend_solution(const double *x) override { logger_biobj_recommend(this, x); }
+};
+
+/**
+ * @brief Returns the data of the logger.
+ */
+static logger_biobj_data_t *logger_biobj_get_data(const coco_problem_t *problem) {
+  assert(dynamic_cast<const logger_biobj_t *>(problem) != NULL);
+  return &static_cast<logger_biobj_t *>(const_cast<coco_problem_t *>(problem))->data;
 }
 
 /**
@@ -1018,9 +1043,16 @@ static void logger_biobj_signal_restart(coco_problem_t *problem) {
  * because if the observer is deleted before the suite, the observer is not available anymore when
  * the logger is finalized.
  */
+/**
+ * @brief Makes the logger forget its observer, which is being freed.
+ */
+static void logger_biobj_detach_observer(coco_problem_t *problem) {
+  logger_biobj_data_nullify_observer(logger_biobj_get_data(problem));
+}
+
 static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *inner_problem) {
 
-  coco_problem_t *problem;
+  logger_biobj_t *problem;
   logger_biobj_data_t *logger_data;
   observer_biobj_data_t *observer_data;
   const char nondom_folder_name[] = "archive";
@@ -1043,7 +1075,8 @@ static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *i
     coco_error("logger_biobj(): The observed problem must be closed before a new problem can be observed");
   }
 
-  logger_data = (logger_biobj_data_t *)coco_allocate_memory(sizeof(*logger_data));
+  problem = new logger_biobj_t(inner_problem, observer->observer_name.c_str());
+  logger_data = &problem->data;
 
   logger_data->observer = observer;
   logger_data->num_func_evaluations = 0;
@@ -1120,9 +1153,6 @@ static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *i
     observer_data->previous_dimension = (long)inner_problem->number_of_variables;
   }
 
-  problem = coco_problem_transformed_allocate(inner_problem, logger_data, logger_biobj_free, observer->observer_name.c_str());
-  problem->evaluate_function = logger_biobj_evaluate;
-  problem->recommend_solution = logger_biobj_recommend;
 
   /* Initialize the file with recommendations */
 

@@ -103,6 +103,6 @@ static coco_problem_t *transform_vars_permblockdiag(coco_problem_t *inner_proble
 
   problem = coco_problem_transformed_allocate(inner_problem, data, transform_vars_permblockdiag_free,
                                               "transform_vars_permblockdiag");
-  problem->evaluate_function = transform_vars_permblockdiag_evaluate;
+  problem->legacy_evaluate_function = transform_vars_permblockdiag_evaluate;
   return problem;
 }

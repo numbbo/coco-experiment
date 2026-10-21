@@ -40,16 +40,6 @@ static double f_different_powers_raw(const double *x,
 }
 
 /**
- * @brief Uses the raw function to evaluate the COCO problem.
- */
-static void f_different_powers_evaluate(coco_problem_t *problem,
-                                        const double *x, double *y) {
-  assert(problem->number_of_objectives == 1);
-  y[0] = f_different_powers_raw(x, problem->number_of_variables);
-  assert(y[0] + 1e-13 >= problem->best_value[0]);
-}
-
-/**
  * @brief Implements the sign function.
  */
 double sign(double x) {
@@ -62,44 +52,55 @@ double sign(double x) {
 }
 
 /**
- * @brief Evaluates the gradient of the function "different powers".
+ * @brief The different powers function.
  */
-static void f_different_powers_evaluate_gradient(coco_problem_t *problem,
-                                                 const double *x, double *y) {
+struct f_different_powers_t final : public coco_problem_s {
+  explicit f_different_powers_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
+    coco_problem_init_from_scalars(this, "different powers function", -5.0, 5.0, 0.0);
+    coco_problem_set_id(this, "%s_d%02lu", "different_powers",
+                        number_of_variables);
 
-  size_t i;
-  double sum = 0.0;
-  double aux;
-
-  for (i = 0; i < problem->number_of_variables; ++i) {
-    aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)problem->number_of_variables - 1.0);
-    sum += pow(fabs(x[i]), aux);
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
   }
 
-  for (i = 0; i < problem->number_of_variables; ++i) {
-    aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)problem->number_of_variables - 1.0);
-    y[i] = 0.5 * (aux) / (sum);
-    aux -= 1.0;
-    y[i] *= pow(fabs(x[i]), aux) * sign(x[i]);
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = f_different_powers_raw(x, number_of_variables);
+    assert(y[0] + 1e-13 >= best_value[0]);
   }
-}
+
+  /**
+   * @brief Evaluates the gradient of the function "different powers".
+   */
+  void evaluate_gradient(const double *x, double *y) override {
+
+    size_t i;
+    double sum = 0.0;
+    double aux;
+
+    for (i = 0; i < number_of_variables; ++i) {
+      aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
+      sum += pow(fabs(x[i]), aux);
+    }
+
+    for (i = 0; i < number_of_variables; ++i) {
+      aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
+      y[i] = 0.5 * (aux) / (sum);
+      aux -= 1.0;
+      y[i] *= pow(fabs(x[i]), aux) * sign(x[i]);
+    }
+  }
+};
 
 /**
  * @brief Allocates the basic different powers problem.
  */
-static coco_problem_t *
-f_different_powers_allocate(const size_t number_of_variables) {
-
-  coco_problem_t *problem = coco_problem_allocate_from_scalars("different powers function", f_different_powers_evaluate,
-                                                               NULL, number_of_variables, -5.0, 5.0, 0.0);
-  problem->evaluate_gradient = f_different_powers_evaluate_gradient;
-  coco_problem_set_id(problem, "%s_d%02lu", "different_powers",
-                      number_of_variables);
-
-  /* Compute best solution */
-  f_different_powers_evaluate(problem, problem->best_parameter.data(),
-                              problem->best_value.data());
-  return problem;
+static coco_problem_t *f_different_powers_allocate(const size_t number_of_variables) {
+  return new f_different_powers_t(number_of_variables);
 }
 
 /**
