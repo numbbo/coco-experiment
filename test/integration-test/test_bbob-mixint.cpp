@@ -74,7 +74,7 @@ void run_once(const char *suite_name, const char *suite_options, const char *obs
 void check_discretization_single(const char *suite_name, const char *suite_options) {
 
   coco_suite_t *suite;
-  coco_problem_t *problem_cont, *problem_disc, *problem_tmp;
+  coco_problem_t *problem_disc;
   size_t j, k1, k2, k3, k4;
   const double *xopt_cont;
   double fopt_cont, fopt_disc;
@@ -83,6 +83,7 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
   size_t all_points;
   size_t matching_roi, counter = 0;
   const size_t MAX_NUM = 20000;
+  const double roi_bound = 5; /* ROI of the continuous variables */
 
   x = coco_allocate_vector(5);
   f = coco_allocate_vector(1);
@@ -106,8 +107,9 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
         all_points *= num_points[j];
       } else {
         num_points[j] = 1;
-        matching_roi = matching_roi && DoubleAlmostEqual(FromC(problem_disc)->largest_values_of_interest()[j],
-                                                         FromC(problem_disc)->largest_values_of_interest()[j], 1e-10);
+        matching_roi = matching_roi &&
+                       DoubleAlmostEqual(FromC(problem_disc)->smallest_values_of_interest()[j], -roi_bound, 1e-10) &&
+                       DoubleAlmostEqual(FromC(problem_disc)->largest_values_of_interest()[j], roi_bound, 1e-10);
       }
     }
 
@@ -121,11 +123,10 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
       continue;
     }
 
-    /* Compute and compare the optima */
-    problem_tmp = ProblemAsTransformed(FromC(problem_disc))->inner_problem();
-    problem_cont = ProblemAsTransformed(FromC(problem_tmp))->inner_problem();
-    xopt_cont = FromC(problem_cont)->best_parameter().data();
-    fopt_cont = FromC(problem_cont)->best_value()[0];
+    /* Compute and compare the optima. The continuous variables of the optimum and its (scaled) value are
+     * those of the continuous problem. */
+    xopt_cont = FromC(problem_disc)->best_parameter().data();
+    fopt_cont = FromC(problem_disc)->best_value()[0];
     fopt_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? xopt_cont[0] : (double)j);
@@ -146,7 +147,6 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
         }
       }
     }
-    fopt_cont *= SUITE_BBOB_MIXINT_SCALING_FACTORS[ProblemGetSuiteDepFunction(FromC(problem_disc)) - 1];
     if (!DoubleAlmostEqual(fopt_cont, fopt_disc, 1e-10)) {
       coco_free_memory(x);
       coco_free_memory(f);
@@ -176,17 +176,14 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
  * discrete points and checks only the extreme solutions (even if they match, the transformation
  * could be wrong).
  *
- * Note also that this test assumes that the discretization was done on single-objective problems
- * before they were stacked to form bi-objective problems, i.e. the 'wrapping' order was:
- * stacking(scale(discretize(problem1)), scale(discretize(problem2)))
+ * The extreme solutions are those of the two objectives of the bi-objective problem, which are
+ * discretized (and scaled) single-objective problems.
  */
 void check_discretization_bi(const char *suite_name, const char *suite_options) {
 
   coco_suite_t *suite;
   coco_problem_t *problem_disc;
-  coco_problem_t *problem1_disc, *problem2_disc;
-  coco_problem_t *problem1_cont, *problem2_cont;
-  coco_problem_t *problem1_tmp, *problem2_tmp;
+  const Problem *objective1, *objective2;
   size_t j, k1, k2, k3, k4;
   const double *x_ext_cont;
   double f_ext1_cont, f_ext2_cont;
@@ -196,6 +193,7 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
   size_t all_points = 1;
   size_t matching_roi, counter = 0;
   const size_t MAX_NUM = 20000;
+  const double roi_bound = 100; /* ROI of the continuous variables */
 
   x = coco_allocate_vector(5);
   f = coco_allocate_vector(2);
@@ -219,8 +217,9 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
         all_points *= num_points[j];
       } else {
         num_points[j] = 1;
-        matching_roi = matching_roi && DoubleAlmostEqual(FromC(problem_disc)->largest_values_of_interest()[j],
-                                                         FromC(problem_disc)->largest_values_of_interest()[j], 1e-10);
+        matching_roi = matching_roi &&
+                       DoubleAlmostEqual(FromC(problem_disc)->smallest_values_of_interest()[j], -roi_bound, 1e-10) &&
+                       DoubleAlmostEqual(FromC(problem_disc)->largest_values_of_interest()[j], roi_bound, 1e-10);
       }
     }
 
@@ -235,17 +234,17 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     }
 
     /* Check whether the two extreme points are equal */
-    problem1_disc = static_cast<BiobjProblem *>(FromC(problem_disc))->objective1();
-    problem2_disc = static_cast<BiobjProblem *>(FromC(problem_disc))->objective2();
-    problem1_tmp = ProblemAsTransformed(FromC(problem1_disc))->inner_problem();
-    problem2_tmp = ProblemAsTransformed(FromC(problem2_disc))->inner_problem();
-    problem1_cont = ProblemAsTransformed(FromC(problem1_tmp))->inner_problem();
-    problem2_cont = ProblemAsTransformed(FromC(problem2_tmp))->inner_problem();
-    f_ext1_cont = FromC(problem1_cont)->best_value()[0];
-    f_ext2_cont = FromC(problem2_cont)->best_value()[0];
+    BiobjProblem *biobj = dynamic_cast<BiobjProblem *>(FromC(problem_disc));
+    if (biobj == nullptr)
+      coco_error("check_discretization_bi(): Problem %s is not a bi-objective problem",
+                 coco_problem_get_id(problem_disc));
+    objective1 = biobj->objective1();
+    objective2 = biobj->objective2();
+    f_ext1_cont = objective1->best_value()[0];
+    f_ext2_cont = objective2->best_value()[0];
 
     /* The first extreme point */
-    x_ext_cont = FromC(problem1_cont)->best_parameter().data();
+    x_ext_cont = objective1->best_parameter().data();
     f_ext1_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? x_ext_cont[0] : (double)j);
@@ -266,7 +265,6 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
         }
       }
     }
-    f_ext1_cont *= SUITE_BBOB_MIXINT_SCALING_FACTORS[ProblemGetSuiteDepFunction(FromC(problem1_disc)) - 1];
     if (!DoubleAlmostEqual(f_ext1_cont, f_ext1_disc, 1e-10)) {
       coco_free_memory(x);
       coco_free_memory(f);
@@ -276,7 +274,7 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     }
 
     /* The second extreme point */
-    x_ext_cont = FromC(problem2_cont)->best_parameter().data();
+    x_ext_cont = objective2->best_parameter().data();
     f_ext2_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? x_ext_cont[0] : (double)j);
@@ -297,7 +295,6 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
         }
       }
     }
-    f_ext2_cont *= SUITE_BBOB_MIXINT_SCALING_FACTORS[ProblemGetSuiteDepFunction(FromC(problem2_disc)) - 1];
     if (!DoubleAlmostEqual(f_ext2_cont, f_ext2_disc, 1e-10)) {
       coco_free_memory(x);
       coco_free_memory(f);

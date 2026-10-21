@@ -145,6 +145,26 @@ private:
  */
 static constexpr size_t COCO_MAX_EVALS_TO_LOG = 1000;
 
+/**
+ * @brief Discretized constraint value, ~8 + log10(c), in a single digit.
+ *
+ * -\infty..0 -> 0
+ *    0..1e-7 -> 1
+ * 1e-7..1e-6 -> 2
+ *    ...
+ * 1e-1..1    -> 8
+ *   >1       -> 9
+ */
+static int SingleDigitConstraintValue(const double c) {
+  const double limits[9] = {0, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1};
+  int i;
+
+  for (i = 0; i < 9; ++i)
+    if (c <= limits[i])
+      return i;
+  return 9;
+}
+
 /***********************************************************************************************************/
 
 /**
@@ -393,8 +413,49 @@ bool ObserverEvaluations::Trigger(const size_t evaluation_number) {
 
 /***********************************************************************************************************/
 
-void Observer::SignalRestart(Problem *) {
-  coco_info("coco_observer_signal_restart(): Restart signaling not supported for observer %s", observer_name.c_str());
+Observer::~Observer() {
+  for (Logger *logger : loggers_)
+    logger->observer_ = nullptr;
+}
+
+void Observer::SignalRestart(Problem *problem) {
+  Logger *logger = LoggerOf(problem);
+  if (logger == nullptr) {
+    coco_warning("coco_observer_signal_restart(): Problem %s is not observed by observer %s",
+                 problem == nullptr ? "NULL" : problem->id().c_str(), observer_name.c_str());
+    return;
+  }
+  logger->SignalRestart();
+}
+
+Logger *Observer::LoggerOf(const Problem *problem) const {
+  for (Logger *logger : loggers_)
+    if (logger == problem)
+      return logger;
+  return nullptr;
+}
+
+ProblemPtr Observer::RemoveLogger(ProblemPtr problem) {
+  Logger *logger = LoggerOf(problem.get());
+  if (logger == nullptr)
+    coco_error("coco_problem_remove_observer(): Problem %s is not observed by observer %s",
+               problem == nullptr ? "NULL" : problem->id().c_str(), observer_name.c_str());
+  return logger->ReleaseInnerProblem(); /* The logger is freed with problem */
+}
+
+Logger::Logger(Observer &observer, ProblemPtr inner)
+    : TransformedProblem(std::move(inner), observer.name()), observer_(&observer) {
+  observer.loggers_.push_back(this);
+}
+
+Logger::~Logger() {
+  if (observer_ != nullptr)
+    std::erase(observer_->loggers_, this);
+}
+
+void Logger::SignalRestart() {
+  coco_info("coco_observer_signal_restart(): Restart signaling not supported for observer %s",
+            observer_ == nullptr ? "" : observer_->name().c_str());
 }
 
 } // namespace coco
@@ -716,21 +777,8 @@ coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_obser
     return FromC(problem);
   }
 
-  /* Check that we are removing the observer that is actually wrapping the
-   * problem.
-   *
-   * This is a hack - it assumes that the name of the problem is formatted as
-   * "observer_name(problem_name)". While not elegant, it does the job and is
-   * better than nothing. */
-  const std::string prefix = coco::RemoveFromString(FromC(problem)->name(), "(", "");
-  if (prefix != FromC(observer)->name()) {
-    coco_error("coco_problem_remove_observer(): trying to remove observer %s "
-               "instead of %s",
-               FromC(observer)->name().c_str(), prefix.c_str());
-  }
-
   /* Keep the inner problem and free the logger */
-  return ProblemTransformedFreeKeepInner(coco::ProblemPtr(FromC(problem))).release();
+  return FromC(observer)->RemoveLogger(coco::ProblemPtr(FromC(problem))).release();
 }
 
 /**

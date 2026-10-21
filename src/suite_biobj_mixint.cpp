@@ -16,13 +16,6 @@
 namespace coco {
 
 /**
- * @brief Sets the instances associated with years for the bbob-biobj-mixint suites.
- *
- * @note The instances of the bi-objective suites generally do not changes with years.
- */
-static std::string_view SuiteBiobjMixintGetInstancesByYear(const int) { return "1-15"; }
-
-/**
  * @brief Creates and returns a mixed-integer bi-objective bbob problem without needing the actual
  * bbob-mixint suite.
  *
@@ -84,8 +77,8 @@ static ProblemPtr GetBiobjMixintProblem(const size_t function, const size_t dime
     }
   }
 
-  const size_t function1 = ProblemGetSuiteDepFunction(problem1.get());
-  const size_t function2 = ProblemGetSuiteDepFunction(problem2.get());
+  const size_t function1 = problem1->suite_dep_function();
+  const size_t function2 = problem2->suite_dep_function();
 
   /* Second, discretize the single-objective problems */
   problem1_mixint = std::make_unique<TransformVarsDiscretize>(std::move(problem1), smallest_values_of_interest,
@@ -113,11 +106,9 @@ static ProblemPtr GetBiobjMixintProblem(const size_t function, const size_t dime
  */
 class SuiteBiobjMixint final : public Suite {
 public:
-  using Suite::Suite;
+  SuiteBiobjMixint() : Suite("bbob-biobj-mixint", 92, {5, 10, 20, 40, 80, 160}, "instances: 1-15", false) {}
 
-  std::string_view GetInstancesByYear(const int year) const override {
-    return SuiteBiobjMixintGetInstancesByYear(year);
-  }
+  std::string_view GetInstancesByYear(const int) const override { return "1-15"; }
 
   /** @brief Returns the problem with the given function, dimension and instance. */
   ProblemPtr GetProblem(const size_t function, const size_t dimension, const size_t instance) override {
@@ -137,19 +128,5 @@ public:
 private:
   SuiteBiobjNewInstances new_instances_; /**< @brief The new instances computed so far. */
 };
-
-/**
- * @brief Sets the dimensions and default instances for the bbob-biobj-mixint suite.
- */
-static Suite *SuiteBiobjMixintInitialize() {
-
-  Suite *suite;
-  const size_t dimensions[] = {5, 10, 20, 40, 80, 160};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  suite = new SuiteBiobjMixint("bbob-biobj-mixint", 92, num_dimensions, dimensions, "instances: 1-15", 0);
-
-  return suite;
-}
 
 } // namespace coco

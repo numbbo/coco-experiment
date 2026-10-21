@@ -21,7 +21,7 @@ namespace coco {
 /**
  * @brief The toy logger, which wraps the observed problem.
  */
-class LoggerToy final : public TransformedProblem {
+class LoggerToy final : public Logger {
 public:
   LoggerToy(ObserverToy &observer, ProblemPtr inner);
 
@@ -65,8 +65,7 @@ void LoggerToy::EvaluateFunction(std::span<const double> x, std::span<double> y)
 /**
  * @brief Initializes the toy logger.
  */
-LoggerToy::LoggerToy(ObserverToy &observer, ProblemPtr inner)
-    : TransformedProblem(std::move(inner), observer.observer_name) {
+LoggerToy::LoggerToy(ObserverToy &observer, ProblemPtr inner) : Logger(observer, std::move(inner)) {
   if (inner_problem_->number_of_objectives() != 1) {
     coco_warning("LoggerToy(): The toy logger shouldn't be used to log a problem with %zu objectives",
                  inner_problem_->number_of_objectives());

@@ -57,7 +57,7 @@ static constexpr size_t LOGGER_BBOB_NUMBER_OF_VARIABLES_THRESHOLD = 7;
 /**
  * @brief The bbob logger, which wraps the observed problem.
  */
-class LoggerBbob final : public TransformedProblem {
+class LoggerBbob final : public Logger {
 public:
   LoggerBbob(ObserverBbob &observer, ProblemPtr inner);
 
@@ -67,10 +67,7 @@ public:
   void RecommendSolution(std::span<const double> x) override;
 
   /** @brief Saves the information that the algorithm has restarted. */
-  void SignalRestart();
-
-  /** @brief Makes the logger forget its observer (which is being deleted). */
-  void ForgetObserver() { observer_ = nullptr; }
+  void SignalRestart() override;
 
   double best_found_value() const { return best_found_value_; }
   double optimal_value() const { return optimal_value_; }
@@ -78,8 +75,8 @@ public:
   /** @brief Returns the triggers based on target values (which the tests use directly). */
   ObserverTargets &targets() { return targets_; }
 
-  /** @brief Returns the bbob logger behind the given problem (which must be one). */
-  static LoggerBbob *From(const Problem *problem);
+  /** @brief Returns the observer (nullptr if it has been deleted). */
+  ObserverBbob *observer() const { return static_cast<ObserverBbob *>(Logger::observer()); }
 
 private:
   /** @brief Generates the files and folders needed by the logger if they don't already exist. */
@@ -94,8 +91,17 @@ private:
    * started, which is the case when the current dimension or function differ from the last logged ones.
    */
   bool StartNewLine(size_t current_dimension, size_t current_function) const {
-    assert(observer_ != nullptr);
-    return (current_function != observer_->last_function_) || (current_dimension != observer_->last_dimension_);
+    assert(observer() != nullptr);
+    return (current_function != observer()->last_function_) || (current_dimension != observer()->last_dimension_);
+  }
+
+  /** @brief Opens the file in append mode unless it is already open. */
+  static void OpenFile(File &file, const std::string &file_path);
+
+  /** @brief Opens (and creates if needed) the data file path/file_name + file_extension unless it is already open. */
+  static void OpenDataFile(File &data_file, const std::string &path, const std::string &file_name,
+                           const char *file_extension) {
+    OpenFile(data_file, JoinPath(path, file_name + file_extension));
   }
 
   /** @brief Outputs a formatted line to a data file. */
@@ -107,7 +113,6 @@ private:
     return IdentityInverse(inner_x, x);
   }
 
-  ObserverBbob *observer_{};      /**< @brief Pointer to the observer (might be nullptr at the end) */
   std::string suite_name_;        /**< @brief The suite name */
   bool is_initialized_{};         /**< @brief Whether the logger was already initialized */
   bool algorithm_restarted_{};    /**< @brief Whether the algorithm has restarted (output information to .rdat file). */
@@ -174,24 +179,12 @@ static const char *LOGGER_BBOB_HEADER = "%% "
                                         "x1 | "
                                         "x2...\n";
 
-/**
- * @brief Discretized constraint value, ~8 + log10(c), in a single digit.
- *
- * -\infty..0 -> 0
- *    0..1e-7 -> 1
- * 1e-7..1e-6 -> 2
- *    ...
- * 1e-1..1    -> 8
- *   >1       -> 9
- */
-static int LoggerBbobSingleDigitConstraint(const double c) {
-  const double limits[9] = {0, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1};
-  int i;
-
-  for (i = 0; i < 9; ++i)
-    if (c <= limits[i])
-      return i;
-  return 9;
+void LoggerBbob::OpenFile(File &file, const std::string &file_path) {
+  if (file == nullptr) {
+    if (!file.Open(file_path, "a")) {
+      coco_error("LoggerBbob::OpenFile(): Error opening file: %s\nError: %d", file_path.c_str(), errno);
+    }
+  }
 }
 
 /**
@@ -209,7 +202,7 @@ void LoggerBbob::Output(FILE *data_file, std::span<const double> x, double logge
     for (size_t i = 0; i < number_of_constraints_; ++i) {
       /* print 01234567890123..., may happen in the last line of .tdat */
       fprintf(data_file, "%d",
-              !constraints.empty() ? LoggerBbobSingleDigitConstraint(constraints[i]) : static_cast<int>(i % 10));
+              !constraints.empty() ? SingleDigitConstraintValue(constraints[i]) : static_cast<int>(i % 10));
     }
   } else {
     fprintf(data_file, "%+10.9e", logged_best_value);
@@ -232,25 +225,6 @@ void LoggerBbob::Output(FILE *data_file, std::span<const double> x, double logge
 }
 
 /**
- * @brief Opens the file in append mode
- */
-static void LoggerBbobOpenFile(File &file, const std::string &file_path) {
-  if (file == nullptr) {
-    if (!file.Open(file_path, "a")) {
-      coco_error("LoggerBbobOpenFile(): Error opening file: %s\nError: %d", file_path.c_str(), errno);
-    }
-  }
-}
-
-/**
- * @brief Creates the data file (if it didn't exist before) and opens it
- */
-static void LoggerBbobOpenDataFile(File &data_file, const std::string &path, const std::string &file_name,
-                                   const char *file_extension) {
-  LoggerBbobOpenFile(data_file, JoinPath(path, file_name + file_extension));
-}
-
-/**
  * @brief Creates the info file (if it didn't exist before) and opens it
  */
 void LoggerBbob::OpenInfoFile(const std::string &folder, const std::string &function_string,
@@ -259,9 +233,9 @@ void LoggerBbob::OpenInfoFile(const std::string &folder, const std::string &func
 
   coco_debug("Started logger_bbob_t::OpenInfoFile()");
 
-  assert(observer_ != nullptr);
+  assert(observer() != nullptr);
 
-  const std::string file_path = JoinPath(folder, observer_->prefix_ + "_f" + function_string + ".info");
+  const std::string file_path = JoinPath(folder, observer()->prefix_ + "_f" + function_string + ".info");
 
   if (info_file_ == nullptr) {
     add_empty_line = 0;
@@ -270,7 +244,7 @@ void LoggerBbob::OpenInfoFile(const std::string &folder, const std::string &func
     if (tmp_file.Open(file_path, "r")) {
       add_empty_line = 1;
     }
-    LoggerBbobOpenFile(info_file_, file_path);
+    OpenFile(info_file_, file_path);
     if (start_new_line) {
       if (add_empty_line)
         fprintf(info_file_, "\n");
@@ -280,9 +254,9 @@ void LoggerBbob::OpenInfoFile(const std::string &folder, const std::string &func
               "algId = '%s', coco_version = '%s', logger = '%s', "
               "data_format = '%s', settings = '%s'\n",
               suite_name_.c_str(), suite_dep_function(), number_of_variables_, pow(10, -8),
-              observer_->algorithm_name.c_str(), coco_version, observer_->observer_name.c_str(),
-              LOGGER_BBOB_DATA_FORMAT, observer_->settings.c_str());
-      fprintf(info_file_, "%% %s\n", observer_->algorithm_info.c_str());
+              observer()->algorithm_name.c_str(), coco_version, observer()->observer_name.c_str(),
+              LOGGER_BBOB_DATA_FORMAT, observer()->settings.c_str());
+      fprintf(info_file_, "%% %s\n", observer()->algorithm_info.c_str());
       /* data_file_name does not have the extension */
       fprintf(info_file_, "%s.dat", data_file_name.c_str());
     }
@@ -306,12 +280,12 @@ void LoggerBbob::Initialize() {
   else
     str_pointer = "Fopt";
 
-  assert(observer_ != nullptr);
-  observer_data = observer_;
+  assert(observer() != nullptr);
+  observer_data = observer();
 
   const std::string function_string = StringFormat("%zu", suite_dep_function());
   const std::string dimension_string = StringFormat("%zu", number_of_variables_);
-  const std::string &result_folder = observer_->result_folder;
+  const std::string &result_folder = observer()->result_folder;
 
   /* Prepare paths and names */
   CreateDirectory(JoinPath(result_folder, "data_f" + function_string));
@@ -333,13 +307,13 @@ void LoggerBbob::Initialize() {
   fprintf(info_file_, ", %zu", suite_dep_instance());
 
   /* data files */
-  LoggerBbobOpenDataFile(dat_file_, result_folder, relative_path, ".dat");
+  OpenDataFile(dat_file_, result_folder, relative_path, ".dat");
   fprintf(dat_file_, LOGGER_BBOB_HEADER, str_pointer, optimal_value_);
-  LoggerBbobOpenDataFile(tdat_file_, result_folder, relative_path, ".tdat");
+  OpenDataFile(tdat_file_, result_folder, relative_path, ".tdat");
   fprintf(tdat_file_, LOGGER_BBOB_HEADER, str_pointer, optimal_value_);
-  LoggerBbobOpenDataFile(rdat_file_, result_folder, relative_path, ".rdat");
+  OpenDataFile(rdat_file_, result_folder, relative_path, ".rdat");
   fprintf(rdat_file_, LOGGER_BBOB_HEADER, str_pointer, optimal_value_);
-  LoggerBbobOpenDataFile(mdat_file_, result_folder, relative_path, ".mdat");
+  OpenDataFile(mdat_file_, result_folder, relative_path, ".mdat");
   fprintf(mdat_file_, LOGGER_BBOB_HEADER, str_pointer, optimal_value_);
 
   is_initialized_ = 1;
@@ -553,12 +527,6 @@ LoggerBbob::~LoggerBbob() {
     mdat_file_.Close();
   }
 
-  /* The observer might not exist at this point */
-  if ((observer_ != nullptr) && observer_->is_active()) {
-    /* If the observer still exists (if it does not, observed_problem does not matter any longer) */
-    observer_->observed_problem_ = nullptr;
-  }
-
   coco_debug("Ended   logger_bbob_t::~LoggerBbob()");
 }
 
@@ -570,31 +538,7 @@ void LoggerBbob::SignalRestart() {
     algorithm_restarted_ = 1;
 }
 
-/**
- * @brief Returns the bbob logger behind the given problem (which must be one).
- */
-LoggerBbob *LoggerBbob::From(const Problem *problem) {
-  assert(dynamic_cast<const LoggerBbob *>(problem) != nullptr);
-  return static_cast<LoggerBbob *>(const_cast<Problem *>(problem));
-}
-
-void ObserverBbob::SignalRestart(Problem *problem) { LoggerBbob::From(problem)->SignalRestart(); }
-
-/**
- * @brief Makes the observed logger (if any) forget this observer.
- */
-ObserverBbob::~ObserverBbob() {
-  coco_debug("Started observer_bbob_t::~ObserverBbob()");
-  /* Make sure that the observed problem's pointer to the observer points to nullptr */
-  if (observed_problem_ != nullptr) {
-    observed_problem_->ForgetObserver();
-    observed_problem_ = nullptr;
-  }
-  coco_debug("Ended   observer_bbob_t::~ObserverBbob()");
-}
-
-LoggerBbob::LoggerBbob(ObserverBbob &observer, ProblemPtr inner)
-    : TransformedProblem(std::move(inner), observer.observer_name) {
+LoggerBbob::LoggerBbob(ObserverBbob &observer, ProblemPtr inner) : Logger(observer, std::move(inner)) {
   coco_debug("Started LoggerBbob()");
 
   assert(inner_problem_.get());
@@ -604,10 +548,6 @@ LoggerBbob::LoggerBbob(ObserverBbob &observer, ProblemPtr inner)
     coco_warning("LoggerBbob(): The bbob logger shouldn't be used to log a problem with %zu objectives",
                  inner_problem_->number_of_objectives());
   }
-  if (observer.observed_problem_ != nullptr) {
-    coco_error("LoggerBbob(): The observed problem must be closed before a new problem can be observed");
-  }
-  this->observer_ = &observer;
   suite_name_ = inner_problem_->suite()->name();
   is_initialized_ = 0;
   algorithm_restarted_ = 0;
@@ -636,11 +576,11 @@ LoggerBbob::LoggerBbob(ObserverBbob &observer, ProblemPtr inner)
                                   observer.number_target_triggers, observer.log_target_precision);
 
   coco_debug("Ended   LoggerBbob()");
-
-  observer.observed_problem_ = this;
 }
 
 ProblemPtr ObserverBbob::AddLogger(ProblemPtr problem) {
+  if (number_of_loggers() > 0)
+    coco_error("LoggerBbob(): The observed problem must be closed before a new problem can be observed");
   return std::make_unique<LoggerBbob>(*this, std::move(problem));
 }
 

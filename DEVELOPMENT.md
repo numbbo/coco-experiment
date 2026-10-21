@@ -68,7 +68,8 @@ The core in `src/` is C++20 that is amalgamated into a single `coco.cpp` and exp
   converts its pointers with `FromC()`.
 - Problems, transformations and loggers are subclasses of `Problem`. Suites are subclasses of `Suite` that
   implement `GetProblem()` (and `GetInstancesByYear()` if needed). Observers are subclasses of `Observer`
-  that implement `AddLogger()` (and `SignalRestart()` if supported).
+  that implement `AddLogger()`. Loggers are subclasses of `Logger` (and implement `SignalRestart()` if
+  supported); a logger registers with its observer, so the observer knows which problems it observes.
 - Problems are owned through `ProblemPtr` (a `std::unique_ptr<Problem>`). Functions and transformations
   that wrap a problem take it by value and the caller hands it over with `std::move()`, e.g.
   `problem = std::make_unique<TransformObjScale>(std::move(problem), factor);`. Ownership is only released to

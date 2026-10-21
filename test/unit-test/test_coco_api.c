@@ -369,6 +369,15 @@ MU_TEST(test_reset_seeds) {
 /**
  * Tests adding and removing an observer and the observer functions on an observed problem.
  */
+/**
+ * Returns the problem with the given function of the suite in dimension 2 (instance 1), observed by the given
+ * observer. The loggers need the suite of the problem.
+ */
+static coco_problem_t *observed_problem(coco_suite_t *suite, coco_observer_t *observer, const size_t function) {
+  return coco_problem_add_observer(coco_suite_get_problem_by_function_dimension_instance(suite, function, 2, 1),
+                                   observer);
+}
+
 MU_TEST(test_observer) {
   char *options = coco_strdupf("outer_folder: %s result_folder: test_observer", outer_folder);
   coco_observer_t *observer = coco_observer("bbob", options);
@@ -376,6 +385,7 @@ MU_TEST(test_observer) {
   coco_suite_t *suite = coco_suite("bbob", "instances: 1", "dimensions: 3");
   coco_problem_t *problem = coco_suite_get_problem_by_function_dimension_instance(suite, 2, 3, 1);
   coco_problem_t *observed;
+  coco_problem_t *other = coco_get_bbob_problem(1, 3, 1);
   const char *name = coco_problem_get_name(problem);
   char *inner_name = coco_strdupf("%s", name);
   double x[3] = {1, 2, 3}, y;
@@ -391,12 +401,51 @@ MU_TEST(test_observer) {
   coco_evaluate_function(observed, x, &y);
   mu_check(coco_problem_get_evaluations(observed) == 2);
 
+  /* Signaling a restart for a problem the observer doesn't observe only warns */
+  coco_set_log_level("error");
+  coco_observer_signal_restart(observer, other);
+  coco_set_log_level("warning");
+
   problem = coco_problem_remove_observer(observed, observer);
   mu_check(strcmp(coco_problem_get_name(problem), inner_name) == 0);
+  coco_set_log_level("error");
+  coco_observer_signal_restart(observer, problem);
+  coco_set_log_level("warning");
+  coco_problem_free(other);
   coco_problem_free(problem);
   coco_observer_free(observer);
   coco_suite_free(suite);
   coco_free_memory(inner_name);
+  coco_free_memory(options);
+}
+
+/**
+ * Tests an observer that observes two problems at the same time, which are removed in a different order, and
+ * an observer that is freed before its problem.
+ */
+MU_TEST(test_observer_loggers) {
+  char *options = coco_strdupf("outer_folder: %s result_folder: test_observer_loggers", outer_folder);
+  coco_observer_t *observer = coco_observer("toy", options);
+  coco_suite_t *suite = coco_suite("bbob", "instances: 1", "dimensions: 2");
+  coco_problem_t *problem1 = observed_problem(suite, observer, 1);
+  coco_problem_t *problem2 = observed_problem(suite, observer, 2);
+  coco_problem_t *inner;
+
+  inner = coco_problem_remove_observer(problem1, observer);
+  mu_check(strcmp(coco_problem_get_id(inner), "bbob_f001_i01_d02") == 0);
+  coco_problem_free(inner);
+  coco_set_log_level("error");
+  coco_observer_signal_restart(observer, problem2); /* not supported by the toy observer */
+  coco_set_log_level("warning");
+  inner = coco_problem_remove_observer(problem2, observer);
+  mu_check(strcmp(coco_problem_get_id(inner), "bbob_f002_i01_d02") == 0);
+  coco_problem_free(inner);
+
+  /* The logger outlives its observer */
+  problem1 = observed_problem(suite, observer, 1);
+  coco_observer_free(observer);
+  coco_problem_free(problem1);
+  coco_suite_free(suite);
   coco_free_memory(options);
 }
 
@@ -497,6 +546,7 @@ MU_TEST_SUITE(test_all_coco_api) {
   MU_RUN_TEST(test_mixint_problem);
   MU_RUN_TEST(test_reset_seeds);
   MU_RUN_TEST(test_observer);
+  MU_RUN_TEST(test_observer_loggers);
   MU_RUN_TEST(test_no_observer);
   MU_RUN_TEST(test_logger_biobj_feed_solution);
   MU_RUN_TEST(test_archive);

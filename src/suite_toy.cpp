@@ -19,7 +19,7 @@ namespace coco {
  */
 class SuiteToy final : public Suite {
 public:
-  using Suite::Suite;
+  SuiteToy() : Suite("toy", 6, {2, 3, 5, 10, 20}, "instances: 1", true) {}
 
   /** @brief Returns the problem with the given function, dimension and instance. */
   ProblemPtr GetProblem(const size_t function, const size_t dimension,
@@ -47,19 +47,5 @@ public:
     return problem;
   }
 };
-
-/**
- * @brief Sets the dimensions and default instances for the toy suite.
- */
-static Suite *SuiteToyInitialize() {
-
-  Suite *suite;
-  const size_t dimensions[] = {2, 3, 5, 10, 20};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  suite = new SuiteToy("toy", 6, num_dimensions, dimensions, "instances: 1", 1);
-
-  return suite;
-}
 
 } // namespace coco

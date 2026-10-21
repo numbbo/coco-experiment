@@ -26,11 +26,6 @@ static const double SUITE_BBOB_MIXINT_SCALING_FACTORS[] = {
 };
 
 /**
- * @brief Sets the instances associated with years for the bbob-mixint suites.
- */
-static std::string_view SuiteBbobMixintGetInstancesByYear(const int) { return "1-15"; }
-
-/**
  * @brief Creates and returns a mixed-integer bbob problem without needing the actual bbob-mixint
  * suite.
  *
@@ -99,9 +94,9 @@ static ProblemPtr GetBbobMixintProblem(const size_t function, const size_t dimen
  */
 class SuiteBbobMixint final : public Suite {
 public:
-  using Suite::Suite;
+  SuiteBbobMixint() : Suite("bbob-mixint", 24, {5, 10, 20, 40, 80, 160}, "instances: 1-15", true) {}
 
-  std::string_view GetInstancesByYear(const int year) const override { return SuiteBbobMixintGetInstancesByYear(year); }
+  std::string_view GetInstancesByYear(const int) const override { return "1-15"; }
 
   /** @brief Returns the problem with the given function, dimension and instance. */
   ProblemPtr GetProblem(const size_t function, const size_t dimension, const size_t instance) override {
@@ -116,18 +111,5 @@ public:
     return problem;
   }
 };
-
-/**
- * @brief Sets the dimensions and default instances for the bbob-mixint suite.
- */
-static Suite *SuiteBbobMixintInitialize(std::string_view suite_name) {
-
-  Suite *suite;
-  const size_t dimensions[] = {5, 10, 20, 40, 80, 160};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-  suite = new SuiteBbobMixint(suite_name, 24, num_dimensions, dimensions, "instances: 1-15", 1);
-
-  return suite;
-}
 
 } // namespace coco

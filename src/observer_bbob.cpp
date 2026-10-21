@@ -24,8 +24,7 @@ class LoggerBbob;
 class ObserverBbob final : public Observer {
 public:
   ObserverBbob(const ObserverSettings &observer_settings, std::string_view options, OptionKeys &option_keys)
-      : Observer(observer_settings), observed_problem_(nullptr), prefix_("bbobexp"), last_function_(0),
-        last_dimension_(0), last_dat_file_("init") {
+      : Observer(observer_settings), prefix_("bbobexp"), last_function_(0), last_dimension_(0), last_dat_file_("init") {
 
     /* Sets the valid keys for bbob observer options
      * IMPORTANT: This list should be up-to-date with the code and the documentation */
@@ -33,16 +32,11 @@ public:
     OptionsReadString(options, "prefix", prefix_);
   }
 
-  ~ObserverBbob() override;
-
   ProblemPtr AddLogger(ProblemPtr problem) override;
-
-  void SignalRestart(Problem *problem) override;
 
 private:
   friend class LoggerBbob; /* Keeps the state of the last logged problem in the observer */
 
-  LoggerBbob *observed_problem_;    /**< @brief The logger of the observed problem (nullptr if none is observed) */
   std::string prefix_;              /**< @brief Prefix in the name of the info and data files */
   /* Store the information on the last function, dimension and dat file used, to be able to tell when the
    * logger needs to write in a new dat file.  */

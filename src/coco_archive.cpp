@@ -106,7 +106,7 @@ Archive::Archive(std::string_view suite_name, const size_t function, const size_
   /* Initialize the AVL tree */
   tree_ = AvlTreeConstruct(ArchiveCompareByLastObjective, ArchiveNodeItemFree);
 
-  suite = SuiteCreate(suite_name, suite_instance, suite_options);
+  suite = Suite::Create(suite_name, suite_instance, suite_options);
   if (suite == nullptr) {
     coco_error("coco_archive(): cannot create suite '%.*s'", static_cast<int>(suite_name.size()), suite_name.data());
     return; /* Never reached */

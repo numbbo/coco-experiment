@@ -147,6 +147,26 @@ private:
  * values.
  */
 struct LoggerBiobjAvlItem {
+  /**
+   * @brief Stores the solution with its objective values normalized with the ideal and nadir point of the
+   * problem and whether it is feasible w.r.t. the given constraint values.
+   */
+  LoggerBiobjAvlItem(const Problem &problem, std::span<const double> x, std::span<const double> y,
+                     std::span<const double> constraints, const size_t evaluation_number)
+      : x(x.begin(), x.end()), y(y.begin(), y.end()), is_feasible(true),
+        normalized_y(MoNormalize(this->y, problem.best_value(), problem.nadir_value())),
+        evaluation_number(evaluation_number), indicator_contribution(), within_ROI(MoIsWithinRoi(normalized_y)) {
+    /* Determine whether the solution is feasible */
+    if (!constraints.empty()) {
+      double sum_constraints = 0;
+      for (const double constraint : constraints) {
+        if (constraint > 0)
+          sum_constraints += constraint;
+      }
+      is_feasible = !(sum_constraints > 0);
+    }
+  }
+
   std::vector<double> x;            /**< @brief The decision values of this solution. */
   std::vector<double> y;            /**< @brief The values of objectives of this solution. */
   bool is_feasible;                 /**< @brief Whether the solution is feasible. */
@@ -159,42 +179,6 @@ struct LoggerBiobjAvlItem {
 };
 
 /**
- * @brief Creates and returns the information on the solution in the form of a node's item in the AVL tree.
- */
-static LoggerBiobjAvlItem *LoggerBiobjNodeCreate(const Problem *problem, std::span<const double> x,
-                                                 std::span<const double> y, std::span<const double> constraints,
-                                                 const size_t evaluation_number) {
-
-  double sum_constraints = 0;
-
-  LoggerBiobjAvlItem *item = new LoggerBiobjAvlItem();
-
-  /* Copy the data */
-  item->x.assign(x.begin(), x.end());
-  item->y.assign(y.begin(), y.end());
-
-  /* Compute the normalized y */
-  item->normalized_y = MoNormalize(item->y, problem->best_value(), problem->nadir_value());
-  item->within_ROI = MoIsWithinRoi(item->normalized_y);
-
-  item->evaluation_number = evaluation_number;
-  for (size_t i = 0; i < LOGGER_BIOBJ_NUMBER_OF_INDICATORS; i++)
-    item->indicator_contribution[i] = 0;
-
-  /* Determine whether the solution is feasible */
-  item->is_feasible = 1;
-  if (!constraints.empty()) {
-    for (const double constraint : constraints) {
-      if (constraint > 0)
-        sum_constraints += constraint;
-    }
-    item->is_feasible = !(sum_constraints > 0);
-  }
-
-  return item;
-}
-
-/**
  * @brief Frees the data of the given LoggerBiobjAvlItem.
  */
 static void LoggerBiobjNodeFree(void *item, void *) { delete static_cast<LoggerBiobjAvlItem *>(item); }
@@ -205,7 +189,7 @@ static void LoggerBiobjNodeFree(void *item, void *) { delete static_cast<LoggerB
  * @note Some fields from the observers (coco_observer as well as observer_biobj) are copied here because the
  * observers can be deleted before the logger is finalized and we need these fields for finalization.
  */
-class LoggerBiobj final : public TransformedProblem {
+class LoggerBiobj final : public Logger {
 public:
   /**< @brief The implemented indicators. */
 
@@ -218,13 +202,7 @@ public:
   bool FeedSolution(const size_t evaluation, std::span<const double> y);
 
   /** @brief Saves the information that the algorithm has restarted. */
-  void SignalRestart();
-
-  /** @brief Returns the biobj logger behind the given problem (which must be one). */
-  static LoggerBiobj *From(const Problem *problem);
-
-  /** @brief Makes the logger forget its observer (which is being deleted). */
-  void ForgetObserver() { observer_ = nullptr; }
+  void SignalRestart() override;
 
   /** @brief Returns the indicator with the given index (nullptr if the indicators are not computed). */
   LoggerBiobjIndicator *indicator(const size_t i) const { return indicators_[i].get(); }
@@ -234,6 +212,9 @@ private:
 
   /** @brief Adds the solution to the archive if it is not dominated, returns whether the archive changed. */
   bool UpdateArchive(LoggerBiobjAvlItem *node_item);
+
+  /** @brief Outputs the solutions in the tree to the given file. Returns the number of solutions. */
+  size_t OutputTree(FILE *file, const AvlTree *tree) const;
 
   /** @brief Outputs the indicator information according to the observer options. */
   void Output(const int update_performed, const LoggerBiobjAvlItem *node_item);
@@ -246,7 +227,6 @@ private:
     return IdentityInverse(inner_x, x);
   }
 
-  ObserverBiobj *observer_{}; /**< @brief Pointer to the observer (might be nullptr at the end) */
   ObserverBiobjLogNondom log_nondom_mode_{};
   /**< @brief Mode for archiving nondominated solutions. */
   File adat_file_;                /**< @brief File for archiving nondominated solutions (all or final). */
@@ -300,12 +280,7 @@ static int AvlTreeCompareByEvalNumber(const void *a, const void *b, void *) {
     return 0;
 }
 
-/**
- * @brief Outputs the AVL tree to the given file. Returns the number of nodes in the tree.
- */
-static size_t LoggerBiobjTreeOutput(FILE *file, const AvlTree *tree, const size_t dim, const size_t num_int_vars,
-                                    const size_t num_obj, const int log_vars, const int precision_x,
-                                    const int precision_f, const int log_discrete_as_int) {
+size_t LoggerBiobj::OutputTree(FILE *file, const AvlTree *tree) const {
 
   AvlNode *solution;
   size_t i;
@@ -316,14 +291,14 @@ static size_t LoggerBiobjTreeOutput(FILE *file, const AvlTree *tree, const size_
     solution = tree->head;
     while (solution != nullptr) {
       fprintf(file, "%zu\t", (static_cast<LoggerBiobjAvlItem *>(solution->item))->evaluation_number);
-      for (size_t j = 0; j < num_obj; j++)
-        fprintf(file, "%.*e\t", precision_f, (static_cast<LoggerBiobjAvlItem *>(solution->item))->y[j]);
-      if (log_vars) {
-        for (i = 0; i < dim; i++)
-          if ((i < num_int_vars) && (log_discrete_as_int))
+      for (size_t j = 0; j < number_of_objectives_; j++)
+        fprintf(file, "%.*e\t", precision_f_, (static_cast<LoggerBiobjAvlItem *>(solution->item))->y[j]);
+      if (log_vars_) {
+        for (i = 0; i < number_of_variables_; i++)
+          if ((i < number_of_integer_variables_) && (log_discrete_as_int_))
             fprintf(file, "%d\t", DoubleToInt((static_cast<LoggerBiobjAvlItem *>(solution->item))->x[i]));
           else
-            fprintf(file, "%.*e\t", precision_x, (static_cast<LoggerBiobjAvlItem *>(solution->item))->x[i]);
+            fprintf(file, "%.*e\t", precision_x_, (static_cast<LoggerBiobjAvlItem *>(solution->item))->x[i]);
       }
       fprintf(file, "\n");
       solution = solution->next;
@@ -384,7 +359,7 @@ bool LoggerBiobj::UpdateArchive(LoggerBiobjAvlItem *node_item) {
   }
 
   if (!trigger_update) {
-    LoggerBiobjNodeFree(node_item, nullptr);
+    delete node_item;
   } else {
     /* Perform tree update */
     while (next_node != nullptr) {
@@ -723,7 +698,7 @@ void LoggerBiobj::EvaluateFunction(std::span<const double> x, std::span<double> 
     inner_problem_->EvaluateConstraint(x, constraints, 0);
   num_cons_evaluations_ = evaluations_constraints();
 
-  node_item = LoggerBiobjNodeCreate(inner_problem_.get(), x, y, constraints, num_func_evaluations_);
+  node_item = new LoggerBiobjAvlItem(*inner_problem_, x, y, constraints, num_func_evaluations_);
 
   /* Update the archive with the new solution, if it is not dominated by or equal to existing solutions in
    * the archive */
@@ -732,8 +707,7 @@ void LoggerBiobj::EvaluateFunction(std::span<const double> x, std::span<double> 
   /* If the archive was updated and you need to log all nondominated solutions, output the new solution to
    * nondom_file */
   if (update_performed && (log_nondom_mode_ == LOG_NONDOM_ALL)) {
-    LoggerBiobjTreeOutput(adat_file_, buffer_tree_.get(), number_of_variables_, number_of_integer_variables_,
-                          number_of_objectives_, log_vars_, precision_x_, precision_f_, log_discrete_as_int_);
+    OutputTree(adat_file_, buffer_tree_.get());
     AvlTreePurge(buffer_tree_.get());
 
     /* Flush output so that impatient users can see progress. */
@@ -763,10 +737,11 @@ void LoggerBiobj::RecommendSolution(std::span<const double> x) {
 
   /* If this is the first call to the recommend function (on any problem), warn about the large
   resulting files (the observer remembers the warning, unless it has already been freed) */
-  if ((observer_ != nullptr) && (observer_->large_mdat_file_warning_ == 0)) {
+  auto *observer = static_cast<ObserverBiobj *>(this->observer());
+  if ((observer != nullptr) && (observer->large_mdat_file_warning_ == 0)) {
     coco_warning("Using the logger_biobj_recommend function may result in the creation of large "
                  "mdat files since every recommended solution is logged");
-    observer_->large_mdat_file_warning_ = 1;
+    observer->large_mdat_file_warning_ = 1;
   }
 
   /* Log to the mdat file */
@@ -816,7 +791,7 @@ bool LoggerBiobj::FeedSolution(const size_t evaluation, std::span<const double> 
   std::vector<double> x(number_of_variables_);
   for (size_t i = 0; i < number_of_variables_; i++)
     x[i] = 0;
-  node_item = LoggerBiobjNodeCreate(inner_problem_.get(), x, y, {}, num_func_evaluations_);
+  node_item = new LoggerBiobjAvlItem(*inner_problem_, x, y, {}, num_func_evaluations_);
 
   /* Update the archive */
   update_performed = UpdateArchive(node_item);
@@ -849,8 +824,7 @@ void LoggerBiobj::WriteFinalArchive() {
     }
   }
 
-  LoggerBiobjTreeOutput(adat_file_, resorted_tree, number_of_variables_, number_of_integer_variables_,
-                        number_of_objectives_, log_vars_, precision_x_, precision_f_, log_discrete_as_int_);
+  OutputTree(adat_file_, resorted_tree);
 
   AvlTreeDestruct(resorted_tree);
 
@@ -880,12 +854,6 @@ LoggerBiobj::~LoggerBiobj() {
     adat_file_.Close();
   }
 
-  /* The observer might not exist at this point */
-  if ((observer_ != nullptr) && observer_->is_active()) {
-    /* If the observer still exists (if it does not, observed_problem does not matter any longer) */
-    observer_->observed_problem_ = nullptr;
-  }
-
   coco_debug("Ended   logger_biobj_t::~LoggerBiobj()");
 }
 
@@ -898,37 +866,13 @@ void LoggerBiobj::SignalRestart() {
 }
 
 /**
- * @brief Returns the biobj logger behind the given problem (which must be one).
- */
-LoggerBiobj *LoggerBiobj::From(const Problem *problem) {
-  assert(dynamic_cast<const LoggerBiobj *>(problem) != nullptr);
-  return static_cast<LoggerBiobj *>(const_cast<Problem *>(problem));
-}
-
-void ObserverBiobj::SignalRestart(Problem *problem) { LoggerBiobj::From(problem)->SignalRestart(); }
-
-/**
- * @brief Makes the observed logger (if any) forget this observer.
- */
-ObserverBiobj::~ObserverBiobj() {
-  coco_debug("Started observer_biobj_t::~ObserverBiobj()");
-  /* Make sure that the observed problem's pointer to the observer points to nullptr */
-  if (observed_problem_ != nullptr) {
-    observed_problem_->ForgetObserver();
-    observed_problem_ = nullptr;
-  }
-  coco_debug("Ended   observer_biobj_t::~ObserverBiobj()");
-}
-
-/**
  * @brief Initializes the biobjective logger.
  *
  * Copies all observer field values that are needed after initialization into logger field values
  * because if the observer is deleted before the suite, the observer is not available anymore when
  * the logger is finalized.
  */
-LoggerBiobj::LoggerBiobj(ObserverBiobj &observer, ProblemPtr inner)
-    : TransformedProblem(std::move(inner), observer.observer_name) {
+LoggerBiobj::LoggerBiobj(ObserverBiobj &observer, ProblemPtr inner) : Logger(observer, std::move(inner)) {
   const char nondom_folder_name[] = "archive";
 
   coco_debug("Started LoggerBiobj()");
@@ -939,11 +883,7 @@ LoggerBiobj::LoggerBiobj(ObserverBiobj &observer, ProblemPtr inner)
     return; /* Never reached */
   }
 
-  if (observer.observed_problem_ != nullptr) {
-    coco_error("LoggerBiobj(): The observed problem must be closed before a new problem can be observed");
-  }
 
-  this->observer_ = &observer;
   num_func_evaluations_ = 0;
   num_cons_evaluations_ = 0;
   previous_evaluations_ = 0;
@@ -1033,11 +973,11 @@ LoggerBiobj::LoggerBiobj(ObserverBiobj &observer, ProblemPtr inner)
   fprintf(mdat_file_, "\n");
 
   coco_debug("Ended   LoggerBiobj()");
-
-  observer.observed_problem_ = this;
 }
 
 ProblemPtr ObserverBiobj::AddLogger(ProblemPtr problem) {
+  if (number_of_loggers() > 0)
+    coco_error("LoggerBiobj(): The observed problem must be closed before a new problem can be observed");
   return std::make_unique<LoggerBiobj>(*this, std::move(problem));
 }
 
@@ -1050,6 +990,9 @@ ProblemPtr ObserverBiobj::AddLogger(ProblemPtr problem) {
  * LoggerBiobj::FeedSolution().
  */
 int coco_logger_biobj_feed_solution(coco_problem_t *problem, const size_t evaluation, const double *y) {
-  coco::LoggerBiobj *logger = coco::LoggerBiobj::From(FromC(problem));
+  auto *logger = dynamic_cast<coco::LoggerBiobj *>(FromC(problem));
+  if (logger == nullptr)
+    coco_error("coco_logger_biobj_feed_solution(): Problem %s is not observed by a bbob-biobj logger",
+               problem == nullptr ? "NULL" : FromC(problem)->id().c_str());
   return logger->FeedSolution(evaluation, {y, logger->number_of_objectives()});
 }

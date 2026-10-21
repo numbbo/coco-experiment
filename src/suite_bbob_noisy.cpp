@@ -18,19 +18,6 @@
 namespace coco {
 
 /**
- * @brief Sets the instances associated with years for the bbob suite.
- */
-static std::string_view SuiteBbobNoisyGetInstancesByYear(const int year) {
-
-  if (year <= 2009) {
-    return "1-15";
-  } else {
-    coco_error("SuiteBbobNoisyGetInstancesByYear(): year %d not defined for suite bbob-noisy", year);
-    return {};
-  }
-}
-
-/**
  * @brief Creates and returns a bbob-noisy problem without needing the actual bbob-noisy suite.
  *
  * The functions come in groups of three, which add Gaussian, uniform and Cauchy noise to the same noise-free bbob
@@ -108,9 +95,17 @@ static ProblemPtr GetBbobNoisyProblem(const size_t function, const size_t dimens
  */
 class SuiteBbobNoisy final : public Suite {
 public:
-  using Suite::Suite;
+  /* IMPORTANT: Make sure to change the default instance for every new workshop! */
+  SuiteBbobNoisy() : Suite("bbob-noisy", 30, {2, 3, 5, 10, 20, 40}, "year:2009", true) {}
 
-  std::string_view GetInstancesByYear(const int year) const override { return SuiteBbobNoisyGetInstancesByYear(year); }
+  std::string_view GetInstancesByYear(const int year) const override {
+    if (year <= 2009) {
+      return "1-15";
+    } else {
+      coco_error("SuiteBbobNoisy::GetInstancesByYear(): year %d not defined for suite bbob-noisy", year);
+      return {};
+    }
+  }
 
   /** @brief Returns the problem with the given function, dimension and instance. */
   ProblemPtr GetProblem(const size_t function, const size_t dimension, const size_t instance) override {
@@ -121,20 +116,5 @@ public:
     return problem;
   }
 };
-
-/**
- * @brief Sets the dimensions and default instances for the bbob suite.
- */
-static Suite *SuiteBbobNoisyInitialize() {
-
-  Suite *suite;
-  const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
-  const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
-
-  /* IMPORTANT: Make sure to change the default instance for every new workshop! */
-  suite = new SuiteBbobNoisy("bbob-noisy", 30, num_dimensions, dimensions, "year:2009", 1);
-
-  return suite;
-}
 
 } // namespace coco

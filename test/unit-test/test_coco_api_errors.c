@@ -43,6 +43,11 @@ static int run(const char *name) {
     const double y[2] = {1.0, 1.0};
     coco_logger_biobj_feed_solution(problem, 2, y);
     coco_logger_biobj_feed_solution(problem, 1, y);
+  } else if (strcmp(name, "feed_solution_unobserved") == 0) {
+    coco_suite_t *suite = coco_suite("bbob-biobj", "instances: 1", "dimensions: 2");
+    coco_problem_t *problem = coco_suite_get_next_problem(suite, NULL);
+    const double y[2] = {1.0, 1.0};
+    coco_logger_biobj_feed_solution(problem, 1, y);
   } else {
     printf("unknown case %s\n", name);
     return 2;

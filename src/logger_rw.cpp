@@ -31,7 +31,7 @@ namespace coco {
  * @note Some fields from the observers (coco_observer as well as observer_rw) are copied here because the
  * observers can be deleted before the logger is finalized and we need these fields for finalization.
  */
-class LoggerRw final : public TransformedProblem {
+class LoggerRw final : public Logger {
 public:
   LoggerRw(ObserverRw &observer, ProblemPtr inner);
 
@@ -126,8 +126,7 @@ void LoggerRw::EvaluateFunction(std::span<const double> x, std::span<double> y) 
  * is finalized.
  * - This reduces function calls.
  */
-LoggerRw::LoggerRw(ObserverRw &observer, ProblemPtr inner)
-    : TransformedProblem(std::move(inner), observer.observer_name) {
+LoggerRw::LoggerRw(ObserverRw &observer, ProblemPtr inner) : Logger(observer, std::move(inner)) {
   num_func_evaluations_ = 0;
   num_cons_evaluations_ = 0;
   /* Copy values from the observes that you might need even if they do not exist any more */

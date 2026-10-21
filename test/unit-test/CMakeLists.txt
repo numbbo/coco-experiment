@@ -81,8 +81,9 @@ foreach(error_case IN ITEMS
         "dimension_index@dimensions index exceeding"
         "instance_index@instance index exceeding"
         "fvalues_of_interest@undefined for single-objective problems"
-        "remove_other_observer@trying to remove observer toy instead of bbob"
-        "feed_solution_order@Evaluation 2 came before evaluation 1")
+        "remove_other_observer@Problem bbob_f001_i01_d02 is not observed by observer toy"
+        "feed_solution_order@Evaluation 2 came before evaluation 1"
+        "feed_solution_unobserved@is not observed by a bbob-biobj logger")
   string(REPLACE "@" ";" error_case "${error_case}")
   list(GET error_case 0 error_name)
   list(GET error_case 1 error_message)

@@ -24,11 +24,6 @@ struct LoggerBbobOldInfoState {
   /** @brief The dimensions already in the current info file. If the one about to be logged is new for the
    * current function, a new info file is created with the number of the first instance as suffix. */
   size_t dimensions_in_info_file[NUMBER_OF_DIMENSIONS] = {};
-  /**
-   * @brief Whether a logger is open. The info file handling fails if several problems are open, so this
-   * leads to an error.
-   */
-  bool logger_is_open = false;
 };
 
 /**

@@ -24,6 +24,7 @@
 #include "coco_utilities.cpp"
 #include "coco_problem.cpp"
 #include "coco_string.cpp"
+#include "coco_observer.cpp"
 #include "observer_bbob_old.cpp"
 
 namespace coco {
@@ -38,7 +39,7 @@ static const double WEIGHT_CONSTRAINTS =
 /**
  * @brief The bbob-old logger, which wraps the observed problem.
  */
-class LoggerBbobOld final : public TransformedProblem {
+class LoggerBbobOld final : public Logger {
 public:
   /*char *path;// relative path to the data folder. //Wassim: now fetched from the observer */
 
@@ -56,6 +57,19 @@ public:
 private:
   /** @brief Generates the files and folders needed by the logger if they don't already exist. */
   void Initialize();
+
+  /** @brief Opens the file in append mode, reports an error if that fails. */
+  static void OpenFile(File &file, const std::string &file_path);
+
+  /** @brief Opens (and creates if needed) the data file result_folder_/data_file_path + file_extension. */
+  void OpenDataFile(File &file, const std::string &data_file_path, const char *file_extension) {
+    if (file == nullptr)
+      OpenFile(file, JoinPath(result_folder_, data_file_path + file_extension));
+  }
+
+  /** @brief Adds a formatted line to the data file. */
+  void WriteData(FILE *file, double fvalue, double best_fvalue, std::span<const double> x,
+                 std::span<const double> constraints) const;
 
   /** @brief Creates the index file fileName_prefix+problem_id+file_extension in folder_path. */
   void OpenIndexFile(const std::string &folder_path, const char *indexFile_prefix, const std::string &function_id,
@@ -77,35 +91,11 @@ private:
   bool written_last_eval_{}; /* allows writing the data of the final fun eval in the .tdat file if not already written
                               by the t_trigger*/
   std::vector<double> best_solution_;
-  /* The following are to only pass data as a parameter in the free function. The
-   * interface should probably be the same for all free functions so passing the
-   * problem as a second parameter is not an option even though we need info
-   * form it.*/
   bool log_discrete_as_int_{}; /**< @brief Whether to output discrete variables in int or double format. */
   double optimal_fvalue_{};
   ObserverLogTargets targets_;              /**< @brief Triggers based on target values. */
   ObserverEvaluations evaluation_triggers_; /**< @brief Triggers based on the number of evaluations. */
 };
-
-/**
- * @brief Discretized constraint value, ~8 + log10(c), in a single digit.
- *
- * -\infty..0 -> 0
- *    0..1e-7 -> 1
- * 1e-7..1e-6 -> 2
- *    ...
- * 1e-1..1    -> 8
- *   >1       -> 9
- */
-static int SingleDigitConstraintValue(const double c) {
-  const double limits[9] = {0, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1};
-  int i;
-
-  for (i = 0; i < 9; ++i)
-    if (c <= limits[i])
-      return i;
-  return 9;
-}
 
 /* was (old):
  * function evaluation |
@@ -136,66 +126,39 @@ static const char *BBOB_OLD_FILE_HEADER_STR = "%% "
 static const char *LOGGER_NAME = "bbob_old";
 static const char *DATA_FORMAT = "bbob-new2"; /* back to 5 columns, 5-th column writes single digit constraint values */
 
-/**
- * adds a formated line to a data file
- */
-static void LoggerBbobOldWriteData(FILE *target_file, size_t number_of_f_evaluations, size_t number_of_cons_evaluations,
-                                   double fvalue, double best_fvalue, double best_value, std::span<const double> x,
-                                   size_t number_of_integer_variables, std::span<const double> constraints,
-                                   const int log_discrete_as_int) {
-  const size_t number_of_variables = x.size();
-  const size_t number_of_constraints = constraints.size();
+void LoggerBbobOld::OpenFile(File &file, const std::string &file_path) {
+  if (!file.Open(file_path, "a+"))
+    coco_error("LoggerBbobOld::OpenFile(): Error opening file %s: %s", file_path.c_str(), strerror(errno));
+}
+
+void LoggerBbobOld::WriteData(FILE *file, double fvalue, double best_fvalue, std::span<const double> x,
+                              std::span<const double> constraints) const {
   /* for some reason, it's %.0f in the old code instead of the 10.9e
    * in the documentation
    */
-  fprintf(target_file, "%zu %zu %+10.9e %+10.9e ", number_of_f_evaluations, number_of_cons_evaluations,
-          best_fvalue - best_value, fvalue);
+  fprintf(file, "%zu %zu %+10.9e %+10.9e ", number_of_evaluations_, number_of_evaluations_constraints_,
+          best_fvalue - optimal_fvalue_, fvalue);
 
-  if (number_of_constraints > 0)
-    for (size_t i = 0; i < number_of_constraints; ++i)
-      fprintf(target_file, "%d", SingleDigitConstraintValue(constraints[i]));
+  if (!constraints.empty())
+    for (const double constraint : constraints)
+      fprintf(file, "%d", SingleDigitConstraintValue(constraint));
   else
-    fprintf(target_file, "%+10.9e", best_fvalue);
+    fprintf(file, "%+10.9e", best_fvalue);
 
-  if ((number_of_variables - number_of_integer_variables) < 22) {
-    for (size_t i = 0; i < number_of_variables; i++) {
-      if ((i < number_of_integer_variables) && (log_discrete_as_int))
-        fprintf(target_file, " %d", DoubleToInt(x[i]));
+  if ((x.size() - number_of_integer_variables_) < 22) {
+    for (size_t i = 0; i < x.size(); i++) {
+      if ((i < number_of_integer_variables_) && (log_discrete_as_int_))
+        fprintf(file, " %d", DoubleToInt(x[i]));
       else
-        fprintf(target_file, " %+5.4e", x[i]);
+        fprintf(file, " %+5.4e", x[i]);
     }
   }
-  fprintf(target_file, "\n");
+  fprintf(file, "\n");
 
   /* Flush output so that impatient users can see progress.
    * Otherwise it can take a long time until the output appears.
    */
-  fflush(target_file);
-}
-
-/**
- * Error when trying to create the file "path"
- */
-static void LoggerBbobOldErrorIo(FILE *path, int errnum) {
-  const char *error_format = "Error opening file: %s\n ";
-  coco_error(error_format, strerror(errnum), path);
-}
-
-/**
- * Creates the data files or simply opens it
- */
-
-static void LoggerBbobOldOpenDataFile(File &target_file, const std::string &path, const std::string &dataFile_path,
-                                      const char *file_extension) {
-  int errnum;
-  const std::string file_path = JoinPath(path, dataFile_path + file_extension);
-  if (target_file == nullptr) {
-    target_file.Open(file_path, "a+");
-    errnum = errno;
-    if (target_file == nullptr) {
-      LoggerBbobOldErrorIo(target_file, errnum);
-    }
-  }
+  fflush(file);
 }
 
 void LoggerBbobOld::OpenIndexFile(const std::string &folder_path, const char *indexFile_prefix,
@@ -203,7 +166,7 @@ void LoggerBbobOld::OpenIndexFile(const std::string &folder_path, const char *in
                                   const std::string &suite_name) {
   /* to add the instance number TODO: this should be done outside to avoid redoing this for the .*dat files */
   std::string used_dataFile_path = dataFile_path;
-  int errnum, newLine = 0; /* newLine is at 1 if we need a new line in the info file */
+  int newLine = 0;         /* newLine is at 1 if we need a new line in the info file */
   File tmp_file;           /* to check whether the file already exists */
   if (info_state_->first_instance == 0) {
     info_state_->first_instance = suite_dep_instance();
@@ -218,11 +181,7 @@ void LoggerBbobOld::OpenIndexFile(const std::string &folder_path, const char *in
     if ((tmp_file) && (info_state_->current_dimension == number_of_variables_) &&
         (info_state_->current_function == suite_dep_function())) {
       /* new instance of current funId and current dim */
-      target_file.Open(file_path, "a+");
-      if (target_file == nullptr) {
-        errnum = errno;
-        LoggerBbobOldErrorIo(target_file, errnum);
-      }
+      OpenFile(target_file, file_path);
       tmp_file.Close();
     } else { /* either file doesn't exist (new funId) or new Dim */
       /* check that the dim was not already present earlier in the file, if so, create a new info file */
@@ -261,11 +220,7 @@ void LoggerBbobOld::OpenIndexFile(const std::string &folder_path, const char *in
           newLine = 1;
         }
       }
-      target_file.Open(file_path, "a+"); /* in any case, we append */
-      if (target_file == nullptr) {
-        errnum = errno;
-        LoggerBbobOldErrorIo(target_file, errnum);
-      }
+      OpenFile(target_file, file_path); /* in any case, we append */
       if (tmp_file) { /* File already exists, new dim so just a new line. Also, close the tmp_file */
         if (newLine) {
           fprintf(target_file, "\n");
@@ -298,7 +253,7 @@ void LoggerBbobOld::Initialize() {
   assert(inner_problem_ != nullptr);
   assert(!inner_problem_->id().empty());
 
-  const std::string tmpc_funId = StringFormat("%zu", ProblemGetSuiteDepFunction(inner_problem_.get()));
+  const std::string tmpc_funId = StringFormat("%zu", inner_problem_->suite_dep_function());
   const std::string tmpc_dim = StringFormat("%zu", inner_problem_->number_of_variables());
 
   /* prepare paths and names */
@@ -308,18 +263,18 @@ void LoggerBbobOld::Initialize() {
   /* index/info file */
   assert(inner_problem_->suite());
   OpenIndexFile(result_folder_, indexFile_prefix, tmpc_funId, dataFile_path, inner_problem_->suite()->name());
-  fprintf(index_file_, ", %zu", ProblemGetSuiteDepInstance(inner_problem_.get()));
+  fprintf(index_file_, ", %zu", inner_problem_->suite_dep_instance());
   /* data files */
   /* TODO: definitely improvable but works for now */
   dataFile_path += "_i" + info_state_->first_instance_string;
 
-  LoggerBbobOldOpenDataFile(fdata_file_, result_folder_, dataFile_path, ".dat");
+  OpenDataFile(fdata_file_, dataFile_path, ".dat");
   fprintf(fdata_file_, BBOB_OLD_FILE_HEADER_STR, optimal_fvalue_);
 
-  LoggerBbobOldOpenDataFile(tdata_file_, result_folder_, dataFile_path, ".tdat");
+  OpenDataFile(tdata_file_, dataFile_path, ".tdat");
   fprintf(tdata_file_, BBOB_OLD_FILE_HEADER_STR, optimal_fvalue_);
 
-  LoggerBbobOldOpenDataFile(rdata_file_, result_folder_, dataFile_path, ".rdat");
+  OpenDataFile(rdata_file_, dataFile_path, ".rdat");
   fprintf(rdata_file_, BBOB_OLD_FILE_HEADER_STR, optimal_fvalue_);
   is_initialized_ = true;
 }
@@ -387,16 +342,13 @@ void LoggerBbobOld::EvaluateFunction(std::span<const double> x, std::span<double
      * by a feasible solution and always at evaluation one
      */
     if (number_of_evaluations_ == 1 || targets_.Trigger(best_fvalue_ - optimal_fvalue_)) {
-      LoggerBbobOldWriteData(fdata_file_, number_of_evaluations_, number_of_evaluations_constraints_, y_logged,
-                             best_fvalue_, optimal_fvalue_, x, number_of_integer_variables_, cons,
-                             log_discrete_as_int_);
+      WriteData(fdata_file_, y_logged, best_fvalue_, x, cons);
     }
   }
 
   /* Add a line in the .tdat file each time an fevals trigger is reached.*/
   if (evaluation_triggers_.Trigger(number_of_evaluations_ + number_of_evaluations_constraints_)) {
-    LoggerBbobOldWriteData(tdata_file_, number_of_evaluations_, number_of_evaluations_constraints_, y_logged,
-                           best_fvalue_, optimal_fvalue_, x, number_of_integer_variables_, cons, log_discrete_as_int_);
+    WriteData(tdata_file_, y_logged, best_fvalue_, x, cons);
     written_last_eval_ = 1;
   }
 
@@ -420,18 +372,13 @@ LoggerBbobOld::~LoggerBbobOld() {
      * "instance" of problem for each restart in the beginning
      */
     if (!written_last_eval_) {
-      LoggerBbobOldWriteData(tdata_file_, number_of_evaluations_, number_of_evaluations_constraints_, best_fvalue_,
-                             best_fvalue_, optimal_fvalue_, best_solution_, number_of_integer_variables_, {},
-                             log_discrete_as_int_);
+      WriteData(tdata_file_, best_fvalue_, best_fvalue_, best_solution_, {});
     }
     tdata_file_.Close();
   }
-
-  info_state_->logger_is_open = false;
 }
 
-LoggerBbobOld::LoggerBbobOld(ObserverBbobOld &observer, ProblemPtr inner)
-    : TransformedProblem(std::move(inner), observer.observer_name) {
+LoggerBbobOld::LoggerBbobOld(ObserverBbobOld &observer, ProblemPtr inner) : Logger(observer, std::move(inner)) {
   result_folder_ = observer.result_folder;
   info_state_ = observer.info_state_;
   algorithm_name_ = observer.algorithm_name;
@@ -441,8 +388,6 @@ LoggerBbobOld::LoggerBbobOld(ObserverBbobOld &observer, ProblemPtr inner)
                  inner_problem_->number_of_objectives());
   }
 
-  if (observer.info_state_->logger_is_open)
-    coco_error("The current bbob_old_logger (observer) must be closed before a new one is opened");
   if (inner_problem_->best_value().empty()) {
     /* Setting the value to 0 results in the assertion y>=optimal_fvalue being susceptible to failure */
     coco_warning("undefined optimal f value. Set to 0");
@@ -467,11 +412,11 @@ LoggerBbobOld::LoggerBbobOld(ObserverBbobOld &observer, ProblemPtr inner)
   targets_ = ObserverLogTargets(observer.number_target_triggers, observer.log_target_precision);
   evaluation_triggers_ = ObserverEvaluations(observer.number_evaluation_triggers, observer.base_evaluation_triggers,
                                              inner_problem_->number_of_variables());
-
-  observer.info_state_->logger_is_open = true;
 }
 
 ProblemPtr ObserverBbobOld::AddLogger(ProblemPtr problem) {
+  if (number_of_loggers() > 0)
+    coco_error("The current bbob_old_logger (observer) must be closed before a new one is opened");
   return std::make_unique<LoggerBbobOld>(*this, std::move(problem));
 }
 

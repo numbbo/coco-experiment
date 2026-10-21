@@ -50,9 +50,9 @@ class LoggerBiobj;
 class ObserverBiobj final : public Observer {
 public:
   ObserverBiobj(const ObserverSettings &observer_settings, std::string_view options, OptionKeys &option_keys)
-      : Observer(observer_settings), observed_problem_(nullptr), log_nondom_mode_(LOG_NONDOM_ALL),
-        log_vars_mode_(LOG_VARS_LOW_DIM), compute_indicators_(true), produce_all_data_(false),
-        large_mdat_file_warning_(false), previous_function_(-1), previous_dimension_(-1) {
+      : Observer(observer_settings), log_nondom_mode_(LOG_NONDOM_ALL), log_vars_mode_(LOG_VARS_LOW_DIM),
+        compute_indicators_(true), produce_all_data_(false), large_mdat_file_warning_(false), previous_function_(-1),
+        previous_dimension_(-1) {
 
     std::string string_value;
 
@@ -98,18 +98,13 @@ public:
     }
   }
 
-  ~ObserverBiobj() override;
-
   ProblemPtr AddLogger(ProblemPtr problem) override;
-
-  void SignalRestart(Problem *problem) override;
 
 private:
   /* The logger and its indicators read the settings and keep the state of the last logged problem */
   friend class LoggerBiobj;
   friend class LoggerBiobjIndicator;
 
-  LoggerBiobj *observed_problem_; /**< @brief The logger of the observed problem (nullptr if none is observed) */
   ObserverBiobjLogNondom log_nondom_mode_;      /**< @brief Handling of the nondominated solutions. */
   ObserverBiobjLogVars log_vars_mode_;          /**< @brief When the decision variables are logged. */
   bool compute_indicators_;                     /**< @brief Whether to compute indicators. */

@@ -17,40 +17,38 @@ namespace coco {
  * @name Methods regarding the basic COCO problem
  */
 /**@{*/
-/**
- * Evaluates the problem constraint.
- *
- * @note Both x and y must point to correctly sized allocated memory regions.
- *
- * @param problem The given COCO problem.
- * @param x The decision vector.
- * @param y The vector of constraints that is the result of the evaluation.
- */
-void EvaluateConstraintOptionalUpdate(Problem *problem, const double *x, double *y, int update_counter) {
-  /* implements a safer version of problem->evaluate(problem, x, y) */
-  assert(problem != nullptr);
-  const std::span<const double> x_span(x, coco_problem_get_dimension(problem));
-  const std::span<double> y_span(y, coco_problem_get_number_of_constraints(problem));
-
-  /* Set constraints vector to INFINITY if the decision vector contains any INFINITY values */
-  for (const double xi : x_span) {
+bool Problem::SetNonFiniteValues(std::span<const double> x, std::span<double> y) {
+  /* Set y to INFINITY if x contains any INFINITY values */
+  for (const double xi : x) {
     if (IsInf(xi)) {
-      for (double &yj : y_span) {
+      for (double &yj : y) {
         yj = fabs(xi);
       }
-      return;
+      return true;
     }
   }
 
-  /* Set constraints vector to NAN if the decision vector contains any NAN values */
-  if (VectorContainsNan(x_span)) {
-    VectorSetToNan(y_span);
-    return;
+  /* Set y to NAN if x contains any NAN values */
+  if (VectorContainsNan(x)) {
+    VectorSetToNan(y);
+    return true;
   }
+  return false;
+}
 
-  problem->EvaluateConstraint(x_span, y_span, update_counter);
+void Problem::EvaluateFunctionChecked(std::span<const double> x, std::span<double> y) {
+  if (SetNonFiniteValues(x, y))
+    return;
+  EvaluateFunction(x, y);
+  CountEvaluation(x, y);
+}
+
+void Problem::EvaluateConstraintChecked(std::span<const double> x, std::span<double> y, int update_counter) {
+  if (SetNonFiniteValues(x, y))
+    return;
+  EvaluateConstraint(x, y, update_counter);
   if (update_counter)
-    problem->CountConstraintEvaluation();
+    CountConstraintEvaluation();
 }
 
 /**
@@ -64,8 +62,7 @@ void Problem::EvaluateFunction(std::span<const double>, std::span<double>) {
 }
 
 void Problem::EvaluateConstraint(std::span<const double>, std::span<double>, int) {
-  coco_error("EvaluateConstraintOptionalUpdate(): No constraint function implemented for problem %s",
-             problem_id_.c_str());
+  coco_error("EvaluateConstraint(): No constraint function implemented for problem %s", problem_id_.c_str());
 }
 
 void Problem::EvaluateGradient(std::span<const double>, std::span<double>) {
@@ -213,12 +210,7 @@ void Problem::InitFromScalars(std::string_view name, const double smallest, cons
 
 /***********************************************************************************************************/
 
-/**
- * @brief Checks whether the given string is in the right format to be a problem_id.
- *
- * No non-alphanumeric characters besides '-' and '_' are allowed.
- */
-static bool ProblemIdIsFine(const std::string &id) {
+bool Problem::IdIsFine(const std::string &id) {
   for (const char c : id) {
     if (('A' <= c) && (c <= 'Z'))
       continue;
@@ -244,7 +236,7 @@ void Problem::SetId(const char *format, ...) {
   va_start(args, format);
   problem_id_ = StringVFormat(format, args);
   va_end(args);
-  if (!ProblemIdIsFine(problem_id_)) {
+  if (!IdIsFine(problem_id_)) {
     coco_error("Problem id should only contain standard chars, not like '%s'", problem_id_.c_str());
   }
 }
@@ -271,17 +263,6 @@ void Problem::SetType(const char *format, ...) {
   va_end(args);
 }
 
-static size_t ProblemGetSuiteDepFunction(const Problem *problem) {
-  assert(problem != nullptr);
-  assert(problem->suite_dep_function() > 0);
-  return problem->suite_dep_function();
-}
-
-static size_t ProblemGetSuiteDepInstance(const Problem *problem) {
-  assert(problem != nullptr);
-  assert(problem->suite_dep_instance() > 0);
-  return problem->suite_dep_instance();
-}
 /**@}*/
 
 /***********************************************************************************************************/
@@ -290,15 +271,6 @@ static size_t ProblemGetSuiteDepInstance(const Problem *problem) {
  * @name Methods regarding the transformed COCO problem
  */
 /**@{*/
-
-/**
- * @brief Returns the transformed problem behind the given problem pointer.
- */
-static TransformedProblem *ProblemAsTransformed(const Problem *problem) {
-  assert(problem != nullptr);
-  assert(dynamic_cast<const TransformedProblem *>(problem) != nullptr);
-  return static_cast<TransformedProblem *>(const_cast<Problem *>(problem));
-}
 
 /**
  * @brief Constructs a transformed problem that wraps the inner_problem.
@@ -360,13 +332,6 @@ bool TransformedProblem::IdentityInverse(std::span<const double> inner_x, std::s
   assert(inner_x.size() == x.size());
   std::copy(inner_x.begin(), inner_x.end(), x.begin());
   return true;
-}
-
-/**
- * @brief Frees the transformed problem but not its inner problem, which is returned instead.
- */
-static ProblemPtr ProblemTransformedFreeKeepInner(ProblemPtr problem) {
-  return ProblemAsTransformed(problem.get())->ReleaseInnerProblem();
 }
 
 /**@}*/
@@ -431,33 +396,15 @@ void BiobjProblem::EvaluateFunction(std::span<const double> x, std::span<double>
  * first vector item is being set).
  */
 void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
-  /* implements a safer version of problem->evaluate(problem, x, y) */
   assert(problem != nullptr);
-  const std::span<const double> x_span(x, coco_problem_get_dimension(problem));
-  const std::span<double> y_span(y, coco_problem_get_number_of_objectives(problem));
-
-  /* Set objective vector to INFINITY if the decision vector contains any INFINITY values */
-  for (const double xi : x_span) {
-    if (coco::IsInf(xi)) {
-      for (double &yj : y_span) {
-        yj = fabs(xi);
-      }
-      return;
-    }
-  }
-
-  /* Set objective vector to NAN if the decision vector contains any NAN values */
-  if (coco::VectorContainsNan(x_span)) {
-    coco::VectorSetToNan(y_span);
-    return;
-  }
-
-  FromC(problem)->EvaluateFunction(x_span, y_span);
-  FromC(problem)->CountEvaluation(x_span, y_span);
+  FromC(problem)->EvaluateFunctionChecked({x, FromC(problem)->number_of_variables()},
+                                          {y, FromC(problem)->number_of_objectives()});
 }
 
 void coco_evaluate_constraint(coco_problem_t *problem, const double *x, double *y) {
-  EvaluateConstraintOptionalUpdate(FromC(problem), x, y, 1);
+  assert(problem != nullptr);
+  FromC(problem)->EvaluateConstraintChecked({x, FromC(problem)->number_of_variables()},
+                                            {y, FromC(problem)->number_of_constraints()}, 1);
 }
 
 /**

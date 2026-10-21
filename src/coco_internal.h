@@ -34,6 +34,7 @@ namespace coco {
 class Problem;
 class Suite;
 class Observer;
+class Logger;
 
 /***********************************************************************************************************/
 /**
@@ -110,16 +111,28 @@ public:
   /**
    * @brief Evaluates the objective function(s) at x and stores the result in y.
    *
-   * Does not check x or update any counters, see coco_evaluate_function() for that.
+   * Does not check x or update any counters, see EvaluateFunctionChecked() for that.
    */
   virtual void EvaluateFunction(std::span<const double> x, std::span<double> y);
 
   /**
    * @brief Evaluates the constraints at x and stores the result in y.
    *
-   * Does not check x or update the counter of this problem, see EvaluateConstraintOptionalUpdate().
+   * Does not check x or update the counter of this problem, see EvaluateConstraintChecked() for that.
    */
   virtual void EvaluateConstraint(std::span<const double> x, std::span<double> y, int update_counter);
+
+  /**
+   * @brief Evaluates the objective function(s) at x unless x contains infinite values (y is then set to their
+   * absolute value) or NaNs (y is then NaN) and counts the evaluation (only in the first case).
+   */
+  void EvaluateFunctionChecked(std::span<const double> x, std::span<double> y);
+
+  /**
+   * @brief Evaluates the constraints at x like EvaluateFunctionChecked() and counts the evaluation if
+   * update_counter is set.
+   */
+  void EvaluateConstraintChecked(std::span<const double> x, std::span<double> y, int update_counter);
 
   /** @brief Evaluates the gradient of the objective function at x and stores the result in y. */
   virtual void EvaluateGradient(std::span<const double> x, std::span<double> y);
@@ -263,6 +276,15 @@ protected:
   std::vector<double> best_parameter_; /**< @brief Optimal decision vector (empty unless unique) */
 
 private:
+  /**
+   * @brief Sets y for an x that contains infinite values or NaNs (see EvaluateFunctionChecked()) and returns
+   * whether it did.
+   */
+  static bool SetNonFiniteValues(std::span<const double> x, std::span<double> y);
+
+  /** @brief Returns whether id only contains alphanumeric characters, '-' and '_'. */
+  static bool IdIsFine(const std::string &id);
+
   bool tainted_; /**< @brief Is the problem tainted, i.e. has the optimal parameter setting been retrieved? */
 
   std::string problem_name_; /**< @brief Problem name. */
@@ -381,7 +403,8 @@ struct ObserverSettings {
 class Observer : public coco_observer_s, protected ObserverSettings {
 public:
   explicit Observer(const ObserverSettings &observer_settings) : ObserverSettings(observer_settings), active_(true) {}
-  virtual ~Observer() = default;
+  /** @brief Makes the loggers that still exist forget this observer. */
+  virtual ~Observer();
 
   Observer(const Observer &) = delete;
   Observer &operator=(const Observer &) = delete;
@@ -390,16 +413,25 @@ public:
   virtual ProblemPtr AddLogger(ProblemPtr problem) = 0;
 
   /**
-   * @brief Signals an algorithm restart on the given (observed) problem. The default implementation reports
-   * that restarts are not supported.
+   * @brief Signals an algorithm restart to the logger of the given problem. Only warns if this observer does not
+   * observe the problem.
    */
-  virtual void SignalRestart(Problem *problem);
+  void SignalRestart(Problem *problem);
 
   /**
    * @brief Wraps the problem with the logger of this observer if the observer is active and returns the
    * result (the problem itself if the observer is not active, nullptr for a nullptr problem).
    */
   ProblemPtr Observe(ProblemPtr problem);
+
+  /**
+   * @brief Frees the logger of this observer that wraps the given problem and returns the inner problem. It is an
+   * error if the given problem is not such a logger.
+   */
+  ProblemPtr RemoveLogger(ProblemPtr problem);
+
+  /** @brief Returns the given problem if it is a logger of this observer, nullptr otherwise. */
+  Logger *LoggerOf(const Problem *problem) const;
 
   /** @brief Returns whether the observer is active (the logger will log some output). */
   bool is_active() const { return active_; }
@@ -411,8 +443,41 @@ protected:
   /** @brief Makes the observer inactive, e.g. because its options do not ask for any output. */
   void Deactivate() { active_ = false; }
 
+  /** @brief Returns the number of loggers of this observer that exist. */
+  size_t number_of_loggers() const { return loggers_.size(); }
+
 private:
-  bool active_; /**< @brief Whether the observer is active (the logger will log some output). */
+  friend class Logger; /* Registers and unregisters itself */
+
+  bool active_;                   /**< @brief Whether the observer is active (the logger will log some output). */
+  std::vector<Logger *> loggers_; /**< @brief The loggers of this observer that exist (not owned). */
+};
+
+/**
+ * @brief The base class of the loggers, which wrap the observed problems.
+ *
+ * A logger registers with its observer when it is created and unregisters when it is deleted, so the observer
+ * knows which problems it observes. If the observer is deleted first, the logger forgets it and observer()
+ * returns nullptr.
+ */
+class Logger : public TransformedProblem {
+public:
+  Logger(Observer &observer, ProblemPtr inner);
+  ~Logger() override;
+
+  /**
+   * @brief Saves the information that the algorithm has restarted. The default implementation reports that
+   * restarts are not supported.
+   */
+  virtual void SignalRestart();
+
+  /** @brief Returns the observer of this logger (nullptr if it has been deleted). */
+  Observer *observer() const { return observer_; }
+
+private:
+  friend class Observer; /* Makes the logger forget it */
+
+  Observer *observer_; /**< @brief The observer of this logger (nullptr if it has been deleted) */
 };
 
 /**
@@ -427,10 +492,16 @@ class Suite : public coco_suite_s {
 public:
   /**
    * @brief Sets the functions and dimensions contained in the suite, while the instances are set by
-   * coco_suite_set_instance().
+   * SetInstances().
    */
-  Suite(std::string_view suite_name, const size_t number_of_functions, const size_t number_of_dimensions,
-        const size_t *dimensions, std::string_view default_instances, const int known_optima);
+  Suite(std::string_view suite_name, const size_t number_of_functions, std::vector<size_t> dimensions,
+        std::string_view default_instances, const bool known_optima);
+
+  /**
+   * @brief Creates the suite with the given name, instances and options (see coco_suite()). Returns nullptr if
+   * the options leave no problem.
+   */
+  static Suite *Create(std::string_view suite_name, std::string_view suite_instance, std::string_view suite_options);
   /** @brief Frees the current problem (if any). */
   virtual ~Suite();
 
@@ -496,6 +567,24 @@ public:
   void set_known_optima(const bool known) { known_optima_ = known; }
 
 private:
+  /** @brief Creates the suite with the given name. Add new suites here. */
+  static Suite *New(std::string_view suite_name);
+
+  /**
+   * @brief Returns the instances read from either a "year: YEAR" or "instances: NUMBERS" string (empty if there
+   * are none).
+   */
+  std::vector<size_t> ParseInstances(std::string_view suite_instance) const;
+
+  /** @brief Sets items[i - 1] to 0 for every i (starting from 1) that is not in indices. */
+  static void FilterIndices(std::vector<size_t> &items, const std::vector<size_t> &indices);
+
+  /**
+   * @brief Moves current_item_id to the next positive item and returns true. If there is none, moves it to the
+   * first positive item and returns false.
+   */
+  static bool NextItem(const std::vector<size_t> &items, long &current_item_id);
+
   /** @brief Moves to the next instance that is not filtered out, returns 0 if it wrapped around. */
   bool NextInstance();
 
