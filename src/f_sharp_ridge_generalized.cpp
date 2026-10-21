@@ -18,19 +18,40 @@
 #include "transform_vars_shift.cpp"
 
 /**
- * @brief Parameters of the sharp ridge function.
+ * @brief The sharp ridge function.
  */
-struct f_sharp_ridge_generalized_data_t {
-  size_t proportion_of_linear_dims;
+struct f_sharp_ridge_generalized_t final : public coco_problem_s {
+  size_t proportion_of_linear_dims{};
+
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(const double *x) const;
+
+  f_sharp_ridge_generalized_t(const size_t number_of_variables, size_t proportion_of_linear_dims)
+      : coco_problem_s(number_of_variables, 1, 0) {
+    /* Wassim: proportion_of_linear_dims should probably be allowed to be non-integer */
+    init_from_scalars("sharp ridge function", -5.0, 5.0, 0.0);
+    set_id("%s_d%02lu", "sharp_ridge_generalized", number_of_variables);
+    this->proportion_of_linear_dims = proportion_of_linear_dims;
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = raw(x);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
 };
 
 /**
  * @brief Implements the generalized sharp ridge function without connections to
  * any COCO structures.
  */
-static double
-f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
-                              f_sharp_ridge_generalized_data_t *data) {
+double f_sharp_ridge_generalized_t::raw(const double *x) const {
 
   static const double alpha = 100.0;
   size_t i = 0, number_linear_dimensions;
@@ -42,12 +63,8 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
     return NAN;
 
   result = 0.0;
-  number_linear_dimensions =
-      number_of_variables /
-      data->proportion_of_linear_dims;
-  if (number_of_variables %
-          data->proportion_of_linear_dims !=
-      0) {
+  number_linear_dimensions = number_of_variables / proportion_of_linear_dims;
+  if (number_of_variables % proportion_of_linear_dims != 0) {
     number_linear_dimensions += 1;
   }
   for (i = number_linear_dimensions; i < number_of_variables; ++i) {
@@ -60,33 +77,6 @@ f_sharp_ridge_generalized_raw(const double *x, const size_t number_of_variables,
 
   return result;
 }
-
-/**
- * @brief The sharp ridge function.
- */
-struct f_sharp_ridge_generalized_t final : public coco_problem_s {
-  f_sharp_ridge_generalized_data_t params;
-
-  f_sharp_ridge_generalized_t(const size_t number_of_variables, size_t proportion_of_linear_dims)
-      : coco_problem_s(number_of_variables, 1, 0) {
-    /* Wassim: proportion_of_linear_dims should probably be allowed to be non-integer */
-    coco_problem_init_from_scalars(this, "sharp ridge function", -5.0, 5.0, 0.0);
-    coco_problem_set_id(this, "%s_d%02lu", "sharp_ridge_generalized", number_of_variables);
-    params.proportion_of_linear_dims = proportion_of_linear_dims;
-
-    /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
-  }
-
-  /**
-   * @brief Uses the raw function to evaluate the COCO problem.
-   */
-  void evaluate_function(const double *x, double *y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_sharp_ridge_generalized_raw(x, number_of_variables, &params);
-    assert(y[0] + 1e-13 >= best_value[0]);
-  }
-};
 
 /**
  * @brief Allocates the basic sharp ridge problem.
@@ -154,9 +144,9 @@ static coco_problem_ptr_t f_sharp_ridge_generalized_permblockdiag_bbob_problem_a
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "3-ill-conditioned");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("3-ill-conditioned");
 
   return problem;
 }

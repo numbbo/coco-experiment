@@ -143,42 +143,6 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
 }
 
 /**
- * @brief Returns the problem from the constrained bbob suite that
- *        corresponds to the given parameters.
- *
- * @param suite The COCO suite.
- * @param function_idx Index of the function (starting from 0).
- * @param dimension_idx Index of the dimension (starting from 0).
- * @param instance_idx Index of the instance (starting from 0).
- * @return The problem that corresponds to the given parameters.
- */
-static coco_problem_ptr_t suite_cons_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                                      const size_t dimension_idx, const size_t instance_idx) {
-
-  coco_problem_ptr_t problem;
-
-  const size_t function = suite->functions[function_idx];
-  const size_t dimension = suite->dimensions[dimension_idx];
-  const size_t instance = suite->instances[instance_idx];
-
-  problem = coco_get_cons_bbob_problem(suite->suite_name, function, dimension, instance);
-
-  problem->suite_dep_function = function;
-  problem->suite_dep_instance = instance;
-  problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
-
-  /* Use the standard stacked problem_id as problem_name and
-   * construct a new suite-specific problem_id
-   */
-  coco_problem_set_id(problem.get(), "%s_f%03lu_i%02lu_d%02lu", suite->suite_name.c_str(), (unsigned long)function,
-                      (unsigned long)instance, (unsigned long)dimension);
-  coco_problem_set_name(problem.get(), "%s suite problem f%lu instance %lu in %luD", suite->suite_name.c_str(),
-                        (unsigned long)function, (unsigned long)instance, (unsigned long)dimension);
-
-  return problem;
-}
-
-/**
  * @brief The bbob-constrained suites.
  */
 struct suite_cons_bbob_t final : public coco_suite_s {
@@ -188,9 +152,21 @@ struct suite_cons_bbob_t final : public coco_suite_s {
     return suite_cons_bbob_get_instances_by_year(year);
   }
 
-  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
-                                 const size_t instance_idx) override {
-    return suite_cons_bbob_get_problem(this, function_idx, dimension_idx, instance_idx);
+  /** @brief Returns the problem with the given function, dimension and instance. */
+  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
+    coco_problem_ptr_t problem;
+
+    problem = coco_get_cons_bbob_problem(suite_name, function, dimension, instance);
+
+    /* Use the standard stacked problem_id as problem_name and
+     * construct a new suite-specific problem_id
+     */
+    problem->set_id("%s_f%03lu_i%02lu_d%02lu", suite_name.c_str(), (unsigned long)function, (unsigned long)instance,
+                    (unsigned long)dimension);
+    problem->set_name("%s suite problem f%lu instance %lu in %luD", suite_name.c_str(), (unsigned long)function,
+                      (unsigned long)instance, (unsigned long)dimension);
+
+    return problem;
   }
 };
 

@@ -94,7 +94,7 @@ MU_TEST(test_coco_evaluate_constraint) {
 }
 
 /**
- * Tests whether the coco_is_feasible returns 0 when given a vector 
+ * Tests whether coco_problem_s::is_feasible() returns 0 when given a vector 
  * with one or more NAN values and 1 for the initial solution given
  * by COCO.
  */
@@ -115,9 +115,9 @@ MU_TEST(test_coco_is_feasible) {
     x[1] = NAN;
   	number_of_constraints = coco_problem_get_number_of_constraints(problem);
   	y = coco_allocate_vector(number_of_constraints);
-    mu_check(coco_is_feasible(problem, x, y) == 0);
+    mu_check(problem->is_feasible(x, y) == 0);
     coco_problem_get_initial_solution(problem, initial_solution);
-    mu_check(coco_is_feasible(problem, initial_solution, y) == 1);
+    mu_check(problem->is_feasible(initial_solution, y) == 1);
     coco_free_memory(y);
   }
   coco_suite_free(suite);

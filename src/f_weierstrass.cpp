@@ -23,56 +23,27 @@
 #define F_WEIERSTRASS_SUMMANDS 12
 
 /**
- * @brief Data type for the Weierstrass problem.
- */
-struct f_weierstrass_data_t {
-  double f0;
-  double ak[F_WEIERSTRASS_SUMMANDS];
-  double bk[F_WEIERSTRASS_SUMMANDS];
-};
-
-/**
- * @brief Implements the Weierstrass function without connections to any COCO
- * structures.
- */
-static double f_weierstrass_raw(const double *x,
-                                const size_t number_of_variables,
-                                f_weierstrass_data_t *data) {
-
-  size_t i, j;
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = 0.0;
-  for (i = 0; i < number_of_variables; ++i) {
-    for (j = 0; j < F_WEIERSTRASS_SUMMANDS; ++j) {
-      result += cos(2 * coco_pi * (x[i] + 0.5) * data->bk[j]) * data->ak[j];
-    }
-  }
-  result = 10.0 * pow(result / (double)(long)number_of_variables - data->f0, 3.0);
-
-  return result;
-}
-
-/**
  * @brief The Weierstrass function.
  */
 struct f_weierstrass_t final : public coco_problem_s {
-  f_weierstrass_data_t params;
+  double f0{};
+  double ak[F_WEIERSTRASS_SUMMANDS]{};
+  double bk[F_WEIERSTRASS_SUMMANDS]{};
+
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(const double *x) const;
 
   explicit f_weierstrass_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     size_t i;
 
-    coco_problem_init_from_scalars(this, "Weierstrass function", -5.0, 5.0, 0.);
-    coco_problem_set_id(this, "%s_d%02lu", "weierstrass", number_of_variables);
+    init_from_scalars("Weierstrass function", -5.0, 5.0, 0.);
+    set_id("%s_d%02lu", "weierstrass", number_of_variables);
 
-    params.f0 = 0.0;
+    f0 = 0.0;
     for (i = 0; i < F_WEIERSTRASS_SUMMANDS; ++i) {
-      params.ak[i] = pow(0.5, (double)i);
-      params.bk[i] = pow(3., (double)i);
-      params.f0 += params.ak[i] * cos(2 * coco_pi * params.bk[i] * 0.5);
+      ak[i] = pow(0.5, (double)i);
+      bk[i] = pow(3., (double)i);
+      f0 += ak[i] * cos(2 * coco_pi * bk[i] * 0.5);
     }
 
     /* Compute best solution */
@@ -85,10 +56,33 @@ struct f_weierstrass_t final : public coco_problem_s {
    */
   void evaluate_function(const double *x, double *y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_weierstrass_raw(x, number_of_variables, &params);
+    y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
+
+/**
+ * @brief Implements the Weierstrass function without connections to any COCO
+ * structures.
+ */
+double f_weierstrass_t::raw(const double *x) const {
+
+  size_t i, j;
+  double result;
+
+  if (coco_vector_contains_nan(x, number_of_variables))
+    return NAN;
+
+  result = 0.0;
+  for (i = 0; i < number_of_variables; ++i) {
+    for (j = 0; j < F_WEIERSTRASS_SUMMANDS; ++j) {
+      result += cos(2 * coco_pi * (x[i] + 0.5) * bk[j]) * ak[j];
+    }
+  }
+  result = 10.0 * pow(result / (double)(long)number_of_variables - f0, 3.0);
+
+  return result;
+}
 
 /**
  * @brief Allocates the basic Weierstrass problem.
@@ -148,9 +142,9 @@ static coco_problem_ptr_t f_weierstrass_bbob_problem_allocate(const size_t funct
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "4-multi-modal");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("4-multi-modal");
 
   return problem;
 }
@@ -220,9 +214,9 @@ static coco_problem_ptr_t f_weierstrass_permblockdiag_bbob_problem_allocate(cons
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "4-multi-modal");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("4-multi-modal");
 
   return problem;
 }

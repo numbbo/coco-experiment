@@ -36,7 +36,7 @@ struct transform_obj_cauchy_noise_t final : public coco_problem_transformed_t {
     for (size_t i = 0; i < number_of_objectives; i++) {
       last_noise_free_values[i] = y[i];
     }
-    *(y) = *(y) + cauchy_noise + 1.01 * tol + coco_boundary_handling(this, x);
+    *(y) = *(y) + cauchy_noise + 1.01 * tol + boundary_penalty(x);
   }
 };
 

@@ -32,6 +32,12 @@
  * until negative infinity.
  */
 struct coco_observer_log_targets_t {
+  coco_observer_log_targets_t() = default;
+  coco_observer_log_targets_t(const size_t number_of_triggers, const double precision);
+
+  /** @brief Returns whether the given value triggers logging and updates the target if so. */
+  int trigger(const double given_value);
+
   int exponent = INT_MAX;        /**< @brief Value used to compare with the previously hit
                                     target. */
   double value = DBL_MAX;        /**< @brief Value of the currently hit target. */
@@ -48,6 +54,9 @@ struct coco_observer_log_targets_t {
  * value.
  */
 struct coco_observer_lin_targets_t {
+  /** @brief Returns whether the given value triggers logging and updates the target if so. */
+  int trigger(const double given_value);
+
   double value = DBL_MAX; /**< @brief Value of the currently hit target. */
   double precision = 0;   /**< @brief Precision of interest. */
 };
@@ -60,6 +69,16 @@ struct coco_observer_lin_targets_t {
  * on problems with known optima.
  */
 struct coco_observer_targets_t {
+  coco_observer_targets_t() = default;
+  coco_observer_targets_t(const int optima_known, const double lin_precision, const size_t number_of_targets,
+                          const double log_precision);
+
+  /** @brief Returns whether the given value triggers logging. */
+  int trigger(const double given_value);
+
+  /** @brief Returns the last triggered target. */
+  double last_target() const;
+
   int use_log_targets = 0;
   coco_observer_lin_targets_t lin_targets;
   coco_observer_log_targets_t log_targets; /**< @brief Only used if use_log_targets is set. */
@@ -73,6 +92,12 @@ struct coco_observer_targets_t {
  * - every base_evaluation * dimension * (10**exponent2) for exponent2 >= 0
  */
 struct coco_observer_evaluations_t {
+  coco_observer_evaluations_t() = default;
+  coco_observer_evaluations_t(const size_t number_evaluation_triggers, std::string_view base_evaluations,
+                              const size_t dimension);
+
+  /** @brief Returns whether the given evaluation number triggers logging. */
+  int trigger(const size_t evaluation_number);
 
   /* First trigger */
   size_t value1 = 1;             /**< @brief The next value for the first trigger. */
@@ -89,6 +114,10 @@ struct coco_observer_evaluations_t {
   size_t base_index = 0;        /**< @brief The next index of the base evaluations. */
   size_t dimension = 0;         /**< @brief Dimension used in the calculation of the first
                                    trigger. */
+
+private:
+  int trigger_first(const size_t evaluation_number);
+  int trigger_second(const size_t evaluation_number);
 };
 
 /**
@@ -114,18 +143,14 @@ struct coco_observer_evaluations_t {
  * for each i. If 0, the logarithmic targets will not be used.
  * @param precision Minimal precision of interest.
  */
-static coco_observer_log_targets_t coco_observer_log_targets(const size_t number_of_targets, const double precision) {
-  coco_observer_log_targets_t log_targets;
-  log_targets.number_of_triggers = number_of_targets;
-  log_targets.precision = precision;
-  return log_targets;
-}
+coco_observer_log_targets_t::coco_observer_log_targets_t(const size_t number_of_triggers, const double precision)
+    : number_of_triggers(number_of_triggers), precision(precision) {}
 
 /**
  * @brief Checks whether the given value should trigger logging with logarithmic
  * targets. If so, the internal values are updated.
  */
-static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_targets, const double given_value) {
+int coco_observer_log_targets_t::trigger(const double given_value) {
 
   int activate_trigger = 0;
 
@@ -135,32 +160,30 @@ static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_ta
   int current_exponent = 0;
   int adjusted_exponent = 0;
 
-  assert(log_targets != nullptr);
-
-  number_of_targets_double = (double)(long)log_targets->number_of_triggers;
+  number_of_targets_double = (double)(long)number_of_triggers;
 
   /* The given_value is positive or zero */
   if (given_value >= 0) {
 
     if (given_value == 0) {
       /* If zero, use even smaller value than precision */
-      verified_value = log_targets->precision / 10.0;
-    } else if (given_value < log_targets->precision) {
+      verified_value = precision / 10.0;
+    } else if (given_value < precision) {
       /* If close to zero, use precision instead of the given_value */
-      verified_value = log_targets->precision;
+      verified_value = precision;
     } else {
       verified_value = given_value;
     }
 
     current_exponent = (int)(ceil(log10(verified_value) * number_of_targets_double));
 
-    if (current_exponent < log_targets->exponent) {
+    if (current_exponent < exponent) {
       /* Update the target information */
-      log_targets->exponent = current_exponent;
+      exponent = current_exponent;
       if (given_value == 0)
-        log_targets->value = 0;
+        value = 0;
       else
-        log_targets->value = pow(10, (double)current_exponent / number_of_targets_double);
+        value = pow(10, (double)current_exponent / number_of_targets_double);
       activate_trigger = 1;
     }
   }
@@ -168,8 +191,8 @@ static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_ta
   else {
 
     /* If close to zero, use precision instead of the given_value*/
-    if (given_value > -log_targets->precision) {
-      verified_value = log_targets->precision;
+    if (given_value > -precision) {
+      verified_value = precision;
     } else {
       verified_value = -given_value;
     }
@@ -181,13 +204,12 @@ static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_ta
      * diminishing in value. The adjusted exponent can only be used to verify if
      * a new target has been hit. To compute the actual target value, the
      * current_exponent needs to be used. */
-    adjusted_exponent =
-        2 * (int)(ceil(log10(log_targets->precision / 10.0) * number_of_targets_double)) - current_exponent - 1;
+    adjusted_exponent = 2 * (int)(ceil(log10(precision / 10.0) * number_of_targets_double)) - current_exponent - 1;
 
-    if (adjusted_exponent < log_targets->exponent) {
+    if (adjusted_exponent < exponent) {
       /* Update the target information */
-      log_targets->exponent = adjusted_exponent;
-      log_targets->value = -pow(10, (double)current_exponent / number_of_targets_double);
+      exponent = adjusted_exponent;
+      value = -pow(10, (double)current_exponent / number_of_targets_double);
       activate_trigger = 1;
     }
   }
@@ -199,17 +221,15 @@ static int coco_observer_log_targets_trigger(coco_observer_log_targets_t *log_ta
  * @brief Checks whether the given value should trigger logging with linear
  * targets. If so, the internal values are updated.
  */
-static int coco_observer_lin_targets_trigger(coco_observer_lin_targets_t *lin_targets, const double given_value) {
+int coco_observer_lin_targets_t::trigger(const double given_value) {
 
   int activate_trigger = 0;
   double target_reached;
 
-  assert(lin_targets != nullptr);
-
-  target_reached = coco_double_round_up_with_precision(given_value, lin_targets->precision);
-  if (target_reached < lin_targets->value) {
+  target_reached = coco_double_round_up_with_precision(given_value, precision);
+  if (target_reached < value) {
     activate_trigger = 1;
-    lin_targets->value = target_reached;
+    value = target_reached;
   }
 
   return activate_trigger;
@@ -223,33 +243,30 @@ static int coco_observer_lin_targets_trigger(coco_observer_lin_targets_t *lin_ta
  * are used only if the suite has a known optimum. The linear targets are always
  * used.
  */
-static coco_observer_targets_t coco_observer_targets(const int optima_known, const double lin_precision,
-                                                     const size_t number_of_targets, const double log_precision) {
-  coco_observer_targets_t targets;
-  targets.use_log_targets = (number_of_targets > 0) && optima_known;
-  targets.lin_targets.precision = lin_precision;
-  targets.log_targets = coco_observer_log_targets(number_of_targets, log_precision);
-  return targets;
+coco_observer_targets_t::coco_observer_targets_t(const int optima_known, const double lin_precision,
+                                                 const size_t number_of_targets, const double log_precision)
+    : use_log_targets((number_of_targets > 0) && optima_known), log_targets(number_of_targets, log_precision) {
+  lin_targets.precision = lin_precision;
 }
 
 /**
  * @brief Computes and returns whether the given value should trigger logging.
  */
-static int coco_observer_targets_trigger(coco_observer_targets_t *targets, const double given_value) {
+int coco_observer_targets_t::trigger(const double given_value) {
 
-  int log_trigger = targets->use_log_targets && coco_observer_log_targets_trigger(&targets->log_targets, given_value);
-  int lin_trigger = coco_observer_lin_targets_trigger(&targets->lin_targets, given_value);
+  int log_trigger = use_log_targets && log_targets.trigger(given_value);
+  int lin_trigger = lin_targets.trigger(given_value);
   return log_trigger || lin_trigger;
 }
 
 /**
  * @brief Returns the last triggered target.
  */
-static double coco_observer_targets_get_last_target(const coco_observer_targets_t *targets) {
-  double last_target = targets->lin_targets.value;
+double coco_observer_targets_t::last_target() const {
+  double last_target = lin_targets.value;
 
-  if (targets->use_log_targets) {
-    double last_log_target = targets->log_targets.value;
+  if (use_log_targets) {
+    double last_log_target = log_targets.value;
     if (last_log_target < last_target) {
       last_target = last_log_target;
     }
@@ -281,25 +298,16 @@ static double coco_observer_targets_get_last_target(const coco_observer_targets_
  * dim*1, dim*2, dim*5, 10*dim*1, 10*dim*2, 10*dim*5, 100*dim*1, 100*dim*2,
  * 100*dim*5, ...
  */
-static coco_observer_evaluations_t coco_observer_evaluations(const size_t number_evaluation_triggers,
-                                                             std::string_view base_evaluations,
-                                                             const size_t dimension) {
+coco_observer_evaluations_t::coco_observer_evaluations_t(const size_t number_evaluation_triggers,
+                                                         std::string_view base_evaluations, const size_t dimension)
+    : number_of_triggers(number_evaluation_triggers),
+      base_evaluations(coco_string_parse_ranges(base_evaluations, 1, 0, "base_evaluations", COCO_MAX_EVALS_TO_LOG)),
+      dimension(dimension) {
 
-  coco_observer_evaluations_t evaluations;
-
-  /* First trigger */
-  evaluations.number_of_triggers = number_evaluation_triggers;
-
-  /* Second trigger */
-  evaluations.base_evaluations =
-      coco_string_parse_ranges(base_evaluations, 1, 0, "base_evaluations", COCO_MAX_EVALS_TO_LOG);
-  if (evaluations.base_evaluations.empty())
+  if (this->base_evaluations.empty())
     coco_error("coco_observer_evaluations(): cannot parse base evaluations '%.*s'", (int)base_evaluations.size(),
                base_evaluations.data());
-  evaluations.dimension = dimension;
-  evaluations.value2 = dimension * evaluations.base_evaluations[0];
-
-  return evaluations;
+  value2 = dimension * this->base_evaluations[0];
 }
 
 /**
@@ -309,19 +317,14 @@ static coco_observer_evaluations_t coco_observer_evaluations(const size_t number
  * The second condition is:
  * evaluation_number == 10**(exponent1/number_of_triggers)
  */
-static int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t *evaluations,
-                                                   const size_t evaluation_number) {
+int coco_observer_evaluations_t::trigger_first(const size_t evaluation_number) {
 
-  assert(evaluations != nullptr);
-
-  if (evaluation_number >= evaluations->value1) {
+  if (evaluation_number >= value1) {
     /* Compute the next value for the first trigger */
-    while (coco_double_to_size_t(floor(pow(10, (double)evaluations->exponent1 /
-                                                   (double)evaluations->number_of_triggers))) <= evaluations->value1) {
-      evaluations->exponent1++;
+    while (coco_double_to_size_t(floor(pow(10, (double)exponent1 / (double)number_of_triggers))) <= value1) {
+      exponent1++;
     }
-    evaluations->value1 =
-        coco_double_to_size_t(floor(pow(10, (double)evaluations->exponent1 / (double)evaluations->number_of_triggers)));
+    value1 = coco_double_to_size_t(floor(pow(10, (double)exponent1 / (double)number_of_triggers)));
     return 1;
   }
   return 0;
@@ -335,22 +338,18 @@ static int coco_observer_evaluations_trigger_first(coco_observer_evaluations_t *
  * evaluation_number == base_evaluation[base_index] * dimension *
  * (10**exponent2)
  */
-static int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t *evaluations,
-                                                    const size_t evaluation_number) {
+int coco_observer_evaluations_t::trigger_second(const size_t evaluation_number) {
 
-  assert(evaluations != nullptr);
-
-  if (evaluation_number >= evaluations->value2) {
+  if (evaluation_number >= value2) {
     /* Compute the next value for the second trigger */
-    if (evaluations->base_index < evaluations->base_evaluations.size() - 1) {
-      evaluations->base_index++;
+    if (base_index < base_evaluations.size() - 1) {
+      base_index++;
     } else {
-      evaluations->base_index = 0;
-      evaluations->exponent2++;
+      base_index = 0;
+      exponent2++;
     }
-    evaluations->value2 =
-        coco_double_to_size_t(pow(10, (double)evaluations->exponent2) * (double)(long)evaluations->dimension *
-                              (double)(long)evaluations->base_evaluations[evaluations->base_index]);
+    value2 = coco_double_to_size_t(pow(10, (double)exponent2) * (double)(long)dimension *
+                                   (double)(long)base_evaluations[base_index]);
     return 1;
   }
   return 0;
@@ -364,12 +363,12 @@ static int coco_observer_evaluations_trigger_second(coco_observer_evaluations_t 
  * - every 10**(exponent1/number_of_triggers) for exponent1 >= 0
  * - every base_evaluation * dimension * (10**exponent2) for exponent2 >= 0
  */
-static int coco_observer_evaluations_trigger(coco_observer_evaluations_t *evaluations, const size_t evaluation_number) {
+int coco_observer_evaluations_t::trigger(const size_t evaluation_number) {
 
   /* Both functions need to be called so that both triggers are correctly
    * updated */
-  int first = coco_observer_evaluations_trigger_first(evaluations, evaluation_number);
-  int second = coco_observer_evaluations_trigger_second(evaluations, evaluation_number);
+  int first = trigger_first(evaluation_number);
+  int second = trigger_second(evaluation_number);
 
   return (first + second > 0) ? 1 : 0;
 }
@@ -647,23 +646,17 @@ coco_observer_t *coco_observer(const char *observer_name, const char *observer_o
   return coco_observer_create(coco_c_string_view(observer_name), coco_c_string_view(observer_options));
 }
 
-/**
- * @brief Wraps the observer's logger around the problem if the observer is not NULL and active.
- *
- * @return The observed problem or the given problem if it is not observed.
- */
-static coco_problem_ptr_t coco_observer_add_logger(coco_observer_t *observer, coco_problem_ptr_t problem) {
+coco_problem_ptr_t coco_observer_s::observe(coco_problem_ptr_t problem) {
 
   if (problem == nullptr)
     return nullptr;
 
-  if ((observer == nullptr) || (observer->is_active == 0)) {
-    coco_warning("coco_problem_add_observer(): The problem will not be observed. %s",
-                 observer == nullptr ? "(observer == NULL)" : "(observer not active)");
+  if (is_active == 0) {
+    coco_warning("coco_problem_add_observer(): The problem will not be observed. (observer not active)");
     return problem;
   }
 
-  return observer->add_logger(std::move(problem));
+  return add_logger(std::move(problem));
 }
 
 /**
@@ -677,7 +670,13 @@ static coco_problem_ptr_t coco_observer_add_logger(coco_observer_t *observer, co
  * the same problem if the observer is NULL.
  */
 coco_problem_t *coco_problem_add_observer(coco_problem_t *problem, coco_observer_t *observer) {
-  return coco_observer_add_logger(observer, coco_problem_ptr_t(problem)).release();
+  if (problem == nullptr)
+    return nullptr;
+  if (observer == nullptr) {
+    coco_warning("coco_problem_add_observer(): The problem will not be observed. (observer == NULL)");
+    return problem;
+  }
+  return observer->observe(coco_problem_ptr_t(problem)).release();
 }
 
 /**

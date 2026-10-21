@@ -398,13 +398,13 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
                                           largest_values_of_interest.data());
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  coco_problem_set_name(problem.get(), "%s", problem->problem_id.c_str());
+  problem->set_name("%s", problem->problem_id.c_str());
   /* Attention! Any change to the problem id affects also archive processing! */
-  coco_problem_set_id(problem.get(), "bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function,
-                      (unsigned long)instance, (unsigned long)dimension);
+  problem->set_id("bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function, (unsigned long)instance,
+                  (unsigned long)dimension);
 
   /* Construct problem type */
-  coco_problem_set_type(problem.get(), "%s_%s", problem_type1.c_str(), problem_type2.c_str());
+  problem->set_type("%s_%s", problem_type1.c_str(), problem_type2.c_str());
 
   return problem;
 }

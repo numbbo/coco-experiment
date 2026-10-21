@@ -6,8 +6,6 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-static coco_problem_ptr_t logger_toy(coco_observer_t *observer, coco_problem_ptr_t problem);
-
 /**
  * @brief The toy observer.
  *
@@ -45,15 +43,8 @@ struct observer_toy_t final : public coco_observer_s {
       fclose(log_file);
   }
 
-  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override { return logger_toy(this, std::move(problem)); }
+  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
 
   FILE *log_file; /**< @brief File used for logging. */
 };
 
-/**
- * @brief Returns the toy observer (the given observer must be one).
- */
-static observer_toy_t *observer_toy_get(coco_observer_t *observer) {
-  assert(dynamic_cast<observer_toy_t *>(observer) != nullptr);
-  return static_cast<observer_toy_t *>(observer);
-}

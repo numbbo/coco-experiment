@@ -18,7 +18,7 @@ struct transform_vars_brs_t final : public coco_problem_transformed_t {
   explicit transform_vars_brs_t(coco_problem_ptr_t inner)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_brs"),
         scaled_x(inner_problem->number_of_variables) {
-    if (coco_problem_best_parameter_not_zero(inner_problem.get())) {
+    if (inner_problem->best_parameter_not_zero()) {
       coco_warning("transform_vars_brs(): 'best_parameter' not updated, set to NAN");
       coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
     }

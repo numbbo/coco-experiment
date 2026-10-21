@@ -104,10 +104,8 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
     problem = f_schaffers_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed_17, 1000,
                                                               problem_id_template, problem_name_template);
   } else if (function == 19) {
-    f_griewank_rosenbrock_args_t args;
-    args.facftrue = 10.0;
     problem = f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
-        function, dimension, instance, rseed, &args, problem_id_template, problem_name_template);
+        function, dimension, instance, rseed, 10.0, problem_id_template, problem_name_template);
   } else if (function == 20) {
     problem = f_schwefel_generalized_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                            problem_name_template);
@@ -136,33 +134,6 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
 }
 
 /**
- * @brief Returns the problem from the bbob large-scale suite that corresponds to the given parameters.
- *
- * @param suite The COCO suite.
- * @param function_idx Index of the function (starting from 0).
- * @param dimension_idx Index of the dimension (starting from 0).
- * @param instance_idx Index of the instance (starting from 0).
- * @return The problem that corresponds to the given parameters.
- */
-static coco_problem_ptr_t suite_largescale_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                                       const size_t dimension_idx, const size_t instance_idx) {
-
-  coco_problem_ptr_t problem;
-
-  const size_t function = suite->functions[function_idx];
-  const size_t dimension = suite->dimensions[dimension_idx];
-  const size_t instance = suite->instances[instance_idx];
-
-  problem = coco_get_largescale_problem(function, dimension, instance);
-
-  problem->suite_dep_function = function;
-  problem->suite_dep_instance = instance;
-  problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
-
-  return problem;
-}
-
-/**
  * @brief The bbob-largescale suite.
  */
 struct suite_largescale_t final : public coco_suite_s {
@@ -172,9 +143,13 @@ struct suite_largescale_t final : public coco_suite_s {
     return suite_largescale_get_instances_by_year(year);
   }
 
-  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
-                                 const size_t instance_idx) override {
-    return suite_largescale_get_problem(this, function_idx, dimension_idx, instance_idx);
+  /** @brief Returns the problem with the given function, dimension and instance. */
+  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
+    coco_problem_ptr_t problem;
+
+    problem = coco_get_largescale_problem(function, dimension, instance);
+
+    return problem;
   }
 };
 

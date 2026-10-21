@@ -92,42 +92,8 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
 
   problem = transform_obj_scale(std::move(problem), suite_bbob_mixint_scaling_factors[function - 1]);
 
-  coco_problem_set_id(problem.get(), "bbob-mixint_f%03lu_i%02lu_d%02lu", function, instance, dimension);
-  coco_problem_set_name(problem.get(), "mixint(%s)", inner_problem_id.c_str());
-
-  return problem;
-}
-
-/**
- * @brief Returns the problem from the bbob-mixint suite that corresponds to the given parameters.
- *
- * Uses large-scale bbob functions if dimension is equal or larger than the hard-coded dim_large_scale
- * value (50).
- *
- * @param suite The COCO suite.
- * @param function_idx Index of the function (starting from 0).
- * @param dimension_idx Index of the dimension (starting from 0).
- * @param instance_idx Index of the instance (starting from 0).
- * @return The problem that corresponds to the given parameters.
- */
-static coco_problem_ptr_t suite_bbob_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                                        const size_t dimension_idx, const size_t instance_idx) {
-
-  coco_problem_ptr_t problem;
-  const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
-
-  const size_t function = suite->functions[function_idx];
-  const size_t dimension = suite->dimensions[dimension_idx];
-  const size_t instance = suite->instances[instance_idx];
-
-  if (dimension < dim_large_scale)
-    problem = coco_get_bbob_mixint_problem(function, dimension, instance, coco_make_bbob_problem);
-  else
-    problem = coco_get_bbob_mixint_problem(function, dimension, instance, coco_get_largescale_problem);
-
-  problem->suite_dep_function = function;
-  problem->suite_dep_instance = instance;
-  problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
+  problem->set_id("bbob-mixint_f%03lu_i%02lu_d%02lu", function, instance, dimension);
+  problem->set_name("mixint(%s)", inner_problem_id.c_str());
 
   return problem;
 }
@@ -142,9 +108,17 @@ struct suite_bbob_mixint_t final : public coco_suite_s {
     return suite_bbob_mixint_get_instances_by_year(year);
   }
 
-  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
-                                 const size_t instance_idx) override {
-    return suite_bbob_mixint_get_problem(this, function_idx, dimension_idx, instance_idx);
+  /** @brief Returns the problem with the given function, dimension and instance. */
+  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
+    coco_problem_ptr_t problem;
+    const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
+
+    if (dimension < dim_large_scale)
+      problem = coco_get_bbob_mixint_problem(function, dimension, instance, coco_make_bbob_problem);
+    else
+      problem = coco_get_bbob_mixint_problem(function, dimension, instance, coco_get_largescale_problem);
+
+    return problem;
   }
 };
 

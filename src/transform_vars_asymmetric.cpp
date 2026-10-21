@@ -56,7 +56,7 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
   transform_vars_asymmetric_t(coco_problem_ptr_t inner, const double beta)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_asymmetric"),
         asymmetric_x(inner_problem->number_of_variables), beta(beta) {
-    if (inner_problem->number_of_objectives > 0 && coco_problem_best_parameter_not_zero(inner_problem.get())) {
+    if (inner_problem->number_of_objectives > 0 && inner_problem->best_parameter_not_zero()) {
       coco_warning("transform_vars_asymmetric(): 'best_parameter' not updated, set to NAN");
       coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
     }
@@ -82,7 +82,7 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed function.
    */
   void evaluate_function(const double *x, double *y) override {
-    int is_feasible;
+    int feasible;
 
     if (inner_problem->number_of_objectives == 0) {
       coco_evaluate_function(inner_problem.get(), x, y);
@@ -100,8 +100,8 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
 
     if (number_of_constraints > 0) {
       std::vector<double> cons_values(number_of_constraints);
-      is_feasible = coco_is_feasible(this, x, cons_values.data());
-      if (is_feasible)
+      feasible = is_feasible(x, cons_values.data());
+      if (feasible)
         assert(y[0] + 1e-13 >= best_value[0]);
     } else
       assert(y[0] + 1e-13 >= best_value[0]);

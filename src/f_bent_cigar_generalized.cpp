@@ -18,52 +18,19 @@
 #include "transform_vars_shift.cpp"
 
 /**
- * @brief Parameters of the generalized bent cigar function.
- */
-struct f_bent_cigar_generalized_data_t {
-  size_t proportion_long_axes_denom;
-};
-
-/**
- * @brief Implements the generalized bent cigar function without connections to
- * any COCO structures.
- */
-static double
-f_bent_cigar_generalized_raw(const double *x, const size_t number_of_variables,
-                             f_bent_cigar_generalized_data_t *data) {
-
-  static const double condition = 1.0e6;
-  size_t i, nb_long_axes;
-  double result;
-  result = 0;
-  nb_long_axes =
-      number_of_variables /
-      data->proportion_long_axes_denom;
-  if (number_of_variables %
-          data->proportion_long_axes_denom !=
-      0) {
-    nb_long_axes += 1;
-  }
-  for (i = 0; i < nb_long_axes; ++i) {
-    result += x[i] * x[i];
-  }
-  for (i = nb_long_axes; i < number_of_variables; ++i) {
-    result += condition * x[i] * x[i];
-  }
-  return result;
-}
-
-/**
  * @brief The generalized bent cigar function.
  */
 struct f_bent_cigar_generalized_t final : public coco_problem_s {
-  f_bent_cigar_generalized_data_t params;
+  size_t proportion_long_axes_denom{};
+
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(const double *x) const;
 
   f_bent_cigar_generalized_t(const size_t number_of_variables, size_t proportion_long_axes_denom)
       : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "generalized bent cigar function", -5.0, 5.0, 0.0);
-    coco_problem_set_id(this, "%s_d%04lu", "bent_cigar", number_of_variables);
-    params.proportion_long_axes_denom = proportion_long_axes_denom;
+    init_from_scalars("generalized bent cigar function", -5.0, 5.0, 0.0);
+    set_id("%s_d%04lu", "bent_cigar", number_of_variables);
+    this->proportion_long_axes_denom = proportion_long_axes_denom;
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -74,10 +41,33 @@ struct f_bent_cigar_generalized_t final : public coco_problem_s {
    */
   void evaluate_function(const double *x, double *y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_bent_cigar_generalized_raw(x, number_of_variables, &params);
+    y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
+
+/**
+ * @brief Implements the generalized bent cigar function without connections to
+ * any COCO structures.
+ */
+double f_bent_cigar_generalized_t::raw(const double *x) const {
+
+  static const double condition = 1.0e6;
+  size_t i, nb_long_axes;
+  double result;
+  result = 0;
+  nb_long_axes = number_of_variables / proportion_long_axes_denom;
+  if (number_of_variables % proportion_long_axes_denom != 0) {
+    nb_long_axes += 1;
+  }
+  for (i = 0; i < nb_long_axes; ++i) {
+    result += x[i] * x[i];
+  }
+  for (i = nb_long_axes; i < number_of_variables; ++i) {
+    result += condition * x[i] * x[i];
+  }
+  return result;
+}
 
 /**
  * @brief Allocates the basic generalized bent cigar problem.
@@ -138,8 +128,8 @@ static coco_problem_ptr_t f_bent_cigar_generalized_permblockdiag_bbob_problem_al
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "3-ill-conditioned");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("3-ill-conditioned");
   return problem;
 }

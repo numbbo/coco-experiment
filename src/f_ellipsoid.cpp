@@ -19,45 +19,20 @@
 #include "transform_obj_norm_by_dim.cpp"
 
 /**
- * @brief Data type for the ellipsoid problem.
- */
-struct f_ellipsoid_data_t {
-  double conditioning;
-};
-
-/**
- * @brief Implements the ellipsoid function without connections to any COCO
- * structures.
- */
-static double f_ellipsoid_raw(const double *x, const size_t number_of_variables, f_ellipsoid_data_t *data) {
-
-  size_t i = 0;
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = x[i] * x[i];
-  for (i = 1; i < number_of_variables; ++i) {
-    const double exponent = 1.0 * (double)(long)i / ((double)(long)number_of_variables - 1.0);
-    result += pow(data->conditioning, exponent) * x[i] * x[i];
-  }
-
-  return result;
-}
-
-/**
  * @brief The ellipsoid function.
  */
 struct f_ellipsoid_t final : public coco_problem_s {
-  f_ellipsoid_data_t params;
+  double conditioning{};
+
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(const double *x) const;
 
   f_ellipsoid_t(const size_t number_of_variables, const double conditioning)
       : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "ellipsoid function", -5.0, 5.0, 0.0);
-    coco_problem_set_id(this, "%s_d%02lu", "ellipsoid", number_of_variables);
+    init_from_scalars("ellipsoid function", -5.0, 5.0, 0.0);
+    set_id("%s_d%02lu", "ellipsoid", number_of_variables);
 
-    params.conditioning = conditioning;
+    this->conditioning = conditioning;
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -68,7 +43,7 @@ struct f_ellipsoid_t final : public coco_problem_s {
    */
   void evaluate_function(const double *x, double *y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_ellipsoid_raw(x, number_of_variables, &params);
+    y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
@@ -81,10 +56,31 @@ struct f_ellipsoid_t final : public coco_problem_s {
 
     for (i = 0; i < number_of_variables; ++i) {
       exponent = 1.0 * (double)(long)i / ((double)(long)number_of_variables - 1.0);
-      y[i] = 2.0 * pow(params.conditioning, exponent) * x[i];
+      y[i] = 2.0 * pow(conditioning, exponent) * x[i];
     }
   }
 };
+
+/**
+ * @brief Implements the ellipsoid function without connections to any COCO
+ * structures.
+ */
+double f_ellipsoid_t::raw(const double *x) const {
+
+  size_t i = 0;
+  double result;
+
+  if (coco_vector_contains_nan(x, number_of_variables))
+    return NAN;
+
+  result = x[i] * x[i];
+  for (i = 1; i < number_of_variables; ++i) {
+    const double exponent = 1.0 * (double)(long)i / ((double)(long)number_of_variables - 1.0);
+    result += pow(conditioning, exponent) * x[i] * x[i];
+  }
+
+  return result;
+}
 
 /**
  * @brief Allocates the basic ellipsoid problem.
@@ -121,9 +117,9 @@ static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t functio
   }
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "1-separable");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("1-separable");
 
   return problem;
 }
@@ -133,17 +129,15 @@ static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t functio
  */
 static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                     const size_t instance, const long rseed,
-                                                                    const void *args, const char *problem_id_template,
+                                                                    const double conditioning,
+                                                                    const char *problem_id_template,
                                                                     const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
 
-  f_ellipsoid_args_t *f_ellipsoid_args;
-  f_ellipsoid_args = ((f_ellipsoid_args_t *)args);
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
 
-  double conditioning = f_ellipsoid_args->conditioning;
   std::vector<double> xopt(dimension);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
     sbox_cost_compute_xopt(xopt.data(), rseed, dimension);
@@ -160,9 +154,9 @@ static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t
   problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
   problem = transform_obj_shift(std::move(problem), fopt);
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "3-ill-conditioned");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("3-ill-conditioned");
 
   return problem;
 }
@@ -210,9 +204,9 @@ static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const 
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "3-ill-conditioned");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("3-ill-conditioned");
 
   return problem;
 }
@@ -241,9 +235,9 @@ static coco_problem_ptr_t f_ellipsoid_cons_bbob_problem_allocate(const size_t fu
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "1-separable");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("1-separable");
 
   return problem;
 }
@@ -279,9 +273,9 @@ static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const s
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "3-ill-conditioned");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("3-ill-conditioned");
 
   return problem;
 }

@@ -38,7 +38,7 @@ struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
     double uniform_noise = uniform_noise_factor * scaling_factor;
     double tol = 1e-8;
     *(y) = *(y)*uniform_noise + 1.01 * tol;
-    *(y) = *(y) + fopt + coco_boundary_handling(this, x);
+    *(y) = *(y) + fopt + boundary_penalty(x);
   }
 };
 

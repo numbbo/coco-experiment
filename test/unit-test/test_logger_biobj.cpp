@@ -20,7 +20,7 @@ MU_TEST(test_logger_biobj_evaluate) {
   double *y_eval = coco_allocate_vector(2);
   double hypervolume;
 
-  logger_biobj_data_t *logger;
+  logger_biobj_t *logger;
   logger_biobj_indicator_t *indicator;
 
   int scan_return;
@@ -53,7 +53,7 @@ MU_TEST(test_logger_biobj_evaluate) {
       /* Checks the function values are right */
       mu_check(about_equal_vector(y, y_eval, 2));
 
-      logger = logger_biobj_get_data(problem);
+      logger = logger_biobj_t::from(problem);
       indicator = logger->indicators[0].get();
 
       /* Checks the hypervolume */
@@ -82,7 +82,7 @@ MU_TEST(test_logger_biobj_evaluate2) {
   double *x = coco_allocate_vector(2);
   double *y = coco_allocate_vector(2);
 
-  logger_biobj_data_t *logger;
+  logger_biobj_t *logger;
   logger_biobj_indicator_t *indicator;
 
   suite = coco_suite("bbob-biobj", "instances: 1-10", "dimensions: 2 function_indices: 12 instance_indices: 7");
@@ -90,7 +90,7 @@ MU_TEST(test_logger_biobj_evaluate2) {
 
   while ((problem = coco_suite_get_next_problem(suite, observer)) != NULL) {
 
-    logger = logger_biobj_get_data(problem);
+    logger = logger_biobj_t::from(problem);
     indicator = logger->indicators[0].get();
 
     /* Tests the ideal and nadir points */
@@ -145,7 +145,7 @@ MU_TEST(test_coco_logger_biobj_feed_solution) {
   size_t number_of_evaluations;
   double *y = coco_allocate_vector(2);
 
-  logger_biobj_data_t *logger;
+  logger_biobj_t *logger;
   logger_biobj_indicator_t *indicator;
 
   suite = coco_suite("bbob-biobj", "instances: 7", "dimensions: 10 function_indices: 12");
@@ -154,7 +154,7 @@ MU_TEST(test_coco_logger_biobj_feed_solution) {
 
   mu_check(problem != NULL);
 
-  logger = logger_biobj_get_data(problem);
+  logger = logger_biobj_t::from(problem);
   indicator = logger->indicators[0].get();
 
   indicator->best_value = 9.999545292785900e-01;
@@ -191,10 +191,27 @@ MU_TEST(test_coco_logger_biobj_feed_solution) {
 /**
  * Run all tests in this file.
  */
+/**
+ * Tests that a solution can still be recommended after the observer has been freed.
+ */
+MU_TEST(test_logger_biobj_recommend_after_observer_free) {
+
+  coco_suite_t *suite = coco_suite("bbob-biobj", "instances: 1", "dimensions: 2 function_indices: 1");
+  coco_observer_t *observer = coco_observer("bbob-biobj", "");
+  coco_problem_t *problem = coco_suite_get_next_problem(suite, observer);
+  double x[2] = {0.0, 0.0};
+
+  mu_check(problem != NULL);
+  coco_observer_free(observer);
+  coco_recommend_solution(problem, x);
+  coco_suite_free(suite);
+}
+
 int main(void) {
   MU_RUN_TEST(test_logger_biobj_evaluate);
   MU_RUN_TEST(test_logger_biobj_evaluate2);
   MU_RUN_TEST(test_coco_logger_biobj_feed_solution);
+  MU_RUN_TEST(test_logger_biobj_recommend_after_observer_free);
 
   MU_REPORT();
 

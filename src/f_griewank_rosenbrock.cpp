@@ -19,18 +19,40 @@
 #include "transform_vars_shift.cpp"
 
 /**
- * @brief Data type for the griewank rosenbrock problem
+ * @brief The Griewank-Rosenbrock function.
  */
-struct f_griewank_rosenbrock_data_t {
-  double facftrue;
+struct f_griewank_rosenbrock_t final : public coco_problem_s {
+  double facftrue{};
+
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(const double *x) const;
+
+  f_griewank_rosenbrock_t(const size_t number_of_variables, double facftrue)
+      : coco_problem_s(number_of_variables, 1, 0) {
+    init_from_scalars("Griewank Rosenbrock function", -5.0, 5.0, 1);
+    set_id("%s_d%02lu", "griewank_rosenbrock", number_of_variables);
+
+    this->facftrue = facftrue;
+
+    /* Compute best solution */
+    evaluate_function(best_parameter.data(), best_value.data());
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = raw(x);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
 };
 
 /**
  * @brief Implements the Griewank-Rosenbrock function without connections to any
  * COCO structures.
  */
-static double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_variables,
-                                        f_griewank_rosenbrock_data_t *data) {
+double f_griewank_rosenbrock_t::raw(const double *x) const {
 
   size_t i = 0;
   double tmp = 0;
@@ -47,37 +69,10 @@ static double f_griewank_rosenbrock_raw(const double *x, const size_t number_of_
     tmp = 100.0 * c1 * c1 + c2 * c2;
     result += tmp / 4000. - cos(tmp);
   }
-  result = data->facftrue + data->facftrue * result / (double)(number_of_variables - 1);
+  result = facftrue + facftrue * result / (double)(number_of_variables - 1);
 
   return result;
 }
-
-/**
- * @brief The Griewank-Rosenbrock function.
- */
-struct f_griewank_rosenbrock_t final : public coco_problem_s {
-  f_griewank_rosenbrock_data_t params;
-
-  f_griewank_rosenbrock_t(const size_t number_of_variables, double facftrue)
-      : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "Griewank Rosenbrock function", -5.0, 5.0, 1);
-    coco_problem_set_id(this, "%s_d%02lu", "griewank_rosenbrock", number_of_variables);
-
-    params.facftrue = facftrue;
-
-    /* Compute best solution */
-    evaluate_function(best_parameter.data(), best_value.data());
-  }
-
-  /**
-   * @brief Uses the raw function to evaluate the COCO problem.
-   */
-  void evaluate_function(const double *x, double *y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_griewank_rosenbrock_raw(x, number_of_variables, &params);
-    assert(y[0] + 1e-13 >= best_value[0]);
-  }
-};
 
 /**
  * @brief Allocates the basic Griewank-Rosenbrock problem.
@@ -91,7 +86,8 @@ static coco_problem_ptr_t f_griewank_rosenbrock_allocate(const size_t number_of_
  */
 static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                       const size_t instance, const long rseed,
-                                                                      const void *args, const char *problem_id_template,
+                                                                      const double facftrue,
+                                                                      const char *problem_id_template,
                                                                       const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
@@ -117,9 +113,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
     }
   }
 
-  f_griewank_rosenbrock_args_t *f_griewank_rosenbrock_args;
-  f_griewank_rosenbrock_args = ((f_griewank_rosenbrock_args_t *)args);
-  problem = f_griewank_rosenbrock_allocate(dimension, f_griewank_rosenbrock_args->facftrue);
+  problem = f_griewank_rosenbrock_allocate(dimension, facftrue);
   problem = transform_obj_shift(std::move(problem), fopt);
   problem = transform_vars_shift(std::move(problem), shift.data(), 0);
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
@@ -139,9 +133,9 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
     problem->best_parameter[j] = tmp / (2. * scales);
   }
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "4-multi-modal");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("4-multi-modal");
 
   return problem;
 }
@@ -150,7 +144,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
  * @brief Creates the BBOB permuted block-rotated Griewank-Rosenbrock problem.
  */
 static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
-    const size_t function, const size_t dimension, const size_t instance, const long rseed, const void *args,
+    const size_t function, const size_t dimension, const size_t instance, const long rseed, const double facftrue,
     const char *problem_id_template, const char *problem_name_template) {
   double fopt;
   coco_problem_ptr_t problem;
@@ -184,10 +178,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   coco_compute_truncated_uniform_swap_permutation(P1.data(), rseed + 2000000, dimension, nb_swaps, swap_range);
   coco_compute_truncated_uniform_swap_permutation(P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
 
-  f_griewank_rosenbrock_args_t *f_griewank_rosenbrock_args;
-  f_griewank_rosenbrock_args = ((f_griewank_rosenbrock_args_t *)args);
-
-  problem = f_griewank_rosenbrock_allocate(dimension, f_griewank_rosenbrock_args->facftrue);
+  problem = f_griewank_rosenbrock_allocate(dimension, facftrue);
   problem = transform_vars_shift(std::move(problem), shift.data(), 0);
   problem = transform_vars_scale(std::move(problem), scales);
   problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
@@ -216,9 +207,9 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
     problem->best_parameter[P1[j]] = best_parameter[j];
   }
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "4-multi-modal");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("4-multi-modal");
 
   return problem;
 }

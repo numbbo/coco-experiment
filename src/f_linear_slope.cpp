@@ -55,8 +55,8 @@ struct f_linear_slope_t final : public coco_problem_s {
       : coco_problem_s(number_of_variables, 1, 0) {
     size_t i;
     /* best_parameter will be overwritten below */
-    coco_problem_init_from_scalars(this, "linear slope function", -5.0, 5.0, 0.0);
-    coco_problem_set_id(this, "%s_d%02lu", "linear_slope", number_of_variables);
+    init_from_scalars("linear slope function", -5.0, 5.0, 0.0);
+    set_id("%s_d%02lu", "linear_slope", number_of_variables);
 
     /* Compute best solution */
     for (i = 0; i < number_of_variables; ++i) {
@@ -133,9 +133,9 @@ static coco_problem_ptr_t f_linear_slope_bbob_problem_allocate(const size_t func
   }
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "1-separable");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("1-separable");
 
   return problem;
 }

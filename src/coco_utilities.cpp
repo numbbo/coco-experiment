@@ -715,7 +715,7 @@ static int coco_vector_isfinite(const double *x, const size_t dim) {
  * @param x Decision vector.
  * @param constraint_values Vector of contraints values resulting from evaluation.
  */
-static int coco_is_feasible(coco_problem_t *problem, const double *x, double *constraint_values) {
+int coco_problem_s::is_feasible(const double *x, double *constraint_values) {
 
   size_t i;
   double *cons_values = constraint_values;
@@ -723,22 +723,20 @@ static int coco_is_feasible(coco_problem_t *problem, const double *x, double *co
   int ret_val = 1;
 
   /* Return 0 if the decision vector contains any INFINITY or NaN values */
-  if (!coco_vector_isfinite(x, coco_problem_get_dimension(problem)))
+  if (!coco_vector_isfinite(x, coco_problem_get_dimension(this)))
     return 0;
 
-  if (coco_problem_get_number_of_constraints(problem) <= 0)
+  if (coco_problem_get_number_of_constraints(this) <= 0)
     return 1;
 
-  assert(problem != nullptr);
-
   if (constraint_values == nullptr) {
-    buffer.resize(problem->number_of_constraints);
+    buffer.resize(number_of_constraints);
     cons_values = buffer.data();
   }
 
-  problem->evaluate_constraint(x, cons_values, 0);
+  evaluate_constraint(x, cons_values, 0);
 
-  for (i = 0; i < coco_problem_get_number_of_constraints(problem); ++i) {
+  for (i = 0; i < coco_problem_get_number_of_constraints(this); ++i) {
     if (cons_values[i] > 0.0) {
       ret_val = 0;
       break;

@@ -20,7 +20,7 @@ struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
       : coco_problem_transformed_t(std::move(inner), "transform_vars_x_hat"), seed(seed),
         x_hat(inner_problem->number_of_variables) {
     size_t i;
-    if (coco_problem_best_parameter_not_zero(this)) {
+    if (best_parameter_not_zero()) {
       bbob2009_unif(x_hat.data(), number_of_variables, seed);
       for (i = 0; i < number_of_variables; ++i)
         if (x_hat[i] < 0.5) /* with probability 1/2 */

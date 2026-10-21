@@ -91,9 +91,7 @@ static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, con
         function, dimension, instance, rseed, problem_id_template,
         problem_name_template);
   } else if (function == 7) {
-    f_step_ellipsoid_args_t args;
-    args.penalty_scale = 1.0;
-    problem = f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, &args, problem_id_template,
+    problem = f_step_ellipsoid_bbob_problem_allocate(function, dimension, instance, rseed, 1.0, problem_id_template,
                                                      problem_name_template);
   } else if (function == 8) {
     problem = f_rosenbrock_bbob_problem_allocate(function, dimension, instance,
@@ -104,9 +102,7 @@ static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, con
         function, dimension, instance, rseed, problem_id_template,
         problem_name_template);
   } else if (function == 10) {
-    f_ellipsoid_args_t args;
-    args.conditioning = 1.0e6;
-    problem = f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, &args,
+    problem = f_ellipsoid_rotated_bbob_problem_allocate(function, dimension, instance, rseed, 1.0e6,
                                                         problem_id_template, problem_name_template);
   } else if (function == 11) {
     problem = f_discus_bbob_problem_allocate(function, dimension, instance,
@@ -133,38 +129,24 @@ static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, con
                                                   rseed, problem_id_template,
                                                   problem_name_template);
   } else if (function == 17) {
-    f_schaffers_args_t args;
-    args.conditioning = 10.0;
-    args.penalty_scale = 10.0;
-    problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, &args, problem_id_template,
+    problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed, 10.0, 10.0, problem_id_template,
                                                 problem_name_template);
   } else if (function == 18) {
-    f_schaffers_args_t args;
-    args.conditioning = 1000.0;
-    args.penalty_scale = 10.0;
-    problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed_17, &args, problem_id_template,
-                                                problem_name_template);
+    problem = f_schaffers_bbob_problem_allocate(function, dimension, instance, rseed_17, 1000.0, 10.0,
+                                                problem_id_template, problem_name_template);
   } else if (function == 19) {
-    f_griewank_rosenbrock_args_t args;
-    args.facftrue = 10.0;
-    problem = f_griewank_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, &args,
-                                                        problem_id_template, problem_name_template);
+    problem = f_griewank_rosenbrock_bbob_problem_allocate(function, dimension, instance, rseed, 10.0,
+                                                          problem_id_template, problem_name_template);
   } else if (function == 20) {
     problem = f_schwefel_bbob_problem_allocate(function, dimension, instance,
                                                rseed, problem_id_template,
                                                problem_name_template);
   } else if (function == 21) {
-    f_gallagher_args_t args;
-    args.number_of_peaks = (size_t)101;
-    args.penalty_scale = 1.0;
-    problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, &args, problem_id_template,
-                                                problem_name_template);
+    problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, (size_t)101, 1.0,
+                                                problem_id_template, problem_name_template);
   } else if (function == 22) {
-    f_gallagher_args_t args;
-    args.number_of_peaks = (size_t)21;
-    args.penalty_scale = 1.0;
-    problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, &args, problem_id_template,
-                                                problem_name_template);
+    problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, (size_t)21, 1.0,
+                                                problem_id_template, problem_name_template);
   } else if (function == 23) {
     problem = f_katsuura_bbob_problem_allocate(function, dimension, instance,
                                                rseed, problem_id_template,
@@ -187,35 +169,6 @@ static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, con
 }
 
 /**
- * @brief Returns the problem from the SBOX-COST suite that corresponds to the
- * given parameters.
- *
- * @param suite The COCO suite.
- * @param function_idx Index of the function (starting from 0).
- * @param dimension_idx Index of the dimension (starting from 0).
- * @param instance_idx Index of the instance (starting from 0).
- * @return The problem that corresponds to the given parameters.
- */
-static coco_problem_ptr_t suite_sbox_cost_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                                      const size_t dimension_idx, const size_t instance_idx) {
-
-  coco_problem_ptr_t problem;
-
-  const size_t function = suite->functions[function_idx];
-  const size_t dimension = suite->dimensions[dimension_idx];
-  const size_t instance = suite->instances[instance_idx];
-
-  problem = coco_get_bbob_boxed_problem(function, dimension, instance);
-
-  problem->suite_dep_function = function;
-  problem->suite_dep_instance = instance;
-  problem->suite_dep_index = coco_suite_encode_problem_index(
-      suite, function_idx, dimension_idx, instance_idx);
-
-  return problem;
-}
-
-/**
  * @brief The bbob-boxed suite.
  */
 struct suite_sbox_cost_t final : public coco_suite_s {
@@ -225,9 +178,13 @@ struct suite_sbox_cost_t final : public coco_suite_s {
     return suite_sbox_cost_get_instances_by_year(year);
   }
 
-  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
-                                 const size_t instance_idx) override {
-    return suite_sbox_cost_get_problem(this, function_idx, dimension_idx, instance_idx);
+  /** @brief Returns the problem with the given function, dimension and instance. */
+  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
+    coco_problem_ptr_t problem;
+
+    problem = coco_get_bbob_boxed_problem(function, dimension, instance);
+
+    return problem;
   }
 };
 

@@ -17,24 +17,16 @@
 #include "observer_toy.cpp"
 
 /**
- * @brief The toy logger data type.
- */
-struct logger_toy_data_t {
-  FILE *log_file; /**< @brief Pointer to the file already prepared for logging (owned by the observer). */
-  coco_observer_log_targets_t targets;                  /**< @brief Triggers based on logarithmic target values. */
-  size_t number_of_evaluations;                         /**< @brief The number of evaluations performed so far. */
-  int precision_x;                                      /**< @brief Precision for outputting decision values. */
-  int precision_f;                                      /**< @brief Precision for outputting objective values. */
-};
-
-/**
  * @brief The toy logger, which wraps the observed problem.
  */
 struct logger_toy_t final : public coco_problem_transformed_t {
-  logger_toy_data_t data;
+  FILE *log_file{}; /**< @brief Pointer to the file already prepared for logging (owned by the observer). */
+  coco_observer_log_targets_t targets;   /**< @brief Triggers based on logarithmic target values. */
+  size_t number_of_evaluations{};        /**< @brief The number of evaluations performed so far. */
+  int precision_x{};                     /**< @brief Precision for outputting decision values. */
+  int precision_f{};                     /**< @brief Precision for outputting objective values. */
 
-  logger_toy_t(coco_problem_ptr_t inner, std::string_view observer_name)
-      : coco_problem_transformed_t(std::move(inner), observer_name), data() {}
+  logger_toy_t(observer_toy_t &observer, coco_problem_ptr_t inner);
 
   void evaluate_function(const double *x, double *y) override;
 };
@@ -47,54 +39,49 @@ void logger_toy_t::evaluate_function(const double *x, double *y) {
   size_t i;
 
   coco_evaluate_function(inner_problem.get(), x, y);
-  data.number_of_evaluations++;
+  number_of_evaluations++;
 
   /* Output the solution when a new target that has been hit */
-  if (coco_observer_log_targets_trigger(&data.targets, y[0])) {
-    fprintf(data.log_file, "%lu\t%.*e\t%.*e", (unsigned long)data.number_of_evaluations, data.precision_f, y[0],
-            data.precision_f, data.targets.value);
+  if (targets.trigger(y[0])) {
+    fprintf(log_file, "%lu\t%.*e\t%.*e", (unsigned long)number_of_evaluations, precision_f, y[0], precision_f,
+            targets.value);
     for (i = 0; i < number_of_variables; i++) {
-      fprintf(data.log_file, "\t%.*e", data.precision_x, x[i]);
+      fprintf(log_file, "\t%.*e", precision_x, x[i]);
     }
-    fprintf(data.log_file, "\n");
+    fprintf(log_file, "\n");
   }
 
   /* Flush output so that impatient users can see the progress */
-  fflush(data.log_file);
+  fflush(log_file);
 }
 
 /**
  * @brief Initializes the toy logger.
  */
-static coco_problem_ptr_t logger_toy(coco_observer_t *observer, coco_problem_ptr_t inner) {
-  coco_problem_t *inner_problem = inner.get(); /* Stays valid, the logger takes ownership of it */
-
-  logger_toy_data_t *logger_data;
-  std::unique_ptr<logger_toy_t> problem;
-
+logger_toy_t::logger_toy_t(observer_toy_t &observer, coco_problem_ptr_t inner)
+    : coco_problem_transformed_t(std::move(inner), observer.observer_name) {
   if (inner_problem->number_of_objectives != 1) {
     coco_warning("logger_toy(): The toy logger shouldn't be used to log a problem with %lu objectives",
                  (unsigned long)inner_problem->number_of_objectives);
   }
 
-  problem = std::make_unique<logger_toy_t>(std::move(inner), observer->observer_name);
-
-  /* Initialize the logger_toy_data_t object instance */
-  logger_data = &problem->data;
-  logger_data->number_of_evaluations = 0;
-  logger_data->targets = coco_observer_log_targets(observer->number_target_triggers, observer->log_target_precision);
-  logger_data->log_file = observer_toy_get(observer)->log_file;
-  logger_data->precision_x = observer->precision_x;
-  logger_data->precision_f = observer->precision_f;
+  /* Initialize the logger */
+  number_of_evaluations = 0;
+  targets = coco_observer_log_targets_t(observer.number_target_triggers, observer.log_target_precision);
+  log_file = observer.log_file;
+  precision_x = observer.precision_x;
+  precision_f = observer.precision_f;
 
   /* Output initial information */
-  assert(coco_problem_get_suite(inner_problem));
-  fprintf(logger_data->log_file, "\n");
-  fprintf(logger_data->log_file, "suite = '%s', problem_id = '%s', problem_name = '%s', coco_version = '%s'\n",
-          coco_problem_get_suite(inner_problem)->suite_name.c_str(), coco_problem_get_id(inner_problem),
-          coco_problem_get_name(inner_problem), coco_version);
-  fprintf(logger_data->log_file, "%% evaluation number | function value | target hit | %lu variables \n",
+  assert(inner_problem->suite);
+  fprintf(log_file, "\n");
+  fprintf(log_file, "suite = '%s', problem_id = '%s', problem_name = '%s', coco_version = '%s'\n",
+          inner_problem->suite->suite_name.c_str(), coco_problem_get_id(inner_problem.get()),
+          coco_problem_get_name(inner_problem.get()), coco_version);
+  fprintf(log_file, "%% evaluation number | function value | target hit | %lu variables \n",
           (unsigned long)inner_problem->number_of_variables);
+}
 
-  return problem;
+coco_problem_ptr_t observer_toy_t::add_logger(coco_problem_ptr_t problem) {
+  return std::make_unique<logger_toy_t>(*this, std::move(problem));
 }

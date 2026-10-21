@@ -77,6 +77,36 @@ struct coco_problem_s {
   /** @brief Logs the recommended solution x. */
   virtual void recommend_solution(const double *x);
 
+  /**
+   * @brief Sets the name and, for every variable, the same region of interest and best parameter. Assumes a
+   * single-objective unconstrained problem with only continuous variables.
+   */
+  void init_from_scalars(std::string_view name, const double smallest, const double largest, const double best);
+
+  /** @brief Copies the properties of the other problem, i.e. everything except its behaviour. */
+  void copy_properties_from(const coco_problem_s &other);
+
+  /** @brief Returns 1 if the best parameter is not (close to) the origin or contains NaN, 0 otherwise. */
+  int best_parameter_not_zero() const;
+
+  /**
+   * @brief Returns 1 if x is finite and satisfies all constraints, 0 otherwise. Stores the constraint values
+   * in constraint_values unless it is NULL.
+   */
+  int is_feasible(const double *x, double *constraint_values);
+
+  /** @brief Returns the penalty of the noisy suites for x outside the region of interest. */
+  double boundary_penalty(const double *x) const;
+
+  /** @brief Sets the problem_id using formatted printing (as in printf) and checks that it is well-formed. */
+  void set_id(const char *format, ...) COCO_FORMAT(2, 3);
+
+  /** @brief Sets the problem_name using formatted printing (as in printf). */
+  void set_name(const char *format, ...) COCO_FORMAT(2, 3);
+
+  /** @brief Sets the problem_type using formatted printing (as in printf). */
+  void set_type(const char *format, ...) COCO_FORMAT(2, 3);
+
   size_t number_of_variables;   /**< @brief Number of variables expected by the function, i.e.
                                 problem dimension */
   size_t number_of_objectives;  /**< @brief Number of objectives. */
@@ -146,7 +176,13 @@ typedef struct coco_problem_transformed_s coco_problem_transformed_t;
  * both problems.
  */
 struct coco_problem_stacked_s : public coco_problem_s {
-  coco_problem_stacked_s(coco_problem_ptr_t first, coco_problem_ptr_t second);
+  /**
+   * @brief Stacks the two problems. Uses the given region of interest or, if it is NULL, the one of the second
+   * problem.
+   */
+  coco_problem_stacked_s(coco_problem_ptr_t first, coco_problem_ptr_t second,
+                         const double *smallest_values_of_interest = nullptr,
+                         const double *largest_values_of_interest = nullptr);
 
   void evaluate_function(const double *x, double *y) override;
   void evaluate_constraint(const double *x, double *y, int update_counter) override;
@@ -205,6 +241,12 @@ struct coco_observer_s : public coco_observer_settings_s {
    */
   virtual void signal_restart(coco_problem_t *problem);
 
+  /**
+   * @brief Wraps the problem with the logger of this observer if the observer is active and returns the
+   * result (the problem itself if the observer is not active, NULL for a NULL problem).
+   */
+  coco_problem_ptr_t observe(coco_problem_ptr_t problem);
+
   int is_active; /**< @brief Whether the observer is active (the logger will log some output). */
 };
 
@@ -237,11 +279,27 @@ struct coco_suite_s {
   virtual std::string_view get_instances_by_year(const int year) const;
 
   /**
-   * @brief Returns the problem with the given function, dimension and instance index. The indices are
-   * guaranteed to correspond to a problem that has not been filtered out.
+   * @brief Creates the problem with the given function, dimension and instance (values, not indices).
+   * get_problem_from_indices() sets the suite-dependent fields of the problem afterwards.
    */
-  virtual coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
-                                         const size_t instance_idx) = 0;
+  virtual coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) = 0;
+
+  /**
+   * @brief Returns the problem with the given function, dimension and instance index with its suite-dependent
+   * fields set, or NULL if the problem has been filtered out.
+   */
+  coco_problem_ptr_t get_problem_from_indices(const size_t function_idx, const size_t dimension_idx,
+                                              const size_t instance_idx);
+
+  /** @brief Moves to the next instance that is not filtered out, returns 0 if it wrapped around. */
+  int next_instance();
+
+  /** @brief Moves to the next function that is not filtered out (resetting the instance), returns 0 if it
+   * wrapped around. */
+  int next_function();
+
+  /** @brief Moves to the next dimension that is not filtered out, returns 0 if it wrapped around. */
+  int next_dimension();
 
   std::string suite_name; /**< @brief Name of the suite. */
 
@@ -259,8 +317,6 @@ struct coco_suite_s {
   long current_function_idx;       /**< @brief The function index of the currently tackled problem. */
   long current_instance_idx;       /**< @brief The instance index of the currently tackled problem. */
 };
-
-static void bbob_evaluate_gradient(coco_problem_t *problem, const double *x, double *y);
 
 /***********************************************************************************************************/
 /**

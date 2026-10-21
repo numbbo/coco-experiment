@@ -31,7 +31,7 @@ struct transform_obj_gaussian_noise_t final : public coco_problem_transformed_t 
     }
     *(y) = *(y)-fopt;
     *(y) = *(y)*gaussian_noise + 1.01 * tol;
-    *(y) = *(y) + fopt + coco_boundary_handling(this, x);
+    *(y) = *(y) + fopt + boundary_penalty(x);
   }
 };
 

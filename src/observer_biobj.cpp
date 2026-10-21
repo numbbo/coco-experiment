@@ -15,9 +15,7 @@ enum observer_biobj_log_nondom_e { LOG_NONDOM_NONE, LOG_NONDOM_FINAL, LOG_NONDOM
 /** @brief Enum for denoting when the decision variables are logged. */
 enum observer_biobj_log_vars_e { LOG_VARS_NEVER, LOG_VARS_LOW_DIM, LOG_VARS_ALWAYS };
 
-static coco_problem_ptr_t logger_biobj(coco_observer_t *observer, coco_problem_ptr_t problem);
-static void logger_biobj_signal_restart(coco_problem_t *problem);
-static void logger_biobj_detach_observer(coco_problem_t *problem);
+struct logger_biobj_t;
 
 /**
  * @brief The bi-objective observer.
@@ -99,21 +97,13 @@ struct observer_biobj_t final : public coco_observer_s {
     }
   }
 
-  ~observer_biobj_t() override {
-    coco_debug("Started observer_biobj_t::~observer_biobj_t()");
-    /* Make sure that the observed problem's pointer to the observer points to NULL */
-    if (observed_problem != nullptr) {
-      logger_biobj_detach_observer(observed_problem);
-      observed_problem = nullptr;
-    }
-    coco_debug("Ended   observer_biobj_t::~observer_biobj_t()");
-  }
+  ~observer_biobj_t() override;
 
-  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override { return logger_biobj(this, std::move(problem)); }
+  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
 
-  void signal_restart(coco_problem_t *problem) override { logger_biobj_signal_restart(problem); }
+  void signal_restart(coco_problem_t *problem) override;
 
-  coco_problem_t *observed_problem; /**< @brief Pointer to the observed problem (NULL if none is observed) */
+  logger_biobj_t *observed_problem; /**< @brief The logger of the observed problem (NULL if none is observed) */
 
   observer_biobj_log_nondom_e log_nondom_mode; /**< @brief Handling of the nondominated solutions. */
   observer_biobj_log_vars_e log_vars_mode;     /**< @brief When the decision variables are logged. */
@@ -126,18 +116,3 @@ struct observer_biobj_t final : public coco_observer_s {
   long previous_dimension; /**< @brief Dimension of the previous logged problem */
 };
 
-/**
- * @brief Returns the bi-objective observer (the given observer must be one).
- */
-static observer_biobj_t *observer_biobj_get(coco_observer_t *observer) {
-  assert(dynamic_cast<observer_biobj_t *>(observer) != nullptr);
-  return static_cast<observer_biobj_t *>(observer);
-}
-
-/**
- * @brief Returns the bi-objective observer (the given observer must be one).
- */
-static const observer_biobj_t *observer_biobj_get(const coco_observer_t *observer) {
-  assert(dynamic_cast<const observer_biobj_t *>(observer) != nullptr);
-  return static_cast<const observer_biobj_t *>(observer);
-}

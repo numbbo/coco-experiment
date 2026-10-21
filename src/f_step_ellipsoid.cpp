@@ -28,21 +28,42 @@
 #include "transform_obj_norm_by_dim.cpp"
 
 /**
- * @brief Data type for the step ellipsoid problem.
+ * @brief The BBOB step ellipsoid function.
  */
-struct f_step_ellipsoid_data_t {
-  std::vector<double> x, xx;
+struct f_step_ellipsoid_t final : public coco_problem_s {
+  std::vector<double> z_hat, z;
   std::vector<double> xopt;
-  double fopt, penalty_scale;
+  double fopt{}, penalty_scale{};
   coco_matrix_t rot1, rot2;
+
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(const double *x);
+
+  explicit f_step_ellipsoid_t(const size_t dimension) : coco_problem_s(dimension, 1, 0) {
+    init_from_scalars("step ellipsoid function", -5.0, 5.0, 0);
+    /* Allocate temporary storage and space for the rotation matrices */
+    z_hat.resize(dimension);
+    z.resize(dimension);
+    xopt.resize(dimension);
+    rot1 = coco_matrix_t(dimension, dimension);
+    rot2 = coco_matrix_t(dimension, dimension);
+  }
+
+  /**
+   * @brief Uses the raw function to evaluate the COCO problem.
+   */
+  void evaluate_function(const double *x, double *y) override {
+    assert(number_of_objectives == 1);
+    y[0] = raw(x);
+    assert(y[0] + 1e-13 >= best_value[0]);
+  }
 };
 
 /**
  * @brief Implements the step ellipsoid function without connections to any COCO
  * structures.
  */
-static double f_step_ellipsoid_raw(const double *x, const size_t number_of_variables,
-                                   f_step_ellipsoid_data_t *data) {
+double f_step_ellipsoid_t::raw(const double *x) {
 
   static const double condition = 100;
   static const double alpha = 10.0;
@@ -61,29 +82,28 @@ static double f_step_ellipsoid_raw(const double *x, const size_t number_of_varia
     if (tmp > 0.0)
       penalty += tmp * tmp;
   }
-  penalty = penalty * (data->penalty_scale);
+  penalty = penalty * (penalty_scale);
   for (i = 0; i < number_of_variables; ++i) {
     double c1;
-    data->x[i] = 0.0;
+    z_hat[i] = 0.0;
     c1 = sqrt(pow(condition / 10., (double)i / (double)(number_of_variables - 1)));
     for (j = 0; j < number_of_variables; ++j) {
-      data->x[i] += c1 * data->rot2[i][j] * (x[j] - data->xopt[j]);
+      z_hat[i] += c1 * rot2[i][j] * (x[j] - xopt[j]);
     }
   }
-  x1 = data->x[0];
+  x1 = z_hat[0];
 
   for (i = 0; i < number_of_variables; ++i) {
-    if (fabs(data->x[i]) >
-        0.5) /* TODO: Documentation: no fabs() in documentation */
-      data->x[i] = coco_double_round(data->x[i]);
+    if (fabs(z_hat[i]) > 0.5) /* TODO: Documentation: no fabs() in documentation */
+      z_hat[i] = coco_double_round(z_hat[i]);
     else
-      data->x[i] = coco_double_round(alpha * data->x[i]) / alpha;
+      z_hat[i] = coco_double_round(alpha * z_hat[i]) / alpha;
   }
 
   for (i = 0; i < number_of_variables; ++i) {
-    data->xx[i] = 0.0;
+    z[i] = 0.0;
     for (j = 0; j < number_of_variables; ++j) {
-      data->xx[i] += data->rot1[i][j] * data->x[j];
+      z[i] += rot1[i][j] * z_hat[j];
     }
   }
 
@@ -92,38 +112,12 @@ static double f_step_ellipsoid_raw(const double *x, const size_t number_of_varia
   for (i = 0; i < number_of_variables; ++i) {
     double exponent;
     exponent = (double)(long)i / ((double)(long)number_of_variables - 1.0);
-    result += pow(condition, exponent) * data->xx[i] * data->xx[i];
+    result += pow(condition, exponent) * z[i] * z[i];
   }
-  result = 0.1 * coco_double_max(fabs(x1) * 1.0e-4, result) + penalty + data->fopt;
+  result = 0.1 * coco_double_max(fabs(x1) * 1.0e-4, result) + penalty + fopt;
 
   return result;
 }
-
-/**
- * @brief The BBOB step ellipsoid function.
- */
-struct f_step_ellipsoid_t final : public coco_problem_s {
-  f_step_ellipsoid_data_t params;
-
-  explicit f_step_ellipsoid_t(const size_t dimension) : coco_problem_s(dimension, 1, 0) {
-    coco_problem_init_from_scalars(this, "step ellipsoid function", -5.0, 5.0, 0);
-    /* Allocate temporary storage and space for the rotation matrices */
-    params.x.resize(dimension);
-    params.xx.resize(dimension);
-    params.xopt.resize(dimension);
-    params.rot1 = coco_matrix_t(dimension, dimension);
-    params.rot2 = coco_matrix_t(dimension, dimension);
-  }
-
-  /**
-   * @brief Uses the raw function to evaluate the COCO problem.
-   */
-  void evaluate_function(const double *x, double *y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_step_ellipsoid_raw(x, number_of_variables, &params);
-    assert(y[0] + 1e-13 >= best_value[0]);
-  }
-};
 
 /**
  * @brief Creates the BBOB step ellipsoid problem.
@@ -132,26 +126,22 @@ struct f_step_ellipsoid_t final : public coco_problem_s {
  */
 static coco_problem_ptr_t f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
                                                                  const size_t instance, const long rseed,
-                                                                 const void *args, const char *problem_id_template,
+                                                                 const double penalty_scale,
+                                                                 const char *problem_id_template,
                                                                  const char *problem_name_template) {
 
   size_t i;
   std::unique_ptr<f_step_ellipsoid_t> problem = std::make_unique<f_step_ellipsoid_t>(dimension);
-  f_step_ellipsoid_data_t *data = &problem->params;
 
-  f_step_ellipsoid_args_t *f_step_ellipsoid_args;
-  f_step_ellipsoid_args = ((f_step_ellipsoid_args_t *)args);
-
-  double penalty_scale = f_step_ellipsoid_args->penalty_scale;
-  data->fopt = bbob2009_compute_fopt(function, instance);
-  data->penalty_scale = penalty_scale;
+  problem->fopt = bbob2009_compute_fopt(function, instance);
+  problem->penalty_scale = penalty_scale;
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
-    sbox_cost_compute_xopt(data->xopt.data(), rseed, dimension);
+    sbox_cost_compute_xopt(problem->xopt.data(), rseed, dimension);
   } else {
-    bbob2009_compute_xopt(data->xopt.data(), rseed, dimension);
+    bbob2009_compute_xopt(problem->xopt.data(), rseed, dimension);
   }
-  bbob2009_compute_rotation(data->rot1.rows(), rseed + 1000000, dimension);
-  bbob2009_compute_rotation(data->rot2.rows(), rseed, dimension);
+  bbob2009_compute_rotation(problem->rot1.rows(), rseed + 1000000, dimension);
+  bbob2009_compute_rotation(problem->rot2.rows(), rseed, dimension);
 
   /* Compute best solution
    *
@@ -159,12 +149,12 @@ static coco_problem_ptr_t f_step_ellipsoid_bbob_problem_allocate(const size_t fu
    * transformations to find the best_parameter :/
    */
   for (i = 0; i < problem->number_of_variables; i++) {
-    problem->best_parameter[i] = data->xopt[i];
+    problem->best_parameter[i] = problem->xopt[i];
   }
-  problem->best_value[0] = data->fopt;
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "2-moderate");
+  problem->best_value[0] = problem->fopt;
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("2-moderate");
 
   return problem;
 }
@@ -201,9 +191,9 @@ struct f_step_ellipsoid_permblock_t final : public coco_problem_s {
 
   explicit f_step_ellipsoid_permblock_t(const size_t number_of_variables)
       : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "step ellipsoid function", -5.0, 5.0, 0.0);
+    init_from_scalars("step ellipsoid function", -5.0, 5.0, 0.0);
     shared.zhat_1 = 0; /*needed for xopt evaluation*/
-    coco_problem_set_id(this, "%s_d%02lu", "step_ellipsoid", number_of_variables);
+    set_id("%s_d%02lu", "step_ellipsoid", number_of_variables);
 
     /* Compute best solution, here done outside after the zhat is set to the best_value */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -299,9 +289,9 @@ static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(c
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "2-moderate");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("2-moderate");
 
   return problem;
 }

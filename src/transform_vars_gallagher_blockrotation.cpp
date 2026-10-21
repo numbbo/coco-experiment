@@ -61,7 +61,7 @@ static COCO_UNUSED coco_problem_ptr_t transform_vars_gallagher_blockrotation(coc
                                                                              f_gallagher_shared_data_t *shared);
 static coco_problem_ptr_t transform_vars_gallagher_blockrotation(coco_problem_ptr_t inner_problem,
                                                                  f_gallagher_shared_data_t *shared) {
-  if (coco_problem_best_parameter_not_zero(inner_problem.get())) {
+  if (inner_problem->best_parameter_not_zero()) {
     coco_debug("transform_vars_gallagher_blockrotation(): 'best_parameter' not updated, set to NAN");
     coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
   }

@@ -20,47 +20,20 @@
 #include "transform_vars_shift.cpp"
 
 /**
- * @brief Data type for the attractive sector problem.
- */
-struct f_attractive_sector_data_t {
-  std::vector<double> xopt;
-};
-
-/**
- * @brief Implements the attractive sector function without connections to any
- * COCO structures.
- */
-static double f_attractive_sector_raw(const double *x, const size_t number_of_variables,
-                                      f_attractive_sector_data_t *data) {
-  size_t i;
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = 0.0;
-  for (i = 0; i < number_of_variables; ++i) {
-    if (data->xopt[i] * x[i] > 0.0) {
-      result += 100.0 * 100.0 * x[i] * x[i];
-    } else {
-      result += x[i] * x[i];
-    }
-  }
-  return result;
-}
-
-/**
  * @brief The attractive sector function.
  */
 struct f_attractive_sector_t final : public coco_problem_s {
-  f_attractive_sector_data_t params;
+  std::vector<double> xopt;
+
+  /** @brief Evaluates the function at x without any COCO bookkeeping. */
+  double raw(const double *x) const;
 
   f_attractive_sector_t(const size_t number_of_variables, const double *xopt)
       : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "attractive sector function", -5.0, 5.0, 0.0);
-    coco_problem_set_id(this, "%s_d%02lu", "attractive_sector", number_of_variables);
+    init_from_scalars("attractive sector function", -5.0, 5.0, 0.0);
+    set_id("%s_d%02lu", "attractive_sector", number_of_variables);
 
-    params.xopt.assign(xopt, xopt + number_of_variables);
+    this->xopt.assign(xopt, xopt + number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -71,10 +44,32 @@ struct f_attractive_sector_t final : public coco_problem_s {
    */
   void evaluate_function(const double *x, double *y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_attractive_sector_raw(x, number_of_variables, &params);
+    y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
+
+/**
+ * @brief Implements the attractive sector function without connections to any
+ * COCO structures.
+ */
+double f_attractive_sector_t::raw(const double *x) const {
+  size_t i;
+  double result;
+
+  if (coco_vector_contains_nan(x, number_of_variables))
+    return NAN;
+
+  result = 0.0;
+  for (i = 0; i < number_of_variables; ++i) {
+    if (xopt[i] * x[i] > 0.0) {
+      result += 100.0 * 100.0 * x[i] * x[i];
+    } else {
+      result += x[i] * x[i];
+    }
+  }
+  return result;
+}
 
 /**
  * @brief Allocates the basic attractive sector problem.
@@ -129,9 +124,9 @@ static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t
   problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "2-moderate");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("2-moderate");
 
   return problem;
 }
@@ -197,9 +192,9 @@ static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocat
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "2-moderate");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("2-moderate");
 
   return problem;
 }

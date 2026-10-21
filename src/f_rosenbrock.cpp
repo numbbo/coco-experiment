@@ -48,8 +48,8 @@ static double f_rosenbrock_raw(const double *x,
  */
 struct f_rosenbrock_t final : public coco_problem_s {
   explicit f_rosenbrock_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "Rosenbrock function", -5.0, 5.0, 1.0);
-    coco_problem_set_id(this, "%s_d%02lu", "rosenbrock", number_of_variables);
+    init_from_scalars("Rosenbrock function", -5.0, 5.0, 1.0);
+    set_id("%s_d%02lu", "rosenbrock", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -115,9 +115,9 @@ static coco_problem_ptr_t f_rosenbrock_bbob_problem_allocate(const size_t functi
 
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "2-moderate");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("2-moderate");
 
   return problem;
 }
@@ -170,9 +170,9 @@ static coco_problem_ptr_t f_rosenbrock_rotated_bbob_problem_allocate(const size_
     problem->best_parameter[column] = tmp / (2. * factor);
   }
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "2-moderate");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("2-moderate");
 
   return problem;
 }
@@ -238,9 +238,9 @@ static coco_problem_ptr_t f_rosenbrock_permblockdiag_bbob_problem_allocate(const
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "2-moderate");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("2-moderate");
 
   return problem;
 }

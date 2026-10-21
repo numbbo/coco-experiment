@@ -35,7 +35,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
        The update takes place only if the best parameter or b are different than zero
        and the transformation matrix M is orthogonal.
     */
-    if (coco_problem_best_parameter_not_zero(inner_problem.get()) ||
+    if (inner_problem->best_parameter_not_zero() ||
         !coco_vector_is_zero(this->b.data(), inner_problem->number_of_variables)) {
       if (!coco_is_orthogonal(this->M.data(), this->number_of_variables, inner_problem->number_of_variables))
         coco_warning("transform_vars_affine(): rotation matrix is not orthogonal. Best parameter not updated");
@@ -71,7 +71,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective function.
    */
   void evaluate_function(const double *x, double *y) override {
-    int is_feasible;
+    int feasible;
 
     if (inner_problem->number_of_objectives == 0) {
       coco_evaluate_function(inner_problem.get(), x, y);
@@ -88,8 +88,8 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
 
     if (number_of_constraints > 0) {
       std::vector<double> cons_values(number_of_constraints);
-      is_feasible = coco_is_feasible(this, x, cons_values.data());
-      if (is_feasible)
+      feasible = is_feasible(x, cons_values.data());
+      if (feasible)
         assert(y[0] + 1e-13 >= best_value[0]);
     } else
       assert(y[0] + 1e-13 >= best_value[0]);
@@ -128,7 +128,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     std::vector<double> gradient(inner_problem->number_of_variables, 0.0);
 
     transform(x);
-    bbob_evaluate_gradient(inner_problem.get(), transformed_x.data(), y);
+    inner_problem->evaluate_gradient(transformed_x.data(), y);
 
     /* grad_(f o g )(x), where g(x) = M * x + b, equals to
      * M^T * grad_f(M *x + b)

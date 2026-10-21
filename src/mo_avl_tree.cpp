@@ -470,6 +470,14 @@ static void avl_tree_destruct(avl_tree_t *avltree) {
   delete avltree;
 }
 
+/* Destroys an AVL tree when used as the deleter of a std::unique_ptr. */
+struct avl_tree_deleter_t {
+  void operator()(avl_tree_t *avltree) const { avl_tree_destruct(avltree); }
+};
+
+/* An AVL tree that is destroyed (including its items, if it has a free function) with its owner. */
+typedef std::unique_ptr<avl_tree_t, avl_tree_deleter_t> avl_tree_ptr_t;
+
 static void avl_node_clear(avl_node_t *newnode) {
   newnode->left = newnode->right = nullptr;
 #ifdef AVL_COUNT

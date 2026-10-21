@@ -120,54 +120,15 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
                                           smallest_values_of_interest.data(), largest_values_of_interest.data());
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  coco_problem_set_name(problem.get(), "%s", problem->problem_id.c_str());
-  coco_problem_set_id(problem.get(), "bbob-biobj-mixint_f%03lu_i%02lu_d%03lu", (unsigned long)function,
-                      (unsigned long)instance, (unsigned long)dimension);
+  problem->set_name("%s", problem->problem_id.c_str());
+  problem->set_id("bbob-biobj-mixint_f%03lu_i%02lu_d%03lu", (unsigned long)function, (unsigned long)instance,
+                  (unsigned long)dimension);
 
   /* Construct problem type */
-  coco_problem_set_type(problem.get(), "%s_%s", problem_type1.c_str(), problem_type2.c_str());
+  problem->set_type("%s_%s", problem_type1.c_str(), problem_type2.c_str());
 
   return problem;
 }
-/**
- * @brief Returns the problem from the bbob-biobj-mixint suite that corresponds to the given parameters.
- *
- * Uses large-scale bbob functions if dimension is equal or larger than the hard-coded dim_large_scale
- * value (50).
- *
- * @param suite The COCO suite.
- * @param new_instances The new instances computed so far.
- * @param function_idx Index of the function (starting from 0).
- * @param dimension_idx Index of the dimension (starting from 0).
- * @param instance_idx Index of the instance (starting from 0).
- * @return The problem that corresponds to the given parameters.
- */
-static coco_problem_ptr_t suite_biobj_mixint_get_problem(coco_suite_t *suite,
-                                                         suite_biobj_new_instances_t &new_instances,
-                                                         const size_t function_idx, const size_t dimension_idx,
-                                                         const size_t instance_idx) {
-
-  coco_problem_ptr_t problem;
-  const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
-
-  const size_t function = suite->functions[function_idx];
-  const size_t dimension = suite->dimensions[dimension_idx];
-  const size_t instance = suite->instances[instance_idx];
-
-  if (dimension < dim_large_scale)
-    problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_make_bbob_problem, new_instances,
-                                            suite->dimensions.data(), suite->dimensions.size());
-  else
-    problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_largescale_problem,
-                                            new_instances, suite->dimensions.data(), suite->dimensions.size());
-
-  problem->suite_dep_function = function;
-  problem->suite_dep_instance = instance;
-  problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
-
-  return problem;
-}
-
 /**
  * @brief The bbob-biobj-mixint suite.
  */
@@ -178,9 +139,19 @@ struct suite_biobj_mixint_t final : public coco_suite_s {
     return suite_biobj_mixint_get_instances_by_year(year);
   }
 
-  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
-                                 const size_t instance_idx) override {
-    return suite_biobj_mixint_get_problem(this, new_instances, function_idx, dimension_idx, instance_idx);
+  /** @brief Returns the problem with the given function, dimension and instance. */
+  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
+    coco_problem_ptr_t problem;
+    const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
+
+    if (dimension < dim_large_scale)
+      problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_make_bbob_problem, new_instances,
+                                              dimensions.data(), dimensions.size());
+    else
+      problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_largescale_problem, new_instances,
+                                              dimensions.data(), dimensions.size());
+
+    return problem;
   }
 
   suite_biobj_new_instances_t new_instances; /**< @brief The new instances computed so far. */

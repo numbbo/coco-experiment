@@ -53,8 +53,8 @@ static double f_schaffers_raw(const double *x,
  */
 struct f_schaffers_t final : public coco_problem_s {
   explicit f_schaffers_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "Schaffer's function", -5.0, 5.0, 0.0);
-    coco_problem_set_id(this, "%s_d%02lu", "schaffers", number_of_variables);
+    init_from_scalars("Schaffer's function", -5.0, 5.0, 0.0);
+    set_id("%s_d%02lu", "schaffers", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -81,7 +81,8 @@ static coco_problem_ptr_t f_schaffers_allocate(const size_t number_of_variables)
  * @brief Creates the BBOB Schaffer's F7 problem.
  */
 static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                            const size_t instance, const long rseed, const void *args,
+                                                            const size_t instance, const long rseed,
+                                                            const double conditioning, const double penalty_scale,
                                                             const char *problem_id_template,
                                                             const char *problem_name_template) {
   double fopt;
@@ -91,8 +92,6 @@ static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t functio
   std::vector<double> b(dimension);
   double *current_row;
 
-  double conditioning =  ((f_schaffers_args_t *)args)->conditioning;
-  double penalty_scale =  ((f_schaffers_args_t *)args)->penalty_scale;
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -124,9 +123,9 @@ static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t functio
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
   problem = transform_obj_penalize(std::move(problem), penalty_scale);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "4-multi-modal");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("4-multi-modal");
 
   return problem;
 }
@@ -191,9 +190,9 @@ static coco_problem_ptr_t f_schaffers_permblockdiag_bbob_problem_allocate(const 
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "4-multi-modal");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("4-multi-modal");
 
   return problem;
 }

@@ -54,8 +54,8 @@ static double f_schwefel_generalized_raw(const double *x,
  */
 struct f_schwefel_generalized_t final : public coco_problem_s {
   explicit f_schwefel_generalized_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    coco_problem_init_from_scalars(this, "Schwefel function", -5.0, 5.0, 420.96874633);
-    coco_problem_set_id(this, "%s_d%02lu", "schwefel", number_of_variables);
+    init_from_scalars("Schwefel function", -5.0, 5.0, 420.96874633);
+    set_id("%s_d%02lu", "schwefel", number_of_variables);
 
     /* Compute best solution: best_parameter[i] = 200 * fabs(xopt[i]) */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -125,9 +125,9 @@ static coco_problem_ptr_t f_schwefel_generalized_bbob_problem_allocate(const siz
                                                                   */
   problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem.get(), "5-weakly-structured");
+  problem->set_id(problem_id_template, function, instance, dimension);
+  problem->set_name(problem_name_template, function, instance, dimension);
+  problem->set_type("5-weakly-structured");
 
   return problem;
 }

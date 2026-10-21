@@ -26,9 +26,6 @@
 #include "suite_sbox_cost.cpp"
 #include "suite_toy.cpp"
 
-/* Defined in coco_observer.cpp */
-static coco_problem_ptr_t coco_observer_add_logger(coco_observer_t *observer, coco_problem_ptr_t problem);
-
 /** @brief The maximum number of different instances in a suite. */
 #define COCO_MAX_INSTANCES 1000
 
@@ -67,48 +64,24 @@ static coco_suite_t *coco_suite_intialize(std::string_view suite_name) {
   return suite;
 }
 
-/**
- * @brief Returns the instances of the given suite for the given year.
- */
-static std::string_view coco_suite_get_instances_by_year(const coco_suite_t *suite, const int year) {
-  return suite->get_instances_by_year(year);
-}
+coco_problem_ptr_t coco_suite_s::get_problem_from_indices(const size_t function_idx, const size_t dimension_idx,
+                                                          const size_t instance_idx) {
 
-/**
- * @brief Calls the function that returns the problem corresponding to the given
- * suite, function index, dimension index and instance index. If the indices
- * don't correspond to a problem because of suite filtering, it returns NULL.
- *
- */
-static coco_problem_ptr_t coco_suite_get_problem_from_indices(coco_suite_t *suite, const size_t function_idx,
-                                                              const size_t dimension_idx, const size_t instance_idx) {
+  const size_t function = functions[function_idx];
+  const size_t dimension = dimensions[dimension_idx];
+  const size_t instance = instances[instance_idx];
 
-  coco_problem_ptr_t problem;
-
-  if ((suite->functions[function_idx] == 0) ||
-      (suite->dimensions[dimension_idx] == 0) ||
-      (suite->instances[instance_idx] == 0)) {
+  if ((function == 0) || (dimension == 0) || (instance == 0)) {
     return nullptr;
   }
 
-  problem = suite->get_problem(function_idx, dimension_idx, instance_idx);
-  coco_problem_set_suite(problem.get(), suite);
+  coco_problem_ptr_t problem = get_problem(function, dimension, instance);
+  problem->suite_dep_function = function;
+  problem->suite_dep_instance = instance;
+  problem->suite_dep_index = coco_suite_encode_problem_index(this, function_idx, dimension_idx, instance_idx);
+  problem->suite = this;
 
   return problem;
-}
-
-/**
- * @brief Saves the best indicator value for the given problem in value.
- */
-static void coco_suite_get_best_indicator_value(const int known_optima, const coco_problem_t *problem,
-                                                std::string_view indicator_name, double *value) {
-
-  if (indicator_name == "hyp") {
-    suite_biobj_get_best_hyp_value(known_optima, problem->problem_id, value);
-  } else {
-    coco_error("coco_suite_get_best_indicator_value(): indicator %.*s not supported", (int)indicator_name.size(),
-               indicator_name.data());
-  }
 }
 
 /**
@@ -157,8 +130,7 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
   if (!found)
     return nullptr;
 
-  return coco_suite_get_problem_from_indices(suite, (size_t)function_idx, (size_t)dimension_idx, (size_t)instance_idx)
-      .release();
+  return suite->get_problem_from_indices((size_t)function_idx, (size_t)dimension_idx, (size_t)instance_idx).release();
 }
 
 coco_suite_s::coco_suite_s(std::string_view suite_name, const size_t number_of_functions,
@@ -331,7 +303,7 @@ coco_problem_t *coco_suite_get_problem(coco_suite_t *suite,
   coco_suite_decode_problem_index(suite, problem_index, &function_idx,
                                   &dimension_idx, &instance_idx);
 
-  return coco_suite_get_problem_from_indices(suite, function_idx, dimension_idx, instance_idx).release();
+  return suite->get_problem_from_indices(function_idx, dimension_idx, instance_idx).release();
 }
 
 /**
@@ -385,7 +357,7 @@ static std::vector<size_t> coco_suite_get_instance_indices(const coco_suite_t *s
 
   if ((year_found >= 0) && (parse_year == 1)) {
     if (coco_options_read_int(suite_instance, "year", &(year)) != 0) {
-      year_string = coco_suite_get_instances_by_year(suite, year);
+      year_string = suite->get_instances_by_year(year);
       result = coco_string_parse_ranges(year_string, 1, 0, "instances",
                                         COCO_MAX_INSTANCES);
     } else {
@@ -442,54 +414,22 @@ static int coco_suite_is_next_item_found(const size_t *items,
   return 0;
 }
 
-/**
- * @brief Iterates through the instances of the given suite from the
- * current_instance_idx position on in search for the next positive instance.
- *
- * If such an instance is found, current_instance_idx points to this instance
- * and the method returns 1. If such an instance cannot be found,
- * current_instance_idx points to the first positive instance and the method
- * returns 0.
- */
-static int coco_suite_is_next_instance_found(coco_suite_t *suite) {
-
-  return coco_suite_is_next_item_found(suite->instances.data(), suite->instances.size(), &suite->current_instance_idx);
+int coco_suite_s::next_instance() {
+  return coco_suite_is_next_item_found(instances.data(), instances.size(), &current_instance_idx);
 }
 
-/**
- * @brief Iterates through the functions of the given suite from the
- * current_function_idx position on in search for the next positive function.
- *
- * If such a function is found, current_function_idx points to this function and
- * the method returns 1. If such a function cannot be found,
- * current_function_idx points to the first positive function,
- * current_instance_idx points to the first positive instance and the method
- * returns 0.
- */
-static int coco_suite_is_next_function_found(coco_suite_t *suite) {
-
-  int result =
-      coco_suite_is_next_item_found(suite->functions.data(), suite->functions.size(), &suite->current_function_idx);
+int coco_suite_s::next_function() {
+  int result = coco_suite_is_next_item_found(functions.data(), functions.size(), &current_function_idx);
   if (!result) {
     /* Reset the instances */
-    suite->current_instance_idx = -1;
-    coco_suite_is_next_instance_found(suite);
+    current_instance_idx = -1;
+    next_instance();
   }
   return result;
 }
 
-/**
- * @brief Iterates through the dimensions of the given suite from the
- * current_dimension_idx position on in search for the next positive dimension.
- *
- * If such a dimension is found, current_dimension_idx points to this dimension
- * and the method returns 1. If such a dimension cannot be found,
- * current_dimension_idx points to the first positive dimension and the method
- * returns 0.
- */
-static int coco_suite_is_next_dimension_found(coco_suite_t *suite) {
-
-  return coco_suite_is_next_item_found(suite->dimensions.data(), suite->dimensions.size(), &suite->current_dimension_idx);
+int coco_suite_s::next_dimension() {
+  return coco_suite_is_next_item_found(dimensions.data(), dimensions.size(), &current_dimension_idx);
 }
 
 /**
@@ -649,8 +589,8 @@ static coco_suite_t *coco_suite_create(std::string_view suite_name, std::string_
 
   /* Set the starting values of the current indices in such a way, that when the
    * instance_idx is incremented, this results in a valid problem */
-  coco_suite_is_next_function_found(suite);
-  coco_suite_is_next_dimension_found(suite);
+  suite->next_function();
+  suite->next_dimension();
 
   return suite;
 }
@@ -695,8 +635,7 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
   /* Iterate through the suite by instances, then functions and lastly dimensions in search for the next
    * problem. Note that these functions set the values of suite fields current_instance_idx,
    * current_function_idx and current_dimension_idx. */
-  if (!coco_suite_is_next_instance_found(suite) && !coco_suite_is_next_function_found(suite) &&
-      !coco_suite_is_next_dimension_found(suite)) {
+  if (!suite->next_instance() && !suite->next_function() && !suite->next_dimension()) {
     coco_info_partial("done\n");
     return nullptr;
   }
@@ -711,10 +650,9 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
   dimension_idx = (size_t)suite->current_dimension_idx;
   instance_idx = (size_t)suite->current_instance_idx;
 
-  problem = coco_suite_get_problem_from_indices(suite, function_idx,
-                                                dimension_idx, instance_idx);
+  problem = suite->get_problem_from_indices(function_idx, dimension_idx, instance_idx);
   if (observer != nullptr)
-    problem = coco_observer_add_logger(observer, std::move(problem));
+    problem = observer->observe(std::move(problem));
   suite->current_problem = std::move(problem);
 
   /* Output information regarding the current place in the iteration */

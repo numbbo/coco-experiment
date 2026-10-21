@@ -41,7 +41,7 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
    */
   void evaluate_function(const double *x, double *y) override {
     size_t i;
-    int is_feasible;
+    int feasible;
 
     if (inner_problem->number_of_objectives == 0 || shift_constraint_only != 0) {
       coco_evaluate_function(inner_problem.get(), x, y);
@@ -61,8 +61,8 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
 
     if (number_of_constraints > 0) {
       std::vector<double> cons_values(number_of_constraints);
-      is_feasible = coco_is_feasible(this, x, cons_values.data());
-      if (is_feasible)
+      feasible = is_feasible(x, cons_values.data());
+      if (feasible)
         assert(y[0] + 1e-13 >= best_value[0]);
     } else
       assert(y[0] + 1e-13 >= best_value[0]);
@@ -104,7 +104,7 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
     for (i = 0; i < number_of_variables; ++i) {
       shifted_x[i] = x[i] - offset[i];
     }
-    bbob_evaluate_gradient(inner_problem.get(), shifted_x.data(), y);
+    inner_problem->evaluate_gradient(shifted_x.data(), y);
   }
 };
 

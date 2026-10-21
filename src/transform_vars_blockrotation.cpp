@@ -48,7 +48,7 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
                                                                      cumsum for blocksizes*/
     }
 
-    if (coco_problem_best_parameter_not_zero(inner_problem.get())) {
+    if (inner_problem->best_parameter_not_zero()) {
       coco_debug("transform_vars_blockrotation(): 'best_parameter' not updated, "
                  "set to NAN");
       coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);

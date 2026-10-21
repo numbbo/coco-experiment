@@ -38,37 +38,6 @@ static std::string_view suite_biobj_get_instances_by_year(const int year) {
 }
 
 /**
- * @brief Returns the problem from the bbob-biobj suite that corresponds to the given parameters.
- *
- * @param suite The COCO suite.
- * @param new_instances The new instances computed so far.
- * @param function_idx Index of the function (starting from 0).
- * @param dimension_idx Index of the dimension (starting from 0).
- * @param instance_idx Index of the instance (starting from 0).
- * @return The problem that corresponds to the given parameters.
- */
-static coco_problem_ptr_t suite_biobj_get_problem(coco_suite_t *suite, suite_biobj_new_instances_t &new_instances,
-                                                  const size_t function_idx, const size_t dimension_idx,
-                                                  const size_t instance_idx) {
-
-  coco_problem_ptr_t problem;
-
-  const size_t function = suite->functions[function_idx];
-  const size_t dimension = suite->dimensions[dimension_idx];
-  const size_t instance = suite->instances[instance_idx];
-
-  problem = coco_get_biobj_problem(function, dimension, instance, coco_make_bbob_problem, new_instances,
-                                   suite->dimensions.data(), suite->dimensions.size());
-
-  problem->suite_dep_function = function;
-  problem->suite_dep_instance = instance;
-  problem->suite_dep_index = coco_suite_encode_problem_index(suite, function_idx, dimension_idx, instance_idx);
-  problem->is_opt_known = 1;
-
-  return problem;
-}
-
-/**
  * @brief The bbob-biobj and bbob-biobj-ext suites.
  */
 struct suite_biobj_t final : public coco_suite_s {
@@ -78,9 +47,16 @@ struct suite_biobj_t final : public coco_suite_s {
     return suite_biobj_get_instances_by_year(year);
   }
 
-  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
-                                 const size_t instance_idx) override {
-    return suite_biobj_get_problem(this, new_instances, function_idx, dimension_idx, instance_idx);
+  /** @brief Returns the problem with the given function, dimension and instance. */
+  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
+    coco_problem_ptr_t problem;
+
+    problem = coco_get_biobj_problem(function, dimension, instance, coco_make_bbob_problem, new_instances,
+                                     dimensions.data(), dimensions.size());
+
+    problem->is_opt_known = 1;
+
+    return problem;
   }
 
   suite_biobj_new_instances_t new_instances; /**< @brief The new instances computed so far. */
