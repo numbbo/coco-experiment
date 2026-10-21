@@ -24,13 +24,9 @@ static double f_rosenbrock_raw(const double *x,
                                const size_t number_of_variables) {
 
   size_t i = 0;
-  double result;
   double s1 = 0.0, s2 = 0.0, tmp;
 
   assert(number_of_variables > 1);
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
 
   for (i = 0; i < number_of_variables - 1; ++i) {
     tmp = (x[i] * x[i] - x[i + 1]);
@@ -38,7 +34,7 @@ static double f_rosenbrock_raw(const double *x,
     tmp = (x[i] - 1.0);
     s2 += tmp * tmp;
   }
-  result = 100.0 * s1 + s2;
+  double result = 100.0 * s1 + s2;
 
   return result;
 }
@@ -49,7 +45,7 @@ static double f_rosenbrock_raw(const double *x,
 struct f_rosenbrock_t final : public coco_problem_s {
   explicit f_rosenbrock_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Rosenbrock function", -5.0, 5.0, 1.0);
-    set_id("%s_d%02lu", "rosenbrock", number_of_variables);
+    set_id("%s_d%02zu", "rosenbrock", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -80,7 +76,6 @@ static coco_problem_ptr_t f_rosenbrock_bbob_problem_allocate(const size_t functi
                                                              const coco_bbob_variant_t variant,
                                                              const char *problem_id_template,
                                                              const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   size_t block_size;
   double factor;
@@ -92,12 +87,12 @@ static coco_problem_ptr_t f_rosenbrock_bbob_problem_allocate(const size_t functi
     minus_one[i] = -1.0;
     xopt[i] *= 0.75;
   }
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   if (variant == coco_bbob_variant_t::largescale) {
     block_size = coco_rotation_matrix_block_size(dimension);
-    factor = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
+    factor = coco_double_max(1.0, sqrt(static_cast<double>(block_size)) / 8.0);
   } else {
-    factor = coco_double_max(1.0, sqrt((double)dimension) / 8.0);
+    factor = coco_double_max(1.0, sqrt(static_cast<double>(dimension)) / 8.0);
   }
 
   problem = f_rosenbrock_allocate(dimension);
@@ -127,17 +122,15 @@ static coco_problem_ptr_t f_rosenbrock_rotated_bbob_problem_allocate(const size_
                                                                      const char *problem_id_template,
                                                                      const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
-  double factor;
   double tmp; /* Wassim: will serve to set the optimal solution "manually"*/
 
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed, dimension);
 
-  factor = coco_double_max(1.0, sqrt((double)dimension) / 8.0);
+  double factor = coco_double_max(1.0, sqrt(static_cast<double>(dimension)) / 8.0);
   /* Compute affine transformation */
   for (size_t row = 0; row < dimension; ++row) {
     for (size_t column = 0; column < dimension; ++column) {
@@ -178,26 +171,21 @@ f_rosenbrock_permblockdiag_bbob_problem_allocate(const size_t function, const si
                                                  const long rseed, const coco_bbob_variant_t variant,
                                                  const char *problem_id_template, const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
-  double factor;
 
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
-  size_t block_size;
   size_t nb_blocks;
-  size_t swap_range;
-  size_t nb_swaps;
   std::vector<double> best_parameter(dimension); /* Manh: will serve to set the optimal solution "manually"*/
 
   std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
-  block_size = coco_rotation_matrix_block_size(dimension);
+  size_t block_size = coco_rotation_matrix_block_size(dimension);
 
-  swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  fopt = bbob2009_compute_fopt(function, instance);
-  factor = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
+  double fopt = bbob2009_compute_fopt(function, instance);
+  double factor = coco_double_max(1.0, sqrt(static_cast<double>(block_size)) / 8.0);
   std::vector<double> minus_one(dimension);
   std::vector<double> xopt(dimension);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);

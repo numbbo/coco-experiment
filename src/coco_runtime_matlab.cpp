@@ -18,11 +18,10 @@ void coco_error(const char *message, ...) {
   va_list args;
 
   char buffer[500];
-  int n;
 
   mexPrintf("COCO FATAL ERROR: ");
   va_start(args, message);
-  n = vsprintf(buffer, message, args);
+  int n = vsprintf(buffer, message, args);
   va_end(args);
   mexPrintf(buffer);
 

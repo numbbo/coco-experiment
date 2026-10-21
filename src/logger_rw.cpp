@@ -30,7 +30,7 @@
  * observers can be deleted before the logger is finalized and we need these fields for finalization.
  */
 struct logger_rw_t final : public coco_problem_transformed_t {
-  FILE *out_file{};              /**< @brief File for logging. */
+  coco_file_t out_file;          /**< @brief File for logging. */
   size_t num_func_evaluations{}; /**< @brief The number of function evaluations performed so far. */
   size_t num_cons_evaluations{}; /**< @brief The number of evaluations of constraints performed so far. */
 
@@ -48,8 +48,6 @@ struct logger_rw_t final : public coco_problem_transformed_t {
   bool log_discrete_as_int{}; /**< @brief Whether to output discrete variables in int or double format. */
 
   logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner);
-
-  ~logger_rw_t() override;
 
   void evaluate_function(const double *x, double *y) override;
 
@@ -71,7 +69,7 @@ void logger_rw_t::evaluate_function(const double *x, double *y) {
     time(&start);
 
   /* Evaluate the objective(s) */
-  coco_evaluate_function(inner_problem.get(), x, y);
+  inner_problem->evaluate_function(x, y);
   num_func_evaluations++;
 
   if (number_of_objectives == 1)
@@ -92,8 +90,8 @@ void logger_rw_t::evaluate_function(const double *x, double *y) {
   else if (number_of_objectives == 1)
     log_this_time = !log_only_better;
   if ((num_func_evaluations == 1) || log_this_time) {
-    fprintf(out_file, "%lu\t", (unsigned long)num_func_evaluations);
-    fprintf(out_file, "%lu\t", (unsigned long)num_cons_evaluations);
+    fprintf(out_file, "%zu\t", num_func_evaluations);
+    fprintf(out_file, "%zu\t", num_cons_evaluations);
     for (size_t i = 0; i < number_of_objectives; i++)
       fprintf(out_file, "%+.*e\t", precision_f, y[i]);
     if (log_vars) {
@@ -114,16 +112,6 @@ void logger_rw_t::evaluate_function(const double *x, double *y) {
     fprintf(out_file, "\n");
   }
   fflush(out_file);
-}
-
-/**
- * @brief Closes the output file.
- */
-logger_rw_t::~logger_rw_t() {
-  if (out_file != nullptr) {
-    fclose(out_file);
-    out_file = nullptr;
-  }
 }
 
 /**
@@ -169,7 +157,7 @@ logger_rw_t::logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner)
       coco_join_path(observer.result_folder, coco_string_format("%s_rw.txt", coco_problem_get_id(inner_problem.get())));
 
   /* Open and initialize the output file */
-  out_file = fopen(path_name.c_str(), "a");
+  out_file.open(path_name, "a");
   if (out_file == nullptr) {
     coco_error("logger_rw_t() failed to open file '%s'.", path_name.c_str());
     return; /* Never reached */
@@ -179,16 +167,15 @@ logger_rw_t::logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner)
   fprintf(out_file, "\n%% suite = '%s', problem_id = '%s', problem_name = '%s', coco_version = '%s'\n",
           inner_problem->suite->suite_name.c_str(), coco_problem_get_id(inner_problem.get()),
           coco_problem_get_name(inner_problem.get()), coco_version);
-  fprintf(out_file, "%% f-evaluations | g-evaluations | %lu objective",
-          (unsigned long)inner_problem->number_of_objectives);
+  fprintf(out_file, "%% f-evaluations | g-evaluations | %zu objective", inner_problem->number_of_objectives);
   if (inner_problem->number_of_objectives > 1)
     fprintf(out_file, "s");
   if (log_vars)
-    fprintf(out_file, " | %lu variable", (unsigned long)inner_problem->number_of_variables);
+    fprintf(out_file, " | %zu variable", inner_problem->number_of_variables);
   if (inner_problem->number_of_variables > 1)
     fprintf(out_file, "s");
   if (log_cons)
-    fprintf(out_file, " | %lu constraint", (unsigned long)inner_problem->number_of_constraints);
+    fprintf(out_file, " | %zu constraint", inner_problem->number_of_constraints);
   if (inner_problem->number_of_constraints > 1)
     fprintf(out_file, "s");
   if (log_time)

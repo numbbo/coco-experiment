@@ -31,35 +31,34 @@ static std::string_view suite_cons_bbob_get_instances_by_year(const int year) {
 static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name, const size_t function,
                                                      const size_t dimension, const size_t instance) {
 
-  size_t number_of_linear_constraints;
   coco_problem_ptr_t problem;
 
   std::vector<double> feasible_direction(dimension);
   std::vector<double> xopt(dimension);
-  long rseed = (long)(function + 10000 * instance);
+  long rseed = static_cast<long>(function + 10000 * instance);
 
-  const char *problem_id_template = "bbob-constrained_f%03lu_i%02lu_d%02lu";
-  const char *problem_name_template = "bbob-constrained suite problem f%lu instance %lu in %luD";
+  const char *problem_id_template = "bbob-constrained_f%03zu_i%02zu_d%02zu";
+  const char *problem_name_template = "bbob-constrained suite problem f%zu instance %zu in %zuD";
   if (suite_name == "bbob-constrained-active-only") {
     /* CAVEAT: the first 28 chars of this ID are used in c_linear_cons_bbob_problem_allocate()
      * in c_linear.cpp to make the decision whether inactive constraints are added */
-    problem_id_template = "bbob-constrained-active-only_f%03lu_i%02lu_d%02lu";
-    problem_name_template = "bbob-constrained-active-only suite problem f%lu instance %lu in %luD";
+    problem_id_template = "bbob-constrained-active-only_f%03zu_i%02zu_d%02zu";
+    problem_name_template = "bbob-constrained-active-only suite problem f%zu instance %zu in %zuD";
   }
   if (suite_name == "bbob-constrained-no-disguise") {
     /* First trick as above, by chance same number of characters
      * Both options at the same time not supported */
-    problem_id_template = "bbob-constrained-no-disguise_f%03lu_i%02lu_d%02lu";
-    problem_name_template = "bbob-constrained-no-disguise suite problem f%lu instance %lu in %luD";
+    problem_id_template = "bbob-constrained-no-disguise_f%03zu_i%02zu_d%02zu";
+    problem_name_template = "bbob-constrained-no-disguise suite problem f%zu instance %zu in %zuD";
   }
 
   /* Seed value used for shifting the whole constrained problem */
   bbob2009_compute_xopt(xopt.data(), rseed, dimension);
 
   /* Choose a different seed value for building the objective function */
-  rseed = (long)(function + 20000 * instance);
+  rseed = static_cast<long>(function + 20000 * instance);
 
-  number_of_linear_constraints = nb_of_linear_constraints(function, dimension);
+  size_t number_of_linear_constraints = nb_of_linear_constraints(function, dimension);
 
   if (obj_function_type(function) == 1) {
 
@@ -134,7 +133,7 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
                                   10.); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else {
-    coco_error("coco_get_cons_bbob_problem(): cannot retrieve problem f%lu instance %lu in %luD", function, instance,
+    coco_error("coco_get_cons_bbob_problem(): cannot retrieve problem f%zu instance %zu in %zuD", function, instance,
                dimension);
     return nullptr; /* Never reached */
   }
@@ -161,10 +160,8 @@ struct suite_cons_bbob_t final : public coco_suite_s {
     /* Use the standard stacked problem_id as problem_name and
      * construct a new suite-specific problem_id
      */
-    problem->set_id("%s_f%03lu_i%02lu_d%02lu", suite_name.c_str(), (unsigned long)function, (unsigned long)instance,
-                    (unsigned long)dimension);
-    problem->set_name("%s suite problem f%lu instance %lu in %luD", suite_name.c_str(), (unsigned long)function,
-                      (unsigned long)instance, (unsigned long)dimension);
+    problem->set_id("%s_f%03zu_i%02zu_d%02zu", suite_name.c_str(), function, instance, dimension);
+    problem->set_name("%s suite problem f%zu instance %zu in %zuD", suite_name.c_str(), function, instance, dimension);
 
     return problem;
   }

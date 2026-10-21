@@ -44,16 +44,11 @@ struct transform_vars_z_hat_t final : public coco_problem_transformed_t {
    */
   void evaluate_function(const double *x, double *y) override {
 
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
-      return;
-    }
-
     z[0] = x[0];
     for (size_t i = 1; i < number_of_variables; ++i) {
       z[i] = x[i] + 0.25 * (x[i - 1] - 2.0 * fabs(xopt[i - 1]));
     }
-    coco_evaluate_function(inner_problem.get(), z.data(), y);
+    inner_problem->evaluate_function(z.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 

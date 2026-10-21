@@ -89,10 +89,10 @@ MU_TEST(test_coco_directories_and_files) {
   const std::string nested = coco_join_path(base, "a", "b");
 
   mu_check(!coco_directory_exists(base));
-  mu_check(coco_create_directory(nested) == 0); /* Creates base, a and b */
+  mu_check(coco_create_directory(nested)); /* Creates base, a and b */
   mu_check(coco_directory_exists(coco_join_path(base, "a")));
-  mu_check(coco_create_directory(nested) == 1); /* Already exists */
-  mu_check(coco_create_directory(nested + "/") == 1);
+  mu_check(!coco_create_directory(nested)); /* Already exists */
+  mu_check(!coco_create_directory(nested + "/"));
 
   /* A unique directory gets a numbered suffix when the name is taken */
   const std::string unique = coco_create_unique_directory(nested);

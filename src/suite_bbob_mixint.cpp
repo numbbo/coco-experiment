@@ -26,11 +26,7 @@ static double suite_bbob_mixint_scaling_factors[] = {
 /**
  * @brief Sets the instances associated with years for the bbob-mixint suites.
  */
-static std::string_view suite_bbob_mixint_get_instances_by_year(const int year) {
-
-  (void)year; /* To get rid of compiler warnings */
-  return "1-15";
-}
+static std::string_view suite_bbob_mixint_get_instances_by_year(const int) { return "1-15"; }
 
 /**
  * @brief Creates and returns a mixed-integer bbob problem without needing the actual bbob-mixint
@@ -58,7 +54,7 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
   size_t cardinality = 0;
   size_t num_integer = dimension;
   if (dimension % 5 != 0)
-    coco_error("coco_get_bbob_mixint_problem(): dimension %lu not supported for suite_bbob_mixint", dimension);
+    coco_error("coco_get_bbob_mixint_problem(): dimension %zu not supported for suite_bbob_mixint", dimension);
 
   problem = coco_get_problem_function(function, dimension, instance);
   assert(problem != nullptr);
@@ -78,7 +74,7 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
     } else {
       /* Outer problem */
       smallest_values_of_interest[i] = 0;
-      largest_values_of_interest[i] = (double)cardinality - 1;
+      largest_values_of_interest[i] = static_cast<double>(cardinality) - 1;
       /* Inner problem */
       problem->smallest_values_of_interest[i] = -4;
       problem->largest_values_of_interest[i] = 4;
@@ -92,7 +88,7 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
 
   problem = transform_obj_scale(std::move(problem), suite_bbob_mixint_scaling_factors[function - 1]);
 
-  problem->set_id("bbob-mixint_f%03lu_i%02lu_d%02lu", function, instance, dimension);
+  problem->set_id("bbob-mixint_f%03zu_i%02zu_d%02zu", function, instance, dimension);
   problem->set_name("mixint(%s)", inner_problem_id.c_str());
 
   return problem;

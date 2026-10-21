@@ -63,9 +63,9 @@ coco_random_state_s::coco_random_state_s(uint32_t seed) {
   /* Expand seed to fill initial state array. */
   for (size_t i = 0; i < COCO_LONG_LAG; ++i) {
     /* Uses uint64_t to silence the compiler ("shift count negative or too big, undefined behavior" warning) */
-    x[i] = ((double)seed) / (double)(((uint64_t)1UL << 32) - 1);
+    x[i] = (static_cast<double>(seed)) / static_cast<double>((static_cast<uint64_t>(1UL) << 32) - 1);
     /* Advance seed based on simple RNG from TAOCP */
-    seed = (uint32_t)1812433253UL * (seed ^ (seed >> 30)) + ((uint32_t)i + 1);
+    seed = static_cast<uint32_t>(1812433253UL) * (seed ^ (seed >> 30)) + (static_cast<uint32_t>(i) + 1);
   }
   index = 12;
 }

@@ -19,9 +19,9 @@ struct suite_toy_t final : public coco_suite_s {
   using coco_suite_s::coco_suite_s;
 
   /** @brief Returns the problem with the given function, dimension and instance. */
-  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
+  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension,
+                                 const size_t /* instance: the toy functions have none */) override {
     coco_problem_ptr_t problem;
-    (void)instance; /* The toy functions have no instances */
 
     if (function == 1) {
       problem = f_sphere_allocate(dimension);
@@ -37,7 +37,7 @@ struct suite_toy_t final : public coco_suite_s {
     } else if (function == 6) {
       problem = f_rosenbrock_allocate(dimension);
     } else {
-      coco_error("suite_toy_t::get_problem(): function %lu does not exist in this suite", (unsigned long)function);
+      coco_error("suite_toy_t::get_problem(): function %zu does not exist in this suite", function);
       return nullptr; /* Never reached */
     }
 
@@ -48,7 +48,7 @@ struct suite_toy_t final : public coco_suite_s {
 /**
  * @brief Sets the dimensions and default instances for the toy suite.
  */
-static coco_suite_t *suite_toy_initialize(void) {
+static coco_suite_t *suite_toy_initialize() {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20};

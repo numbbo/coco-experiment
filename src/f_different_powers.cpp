@@ -24,16 +24,12 @@ static double f_different_powers_raw(const double *x,
                                      const size_t number_of_variables) {
 
   double sum = 0.0;
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
 
   for (size_t i = 0; i < number_of_variables; ++i) {
-    double exponent = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
+    double exponent = 2.0 + (4.0 * static_cast<double>(i)) / (static_cast<double>(number_of_variables) - 1.0);
     sum += pow(fabs(x[i]), exponent);
   }
-  result = sqrt(sum);
+  double result = sqrt(sum);
 
   return result;
 }
@@ -56,7 +52,7 @@ double sign(double x) {
 struct f_different_powers_t final : public coco_problem_s {
   explicit f_different_powers_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("different powers function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "different_powers", number_of_variables);
+    set_id("%s_d%02zu", "different_powers", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -80,12 +76,12 @@ struct f_different_powers_t final : public coco_problem_s {
     double aux;
 
     for (size_t i = 0; i < number_of_variables; ++i) {
-      aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
+      aux = 2.0 + (4.0 * static_cast<double>(i)) / (static_cast<double>(number_of_variables) - 1.0);
       sum += pow(fabs(x[i]), aux);
     }
 
     for (size_t i = 0; i < number_of_variables; ++i) {
-      aux = 2.0 + (4.0 * (double)(long)i) / ((double)(long)number_of_variables - 1.0);
+      aux = 2.0 + (4.0 * static_cast<double>(i)) / (static_cast<double>(number_of_variables) - 1.0);
       y[i] = 0.5 * (aux) / (sum);
       aux -= 1.0;
       y[i] *= pow(fabs(x[i]), aux) * sign(x[i]);
@@ -109,14 +105,13 @@ static coco_problem_ptr_t f_different_powers_bbob_problem_allocate(const size_t 
                                                                    const char *problem_id_template,
                                                                    const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
 
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -192,22 +187,19 @@ static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(
 static coco_problem_ptr_t f_different_powers_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
 
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
 
   size_t nb_blocks;
-  size_t swap_range;
-  size_t nb_swaps;
 
   std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
-  swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);

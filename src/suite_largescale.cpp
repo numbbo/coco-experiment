@@ -42,12 +42,12 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
                                                       const size_t instance) {
   coco_problem_ptr_t problem;
 
-  const char *problem_id_template = "bbob_f%03lu_i%02lu_d%04lu";
-  const char *problem_name_template = "BBOB large-scale suite problem f%lu instance %lu in %luD";
+  const char *problem_id_template = "bbob_f%03zu_i%02zu_d%04zu";
+  const char *problem_name_template = "BBOB large-scale suite problem f%zu instance %zu in %zuD";
 
-  const long rseed = (long)(function + 10000 * instance);
-  const long rseed_3 = (long)(3 + 10000 * instance);
-  const long rseed_17 = (long)(17 + 10000 * instance);
+  const long rseed = static_cast<long>(function + 10000 * instance);
+  const long rseed_3 = static_cast<long>(3 + 10000 * instance);
+  const long rseed_17 = static_cast<long>(17 + 10000 * instance);
 
   if (function == 1) {
     problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::largescale,
@@ -137,13 +137,13 @@ static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, con
     problem = f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(function, dimension, instance, rseed,
                                                                          problem_id_template, problem_name_template);
   } else {
-    coco_error("coco_get_largescale_problem(): cannot retrieve problem f%lu instance %lu in %luD",
-               (unsigned long)function, (unsigned long)instance, (unsigned long)dimension);
+    coco_error("coco_get_largescale_problem(): cannot retrieve problem f%zu instance %zu in %zuD", function, instance,
+               dimension);
     return nullptr; /* Never reached */
   }
 
   if (problem == nullptr) {
-    coco_error("coco_get_largescale_problem(): function f%lu not yet implemented  ", function);
+    coco_error("coco_get_largescale_problem(): function f%zu not yet implemented  ", function);
   }
   return problem;
 }
@@ -171,7 +171,7 @@ struct suite_largescale_t final : public coco_suite_s {
 /**
  * @brief Sets the dimensions and default instances for the bbob large-scale suite.
  */
-static coco_suite_t *suite_largescale_initialize(void) {
+static coco_suite_t *suite_largescale_initialize() {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {20, 40, 80, 160, 320, 640};

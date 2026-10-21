@@ -36,12 +36,12 @@ struct f_weierstrass_t final : public coco_problem_s {
   explicit f_weierstrass_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
 
     init_from_scalars("Weierstrass function", -5.0, 5.0, 0.);
-    set_id("%s_d%02lu", "weierstrass", number_of_variables);
+    set_id("%s_d%02zu", "weierstrass", number_of_variables);
 
     f0 = 0.0;
     for (size_t i = 0; i < F_WEIERSTRASS_SUMMANDS; ++i) {
-      ak[i] = pow(0.5, (double)i);
-      bk[i] = pow(3., (double)i);
+      ak[i] = pow(0.5, static_cast<double>(i));
+      bk[i] = pow(3., static_cast<double>(i));
       f0 += ak[i] * cos(2 * coco_pi * bk[i] * 0.5);
     }
 
@@ -66,18 +66,13 @@ struct f_weierstrass_t final : public coco_problem_s {
  */
 double f_weierstrass_t::raw(const double *x) const {
 
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = 0.0;
+  double result = 0.0;
   for (size_t i = 0; i < number_of_variables; ++i) {
     for (size_t j = 0; j < F_WEIERSTRASS_SUMMANDS; ++j) {
       result += cos(2 * coco_pi * (x[i] + 0.5) * bk[j]) * ak[j];
     }
   }
-  result = 10.0 * pow(result / (double)(long)number_of_variables - f0, 3.0);
+  result = 10.0 * pow(result / static_cast<double>(number_of_variables) - f0, 3.0);
 
   return result;
 }
@@ -97,16 +92,15 @@ static coco_problem_ptr_t f_weierstrass_bbob_problem_allocate(const size_t funct
                                                               const coco_bbob_variant_t variant,
                                                               const char *problem_id_template,
                                                               const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   const double condition = 100.0;
-  const double penalty_factor = 10.0 / (double)dimension;
+  const double penalty_factor = 10.0 / static_cast<double>(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -114,7 +108,7 @@ static coco_problem_ptr_t f_weierstrass_bbob_problem_allocate(const size_t funct
   std::vector<double> scales(dimension);
   for (size_t k = 0; k < dimension; ++k) {
     const double base = 1.0 / sqrt(condition);
-    const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
+    const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
     scales[k] = pow(base, exponent);
   }
   M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
@@ -142,7 +136,6 @@ static coco_problem_ptr_t
 f_weierstrass_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                   const long rseed, const coco_bbob_variant_t variant,
                                                   const char *problem_id_template, const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P21(dimension);
@@ -150,17 +143,15 @@ f_weierstrass_permblockdiag_bbob_problem_allocate(const size_t function, const s
   std::vector<size_t> P22(dimension);
   size_t nb_blocks1;
   size_t nb_blocks2;
-  size_t swap_range;
-  size_t nb_swaps;
-  const double condition = 100.0, penalty_factor = 10.0 / (double)dimension;
+  const double condition = 100.0, penalty_factor = 10.0 / static_cast<double>(dimension);
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
   std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
-  swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);

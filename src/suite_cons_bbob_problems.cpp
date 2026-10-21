@@ -111,7 +111,7 @@ static void cons_bbob_inverse_initial_solution(coco_problem_t *problem, const do
 
   for (size_t j = 0;; ++j) {
     for (size_t i = 0; i < n; ++i)
-      halved[i] = problem->initial_solution[i] * pow(halving_factor, (double)(long)j);
+      halved[i] = problem->initial_solution[i] * pow(halving_factor, static_cast<double>(j));
     if (!problem->from_base_coordinates(halved.data(), inverted.data()))
       coco_error("cons_bbob_inverse_initial_solution(): the transformations of %s are not invertible",
                  problem->problem_id.c_str());
@@ -139,7 +139,7 @@ static void cons_bbob_inverse_initial_solution(coco_problem_t *problem, const do
 static size_t obj_function_type(const size_t function) {
 
   size_t problems_per_obj_function_type = 6;
-  return (size_t)ceil((double)function / (double)problems_per_obj_function_type);
+  return static_cast<size_t>(ceil(static_cast<double>(function) / static_cast<double>(problems_per_obj_function_type)));
 }
 
 /**
@@ -149,10 +149,9 @@ static size_t obj_function_type(const size_t function) {
 static size_t nb_of_linear_constraints(const size_t function, const size_t dimension) {
 
   int problems_per_obj_function_type = 6;
-  int p;
 
   /* Map "function" value into {1, ..., problems_per_obj_function_type} */
-  p = (((int)function - 1) % problems_per_obj_function_type) + 1;
+  int p = ((static_cast<int>(function) - 1) % problems_per_obj_function_type) + 1;
 
   if (p == 1)
     return 1;

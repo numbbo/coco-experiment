@@ -60,7 +60,7 @@ static long coco_random_unif_integer(long lower_bound, long upper_bound, long se
   std::vector<double> tmp_uniform(1);
   bbob2009_unif(tmp_uniform.data(), 1, seed);
   range = upper_bound - lower_bound + 1;
-  rand_int = ((long)(tmp_uniform[0] * (double)range)) + lower_bound;
+  rand_int = (static_cast<long>(tmp_uniform[0] * static_cast<double>(range))) + lower_bound;
   return rand_int;
 }
 
@@ -107,8 +107,9 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
         upper_bound = first_swap_var + swap_range;
       }
 
-      second_swap_var = (size_t)coco_random_unif_integer((long)lower_bound, (long)upper_bound - 1,
-                                                         seed + (long)(1 + idx_swap) * 1000);
+      second_swap_var = static_cast<size_t>(coco_random_unif_integer(static_cast<long>(lower_bound),
+                                                                     static_cast<long>(upper_bound) - 1,
+                                                                     seed + static_cast<long>(1 + idx_swap) * 1000));
       if (second_swap_var >= first_swap_var) {
         second_swap_var += 1;
       }
@@ -131,7 +132,7 @@ static size_t coco_get_swap_range(size_t dimension, std::string_view suite_name)
     return dimension / 3;
   } else {
     coco_error("coco_get_swap_range(): unknown problem suite");
-    return (size_t)nullptr;
+    return 0;
   }
 }
 
@@ -143,6 +144,6 @@ size_t coco_get_nb_swaps(size_t dimension, std::string_view suite_name) {
     return dimension;
   } else {
     coco_error("coco_get_nb_swaps(): unknown problem suite");
-    return (size_t)nullptr;
+    return 0;
   }
 }

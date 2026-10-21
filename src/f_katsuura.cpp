@@ -24,24 +24,21 @@
 static double f_katsuura_raw(const double *x,
                              const size_t number_of_variables) {
 
-  double tmp, tmp2;
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
+  const double exponent = 10. / pow(static_cast<double>(number_of_variables), 1.2);
 
   /* Computation core */
-  result = 1.0;
+  double result = 1.0;
   for (size_t i = 0; i < number_of_variables; ++i) {
-    tmp = 0;
-    for (size_t j = 1; j < 33; ++j) {
-      tmp2 = pow(2., (double)j);
+    double tmp = 0;
+    for (int j = 1; j < 33; ++j) {
+      const double tmp2 = ldexp(1.0, j); /* 2^j */
       tmp += fabs(tmp2 * x[i] - coco_double_round(tmp2 * x[i])) / tmp2;
     }
-    tmp = 1.0 + ((double)(long)i + 1) * tmp;
-    result *= pow(tmp, 10. / pow((double)number_of_variables, 1.2));
+    tmp = 1.0 + (static_cast<double>(i) + 1) * tmp;
+    result *= pow(tmp, exponent);
   }
-  result = 10. / ((double)number_of_variables) / ((double)number_of_variables) * (-1. + result);
+  result =
+      10. / (static_cast<double>(number_of_variables)) / (static_cast<double>(number_of_variables)) * (-1. + result);
 
   return result;
 }
@@ -52,7 +49,7 @@ static double f_katsuura_raw(const double *x,
 struct f_katsuura_t final : public coco_problem_s {
   explicit f_katsuura_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Katsuura function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "katsuura", number_of_variables);
+    set_id("%s_d%02zu", "katsuura", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -83,7 +80,6 @@ static coco_problem_ptr_t f_katsuura_bbob_problem_allocate(const size_t function
                                                            const coco_bbob_variant_t variant,
                                                            const char *problem_id_template,
                                                            const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
@@ -91,7 +87,7 @@ static coco_problem_ptr_t f_katsuura_bbob_problem_allocate(const size_t function
   const double penalty_factor = 1.0;
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -99,7 +95,7 @@ static coco_problem_ptr_t f_katsuura_bbob_problem_allocate(const size_t function
 
   std::vector<double> scales(dimension);
   for (size_t k = 0; k < dimension; ++k) {
-    const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
+    const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
     scales[k] = pow(sqrt(100), exponent);
   }
   M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
@@ -125,7 +121,6 @@ static coco_problem_ptr_t f_katsuura_permblockdiag_bbob_problem_allocate(const s
                                                                          const coco_bbob_variant_t variant,
                                                                          const char *problem_id_template,
                                                                          const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   const double penalty_factor = 1.0;
   std::vector<size_t> P11(dimension);
@@ -134,20 +129,16 @@ static coco_problem_ptr_t f_katsuura_permblockdiag_bbob_problem_allocate(const s
   std::vector<size_t> P22(dimension);
   size_t nb_blocks1;
   size_t nb_blocks2;
-  size_t swap_range1;
-  size_t swap_range2;
-  size_t nb_swaps1;
-  size_t nb_swaps2;
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
   std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
-  swap_range1 = coco_get_swap_range(dimension, "bbob-largescale");
-  swap_range2 = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
-  nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t swap_range1 = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t swap_range2 = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps1 = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);

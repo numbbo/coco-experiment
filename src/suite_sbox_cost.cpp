@@ -58,13 +58,12 @@ static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, con
                                                       const size_t instance) {
   coco_problem_ptr_t problem;
 
-  const char *problem_id_template = "bbob-boxed_f%03lu_i%02lu_d%02lu";
-  const char *problem_name_template =
-      "bbob-boxed suite problem f%lu instance %lu in %luD";
+  const char *problem_id_template = "bbob-boxed_f%03zu_i%02zu_d%02zu";
+  const char *problem_name_template = "bbob-boxed suite problem f%zu instance %zu in %zuD";
 
-  const long rseed = (long)(function + 10000 * instance);
-  const long rseed_3 = (long)(3 + 10000 * instance);
-  const long rseed_17 = (long)(17 + 10000 * instance);
+  const long rseed = static_cast<long>(function + 10000 * instance);
+  const long rseed_3 = static_cast<long>(3 + 10000 * instance);
+  const long rseed_17 = static_cast<long>(17 + 10000 * instance);
 
   if (function == 1) {
     problem = f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::boxed,
@@ -130,11 +129,13 @@ static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, con
                                                rseed, problem_id_template,
                                                problem_name_template);
   } else if (function == 21) {
-    problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::boxed,
-                                                (size_t)101, 1.0, problem_id_template, problem_name_template);
+    problem =
+        f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::boxed,
+                                          static_cast<size_t>(101), 1.0, problem_id_template, problem_name_template);
   } else if (function == 22) {
-    problem = f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::boxed,
-                                                (size_t)21, 1.0, problem_id_template, problem_name_template);
+    problem =
+        f_gallagher_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::boxed,
+                                          static_cast<size_t>(21), 1.0, problem_id_template, problem_name_template);
   } else if (function == 23) {
     problem = f_katsuura_bbob_problem_allocate(function, dimension, instance, rseed, coco_bbob_variant_t::boxed,
                                                problem_id_template, problem_name_template);
@@ -142,11 +143,9 @@ static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, con
     problem = f_lunacek_bi_rastrigin_bbob_problem_allocate(
         function, dimension, instance, rseed, coco_bbob_variant_t::boxed, problem_id_template, problem_name_template);
   } else {
-    coco_error(
-        "coco_get_bbob_boxed_problem(): cannot retrieve problem f%lu instance "
-        "%lu in %luD",
-        (unsigned long)function, (unsigned long)instance,
-        (unsigned long)dimension);
+    coco_error("coco_get_bbob_boxed_problem(): cannot retrieve problem f%zu instance "
+               "%zu in %zuD",
+               function, instance, dimension);
     return nullptr; /* Never reached */
   }
 
@@ -177,7 +176,7 @@ struct suite_sbox_cost_t final : public coco_suite_s {
 /**
  * @brief Sets the dimensions and default instances for the bbob-boxed suite.
  */
-static coco_suite_t *suite_sbox_cost_initialize(void) {
+static coco_suite_t *suite_sbox_cost_initialize() {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};

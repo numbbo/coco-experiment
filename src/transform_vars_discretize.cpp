@@ -28,11 +28,12 @@
  */
 struct transform_vars_discretize_t final : public coco_problem_transformed_t {
   std::vector<double> offset;
+  std::vector<double> discretized_x;
 
   transform_vars_discretize_t(coco_problem_ptr_t inner, const double *smallest_values_of_interest,
                               const double *largest_values_of_interest, const size_t number_of_integer_variables)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_discretize"),
-        offset(inner_problem->number_of_variables) {
+        offset(inner_problem->number_of_variables), discretized_x(inner_problem->number_of_variables) {
     double l, u, inner_l, inner_u, outer_l, outer_u;
     double outer_xopt, inner_xopt, inner_approx_xopt;
     const double precision_offset = 1e-7; /* Needed to avoid issues with rounding doubles */
@@ -85,17 +86,12 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
     int n;
 
     if (inner_problem->number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem.get(), x, y);
-      return;
-    }
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      inner_problem->evaluate_function(x, y);
       return;
     }
 
     /* Transform x to fit in the discretized space */
-    std::vector<double> discretized_x(x, x + number_of_variables);
+    discretized_x.assign(x, x + number_of_variables);
     for (size_t i = 0; i < number_of_integer_variables; ++i) {
       outer_l = smallest_values_of_interest[i];
       outer_u = largest_values_of_interest[i];
@@ -114,7 +110,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
       discretized_x[i] = inner_l + (inner_u - inner_l) * (discretized_x[i] - outer_l) / (outer_u - outer_l) - offset[i];
     }
 
-    coco_evaluate_function(inner_problem.get(), discretized_x.data(), y);
+    inner_problem->evaluate_function(discretized_x.data(), y);
   }
 
   /** @brief Constraints are not supported yet (TODO?). */
@@ -126,11 +122,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
   void evaluate_gradient(const double *x, double *y) override { coco_problem_s::evaluate_gradient(x, y); }
 
   /** @brief Rounding to the integers is not invertible. */
-  bool inverse(const double *inner_x, double *x) const override {
-    (void)inner_x;
-    (void)x;
-    return false;
-  }
+  bool inverse(const double *, double *) const override { return false; }
 };
 
 /**

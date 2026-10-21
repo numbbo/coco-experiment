@@ -29,17 +29,16 @@ static std::string_view coco_c_string_view(const char *string) {
  */
 static std::string coco_string_vformat(const char *format, va_list args) {
   va_list args_copy;
-  int length;
   std::string result;
 
   va_copy(args_copy, args);
-  length = vsnprintf(nullptr, 0, format, args_copy);
+  int length = vsnprintf(nullptr, 0, format, args_copy);
   va_end(args_copy);
   if (length < 0)
     coco_error("coco_string_vformat(): vsnprintf failed on '%s'", format);
-  result.resize((size_t)length + 1);
+  result.resize(static_cast<size_t>(length) + 1);
   vsnprintf(&result[0], result.size(), format, args);
-  result.resize((size_t)length);
+  result.resize(static_cast<size_t>(length));
   return result;
 }
 
@@ -66,7 +65,7 @@ char *coco_strdupf(const char *str, ...) {
   const std::string string = coco_string_vformat(str, args);
   va_end(args);
 
-  char *duplicate = (char *)coco_allocate_memory(string.size() + 1);
+  char *duplicate = static_cast<char *>(coco_allocate_memory(string.size() + 1));
   memcpy(duplicate, string.c_str(), string.size() + 1);
   return duplicate;
 }
@@ -76,7 +75,7 @@ char *coco_strdupf(const char *str, ...) {
  */
 static long coco_strfind(std::string_view base, std::string_view seq) {
   const size_t index = base.find(seq);
-  return (index == std::string_view::npos) ? -1 : (long)index;
+  return (index == std::string_view::npos) ? -1 : static_cast<long>(index);
 }
 
 /**
@@ -112,7 +111,7 @@ static std::string coco_remove_from_string(const std::string &string, std::strin
 
   if ((start == std::string::npos) || (stop == std::string::npos) || (stop < start)) {
     coco_error("coco_remove_from_string(): failed to remove characters between %.*s and %.*s from string %s",
-               (int)from.size(), from.data(), (int)to.size(), to.data(), string.c_str());
+               static_cast<int>(from.size()), from.data(), static_cast<int>(to.size()), to.data(), string.c_str());
     return std::string(); /* Never reached */
   }
   return string.substr(0, start) + string.substr(stop);
@@ -141,9 +140,9 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
 
   /* Check for disallowed characters */
   for (const char c : string) {
-    if ((c != '-') && (c != ',') && !isdigit((unsigned char)c)) {
+    if ((c != '-') && (c != ',') && !isdigit(static_cast<unsigned char>(c))) {
       coco_warning("coco_string_parse_ranges(): problem parsing '%.*s' - cannot parse ranges with '%c'",
-                   (int)string.size(), string.data(), c);
+                   static_cast<int>(string.size()), string.data(), c);
       return result;
     }
   }
@@ -157,23 +156,23 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
   /* Split string to ranges w.r.t commas and go over them */
   for (const std::string &range : coco_string_split(string, ',')) {
 
-    const size_t count = (size_t)std::count(range.begin(), range.end(), '-');
+    const size_t count = static_cast<size_t>(std::count(range.begin(), range.end(), '-'));
 
     if (count > 1) {
       /* Incorrect number of '-' */
-      coco_warning("coco_string_parse_ranges(): problem parsing '%.*s' - too many '-'s", (int)string.size(),
-                   string.data());
+      coco_warning("coco_string_parse_ranges(): problem parsing '%.*s' - too many '-'s",
+                   static_cast<int>(string.size()), string.data());
       return result;
     } else if (count == 0) {
       /* Range is in the format: n (no range) */
-      num[0] = (size_t)strtol(range.c_str(), nullptr, 10);
+      num[0] = static_cast<size_t>(strtol(range.c_str(), nullptr, 10));
       num[1] = num[0];
     } else {
       /* Range is in one of the following formats: n-m / -n / n- / - */
       const std::vector<std::string> numbers = coco_string_split(range, '-');
       for (j = 0; j < numbers.size(); j++) {
         assert(j < 2);
-        num[j] = (size_t)strtol(numbers[j].c_str(), nullptr, 10);
+        num[j] = static_cast<size_t>(strtol(numbers[j].c_str(), nullptr, 10));
       }
 
       if (numbers.empty()) {
@@ -209,11 +208,11 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
     /* Make sure the boundaries are taken into account */
     if ((min > 0) && (num[0] < min)) {
       num[0] = min;
-      coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be >= %lu", name, (unsigned long)min);
+      coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be >= %zu", name, min);
     }
     if ((max > 0) && (num[1] > max)) {
       num[1] = max;
-      coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be <= %lu", name, (unsigned long)max);
+      coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be <= %zu", name, max);
     }
     if (num[0] > num[1]) {
       coco_warning("coco_string_parse_ranges(): '%s' ranges not within boundaries; some ranges ignored", name);
@@ -235,9 +234,9 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
 static std::string coco_string_trim(std::string_view string) {
   size_t start = 0, stop = string.size();
 
-  while ((start < stop) && isspace((unsigned char)string[start]))
+  while ((start < stop) && isspace(static_cast<unsigned char>(string[start])))
     start++;
-  while ((stop > start) && isspace((unsigned char)string[stop - 1]))
+  while ((stop > start) && isspace(static_cast<unsigned char>(string[stop - 1])))
     stop--;
   return std::string(string.substr(start, stop - start));
 }

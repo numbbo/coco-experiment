@@ -44,21 +44,16 @@
 
 #include <math.h>
 
-using callback_type = double (*)(double, void *);
-
-static double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter,
-                     void *func_data);
-
-static double brentinv(callback_type f, double y, void *func_data);
-
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 /*
-  Note: signbit is in the C99 math library and we compile with C89 standard.
+  The sign test and the minimum below are written out on purpose: std::signbit differs for -0.0 and NaN, and
+  std::min(a, b) differs if a is NaN. Keeping the original semantics keeps the results bit-identical.
 */
-#ifndef signbit
-#define signbit(x) ((x) < 0 ? 1 : 0)
-#endif
+
+/** @brief Returns whether x is negative (false for -0.0 and NaN). */
+static bool brentq_is_negative(const double x) { return x < 0; }
+
+/** @brief Returns the smaller of a and b, b if they are not ordered (NaN). */
+static double brentq_min(const double a, const double b) { return a < b ? a : b; }
 
 /*
   At the top of the loop the situation is the following:
@@ -88,7 +83,12 @@ static double brentinv(callback_type f, double y, void *func_data);
 
 */
 
-double brentq(callback_type f, double y, double xa, double xb, double xtol, double rtol, int iter, void *func_data) {
+/**
+ * @brief Finds x in [xa, xb] with f(x) = y with Brent's method; f(xa) - y and f(xb) - y must not have the same sign.
+ *
+ * f is called as f(x).
+ */
+template <typename F> static double brentq(F f, double y, double xa, double xb, double xtol, double rtol, int iter) {
 
   double xpre = xa, xcur = xb;
   double xblk = 0., fpre, fcur, fblk = 0., spre = 0., scur = 0., sbis;
@@ -96,8 +96,8 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
   double delta;
   double stry, dpre, dblk;
 
-  fpre = (*f)(xpre, func_data) - y;
-  fcur = (*f)(xcur, func_data) - y;
+  fpre = f(xpre) - y;
+  fcur = f(xcur) - y;
   if (fpre * fcur > 0) {
     /* Sign error */
     return NAN;
@@ -112,7 +112,7 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
   }
 
   for (int i = 0; i < iter; i++) {
-    if (fpre != 0 && fcur != 0 && (signbit(fpre) != signbit(fcur))) {
+    if (fpre != 0 && fcur != 0 && (brentq_is_negative(fpre) != brentq_is_negative(fcur))) {
       xblk = xpre;
       fblk = fpre;
       spre = scur = xcur - xpre;
@@ -144,7 +144,7 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
         dblk = (fblk - fcur) / (xblk - xcur);
         stry = -fcur * (fblk * dblk - fpre * dpre) / (dblk * dpre * (fblk - fpre));
       }
-      if (2 * fabs(stry) < MIN(fabs(spre), 3 * fabs(sbis) - delta)) {
+      if (2 * fabs(stry) < brentq_min(fabs(spre), 3 * fabs(sbis) - delta)) {
         /* good short step */
         spre = scur;
         scur = stry;
@@ -167,7 +167,7 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
       xcur += (sbis > 0 ? delta : -delta);
     }
 
-    fcur = (*f)(xcur, func_data) - y;
+    fcur = f(xcur) - y;
   }
   /* Iterations exceeded*/
   return xcur;
@@ -184,10 +184,10 @@ double brentq(callback_type f, double y, double xa, double xb, double xtol, doub
   proceeding with halving/doubling.
 */
 
-double brentinv(callback_type f, double y, void *func_data) {
+template <typename F> static double brentinv(F f, double y) {
   double xres, xmin, xmax, fval;
 
-  fval = (*f)(y, func_data);
+  fval = f(y);
   xmax = y;
   xmin = y;
 
@@ -195,28 +195,28 @@ double brentinv(callback_type f, double y, void *func_data) {
     if (fval > y) {
       while (fval > y) {
         xmin = xmin / 2;
-        fval = (*f)(xmin, func_data);
+        fval = f(xmin);
       }
     } else {
       while (fval < y) {
         xmax = xmax * 2;
-        fval = (*f)(xmax, func_data);
+        fval = f(xmax);
       }
     }
   } else {
     if (fval > y) {
       while (fval > y) {
         xmin = xmin * 2;
-        fval = (*f)(xmin, func_data);
+        fval = f(xmin);
       }
     } else {
       while (fval < y) {
         xmax = xmax / 2;
-        fval = (*f)(xmax, func_data);
+        fval = f(xmax);
       }
     }
   }
 
-  xres = brentq(f, y, xmin, xmax, 1E-14, 1E-10, 200, func_data);
+  xres = brentq(f, y, xmin, xmax, 1E-14, 1E-10, 200);
   return xres;
 }

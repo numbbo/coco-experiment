@@ -34,7 +34,7 @@ struct transform_vars_permutation_t final : public coco_problem_transformed_t {
         permuted_x[i] = x[P[i]];
       }
     }
-    coco_evaluate_function(inner_problem.get(), permuted_x.data(), y);
+    inner_problem->evaluate_function(permuted_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 

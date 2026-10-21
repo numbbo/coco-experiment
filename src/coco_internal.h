@@ -8,6 +8,7 @@
 #ifndef COCOEX_COCO_INTERNAL_H
 #define COCOEX_COCO_INTERNAL_H
 
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -25,6 +26,40 @@ extern "C" {
  * raw pointer at the C interface.
  */
 using coco_problem_ptr_t = std::unique_ptr<coco_problem_t>;
+
+/**
+ * @brief A file that is closed when it is destroyed (or another file is opened).
+ *
+ * Converts to FILE * so that it can be passed to the stdio functions directly. It must not be passed to
+ * fclose(), use close() instead.
+ */
+class coco_file_t {
+public:
+  coco_file_t() = default;
+  coco_file_t(const coco_file_t &) = delete;
+  coco_file_t &operator=(const coco_file_t &) = delete;
+  ~coco_file_t() { close(); }
+
+  /** @brief Opens the file at path with the given mode (see fopen()) and returns whether that worked. */
+  bool open(const std::string &path, const char *mode) {
+    close();
+    file_ = fopen(path.c_str(), mode);
+    return file_ != nullptr;
+  }
+
+  /** @brief Closes the file if it is open. */
+  void close() {
+    if (file_ != nullptr) {
+      fclose(file_);
+      file_ = nullptr;
+    }
+  }
+
+  operator FILE *() const { return file_; }
+
+private:
+  FILE *file_ = nullptr;
+};
 
 /**
  * @brief The get problem function type.
@@ -95,14 +130,20 @@ struct coco_problem_s {
   /** @brief Copies the properties of the other problem, i.e. everything except its behaviour. */
   void copy_properties_from(const coco_problem_s &other);
 
-  /** @brief Returns 1 if the best parameter is not (close to) the origin or contains NaN, 0 otherwise. */
-  int best_parameter_not_zero() const;
+  /** @brief Returns whether the best parameter is not (close to) the origin or contains NaN. */
+  bool best_parameter_not_zero() const;
 
   /**
-   * @brief Returns 1 if x is finite and satisfies all constraints, 0 otherwise. Stores the constraint values
-   * in constraint_values unless it is NULL.
+   * @brief Returns whether x is finite and satisfies all constraints. Stores the constraint values
+   * in constraint_values unless it is nullptr.
    */
-  int is_feasible(const double *x, double *constraint_values);
+  bool is_feasible(const double *x, double *constraint_values);
+
+  /**
+   * @brief Asserts that the objective value y[0] at x is not below the best value unless x is infeasible. Does
+   * nothing (in particular, does not evaluate the constraints) if NDEBUG is defined.
+   */
+  void assert_not_below_best_value(const double *x, const double *y);
 
   /** @brief Returns the penalty of the noisy suites for x outside the region of interest. */
   double boundary_penalty(const double *x) const;
@@ -146,7 +187,7 @@ struct coco_problem_s {
 
   /* Convenience fields for output generation */
   /* If at some point in time these arrays are changed to pointers, checks need to be added in the code to make sure
-   * they are not NULL.*/
+   * they are not nullptr.*/
 
   double final_target_delta[1];       /**< @brief Final target delta. */
   double best_observed_fvalue[1];     /**< @brief The best observed value so far. */
@@ -154,7 +195,7 @@ struct coco_problem_s {
 
   /* Fields depending on the containing benchmark suite */
 
-  coco_suite_t *suite;       /**< @brief Pointer to the containing suite (NULL if not given) */
+  coco_suite_t *suite;       /**< @brief Pointer to the containing suite (nullptr if not given) */
   size_t suite_dep_index;    /**< @brief Suite-depending problem index (starting from 0) */
   size_t suite_dep_function; /**< @brief Suite-depending function */
   size_t suite_dep_instance; /**< @brief Suite-depending instance */
@@ -198,7 +239,7 @@ using coco_problem_transformed_t = coco_problem_transformed_s;
  */
 struct coco_problem_stacked_s : public coco_problem_s {
   /**
-   * @brief Stacks the two problems. Uses the given region of interest or, if it is NULL, the one of the second
+   * @brief Stacks the two problems. Uses the given region of interest or, if it is nullptr, the one of the second
    * problem.
    */
   coco_problem_stacked_s(coco_problem_ptr_t first, coco_problem_ptr_t second,
@@ -264,7 +305,7 @@ struct coco_observer_s : public coco_observer_settings_s {
 
   /**
    * @brief Wraps the problem with the logger of this observer if the observer is active and returns the
-   * result (the problem itself if the observer is not active, NULL for a NULL problem).
+   * result (the problem itself if the observer is not active, nullptr for a nullptr problem).
    */
   coco_problem_ptr_t observe(coco_problem_ptr_t problem);
 
@@ -307,20 +348,20 @@ struct coco_suite_s {
 
   /**
    * @brief Returns the problem with the given function, dimension and instance index with its suite-dependent
-   * fields set, or NULL if the problem has been filtered out.
+   * fields set, or nullptr if the problem has been filtered out.
    */
   coco_problem_ptr_t get_problem_from_indices(const size_t function_idx, const size_t dimension_idx,
                                               const size_t instance_idx);
 
   /** @brief Moves to the next instance that is not filtered out, returns 0 if it wrapped around. */
-  int next_instance();
+  bool next_instance();
 
   /** @brief Moves to the next function that is not filtered out (resetting the instance), returns 0 if it
    * wrapped around. */
-  int next_function();
+  bool next_function();
 
   /** @brief Moves to the next dimension that is not filtered out, returns 0 if it wrapped around. */
-  int next_dimension();
+  bool next_dimension();
 
   std::string suite_name; /**< @brief Name of the suite. */
 

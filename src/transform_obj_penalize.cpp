@@ -28,11 +28,6 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
     const double *upper_bounds = largest_values_of_interest.data();
     double penalty = 0.0;
 
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
-      return;
-    }
-
     for (size_t i = 0; i < number_of_variables; ++i) {
       const double c1 = x[i] - upper_bounds[i];
       const double c2 = lower_bounds[i] - x[i];
@@ -43,8 +38,7 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
         penalty += c2 * c2;
       }
     }
-    assert(inner_problem != nullptr);
-    coco_evaluate_function(inner_problem.get(), x, y);
+    inner_problem->evaluate_function(x, y);
 
     for (size_t i = 0; i < number_of_objectives; ++i) {
       y[i] += factor * penalty;
@@ -60,6 +54,5 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
  * @brief Creates the transformation.
  */
 static coco_problem_ptr_t transform_obj_penalize(coco_problem_ptr_t inner_problem, const double factor) {
-  assert(inner_problem != nullptr);
   return std::make_unique<transform_obj_penalize_t>(std::move(inner_problem), factor);
 }

@@ -23,7 +23,7 @@ struct tosz_data {
 /**
  * @brief Univariate oscillating non-linear transformation.
  */
-static double tosz_uv(double xi, tosz_data *d) {
+static double tosz_uv(double xi, const tosz_data *d) {
   double yi;
   double tmp, base;
   if (xi > 0.0) {
@@ -43,10 +43,8 @@ static double tosz_uv(double xi, tosz_data *d) {
 /**
  * @brief Inverse of oscillating non-linear transformation tosz_uv obtained with brentq.
  */
-static double tosz_uv_inv(double yi, tosz_data *d) {
-  double xi;
-  xi = brentinv((callback_type)&tosz_uv, yi, d);
-  return xi;
+static double tosz_uv_inv(double yi, const tosz_data *d) {
+  return brentinv([d](double xi) { return tosz_uv(xi, d); }, yi);
 }
 
 /**
@@ -77,29 +75,16 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective functions.
    */
   void evaluate_function(const double *x, double *y) override {
-    int feasible;
-
     if (inner_problem->number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem.get(), x, y);
-      return;
-    }
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      inner_problem->evaluate_function(x, y);
       return;
     }
 
     tosz(x);
 
-    coco_evaluate_function(inner_problem.get(), oscillated_x.data(), y);
+    inner_problem->evaluate_function(oscillated_x.data(), y);
 
-    if (number_of_constraints > 0) {
-      std::vector<double> cons_values(number_of_constraints);
-      feasible = is_feasible(x, cons_values.data());
-      if (feasible)
-        assert(y[0] + 1e-13 >= best_value[0]);
-    } else
-      assert(y[0] + 1e-13 >= best_value[0]);
+    assert_not_below_best_value(x, y);
   }
 
   /**
@@ -109,12 +94,7 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
     double tmp, base;
 
     if (inner_problem->number_of_constraints == 0) {
-      coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
-      return;
-    }
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_constraints(this));
+      inner_problem->evaluate_constraint(x, y, update_counter);
       return;
     }
 

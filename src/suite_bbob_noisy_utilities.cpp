@@ -22,9 +22,9 @@ static long RANDNSEED = 30; /** < @brief Random seed for sampling Gaussian noise
  * @brief Increases the normal random seed by one unit
  * Needed to sample different values at each time
  */
-void increase_random_n_seed(void) {
+void increase_random_n_seed() {
   RANDNSEED += 1;
-  if (RANDNSEED > (long)1.0e9)
+  if (RANDNSEED > static_cast<long>(1.0e9))
     RANDNSEED = 1;
 }
 
@@ -32,16 +32,16 @@ void increase_random_n_seed(void) {
  * @brief Increases the uniform random seed by one unit
  * Needed to sample different values at each time
  */
-void increase_random_seed(void) {
+void increase_random_seed() {
   RANDSEED += 1;
-  if (RANDSEED > (long)1.0e9)
+  if (RANDSEED > static_cast<long>(1.0e9))
     RANDSEED = 1;
 }
 
 /**
  * @brief Resets both random seeds to the initial values
  */
-void coco_reset_seeds(void) {
+void coco_reset_seeds() {
   RANDSEED = 30;
   RANDNSEED = 30;
 }
@@ -51,12 +51,11 @@ void coco_reset_seeds(void) {
  * using the legacy code for random number generations
  * Returns a double
  */
-double coco_sample_gaussian_noise(void) {
-  double gaussian_noise;
+double coco_sample_gaussian_noise() {
   double gaussian_noise_ptr[1] = {0.0};
   increase_random_n_seed();
   bbob2009_gauss(&gaussian_noise_ptr[0], 1, RANDNSEED);
-  gaussian_noise = gaussian_noise_ptr[0];
+  double gaussian_noise = gaussian_noise_ptr[0];
   return gaussian_noise;
 }
 
@@ -65,12 +64,11 @@ double coco_sample_gaussian_noise(void) {
  * using the legacy code for random number generations
  * Returns a double
  */
-double coco_sample_uniform_noise(void) {
-  double uniform_noise_term;
+double coco_sample_uniform_noise() {
   double noise_vector[1] = {0.0};
   increase_random_seed();
   bbob2009_unif(&noise_vector[0], 1, RANDSEED);
-  uniform_noise_term = noise_vector[0];
+  double uniform_noise_term = noise_vector[0];
   return uniform_noise_term;
 }
 /**@}*/

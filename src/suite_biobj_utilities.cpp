@@ -35,10 +35,9 @@ using suite_biobj_new_instances_t = std::vector<std::array<size_t, 3>>;
  * @brief  Performs a few checks and returns whether the two given problem instances should break the search
  * for new instances in suite_biobj_get_new_instance().
  */
-static int suite_biobj_check_inst_consistency(const size_t dimension, size_t function1, size_t instance1,
-                                              size_t function2, size_t instance2) {
-  int break_search = 0;
-  double norm;
+static bool suite_biobj_check_inst_consistency(const size_t dimension, size_t function1, size_t instance1,
+                                               size_t function2, size_t instance2) {
+  bool break_search = false;
   const double apart_enough = 1e-4;
 
   coco_problem_ptr_t problem1 = coco_make_bbob_problem(function1, dimension, instance1);
@@ -54,14 +53,14 @@ static int suite_biobj_check_inst_consistency(const size_t dimension, size_t fun
       std::move(problem1), std::move(problem2), smallest_values_of_interest.data(), largest_values_of_interest.data());
 
   /* Check whether the ideal and nadir points are too close in the objective space */
-  norm = mo_get_norm(problem->best_value.data(), problem->nadir_value.data(), 2);
+  double norm = mo_get_norm(problem->best_value.data(), problem->nadir_value.data(), 2);
   if (norm < 1e-1) { /* TODO How to set this value in a sensible manner? */
     coco_debug(
         "suite_biobj_check_inst_consistency(): The ideal and nadir points of %s are too close in the objective space",
         problem->problem_id.c_str());
     coco_debug("norm = %e, ideal = %e\t%e, nadir = %e\t%e", norm, problem->best_value[0], problem->best_value[1],
                problem->nadir_value[0], problem->nadir_value[1]);
-    break_search = 1;
+    break_search = true;
   }
 
   /* Check whether the extreme optimal points are too close in the decision space */
@@ -71,7 +70,7 @@ static int suite_biobj_check_inst_consistency(const size_t dimension, size_t fun
     coco_debug("suite_biobj_check_inst_consistency(): The extreme points of %s are too close in the decision space",
                problem->problem_id.c_str());
     coco_debug("norm = %e", norm);
-    break_search = 1;
+    break_search = true;
   }
 
   return break_search;
@@ -97,13 +96,13 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
   size_t instance2 = 0;
   size_t num_tries = 0;
   const size_t max_tries = 1000;
-  int appropriate_instance_found = 0, break_search, warning_produced = 0;
+  bool appropriate_instance_found = false, break_search, warning_produced = false;
   size_t function1, function2, dimension;
 
   while ((!appropriate_instance_found) && (num_tries < max_tries)) {
     num_tries++;
     instance2 = instance1 + num_tries;
-    break_search = 0;
+    break_search = false;
 
     /* An instance is "appropriate" if the ideal and nadir points in the objective space and the two
      * extreme optimal points in the decisions space are apart enough for all problems (all dimensions
@@ -120,7 +119,7 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
             if (!warning_produced)
               coco_warning("suite_biobj_get_new_instance(): remove filtering of dimensions to get generally acceptable "
                            "instances!");
-            warning_produced = 1;
+            warning_produced = true;
             continue;
           }
 
@@ -140,7 +139,7 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
           if (!warning_produced)
             coco_warning("suite_biobj_get_new_instance(): remove filtering of dimensions to get generally acceptable "
                          "instances!");
-          warning_produced = 1;
+          warning_produced = true;
           continue;
         }
 
@@ -153,9 +152,9 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
       continue;
     } else {
       /* An appropriate instance was found */
-      appropriate_instance_found = 1;
-      coco_info("suite_biobj_get_new_instance(): Instance %lu created from instances %lu and %lu",
-                (unsigned long)instance, (unsigned long)instance1, (unsigned long)instance2);
+      appropriate_instance_found = true;
+      coco_info("suite_biobj_get_new_instance(): Instance %zu created from instances %zu and %zu", instance, instance1,
+                instance2);
 
       /* Save the instance to new_instances */
       new_instances.push_back({instance, instance1, instance2});
@@ -163,8 +162,8 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
   }
 
   if (!appropriate_instance_found) {
-    coco_error("suite_biobj_get_new_instance(): Could not find suitable instance %lu in %lu tries",
-               (unsigned long)instance, (unsigned long)num_tries);
+    coco_error("suite_biobj_get_new_instance(): Could not find suitable instance %zu in %zu tries", instance,
+               num_tries);
     return 0; /* Never reached */
   }
 
@@ -214,7 +213,7 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
   const size_t function_idx = function - 1;
 
   const size_t num_existing_instances = sizeof(suite_biobj_instances) / sizeof(suite_biobj_instances[0]);
-  int instance_found = 0;
+  bool instance_found = false;
 
   const std::vector<double> smallest_values_of_interest(dimension, -100);
   const std::vector<double> largest_values_of_interest(dimension, 100);
@@ -223,7 +222,8 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
   if (function_idx < 55) {
     /* A "magic" formula to compute the BBOB function index from the bi-objective function index */
     function1_idx = num_sel_bbob_functions -
-                    coco_double_to_size_t(floor(-0.5 + sqrt(0.25 + 2.0 * (double)(55 - function_idx - 1)))) - 1;
+                    coco_double_to_size_t(floor(-0.5 + sqrt(0.25 + 2.0 * static_cast<double>(55 - function_idx - 1)))) -
+                    1;
     function2_idx = function_idx - (function1_idx * num_sel_bbob_functions) + (function1_idx * (function1_idx + 1)) / 2;
   } else if (function_idx == 55) { /* There is not a simple "magic" formula for functions >= 55 */
     function1_idx = 0;
@@ -337,7 +337,7 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
     function1_idx = 22;
     function2_idx = 23;
   } else {
-    coco_error("coco_get_biobj_problem(): Invalid function index %lu.", (unsigned long)function_idx);
+    coco_error("coco_get_biobj_problem(): Invalid function index %zu.", function_idx);
   }
 
   /* Determine the instances */
@@ -348,7 +348,7 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
       /* The instance has been found in suite_biobj_instances */
       instance1 = suite_biobj_instances[i][1];
       instance2 = suite_biobj_instances[i][2];
-      instance_found = 1;
+      instance_found = true;
       break;
     }
   }
@@ -360,7 +360,7 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
         /* The instance has been found in new_instances */
         instance1 = new_instance[1];
         instance2 = new_instance[2];
-        instance_found = 1;
+        instance_found = true;
         break;
       }
     }
@@ -398,8 +398,7 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   problem->set_name("%s", problem->problem_id.c_str());
   /* Attention! Any change to the problem id affects also archive processing! */
-  problem->set_id("bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function, (unsigned long)instance,
-                  (unsigned long)dimension);
+  problem->set_id("bbob-biobj_f%02zu_i%02zu_d%02zu", function, instance, dimension);
 
   /* Construct problem type */
   problem->set_type("%s_%s", problem_type1.c_str(), problem_type2.c_str());

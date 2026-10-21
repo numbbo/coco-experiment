@@ -23,17 +23,12 @@
 static double f_bueche_rastrigin_raw(const double *x,
                                      const size_t number_of_variables) {
   double tmp = 0., tmp2 = 0.;
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables)) {
-    return NAN;
-  }
 
   for (size_t i = 0; i < number_of_variables; ++i) {
     tmp += cos(2 * coco_pi * x[i]);
     tmp2 += x[i] * x[i];
   }
-  result = 10.0 * ((double)(long)number_of_variables - tmp) + tmp2 + 0;
+  double result = 10.0 * (static_cast<double>(number_of_variables) - tmp) + tmp2 + 0;
   return result;
 }
 
@@ -43,7 +38,7 @@ static double f_bueche_rastrigin_raw(const double *x,
 struct f_bueche_rastrigin_t final : public coco_problem_s {
   explicit f_bueche_rastrigin_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Bueche-Rastrigin function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "bueche-rastrigin", number_of_variables);
+    set_id("%s_d%02zu", "bueche-rastrigin", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -74,13 +69,12 @@ static coco_problem_ptr_t f_bueche_rastrigin_bbob_problem_allocate(const size_t 
                                                                    const coco_bbob_variant_t variant,
                                                                    const char *problem_id_template,
                                                                    const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
 
   const double penalty_factor = 100.0;
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   /* OME: This step is in the legacy C code but _not_ in the function

@@ -103,7 +103,7 @@ struct observer_biobj_t final : public coco_observer_s {
 
   void signal_restart(coco_problem_t *problem) override;
 
-  logger_biobj_t *observed_problem; /**< @brief The logger of the observed problem (NULL if none is observed) */
+  logger_biobj_t *observed_problem; /**< @brief The logger of the observed problem (nullptr if none is observed) */
 
   observer_biobj_log_nondom_e log_nondom_mode; /**< @brief Handling of the nondominated solutions. */
   observer_biobj_log_vars_e log_vars_mode;     /**< @brief When the decision variables are logged. */

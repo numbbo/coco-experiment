@@ -38,7 +38,7 @@ struct observer_bbob_t final : public coco_observer_s {
 
   void signal_restart(coco_problem_t *problem) override;
 
-  logger_bbob_t *observed_problem;  /**< @brief The logger of the observed problem (NULL if none is observed) */
+  logger_bbob_t *observed_problem;  /**< @brief The logger of the observed problem (nullptr if none is observed) */
   std::string prefix;               /**< @brief Prefix in the name of the info and data files */
 
   /* Store the information on the last function, dimension and dat file used, to be able to tell when the

@@ -25,8 +25,8 @@ struct coco_archive_s {
   coco_archive_s(const coco_archive_s &) = delete;
   coco_archive_s &operator=(const coco_archive_s &) = delete;
 
-  /** @brief Adds the solution to the archive if it is not dominated, returns 1 if the archive was updated. */
-  int add_solution(const double y1, const double y2, std::string_view text);
+  /** @brief Adds the solution to the archive if it is not dominated, returns whether the archive was updated. */
+  bool add_solution(const double y1, const double y2, std::string_view text);
 
   /** @brief Returns the text of the next solution (the extremes first) or "" after the last one. */
   const char *get_next_solution_text();
@@ -75,17 +75,14 @@ struct coco_archive_avl_item_t {
 /**
  * @brief Frees the data of the given coco_archive_avl_item_t.
  */
-static void coco_archive_node_item_free(coco_archive_avl_item_t *item, void *userdata) {
-  delete item;
-  (void)userdata; /* To silence the compiler */
-}
+static void coco_archive_node_item_free(void *item, void *) { delete static_cast<coco_archive_avl_item_t *>(item); }
 
 /**
  * @brief Defines the ordering of AVL tree nodes based on the value of the last objective.
  */
-static int coco_archive_compare_by_last_objective(const coco_archive_avl_item_t *item1,
-                                                  const coco_archive_avl_item_t *item2, void *userdata) {
-  (void)userdata; /* To silence the compiler */
+static int coco_archive_compare_by_last_objective(const void *a, const void *b, void *) {
+  const auto *item1 = static_cast<const coco_archive_avl_item_t *>(a);
+  const auto *item2 = static_cast<const coco_archive_avl_item_t *>(b);
   if (coco_double_almost_equal(item1->normalized_y[1], item2->normalized_y[1], mo_precision))
     return 0;
   else if (item1->normalized_y[1] < item2->normalized_y[1])
@@ -101,26 +98,23 @@ coco_archive_s::coco_archive_s(std::string_view suite_name, const size_t functio
 
   int output_precision = 15;
   coco_suite_t *suite;
-  const std::string suite_instance = coco_string_format("instances: %lu", (unsigned long)instance);
-  const std::string suite_options =
-      coco_string_format("dimensions: %lu function_indices: %lu", (unsigned long)dimension, (unsigned long)function);
+  const std::string suite_instance = coco_string_format("instances: %zu", instance);
+  const std::string suite_options = coco_string_format("dimensions: %zu function_indices: %zu", dimension, function);
   coco_problem_t *problem;
   std::string text;
-  int updated;
 
   /* Initialize the AVL tree */
-  tree = avl_tree_construct((avl_compare_t)coco_archive_compare_by_last_objective,
-                            (avl_free_t)coco_archive_node_item_free);
+  tree = avl_tree_construct(coco_archive_compare_by_last_objective, coco_archive_node_item_free);
 
   suite = coco_suite_create(suite_name, suite_instance, suite_options);
   if (suite == nullptr) {
-    coco_error("coco_archive(): cannot create suite '%.*s'", (int)suite_name.size(), suite_name.data());
+    coco_error("coco_archive(): cannot create suite '%.*s'", static_cast<int>(suite_name.size()), suite_name.data());
     return; /* Never reached */
   }
   problem = coco_suite_get_next_problem(suite, nullptr);
   if (problem == nullptr) {
-    coco_error("coco_archive(): cannot create problem f%02lu_i%02lu_d%02lu in suite '%.*s'", (unsigned long)function,
-               (unsigned long)instance, (unsigned long)dimension, (int)suite_name.size(), suite_name.data());
+    coco_error("coco_archive(): cannot create problem f%02zu_i%02zu_d%02zu in suite '%.*s'", function, instance,
+               dimension, static_cast<int>(suite_name.size()), suite_name.data());
     return; /* Never reached */
   }
 
@@ -130,7 +124,7 @@ coco_archive_s::coco_archive_s(std::string_view suite_name, const size_t functio
 
   /* Add the extreme points to the archive */
   text = coco_string_format("0\t%.*e\t%.*e\n", output_precision, nadir[0], output_precision, ideal[1]);
-  updated = add_solution(nadir[0], ideal[1], text);
+  [[maybe_unused]] int updated = add_solution(nadir[0], ideal[1], text);
   assert(updated == 1);
 
   text = coco_string_format("0\t%.*e\t%.*e\n", output_precision, ideal[0], output_precision, nadir[1]);
@@ -143,7 +137,6 @@ coco_archive_s::coco_archive_s(std::string_view suite_name, const size_t functio
 
   coco_suite_free(suite);
 
-  (void)updated; /* To silence compiler warnings */
 }
 
 coco_archive_s::~coco_archive_s() { avl_tree_destruct(tree); }
@@ -156,28 +149,29 @@ coco_archive_t *coco_archive(const char *suite_name, const size_t function, cons
   return new coco_archive_t(coco_c_string_view(suite_name), function, dimension, instance);
 }
 
-int coco_archive_s::add_solution(const double y1, const double y2, std::string_view text) {
+bool coco_archive_s::add_solution(const double y1, const double y2, std::string_view text) {
 
   coco_archive_avl_item_t *insert_item;
   avl_node_t *node, *next_node;
-  int updated = 0;
+  bool updated = false;
   int dominance;
 
   const double y[2] = {y1, y2};
   insert_item = new coco_archive_avl_item_t(y, ideal.data(), nadir.data(), number_of_objectives, text);
 
-  /* Find the first point that is not worse than the new point (NULL if such point does not exist) */
+  /* Find the first point that is not worse than the new point (nullptr if such point does not exist) */
   node = avl_item_search_right(tree, insert_item, nullptr);
 
   if (node == nullptr) {
     /* The new point is an extreme point */
-    updated = 1;
+    updated = true;
     next_node = tree->head;
   } else {
     dominance = mo_get_dominance(insert_item->normalized_y.data(),
-                                 ((coco_archive_avl_item_t *)node->item)->normalized_y.data(), number_of_objectives);
+                                 (static_cast<coco_archive_avl_item_t *>(node->item))->normalized_y.data(),
+                                 number_of_objectives);
     if (dominance > -1) {
-      updated = 1;
+      updated = true;
       next_node = node->next;
       if (dominance == 1) {
         /* The new point dominates the next point, remove the next point */
@@ -186,7 +180,7 @@ int coco_archive_s::add_solution(const double y1, const double y2, std::string_v
       }
     } else {
       /* The new point is dominated or equal to an existing one, ignore */
-      updated = 0;
+      updated = false;
     }
   }
 
@@ -200,7 +194,8 @@ int coco_archive_s::add_solution(const double y1, const double y2, std::string_v
        * dominance = 1: the new node dominates the next node */
       node = next_node;
       dominance = mo_get_dominance(insert_item->normalized_y.data(),
-                                   ((coco_archive_avl_item_t *)node->item)->normalized_y.data(), number_of_objectives);
+                                   (static_cast<coco_archive_avl_item_t *>(node->item))->normalized_y.data(),
+                                   number_of_objectives);
       if (dominance == 1) {
         next_node = node->next;
         /* The new point dominates the next point, remove the next point */
@@ -213,8 +208,8 @@ int coco_archive_s::add_solution(const double y1, const double y2, std::string_v
 
     if (avl_item_insert(tree, insert_item) == nullptr) {
       coco_archive_node_item_free(insert_item, nullptr);
-      coco_warning("Solution %.*s did not update the archive", (int)text.size(), text.data());
-      updated = 0;
+      coco_warning("Solution %.*s did not update the archive", static_cast<int>(text.size()), text.data());
+      updated = false;
     }
 
     is_up_to_date = 0;
@@ -250,8 +245,8 @@ void coco_archive_s::update() {
     while (node->next) {
       /* Add hypervolume contributions of the other points that are within ROI */
       left_node = node->next;
-      node_item = (coco_archive_avl_item_t *)node->item;
-      left_node_item = (coco_archive_avl_item_t *)left_node->item;
+      node_item = static_cast<coco_archive_avl_item_t *>(node->item);
+      left_node_item = static_cast<coco_archive_avl_item_t *>(left_node->item);
       if (mo_is_within_ROI(left_node_item->normalized_y.data(), number_of_objectives)) {
         if (mo_is_within_ROI(node_item->normalized_y.data(), number_of_objectives))
           hyp = (node_item->normalized_y[0] - left_node_item->normalized_y[0]) * (1 - left_node_item->normalized_y[1]);
@@ -279,14 +274,14 @@ const char *coco_archive_s::get_next_solution_text() {
 
     if (current_solution == nullptr) {
       /* Return the first extreme */
-      text = ((coco_archive_avl_item_t *)extreme1->item)->text.c_str();
+      text = (static_cast<coco_archive_avl_item_t *>(extreme1->item))->text.c_str();
       current_solution = extreme2;
       return text;
     }
 
     if (current_solution == extreme2) {
       /* Return the second extreme */
-      text = ((coco_archive_avl_item_t *)extreme2->item)->text.c_str();
+      text = (static_cast<coco_archive_avl_item_t *>(extreme2->item))->text.c_str();
       extremes_already_returned = 1;
       current_solution = tree->head;
       return text;
@@ -304,7 +299,7 @@ const char *coco_archive_s::get_next_solution_text() {
     }
 
     /* Return the current solution and move to the next */
-    text = ((coco_archive_avl_item_t *)current_solution->item)->text.c_str();
+    text = (static_cast<coco_archive_avl_item_t *>(current_solution->item))->text.c_str();
     current_solution = current_solution->next;
     return text;
   }

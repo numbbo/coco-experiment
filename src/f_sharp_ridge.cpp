@@ -25,14 +25,10 @@ static double f_sharp_ridge_raw(const double *x,
                                    number_of_variables / 40.0; */
   const size_t vars_40 = coco_double_to_size_t(ceil(d_vars_40));
   size_t i = 0;
-  double result;
 
   assert(number_of_variables > 1);
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = 0.0;
+  double result = 0.0;
   for (i = vars_40; i < number_of_variables; ++i) {
     result += x[i] * x[i];
   }
@@ -49,7 +45,7 @@ static double f_sharp_ridge_raw(const double *x,
 struct f_sharp_ridge_t final : public coco_problem_s {
   explicit f_sharp_ridge_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("sharp ridge function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "sharp_ridge", number_of_variables);
+    set_id("%s_d%02zu", "sharp_ridge", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -80,20 +76,19 @@ static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t funct
                                                               const coco_bbob_variant_t variant,
                                                               const char *problem_id_template,
                                                               const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
   std::vector<double> scales(dimension);
   for (size_t k = 0; k < dimension; ++k) {
-    const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
+    const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
     scales[k] = pow(sqrt(10), exponent);
   }
   M = coco_matrix_product_with_diagonal(rot1, scales, rot2);

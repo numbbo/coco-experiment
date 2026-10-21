@@ -39,15 +39,8 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective function.
    */
   void evaluate_function(const double *x, double *y) override {
-    int feasible;
-
     if (inner_problem->number_of_objectives == 0 || shift_constraint_only != 0) {
-      coco_evaluate_function(inner_problem.get(), x, y);
-      return;
-    }
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      inner_problem->evaluate_function(x, y);
       return;
     }
 
@@ -55,15 +48,9 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
       shifted_x[i] = x[i] - offset[i];
     }
 
-    coco_evaluate_function(inner_problem.get(), shifted_x.data(), y);
+    inner_problem->evaluate_function(shifted_x.data(), y);
 
-    if (number_of_constraints > 0) {
-      std::vector<double> cons_values(number_of_constraints);
-      feasible = is_feasible(x, cons_values.data());
-      if (feasible)
-        assert(y[0] + 1e-13 >= best_value[0]);
-    } else
-      assert(y[0] + 1e-13 >= best_value[0]);
+    assert_not_below_best_value(x, y);
   }
 
   /**
@@ -72,12 +59,7 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
   void evaluate_constraint(const double *x, double *y, int update_counter) override {
 
     if (inner_problem->number_of_constraints == 0) {
-      coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
-      return;
-    }
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      inner_problem->evaluate_constraint(x, y, update_counter);
       return;
     }
 
@@ -91,11 +73,6 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
    * @brief Evaluates the gradient of the transformed function at x
    */
   void evaluate_gradient(const double *x, double *y) override {
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
-      return;
-    }
 
     for (size_t i = 0; i < number_of_variables; ++i) {
       shifted_x[i] = x[i] - offset[i];

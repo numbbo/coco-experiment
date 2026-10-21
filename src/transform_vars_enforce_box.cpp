@@ -19,13 +19,6 @@ struct transform_vars_enforce_box_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective function.
    */
   void evaluate_function(const double *x, double *y) override {
-    int feasible;
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
-      return;
-    }
-
     for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
       if ((x[i] < smallest_values_of_interest[i]) || (x[i] > largest_values_of_interest[i])) {
         /* Box constraint is violated, return Inf */
@@ -34,17 +27,9 @@ struct transform_vars_enforce_box_t final : public coco_problem_transformed_t {
       }
     }
 
-    coco_evaluate_function(inner_problem.get(), x, y);
+    inner_problem->evaluate_function(x, y);
 
-    if (number_of_constraints > 0) {
-      std::vector<double> cons_values(number_of_constraints);
-      feasible = is_feasible(x, cons_values.data());
-      if (feasible) {
-        assert(y[0] + 1e-13 >= best_value[0]);
-      }
-    } else {
-      assert(y[0] + 1e-13 >= best_value[0]);
-    }
+    assert_not_below_best_value(x, y);
   }
 
   /** @brief The decision values are not transformed. */

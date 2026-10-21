@@ -25,11 +25,11 @@ struct tasy_data {
 /**
  * @brief Univariate asymmetric non-linear transformation.
  */
-static double tasy_uv(double xi, tasy_data *d) {
+static double tasy_uv(double xi, const tasy_data *d) {
   double yi;
   double exponent;
   if (xi > 0.0) {
-    exponent = 1.0 + ((d->beta * (double)(long)d->i) / ((double)(long)d->n - 1.0)) * sqrt(xi);
+    exponent = 1.0 + ((d->beta * static_cast<double>(d->i)) / (static_cast<double>(d->n) - 1.0)) * sqrt(xi);
     yi = pow(xi, exponent);
   } else {
     yi = xi;
@@ -40,10 +40,8 @@ static double tasy_uv(double xi, tasy_data *d) {
 /**
  * @brief Inverse of asymmetric non-linear transformation tasy_uv obtained with brentq.
  */
-static double tasy_uv_inv(double yi, tasy_data *d) {
-  double xi;
-  xi = brentinv((callback_type)&tasy_uv, yi, d);
-  return xi;
+static double tasy_uv_inv(double yi, const tasy_data *d) {
+  return brentinv([d](double xi) { return tasy_uv(xi, d); }, yi);
 }
 
 /**
@@ -81,29 +79,16 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed function.
    */
   void evaluate_function(const double *x, double *y) override {
-    int feasible;
-
     if (inner_problem->number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem.get(), x, y);
-      return;
-    }
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
+      inner_problem->evaluate_function(x, y);
       return;
     }
 
     tasy(x);
 
-    coco_evaluate_function(inner_problem.get(), asymmetric_x.data(), y);
+    inner_problem->evaluate_function(asymmetric_x.data(), y);
 
-    if (number_of_constraints > 0) {
-      std::vector<double> cons_values(number_of_constraints);
-      feasible = is_feasible(x, cons_values.data());
-      if (feasible)
-        assert(y[0] + 1e-13 >= best_value[0]);
-    } else
-      assert(y[0] + 1e-13 >= best_value[0]);
+    assert_not_below_best_value(x, y);
   }
 
   /**
@@ -113,12 +98,7 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
     double exponent;
 
     if (inner_problem->number_of_constraints == 0) {
-      coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
-      return;
-    }
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_constraints(this));
+      inner_problem->evaluate_constraint(x, y, update_counter);
       return;
     }
 
@@ -129,7 +109,8 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
     */
     for (size_t i = 0; i < number_of_variables; ++i) {
       if (x[i] > 0.0) {
-        exponent = 1.0 + ((beta * (double)(long)i) / ((double)(long)number_of_variables - 1.0)) * sqrt(x[i]);
+        exponent =
+            1.0 + ((beta * static_cast<double>(i)) / (static_cast<double>(number_of_variables) - 1.0)) * sqrt(x[i]);
         asymmetric_x[i] = pow(x[i], exponent);
       } else {
         asymmetric_x[i] = x[i];

@@ -2,24 +2,28 @@
 
 #include "coco.cpp"
 
-/**
- * Tests the function coco_observer_targets_trigger.
- */
-double my_sqrt(double x, COCO_UNUSED void *other) {
+static double my_sqrt(double x) {
   return sqrt(x);
 }
 
 MU_TEST(test_brentq) {
   double y;
 
-  y = brentq((callback_type) &my_sqrt, 4, 1, 4, 1E-14, 1E-10, 200, NULL);
+  y = brentq(my_sqrt, 4, 1, 4, 1E-14, 1E-10, 200);
   mu_assert_double_eq(2.0, y);
 }
 
 MU_TEST(test_brentinv) {
   double y;
 
-  y = brentinv((callback_type) &my_sqrt, 4, NULL);
+  y = brentinv([](double x) { return x * x * x; }, -8);
+  mu_assert_double_eq(-2.0, y);
+}
+
+MU_TEST(test_brentinv_function) {
+  double y;
+
+  y = brentinv(my_sqrt, 4);
   mu_assert_double_eq(16.0, y);
 }
 
@@ -29,6 +33,7 @@ MU_TEST(test_brentinv) {
 int main(void) {
   MU_RUN_TEST(test_brentq);
   MU_RUN_TEST(test_brentinv);
+  MU_RUN_TEST(test_brentinv_function);
 
   MU_REPORT();
 

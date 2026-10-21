@@ -31,7 +31,7 @@ struct f_attractive_sector_t final : public coco_problem_s {
   f_attractive_sector_t(const size_t number_of_variables, const double *xopt)
       : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("attractive sector function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "attractive_sector", number_of_variables);
+    set_id("%s_d%02zu", "attractive_sector", number_of_variables);
 
     this->xopt.assign(xopt, xopt + number_of_variables);
 
@@ -54,12 +54,8 @@ struct f_attractive_sector_t final : public coco_problem_s {
  * COCO structures.
  */
 double f_attractive_sector_t::raw(const double *x) const {
-  double result;
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = 0.0;
+  double result = 0.0;
   for (size_t i = 0; i < number_of_variables; ++i) {
     if (xopt[i] * x[i] > 0.0) {
       result += 100.0 * 100.0 * x[i] * x[i];
@@ -85,13 +81,12 @@ static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t
                                                                     const coco_bbob_variant_t variant,
                                                                     const char *problem_id_template,
                                                                     const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   /* Compute affine transformation M from two rotation matrices */
@@ -99,7 +94,7 @@ static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
   std::vector<double> scales(dimension);
   for (size_t k = 0; k < dimension; ++k) {
-    const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
+    const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
     scales[k] = pow(sqrt(10.0), exponent);
   }
   M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
@@ -122,7 +117,6 @@ static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocat
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
   const double condition = 10.0;
   /* each of R and Q might have its own parameter values */
@@ -131,7 +125,7 @@ static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocat
   size_t nb_swaps1, nb_swaps2;
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");

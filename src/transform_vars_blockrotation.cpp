@@ -41,7 +41,7 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
 
   void evaluate_function(const double *x, double *y) override {
     B.multiply(x, Bx.data());
-    coco_evaluate_function(inner_problem.get(), Bx.data(), y);
+    inner_problem->evaluate_function(Bx.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
@@ -57,8 +57,8 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
       for (size_t j = 0; j < number_of_variables; ++j) { /* check result */
         if (!coco_double_almost_equal(y[j], (i == j) ? 1.0 : 0.0, precision)) {
           coco_error("transform_vars_blockrotation_t::test() with precision %e "
-                     "failed on row %lu",
-                     precision, (unsigned long)i);
+                     "failed on row %zu",
+                     precision, i);
         }
       }
     }

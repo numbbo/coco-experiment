@@ -17,7 +17,6 @@
 #include "transform_vars_affine.cpp"
 #include "transform_vars_asymmetric.cpp"
 #include "transform_vars_blockrotation.cpp"
-#include "transform_obj_norm_by_dim.cpp"
 
 /**
  * @brief Implements the Schaffer's F7 function without connections to any COCO
@@ -27,15 +26,11 @@ static double f_schaffers_raw(const double *x,
                               const size_t number_of_variables) {
 
   size_t i = 0;
-  double result;
 
   assert(number_of_variables > 1);
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
   /* Computation core */
-  result = 0.0;
+  double result = 0.0;
   for (i = 0; i < number_of_variables - 1; ++i) {
     const double tmp = x[i] * x[i] + x[i + 1] * x[i + 1];
     if (coco_is_inf(tmp) && coco_is_nan(sin(50.0 * pow(tmp, 0.1)))) /* sin(inf) -> nan */
@@ -43,7 +38,7 @@ static double f_schaffers_raw(const double *x,
       return tmp;
     result += pow(tmp, 0.25) * (1.0 + pow(sin(50.0 * pow(tmp, 0.1)), 2.0));
   }
-  result = pow(result / ((double)(long)number_of_variables - 1.0), 2.0);
+  result = pow(result / (static_cast<double>(number_of_variables) - 1.0), 2.0);
 
   return result;
 }
@@ -54,7 +49,7 @@ static double f_schaffers_raw(const double *x,
 struct f_schaffers_t final : public coco_problem_s {
   explicit f_schaffers_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Schaffer's function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "schaffers", number_of_variables);
+    set_id("%s_d%02zu", "schaffers", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -86,14 +81,13 @@ static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t functio
                                                             const double conditioning, const double penalty_scale,
                                                             const char *problem_id_template,
                                                             const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -101,7 +95,7 @@ static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t functio
   for (size_t i = 0; i < dimension; ++i) {
     b[i] = 0.0;
     for (size_t j = 0; j < dimension; ++j) {
-      double exponent = 1.0 * (int)i / ((double)(long)dimension - 1.0);
+      double exponent = 1.0 * static_cast<int>(i) / (static_cast<double>(dimension) - 1.0);
       M(i, j) = rot2(i, j) * pow(sqrt(conditioning), exponent);
     }
   }
@@ -131,7 +125,6 @@ static coco_problem_ptr_t f_schaffers_permblockdiag_bbob_problem_allocate(const 
                                                                           const double conditioning,
                                                                           const char *problem_id_template,
                                                                           const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P21(dimension);
@@ -139,18 +132,16 @@ static coco_problem_ptr_t f_schaffers_permblockdiag_bbob_problem_allocate(const 
   std::vector<size_t> P22(dimension);
   size_t nb_blocks1;
   size_t nb_blocks2;
-  size_t swap_range;
-  size_t nb_swaps;
 
   const double penalty_factor = 10.0;
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
   std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
-  swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);

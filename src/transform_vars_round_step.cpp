@@ -48,10 +48,11 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
     /* multiplication by d to counter-balance the normalization by d*/
     shared->zhat_1 =
         fabs(x[0]) *
-        (double)inner_problem
-            ->number_of_variables; /* TODO: Discuss: consider not pre-imptively multiplying by dim to not change the
-                                      outcome of the max in the core function even though we might want to keep it as it
-                                      is since otherwise, the sum part of the max may take over as dim increases */
+        static_cast<double>(
+            inner_problem->number_of_variables); /* TODO: Discuss: consider not pre-imptively multiplying by dim to not
+                                                   change the outcome of the max in the core function even though we
+                                                   might want to keep it as it is since otherwise, the sum part of the
+                                                   max may take over as dim increases */
     for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
       if (fabs(x[i]) > 0.5) {
         rounded_x[i] = coco_double_round(x[i]);
@@ -59,16 +60,12 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
         rounded_x[i] = coco_double_round(alpha * x[i]) / alpha;
       }
     }
-    coco_evaluate_function(inner_problem.get(), rounded_x.data(), y);
+    inner_problem->evaluate_function(rounded_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /** @brief Rounding is not invertible. */
-  bool inverse(const double *inner_x, double *x) const override {
-    (void)inner_x;
-    (void)x;
-    return false;
-  }
+  bool inverse(const double *, double *) const override { return false; }
 };
 
 /**

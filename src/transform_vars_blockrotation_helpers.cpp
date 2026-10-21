@@ -23,8 +23,8 @@ static size_t coco_rotation_matrix_block_size(size_t const dimension) {
   const double BLOCK_SIZE_RELATIVE = 1;      /* for block rotations, relative to dimension */
   const size_t MAX_BLOCK_SIZE_ABSOLUTE = 40; /* for block rotations */
 
-  return coco_double_to_size_t(
-      coco_double_min(BLOCK_SIZE_RELATIVE * (double)dimension, (double)MAX_BLOCK_SIZE_ABSOLUTE));
+  return coco_double_to_size_t(coco_double_min(BLOCK_SIZE_RELATIVE * static_cast<double>(dimension),
+                                               static_cast<double>(MAX_BLOCK_SIZE_ABSOLUTE)));
 }
 
 /**
@@ -39,7 +39,7 @@ static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, const 
   for (size_t idx_block = 0; idx_block < nb_blocks; idx_block++) {
     current_blocksize = block_sizes[idx_block];
     const coco_matrix_t current_block =
-        bbob2009_compute_rotation(seed + (long)1000000 * (long)idx_block, current_blocksize);
+        bbob2009_compute_rotation(seed + static_cast<long>(1000000) * static_cast<long>(idx_block), current_blocksize);
 
     /* now fill the block matrix*/
     for (size_t i = 0; i < current_blocksize; i++) {

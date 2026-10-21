@@ -25,7 +25,6 @@
 #include "transform_vars_blockrotation.cpp"
 #include "transform_vars_permutation.cpp"
 #include "transform_vars_round_step.cpp"
-#include "transform_obj_norm_by_dim.cpp"
 
 /**
  * @brief The BBOB step ellipsoid function.
@@ -33,6 +32,8 @@
 struct f_step_ellipsoid_t final : public coco_problem_s {
   std::vector<double> z_hat, z;
   std::vector<double> xopt;
+  std::vector<double> c1;     /**< @brief sqrt((condition / 10)^(i / (n - 1))), scales the rows of rot2 */
+  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
   double fopt{}, penalty_scale{};
   coco_matrix_t rot1, rot2;
 
@@ -40,6 +41,7 @@ struct f_step_ellipsoid_t final : public coco_problem_s {
   double raw(const double *x);
 
   explicit f_step_ellipsoid_t(const size_t dimension) : coco_problem_s(dimension, 1, 0) {
+    static const double condition = 100;
     init_from_scalars("step ellipsoid function", -5.0, 5.0, 0);
     /* Allocate temporary storage and space for the rotation matrices */
     z_hat.resize(dimension);
@@ -47,6 +49,12 @@ struct f_step_ellipsoid_t final : public coco_problem_s {
     xopt.resize(dimension);
     rot1 = coco_matrix_t(dimension, dimension);
     rot2 = coco_matrix_t(dimension, dimension);
+    c1.resize(dimension);
+    scales.resize(dimension);
+    for (size_t i = 0; i < dimension; ++i) {
+      c1[i] = sqrt(pow(condition / 10., static_cast<double>(i) / static_cast<double>(dimension - 1)));
+      scales[i] = pow(condition, static_cast<double>(i) / (static_cast<double>(dimension) - 1.0));
+    }
   }
 
   /**
@@ -65,29 +73,21 @@ struct f_step_ellipsoid_t final : public coco_problem_s {
  */
 double f_step_ellipsoid_t::raw(const double *x) {
 
-  static const double condition = 100;
   static const double alpha = 10.0;
   double penalty = 0.0, x1;
-  double result;
 
   assert(number_of_variables > 1);
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
   for (size_t i = 0; i < number_of_variables; ++i) {
-    double tmp;
-    tmp = fabs(x[i]) - 5.0;
+    double tmp = fabs(x[i]) - 5.0;
     if (tmp > 0.0)
       penalty += tmp * tmp;
   }
   penalty = penalty * (penalty_scale);
   for (size_t i = 0; i < number_of_variables; ++i) {
-    double c1;
     z_hat[i] = 0.0;
-    c1 = sqrt(pow(condition / 10., (double)i / (double)(number_of_variables - 1)));
     for (size_t j = 0; j < number_of_variables; ++j) {
-      z_hat[i] += c1 * rot2(i, j) * (x[j] - xopt[j]);
+      z_hat[i] += c1[i] * rot2(i, j) * (x[j] - xopt[j]);
     }
   }
   x1 = z_hat[0];
@@ -102,12 +102,9 @@ double f_step_ellipsoid_t::raw(const double *x) {
   rot1.multiply(z_hat.data(), z.data());
 
   /* Computation core */
-  result = 0.0;
-  for (size_t i = 0; i < number_of_variables; ++i) {
-    double exponent;
-    exponent = (double)(long)i / ((double)(long)number_of_variables - 1.0);
-    result += pow(condition, exponent) * z[i] * z[i];
-  }
+  double result = 0.0;
+  for (size_t i = 0; i < number_of_variables; ++i)
+    result += scales[i] * z[i] * z[i];
   result = 0.1 * coco_double_max(fabs(x1) * 1.0e-4, result) + penalty + fopt;
 
   return result;
@@ -151,18 +148,11 @@ f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimen
  * @brief Implements the step ellipsoid function without connections to any COCO
  * structures.
  */
-static double f_step_ellipsoid_core(const double *x, const size_t number_of_variables,
+static double f_step_ellipsoid_core(const double *x, const size_t number_of_variables, const double *scales,
                                     f_step_ellipsoid_shared_data_t *shared) {
-
-  static const double condition = 100;
-  double result;
-  result = 0.0;
-
-  for (size_t i = 0; i < number_of_variables; ++i) {
-    double exponent;
-    exponent = (double)(long)i / ((double)(long)number_of_variables - 1.0);
-    result += pow(condition, exponent) * x[i] * x[i];
-  }
+  double result = 0.0;
+  for (size_t i = 0; i < number_of_variables; ++i)
+    result += scales[i] * x[i] * x[i];
   result = 0.1 * coco_double_max(
                      shared->zhat_1 * 1.0e-4, result);
   return result;
@@ -175,12 +165,16 @@ static double f_step_ellipsoid_core(const double *x, const size_t number_of_vari
  */
 struct f_step_ellipsoid_permblock_t final : public coco_problem_s {
   f_step_ellipsoid_shared_data_t shared;
+  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
 
   explicit f_step_ellipsoid_permblock_t(const size_t number_of_variables)
-      : coco_problem_s(number_of_variables, 1, 0) {
+      : coco_problem_s(number_of_variables, 1, 0), scales(number_of_variables) {
+    static const double condition = 100;
+    for (size_t i = 0; i < number_of_variables; ++i)
+      scales[i] = pow(condition, static_cast<double>(i) / (static_cast<double>(number_of_variables) - 1.0));
     init_from_scalars("step ellipsoid function", -5.0, 5.0, 0.0);
     shared.zhat_1 = 0; /*needed for xopt evaluation*/
-    set_id("%s_d%02lu", "step_ellipsoid", number_of_variables);
+    set_id("%s_d%02zu", "step_ellipsoid", number_of_variables);
 
     /* Compute best solution, here done outside after the zhat is set to the best_value */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -191,7 +185,7 @@ struct f_step_ellipsoid_permblock_t final : public coco_problem_s {
    */
   void evaluate_function(const double *x, double *y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_step_ellipsoid_core(x, number_of_variables, &shared);
+    y[0] = f_step_ellipsoid_core(x, number_of_variables, scales.data(), &shared);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
@@ -216,13 +210,12 @@ static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
   double alpha = 10.; /*parameter of rounding*/
-  double fopt;
   coco_problem_ptr_t problem;
   size_t nb_blocks1, nb_blocks2, swap_range1, swap_range2, nb_swaps1, nb_swaps2;
   double penalty_factor = 1.;
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");

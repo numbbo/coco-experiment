@@ -28,7 +28,7 @@
  */
 void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   /* implements a safer version of problem->evaluate(problem, x, y) */
-  int feasible;
+  bool feasible;
 
   assert(problem != nullptr);
 
@@ -123,30 +123,29 @@ void coco_recommend_solution(coco_problem_t *problem, const double *x) {
  * They report that the method is not implemented for the problem.
  */
 /**@{*/
-void coco_problem_s::evaluate_function(const double *x, double *y) {
-  (void)x; /* To silence the compiler */
-  (void)y;
+void coco_problem_s::evaluate_function(const double *, double *) {
   coco_error("coco_evaluate_function(): No function implemented for problem %s", problem_id.c_str());
 }
 
-void coco_problem_s::evaluate_constraint(const double *x, double *y, int update_counter) {
-  (void)x; /* To silence the compiler */
-  (void)y;
-  (void)update_counter;
+void coco_problem_s::evaluate_constraint(const double *, double *, int) {
   coco_error("coco_evaluate_constraint_optional_update(): No constraint function implemented for problem %s",
              problem_id.c_str());
 }
 
-void coco_problem_s::evaluate_gradient(const double *x, double *y) {
-  (void)x; /* To silence the compiler */
-  (void)y;
+void coco_problem_s::evaluate_gradient(const double *, double *) {
   coco_error("evaluate_gradient(): No gradient function implemented for problem %s", problem_id.c_str());
 }
 
-void coco_problem_s::recommend_solution(const double *x) {
-  (void)x; /* To silence the compiler */
+void coco_problem_s::recommend_solution(const double *) {
   coco_warning("coco_recommend_solution(): No recommend solution function implemented for problem %s",
                problem_id.c_str());
+}
+
+void coco_problem_s::assert_not_below_best_value([[maybe_unused]] const double *x, [[maybe_unused]] const double *y) {
+#ifndef NDEBUG
+  if (number_of_constraints == 0 || is_feasible(x, nullptr))
+    assert(y[0] + 1e-13 >= best_value[0]);
+#endif
 }
 
 bool coco_problem_s::from_base_coordinates(const double *base_x, double *x) const {
@@ -263,7 +262,7 @@ void coco_problem_free(coco_problem_t *problem) {
  *
  * No non-alphanumeric characters besides '-' and '_' are allowed.
  */
-static int coco_problem_id_is_fine(const std::string &id) {
+static bool coco_problem_id_is_fine(const std::string &id) {
   for (const char c : id) {
     if (('A' <= c) && (c <= 'Z'))
       continue;
@@ -273,9 +272,9 @@ static int coco_problem_id_is_fine(const std::string &id) {
       continue;
     if (('0' <= c) && (c <= '9'))
       continue;
-    return 0;
+    return false;
   }
-  return 1;
+  return true;
 }
 
 /**
@@ -327,14 +326,14 @@ size_t coco_problem_get_evaluations_constraints(const coco_problem_t *problem) {
 }
 
 /**
- * @brief Returns 1 if the best parameter is not (close to) zero and 0 otherwise.
+ * @brief Returns whether the best parameter is not (close to) zero.
  */
-int coco_problem_s::best_parameter_not_zero() const {
+bool coco_problem_s::best_parameter_not_zero() const {
   size_t i = 0;
-  int best_is_zero = 1;
+  bool best_is_zero = true;
 
   if (coco_vector_contains_nan(best_parameter.data(), number_of_variables))
-    return 1;
+    return true;
 
   while (i < number_of_variables && best_is_zero) {
     best_is_zero = coco_double_almost_equal(best_parameter[i], 0, 1e-9);
@@ -539,14 +538,12 @@ int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parame
 int coco_problem_is_tainted(const coco_problem_t *problem) { return problem->is_tainted; }
 
 void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
-  FILE *file;
+  coco_file_t file;
   assert(problem != nullptr);
   assert(!problem->best_parameter.empty());
-  file = fopen("._bbob_problem_best_parameter.txt", "w");
-  if (file != nullptr) {
+  if (file.open("._bbob_problem_best_parameter.txt", "w")) {
     for (size_t i = 0; i < problem->number_of_variables; ++i)
       fprintf(file, " %.16f ", problem->best_parameter[i]);
-    fclose(file);
   }
 }
 
@@ -554,7 +551,7 @@ void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
 static coco_problem_stacked_t *coco_problem_as_stacked(const coco_problem_t *problem);
 
 void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
-  FILE *file;
+  coco_file_t file;
   coco_problem_t *problem1, *problem2;
 
   /* We need the underlying single objective problems of the stacked problem, which are not accessible
@@ -563,10 +560,7 @@ void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
   if (dynamic_cast<const coco_problem_stacked_t *>(problem) == nullptr) {
     coco_warning("I'm sorry, Dave. I'm afraid I can't do that.");
     /* In case this function was called previously, overwrite any results. */
-    file = fopen("._bbob_biobj_problem_best_parameter.txt", "w");
-    if (file != nullptr) {
-      fclose(file);
-    }
+    file.open("._bbob_biobj_problem_best_parameter.txt", "w");
     return;
   }
 
@@ -579,14 +573,12 @@ void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
   assert(problem2 != nullptr);
   assert(!problem2->best_parameter.empty());
 
-  file = fopen("._bbob_biobj_problem_best_parameter.txt", "w");
-  if (file != nullptr) {
+  if (file.open("._bbob_biobj_problem_best_parameter.txt", "w")) {
     for (size_t i = 0; i < problem->number_of_variables; ++i)
       fprintf(file, " %.16f ", problem1->best_parameter[i]);
     fprintf(file, "\n");
     for (size_t i = 0; i < problem->number_of_variables; ++i)
       fprintf(file, " %.16f ", problem2->best_parameter[i]);
-    fclose(file);
   }
 }
 
@@ -620,17 +612,17 @@ coco_problem_transformed_s::coco_problem_transformed_s(coco_problem_ptr_t inner,
 }
 
 /**
- * @brief Calls the coco_evaluate_function function on the inner problem.
+ * @brief Evaluates the objective function of the inner problem.
  */
 void coco_problem_transformed_s::evaluate_function(const double *x, double *y) {
-  coco_evaluate_function(inner_problem.get(), x, y);
+  inner_problem->evaluate_function(x, y);
 }
 
 /**
- * @brief Calls the coco_evaluate_constraint_optional_update function on the inner problem.
+ * @brief Evaluates the constraints of the inner problem.
  */
 void coco_problem_transformed_s::evaluate_constraint(const double *x, double *y, int update_counter) {
-  coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
+  inner_problem->evaluate_constraint(x, y, update_counter);
 }
 
 /**
@@ -737,33 +729,27 @@ coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_pr
 }
 
 /**
- * @brief Calls the coco_evaluate_function function on the underlying problems.
+ * @brief Evaluates the objective functions of the underlying problems.
  */
 void coco_problem_stacked_s::evaluate_function(const double *x, double *y) {
   const size_t number_of_objectives_problem1 = coco_problem_get_number_of_objectives(problem1.get());
   const size_t number_of_objectives_problem2 = coco_problem_get_number_of_objectives(problem2.get());
-  int feasible;
-
   assert(coco_problem_get_number_of_objectives(this) == number_of_objectives_problem1 + number_of_objectives_problem2);
 
   if (number_of_objectives_problem1 > 0)
-    coco_evaluate_function(problem1.get(), x, &y[0]);
+    problem1->evaluate_function(x, &y[0]);
   if (number_of_objectives_problem2 > 0)
-    coco_evaluate_function(problem2.get(), x, &y[number_of_objectives_problem1]);
+    problem2->evaluate_function(x, &y[number_of_objectives_problem1]);
 
   /* Make sure that no feasible point has a function value lower
    * than the minimum's.
    */
-  if (number_of_constraints > 0) {
-    std::vector<double> cons_values(number_of_constraints);
-    feasible = is_feasible(x, cons_values.data());
-    if (feasible)
-      assert(y[0] + 1e-13 >= best_value[0]);
-  }
+  if (number_of_constraints > 0)
+    assert_not_below_best_value(x, y);
 }
 
 /**
- * @brief Calls the coco_evaluate_constraint_optional_update function on the underlying problems.
+ * @brief Evaluates the constraints of the underlying problems.
  */
 void coco_problem_stacked_s::evaluate_constraint(const double *x, double *y, int update_counter) {
   const size_t number_of_constraints_problem1 = coco_problem_get_number_of_constraints(problem1.get());
@@ -778,9 +764,9 @@ void coco_problem_stacked_s::evaluate_constraint(const double *x, double *y, int
          number_of_constraints_problem1 + number_of_constraints_problem2);
 
   if (number_of_constraints_problem1 > 0)
-    coco_evaluate_constraint_optional_update(problem1.get(), x, y, update_counter);
+    problem1->evaluate_constraint(x, y, update_counter);
   if (number_of_constraints_problem2 > 0)
-    coco_evaluate_constraint_optional_update(problem2.get(), x, &y[number_of_constraints_problem1], update_counter);
+    problem2->evaluate_constraint(x, &y[number_of_constraints_problem1], update_counter);
 }
 
 /* TODO: Missing coco_problem_stacked_recommend_solution function! */

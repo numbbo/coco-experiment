@@ -14,10 +14,17 @@
  */
 struct transform_vars_brs_t final : public coco_problem_transformed_t {
   std::vector<double> scaled_x; /**< @brief The scaled decision values */
+  std::vector<double> factors;  /**< @brief sqrt(10)^(i / (n - 1)) */
 
   explicit transform_vars_brs_t(coco_problem_ptr_t inner)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_brs"),
-        scaled_x(inner_problem->number_of_variables) {
+        scaled_x(inner_problem->number_of_variables), factors(inner_problem->number_of_variables) {
+    /* Function documentation says we should compute 10^(0.5 *
+     * (i-1)/(D-1)). Instead we compute the equivalent
+     * sqrt(10)^((i-1)/(D-1)) just like the legacy code.
+     */
+    for (size_t i = 0; i < number_of_variables; ++i)
+      factors[i] = pow(sqrt(10.0), static_cast<double>(i) / (static_cast<double>(number_of_variables) - 1.0));
     if (inner_problem->best_parameter_not_zero()) {
       coco_warning("transform_vars_brs(): 'best_parameter' not updated, set to NAN");
       coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
@@ -28,19 +35,8 @@ struct transform_vars_brs_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformation.
    */
   void evaluate_function(const double *x, double *y) override {
-    double factor;
-
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
-      return;
-    }
-
     for (size_t i = 0; i < number_of_variables; ++i) {
-      /* Function documentation says we should compute 10^(0.5 *
-       * (i-1)/(D-1)). Instead we compute the equivalent
-       * sqrt(10)^((i-1)/(D-1)) just like the legacy code.
-       */
-      factor = pow(sqrt(10.0), (double)(long)i / ((double)(long)number_of_variables - 1.0));
+      double factor = factors[i];
       /* Documentation specifies odd indices and starts indexing
        * from 1, we use all even indices since C starts indexing
        * with 0.
@@ -50,14 +46,14 @@ struct transform_vars_brs_t final : public coco_problem_transformed_t {
       }
       scaled_x[i] = factor * x[i];
     }
-    coco_evaluate_function(inner_problem.get(), scaled_x.data(), y);
+    inner_problem->evaluate_function(scaled_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /** @brief Divides by the factor; the factor is positive, so inner_x has the sign of x. */
   bool inverse(const double *inner_x, double *x) const override {
     for (size_t i = 0; i < number_of_variables; ++i) {
-      double factor = pow(sqrt(10.0), (double)(long)i / ((double)(long)number_of_variables - 1.0));
+      double factor = factors[i];
       if (inner_x[i] > 0.0 && i % 2 == 0) {
         factor *= 10.0;
       }

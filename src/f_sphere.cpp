@@ -20,12 +20,8 @@
 static double f_sphere_raw(const double *x, const size_t number_of_variables) {
 
   size_t i = 0;
-  double result;
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = 0.0;
+  double result = 0.0;
   for (i = 0; i < number_of_variables; ++i) {
     result += x[i] * x[i];
   }
@@ -39,7 +35,7 @@ static double f_sphere_raw(const double *x, const size_t number_of_variables) {
 struct f_sphere_t final : public coco_problem_s {
   explicit f_sphere_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("sphere function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "sphere", number_of_variables);
+    set_id("%s_d%02zu", "sphere", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -81,12 +77,11 @@ static coco_problem_ptr_t f_sphere_bbob_problem_allocate(const size_t function, 
                                                          const char *problem_id_template,
                                                          const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_sphere_allocate(dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);

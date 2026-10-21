@@ -20,12 +20,8 @@
 static double f_discus_raw(const double *x, const size_t number_of_variables) {
 
   static const double condition = 1.0e6;
-  double result;
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = condition * x[0] * x[0];
+  double result = condition * x[0] * x[0];
   for (size_t i = 1; i < number_of_variables; ++i) {
     result += x[i] * x[i];
   }
@@ -39,7 +35,7 @@ static double f_discus_raw(const double *x, const size_t number_of_variables) {
 struct f_discus_t final : public coco_problem_s {
   explicit f_discus_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("discus function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "discus", number_of_variables);
+    set_id("%s_d%02zu", "discus", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -83,14 +79,13 @@ static coco_problem_ptr_t f_discus_bbob_problem_allocate(const size_t function, 
                                                          const char *problem_id_template,
                                                          const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
 
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
@@ -118,14 +113,13 @@ static coco_problem_ptr_t f_discus_cons_bbob_problem_allocate(const size_t funct
                                                               const char *problem_id_template,
                                                               const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
 
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);

@@ -40,13 +40,12 @@ struct logger_toy_t final : public coco_problem_transformed_t {
  */
 void logger_toy_t::evaluate_function(const double *x, double *y) {
 
-  coco_evaluate_function(inner_problem.get(), x, y);
+  inner_problem->evaluate_function(x, y);
   number_of_evaluations++;
 
   /* Output the solution when a new target that has been hit */
   if (targets.trigger(y[0])) {
-    fprintf(log_file, "%lu\t%.*e\t%.*e", (unsigned long)number_of_evaluations, precision_f, y[0], precision_f,
-            targets.value);
+    fprintf(log_file, "%zu\t%.*e\t%.*e", number_of_evaluations, precision_f, y[0], precision_f, targets.value);
     for (size_t i = 0; i < number_of_variables; i++) {
       fprintf(log_file, "\t%.*e", precision_x, x[i]);
     }
@@ -63,8 +62,8 @@ void logger_toy_t::evaluate_function(const double *x, double *y) {
 logger_toy_t::logger_toy_t(observer_toy_t &observer, coco_problem_ptr_t inner)
     : coco_problem_transformed_t(std::move(inner), observer.observer_name) {
   if (inner_problem->number_of_objectives != 1) {
-    coco_warning("logger_toy_t(): The toy logger shouldn't be used to log a problem with %lu objectives",
-                 (unsigned long)inner_problem->number_of_objectives);
+    coco_warning("logger_toy_t(): The toy logger shouldn't be used to log a problem with %zu objectives",
+                 inner_problem->number_of_objectives);
   }
 
   /* Initialize the logger */
@@ -80,8 +79,8 @@ logger_toy_t::logger_toy_t(observer_toy_t &observer, coco_problem_ptr_t inner)
   fprintf(log_file, "suite = '%s', problem_id = '%s', problem_name = '%s', coco_version = '%s'\n",
           inner_problem->suite->suite_name.c_str(), coco_problem_get_id(inner_problem.get()),
           coco_problem_get_name(inner_problem.get()), coco_version);
-  fprintf(log_file, "%% evaluation number | function value | target hit | %lu variables \n",
-          (unsigned long)inner_problem->number_of_variables);
+  fprintf(log_file, "%% evaluation number | function value | target hit | %zu variables \n",
+          inner_problem->number_of_variables);
 }
 
 coco_problem_ptr_t observer_toy_t::add_logger(coco_problem_ptr_t problem) {

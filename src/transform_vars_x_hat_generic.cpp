@@ -45,7 +45,7 @@ struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t 
       x_hat[i] = 2.0 * sign_vector[i] * x[i];
       shared->x_hat[i] = x_hat[i];
     }
-    coco_evaluate_function(inner_problem.get(), x_hat.data(), y);
+    inner_problem->evaluate_function(x_hat.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 

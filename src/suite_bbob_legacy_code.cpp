@@ -25,34 +25,32 @@ static double bbob2009_round(double x) { return floor(x + 0.5); }
  */
 static void bbob2009_unif(double *r, size_t N, long inseed) {
   /* generates N uniform numbers with starting seed */
-  long aktseed;
   long tmp;
   long rgrand[32];
-  long aktrand;
 
   if (inseed < 0)
     inseed = -inseed;
   if (inseed < 1)
     inseed = 1;
-  aktseed = inseed;
+  long aktseed = inseed;
   for (long i = 39; i >= 0; i--) {
-    tmp = (int)floor((double)aktseed / (double)127773);
+    tmp = static_cast<int>(floor(static_cast<double>(aktseed) / static_cast<double>(127773)));
     aktseed = 16807 * (aktseed - tmp * 127773) - 2836 * tmp;
     if (aktseed < 0)
       aktseed = aktseed + 2147483647;
     if (i < 32)
       rgrand[i] = aktseed;
   }
-  aktrand = rgrand[0];
-  for (long i = 0; i < (long)N; i++) {
-    tmp = (int)floor((double)aktseed / (double)127773);
+  long aktrand = rgrand[0];
+  for (long i = 0; i < static_cast<long>(N); i++) {
+    tmp = static_cast<int>(floor(static_cast<double>(aktseed) / static_cast<double>(127773)));
     aktseed = 16807 * (aktseed - tmp * 127773) - 2836 * tmp;
     if (aktseed < 0)
       aktseed = aktseed + 2147483647;
-    tmp = (int)floor((double)aktrand / (double)67108865);
+    tmp = static_cast<int>(floor(static_cast<double>(aktrand) / static_cast<double>(67108865)));
     aktrand = rgrand[tmp];
     rgrand[tmp] = aktseed;
-    r[i] = (double)aktrand / 2.147483647e9;
+    r[i] = static_cast<double>(aktrand) / 2.147483647e9;
     if (r[i] == 0.) {
       r[i] = 1e-99;
     }
@@ -188,9 +186,9 @@ static double bbob2009_compute_fopt(const size_t function, const size_t instance
   else if (function == 128 || function == 129 || function == 130)
     rseed = 21;
   else
-    rseed = (long)function;
+    rseed = static_cast<long>(function);
 
-  rrseed = rseed + (long)(10000 * instance);
+  rrseed = rseed + static_cast<long>(10000 * instance);
   bbob2009_gauss(&gval, 1, rrseed);
   bbob2009_gauss(&gval2, 1, rrseed + 1);
   return bbob2009_fmin(1000., bbob2009_fmax(-1000., bbob2009_round(100. * 100. * gval / gval2) / 100.));

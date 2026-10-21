@@ -94,42 +94,45 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
                                                                       const size_t dimension, const size_t instance) {
 
   int function_idx, dimension_idx, instance_idx;
-  int found;
+  bool found;
 
-  found = 0;
+  found = false;
   for (size_t i = 0; i < suite->functions.size(); i++) {
     if (suite->functions[i] == function) {
-      function_idx = (int)i;
-      found = 1;
+      function_idx = static_cast<int>(i);
+      found = true;
       break;
     }
   }
   if (!found)
     return nullptr;
 
-  found = 0;
+  found = false;
   for (size_t i = 0; i < suite->dimensions.size(); i++) {
     if (suite->dimensions[i] == dimension) {
-      dimension_idx = (int)i;
-      found = 1;
+      dimension_idx = static_cast<int>(i);
+      found = true;
       break;
     }
   }
   if (!found)
     return nullptr;
 
-  found = 0;
+  found = false;
   for (size_t i = 0; i < suite->instances.size(); i++) {
     if (suite->instances[i] == instance) {
-      instance_idx = (int)i;
-      found = 1;
+      instance_idx = static_cast<int>(i);
+      found = true;
       break;
     }
   }
   if (!found)
     return nullptr;
 
-  return suite->get_problem_from_indices((size_t)function_idx, (size_t)dimension_idx, (size_t)instance_idx).release();
+  return suite
+      ->get_problem_from_indices(static_cast<size_t>(function_idx), static_cast<size_t>(dimension_idx),
+                                 static_cast<size_t>(instance_idx))
+      .release();
 }
 
 coco_suite_s::coco_suite_s(std::string_view suite_name, const size_t number_of_functions,
@@ -158,8 +161,7 @@ coco_suite_s::~coco_suite_s() {
   current_problem.reset();
 }
 
-std::string_view coco_suite_s::get_instances_by_year(const int year) const {
-  (void)year;
+std::string_view coco_suite_s::get_instances_by_year(const int) const {
   coco_error("coco_suite_s::get_instances_by_year(): suite '%s' has no years defined", suite_name.c_str());
   return {};
 }
@@ -382,20 +384,18 @@ static std::vector<size_t> coco_suite_get_instance_indices(const coco_suite_t *s
  * returns 1. If such an item cannot be found, current_item_id points to the
  * first positive item and the method returns 0.
  */
-static int coco_suite_is_next_item_found(const size_t *items,
-                                         const size_t number_of_items,
-                                         long *current_item_id) {
+static bool coco_suite_is_next_item_found(const size_t *items, const size_t number_of_items, long *current_item_id) {
 
-  if ((*current_item_id) != (long)number_of_items - 1) {
+  if ((*current_item_id) != static_cast<long>(number_of_items) - 1) {
     /* Not the last item, iterate through items */
     do {
       (*current_item_id)++;
-    } while (((*current_item_id) < (long)number_of_items - 1) && (items[*current_item_id] == 0));
+    } while (((*current_item_id) < static_cast<long>(number_of_items) - 1) && (items[*current_item_id] == 0));
 
-    assert((*current_item_id) < (long)number_of_items);
+    assert((*current_item_id) < static_cast<long>(number_of_items));
     if (items[*current_item_id] != 0) {
       /* Next item is found, return true */
-      return 1;
+      return true;
     }
   }
 
@@ -403,19 +403,19 @@ static int coco_suite_is_next_item_found(const size_t *items,
   *current_item_id = -1;
   do {
     (*current_item_id)++;
-  } while ((*current_item_id < (long)number_of_items - 1) && (items[*current_item_id] == 0));
+  } while ((*current_item_id < static_cast<long>(number_of_items) - 1) && (items[*current_item_id] == 0));
   if (items[*current_item_id] == 0)
     coco_error("coco_suite_is_next_item_found(): the chosen suite has no valid "
                "(positive) items");
-  return 0;
+  return false;
 }
 
-int coco_suite_s::next_instance() {
+bool coco_suite_s::next_instance() {
   return coco_suite_is_next_item_found(instances.data(), instances.size(), &current_instance_idx);
 }
 
-int coco_suite_s::next_function() {
-  int result = coco_suite_is_next_item_found(functions.data(), functions.size(), &current_function_idx);
+bool coco_suite_s::next_function() {
+  bool result = coco_suite_is_next_item_found(functions.data(), functions.size(), &current_function_idx);
   if (!result) {
     /* Reset the instances */
     current_instance_idx = -1;
@@ -424,7 +424,7 @@ int coco_suite_s::next_function() {
   return result;
 }
 
-int coco_suite_s::next_dimension() {
+bool coco_suite_s::next_dimension() {
   return coco_suite_is_next_item_found(dimensions.data(), dimensions.size(), &current_dimension_idx);
 }
 
@@ -552,7 +552,7 @@ static coco_suite_t *coco_suite_create(std::string_view suite_name, std::string_
         (coco_options_read_values(suite_options, "dimensions", option_string) > 0)) {
       /* Check for disallowed characters */
       for (const char c : option_string) {
-        if ((c != ',') && !isdigit((unsigned char)c)) {
+        if ((c != ',') && !isdigit(static_cast<unsigned char>(c))) {
           coco_warning("coco_suite(): 'dimensions' suite option ignored because of disallowed characters");
           coco_suite_free(suite);
           return nullptr;
@@ -613,20 +613,14 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance, con
  */
 coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t *observer) {
 
-  size_t function_idx;
-  size_t dimension_idx;
-  size_t instance_idx;
   coco_problem_ptr_t problem;
 
-  long previous_function_idx;
-  long previous_dimension_idx;
-  long previous_instance_idx;
 
   assert(suite != nullptr);
 
-  previous_function_idx = suite->current_function_idx;
-  previous_dimension_idx = suite->current_dimension_idx;
-  previous_instance_idx = suite->current_instance_idx;
+  long previous_function_idx = suite->current_function_idx;
+  long previous_dimension_idx = suite->current_dimension_idx;
+  long previous_instance_idx = suite->current_instance_idx;
 
   /* Iterate through the suite by instances, then functions and lastly dimensions in search for the next
    * problem. Note that these functions set the values of suite fields current_instance_idx,
@@ -642,9 +636,9 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
   assert(suite->current_dimension_idx >= 0);
   assert(suite->current_instance_idx >= 0);
 
-  function_idx = (size_t)suite->current_function_idx;
-  dimension_idx = (size_t)suite->current_dimension_idx;
-  instance_idx = (size_t)suite->current_instance_idx;
+  size_t function_idx = static_cast<size_t>(suite->current_function_idx);
+  size_t dimension_idx = static_cast<size_t>(suite->current_dimension_idx);
+  size_t instance_idx = static_cast<size_t>(suite->current_instance_idx);
 
   problem = suite->get_problem_from_indices(function_idx, dimension_idx, instance_idx);
   if (observer != nullptr)
@@ -653,18 +647,18 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
 
   /* Output information regarding the current place in the iteration */
   if (coco_log_level >= COCO_INFO) {
-    if (((long)dimension_idx != previous_dimension_idx) || (previous_instance_idx < 0)) {
+    if ((static_cast<long>(dimension_idx) != previous_dimension_idx) || (previous_instance_idx < 0)) {
       /* A new dimension started */
       const std::string time_string = coco_current_time_get_string();
       if (dimension_idx > 0)
         coco_info_partial("done\n");
       else
         coco_info_partial("\n");
-      coco_info_partial("COCO INFO: %s, d=%lu, running: f%02lu", time_string.c_str(),
-                        (unsigned long)suite->dimensions[dimension_idx], (unsigned long)suite->functions[function_idx]);
-    } else if ((long)function_idx != previous_function_idx) {
+      coco_info_partial("COCO INFO: %s, d=%zu, running: f%02zu", time_string.c_str(), suite->dimensions[dimension_idx],
+                        suite->functions[function_idx]);
+    } else if (static_cast<long>(function_idx) != previous_function_idx) {
       /* A new function started */
-      coco_info_partial("f%02lu", (unsigned long)suite->functions[function_idx]);
+      coco_info_partial("f%02zu", suite->functions[function_idx]);
     }
     /* One dot for each instance */
     coco_info_partial(".");

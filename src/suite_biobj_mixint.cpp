@@ -18,11 +18,7 @@
  *
  * @note The instances of the bi-objective suites generally do not changes with years.
  */
-static std::string_view suite_biobj_mixint_get_instances_by_year(const int year) {
-
-  (void)year; /* To get rid of compiler warnings */
-  return "1-15";
-}
+static std::string_view suite_biobj_mixint_get_instances_by_year(const int) { return "1-15"; }
 
 /**
  * @brief Creates and returns a mixed-integer bi-objective bbob problem without needing the actual
@@ -64,7 +60,7 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
   const size_t variable_cardinality[] = {2, 4, 8, 16, 0};
 
   if (dimension % 5 != 0)
-    coco_error("coco_get_biobj_mixint_problem(): dimension %lu not supported for suite_bbob_mixint", dimension);
+    coco_error("coco_get_biobj_mixint_problem(): dimension %zu not supported for suite_bbob_mixint", dimension);
 
   /* First, find the underlying single-objective continuous problems */
   problem_cont = coco_get_biobj_problem(function, dimension, instance, coco_get_problem_function, new_instances,
@@ -91,7 +87,7 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
     } else {
       /* Outer problem */
       smallest_values_of_interest[i] = 0;
-      largest_values_of_interest[i] = (double)variable_cardinality[j] - 1;
+      largest_values_of_interest[i] = static_cast<double>(variable_cardinality[j]) - 1;
       /* Inner problems */
       problem1->smallest_values_of_interest[i] = -4;
       problem1->largest_values_of_interest[i] = 4;
@@ -121,8 +117,7 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
   problem->set_name("%s", problem->problem_id.c_str());
-  problem->set_id("bbob-biobj-mixint_f%03lu_i%02lu_d%03lu", (unsigned long)function, (unsigned long)instance,
-                  (unsigned long)dimension);
+  problem->set_id("bbob-biobj-mixint_f%03zu_i%02zu_d%03zu", function, instance, dimension);
 
   /* Construct problem type */
   problem->set_type("%s_%s", problem_type1.c_str(), problem_type2.c_str());
@@ -160,7 +155,7 @@ struct suite_biobj_mixint_t final : public coco_suite_s {
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj-mixint suite.
  */
-static coco_suite_t *suite_biobj_mixint_initialize(void) {
+static coco_suite_t *suite_biobj_mixint_initialize() {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {5, 10, 20, 40, 80, 160};

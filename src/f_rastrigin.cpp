@@ -29,11 +29,7 @@ static double f_rastrigin_raw(const double *x,
                               const size_t number_of_variables) {
 
   size_t i = 0;
-  double result;
   double sum1 = 0.0, sum2 = 0.0;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
 
   for (i = 0; i < number_of_variables; ++i) {
     sum1 += cos(coco_two_pi * x[i]);
@@ -41,7 +37,7 @@ static double f_rastrigin_raw(const double *x,
   }
   if (coco_is_inf(sum2)) /* cos(inf) -> nan */
     return sum2;
-  result = 10.0 * ((double)(long)number_of_variables - sum1) + sum2;
+  double result = 10.0 * (static_cast<double>(number_of_variables) - sum1) + sum2;
 
   return result;
 }
@@ -53,7 +49,7 @@ struct f_rastrigin_t final : public coco_problem_s {
   explicit f_rastrigin_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Rastrigin function", -5.0, 5.0, 0.0);
     /* TODO: make sure the gradient is computed correctly for the rotated Rastrigin */
-    set_id("%s_d%02lu", "rastrigin", number_of_variables);
+    set_id("%s_d%02zu", "rastrigin", number_of_variables);
 
     /* Compute best solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -95,11 +91,10 @@ static coco_problem_ptr_t f_rastrigin_bbob_problem_allocate(const size_t functio
                                                             const char *problem_id_template,
                                                             const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   problem = f_rastrigin_allocate(dimension);
@@ -129,20 +124,19 @@ static coco_problem_ptr_t f_rastrigin_rotated_bbob_problem_allocate(const size_t
                                                                     const coco_bbob_variant_t variant,
                                                                     const char *problem_id_template,
                                                                     const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
   const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
   std::vector<double> scales(dimension);
   for (size_t k = 0; k < dimension; ++k) {
-    const double exponent = 1.0 * (int)k / ((double)(long)dimension - 1.0);
+    const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
     scales[k] = pow(sqrt(10), exponent);
   }
   M = coco_matrix_product_with_diagonal(rot1, scales, rot2);
@@ -171,7 +165,6 @@ static coco_problem_ptr_t f_rastrigin_permblockdiag_bbob_problem_allocate(const 
                                                                           const coco_bbob_variant_t variant,
                                                                           const char *problem_id_template,
                                                                           const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P12(dimension);
@@ -189,7 +182,7 @@ static coco_problem_ptr_t f_rastrigin_permblockdiag_bbob_problem_allocate(const 
   nb_swaps2 = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);
@@ -237,13 +230,13 @@ static void f_rastrigin_cons_compute_xopt(double *xopt, const long rseed,
 
   for (size_t i = 0; i < dim; ++i) {
     xopt[i] = 10 * xopt[i] - 5;
-    xopt[i] = (int)xopt[i];
+    xopt[i] = static_cast<int>(xopt[i]);
   }
 
   /* In case (0, ..., 0) is sampled, set xopt to a different value */
   if (coco_vector_is_zero(xopt, dim))
     for (size_t i = 0; i < dim; ++i) {
-      xopt[i] = (int)(i % 9) - 4;
+      xopt[i] = static_cast<int>(i % 9) - 4;
     }
 }
 
@@ -255,12 +248,11 @@ static coco_problem_ptr_t f_rastrigin_cons_bbob_problem_allocate(const size_t fu
                                                                  const char *problem_id_template,
                                                                  const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   f_rastrigin_cons_compute_xopt(xopt.data(), rseed, dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_rastrigin_allocate(dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
@@ -281,7 +273,6 @@ static coco_problem_ptr_t f_rastrigin_rotated_cons_bbob_problem_allocate(const s
                                                                          const char *problem_id_template,
                                                                          const char *problem_name_template) {
 
-  double fopt;
   coco_problem_ptr_t problem;
 
   coco_matrix_t M(dimension, dimension);
@@ -292,7 +283,7 @@ static coco_problem_ptr_t f_rastrigin_rotated_cons_bbob_problem_allocate(const s
 
   std::vector<double> xopt(dimension);
   f_rastrigin_cons_compute_xopt(xopt.data(), rseed, dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_rastrigin_allocate(dimension);
   problem = transform_vars_shift(std::move(problem), xopt.data(), 0);

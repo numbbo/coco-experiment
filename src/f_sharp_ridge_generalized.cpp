@@ -30,7 +30,7 @@ struct f_sharp_ridge_generalized_t final : public coco_problem_s {
       : coco_problem_s(number_of_variables, 1, 0) {
     /* Wassim: proportion_of_linear_dims should probably be allowed to be non-integer */
     init_from_scalars("sharp ridge function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "sharp_ridge_generalized", number_of_variables);
+    set_id("%s_d%02zu", "sharp_ridge_generalized", number_of_variables);
     this->proportion_of_linear_dims = proportion_of_linear_dims;
 
     /* Compute best solution */
@@ -55,14 +55,10 @@ double f_sharp_ridge_generalized_t::raw(const double *x) const {
 
   static const double alpha = 100.0;
   size_t i = 0, number_linear_dimensions;
-  double result;
 
   assert(number_of_variables > 1);
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
-  result = 0.0;
+  double result = 0.0;
   number_linear_dimensions = number_of_variables / proportion_of_linear_dims;
   if (number_of_variables % proportion_of_linear_dims != 0) {
     number_linear_dimensions += 1;
@@ -93,7 +89,6 @@ static coco_problem_ptr_t f_sharp_ridge_generalized_allocate(const size_t number
 static coco_problem_ptr_t f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P21(dimension);
@@ -101,18 +96,16 @@ static coco_problem_ptr_t f_sharp_ridge_generalized_permblockdiag_bbob_problem_a
   std::vector<size_t> P22(dimension);
   size_t nb_blocks1;
   size_t nb_blocks2;
-  size_t swap_range;
-  size_t nb_swaps;
 
   const size_t proportion_of_linear_dims = 40;
 
   std::vector<size_t> block_sizes1 = coco_get_block_sizes(&nb_blocks1, dimension, "bbob-largescale");
   std::vector<size_t> block_sizes2 = coco_get_block_sizes(&nb_blocks2, dimension, "bbob-largescale");
-  swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
 
   const coco_block_diagonal_matrix_t B1 = coco_compute_blockrotation(rseed + 1000000, block_sizes1.data(), nb_blocks1);

@@ -26,12 +26,7 @@ struct transform_obj_power_t final : public coco_problem_transformed_t {
    */
   void evaluate_function(const double *x, double *y) override {
 
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
-      return;
-    }
-
-    coco_evaluate_function(inner_problem.get(), x, y);
+    inner_problem->evaluate_function(x, y);
 
     for (size_t i = 0; i < number_of_objectives; i++) {
       y[i] = pow(y[i], exponent);

@@ -26,7 +26,6 @@ static double f_schwefel_generalized_raw(const double *x,
                                          const size_t number_of_variables) {
 
   size_t i = 0;
-  double result;
   double penalty, sum;
   const double Schwefel_constant = 4.189828872724339;
 
@@ -43,7 +42,7 @@ static double f_schwefel_generalized_raw(const double *x,
   for (i = 0; i < number_of_variables; ++i) {
     sum += x[i] * sin(sqrt(fabs(x[i])));
   }
-  result = 0.01 * (penalty + Schwefel_constant * 100. - sum / (double)number_of_variables);
+  double result = 0.01 * (penalty + Schwefel_constant * 100. - sum / static_cast<double>(number_of_variables));
 
   return result;
 }
@@ -54,7 +53,7 @@ static double f_schwefel_generalized_raw(const double *x,
 struct f_schwefel_generalized_t final : public coco_problem_s {
   explicit f_schwefel_generalized_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Schwefel function", -5.0, 5.0, 420.96874633);
-    set_id("%s_d%02lu", "schwefel", number_of_variables);
+    set_id("%s_d%02zu", "schwefel", number_of_variables);
 
     /* Compute best solution: best_parameter[i] = 200 * fabs(xopt[i]) */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -84,13 +83,12 @@ static coco_problem_ptr_t f_schwefel_generalized_bbob_problem_allocate(const siz
                                                                        const size_t instance, const long rseed,
                                                                        const char *problem_id_template,
                                                                        const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   std::vector<double> tmp1(dimension);
   std::vector<double> tmp2(dimension);
 
   std::vector<double> xopt(dimension);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   bbob2009_unif(tmp1.data(), dimension, rseed);
   for (size_t i = 0; i < dimension; ++i) {
     xopt[i] = 0.5 * 4.2096874637;

@@ -115,17 +115,17 @@ static std::string coco_join_path(const std::string &path, const std::string &co
 }
 
 /**
- * @brief Returns 1 if the path exists and is a directory and 0 otherwise.
+ * @brief Returns whether the path exists and is a directory.
  */
-static int coco_directory_exists(const std::string &path) {
+static bool coco_directory_exists(const std::string &path) {
   std::error_code error;
   return std::filesystem::is_directory(path, error);
 }
 
 /**
- * @brief Returns 1 if the path exists and is not a directory and 0 otherwise.
+ * @brief Returns whether the path exists and is not a directory.
  */
-static int coco_file_exists(const std::string &path) {
+static bool coco_file_exists(const std::string &path) {
   std::error_code error;
   const std::filesystem::file_status status = std::filesystem::status(path, error);
   return std::filesystem::exists(status) && !std::filesystem::is_directory(status);
@@ -136,21 +136,21 @@ static int coco_file_exists(const std::string &path) {
  *
  * Raises a coco_error if the directory cannot be created, for example because a file of the same name exists.
  *
- * @return 0 if the directory was created and 1 if it existed before.
+ * @return Whether the directory was created (false if it existed before).
  */
-static int coco_create_directory(const std::string &path) {
+static bool coco_create_directory(const std::string &path) {
   std::string directory = path;
   std::error_code error;
 
   /* Remove trailing separators, some implementations report a path like "a/b/" as not created */
   while (directory.size() > 1 &&
-         (directory.back() == '/' || directory.back() == (char)std::filesystem::path::preferred_separator))
+         (directory.back() == '/' || directory.back() == static_cast<char>(std::filesystem::path::preferred_separator)))
     directory.pop_back();
 
   const bool created = std::filesystem::create_directories(directory, error);
   if (error)
     coco_error("coco_create_directory(): unable to create %s: %s", path.c_str(), error.message().c_str());
-  return created ? 0 : 1;
+  return created;
 }
 
 /**
@@ -195,7 +195,7 @@ static std::string coco_create_unique_directory(const std::string &path) {
 
   int counter = 1;
 
-  if (coco_create_directory(path) == 0) {
+  if (coco_create_directory(path)) {
     /* Directory created */
     return path;
   }
@@ -203,7 +203,7 @@ static std::string coco_create_unique_directory(const std::string &path) {
   while (counter < 9999) {
     const std::string new_path = coco_string_format("%s-%04d", path.c_str(), counter);
 
-    if (coco_create_directory(new_path) == 0) {
+    if (coco_create_directory(new_path)) {
       /* Directory created */
       return new_path;
     }
@@ -242,7 +242,7 @@ int coco_remove_directory(const char *path) {
 /**@{*/
 double *coco_allocate_vector(const size_t number_of_elements) {
   const size_t block_size = number_of_elements * sizeof(double);
-  return (double *)coco_allocate_memory(block_size);
+  return static_cast<double *>(coco_allocate_memory(block_size));
 }
 
 /**
@@ -530,10 +530,10 @@ static int coco_options_read(std::string_view options, std::string_view name, co
     return 0;
 
   /* Skip leading white space and take the value up to the next white space */
-  while ((start < options.size()) && isspace((unsigned char)options[start]))
+  while ((start < options.size()) && isspace(static_cast<unsigned char>(options[start])))
     start++;
   size_t stop = start;
-  while ((stop < options.size()) && !isspace((unsigned char)options[stop]))
+  while ((stop < options.size()) && !isspace(static_cast<unsigned char>(options[stop])))
     stop++;
 
   const std::string value(options.substr(start, stop - start));
@@ -576,7 +576,7 @@ static int coco_options_read_flag(std::string_view options, std::string_view nam
  * @return The number of successful assignments.
  */
 static int coco_options_read_size_t(std::string_view options, std::string_view name, size_t *pointer) {
-  return coco_options_read(options, name, "%lu", pointer);
+  return coco_options_read(options, name, "%zu", pointer);
 }
 
 /**
@@ -611,7 +611,7 @@ static int coco_options_read_string(std::string_view options, std::string_view n
     return 0;
 
   /* Remove leading white spaces */
-  while ((start < options.size()) && isspace((unsigned char)options[start]))
+  while ((start < options.size()) && isspace(static_cast<unsigned char>(options[start])))
     start++;
 
   if ((start < options.size()) && (options[start] == '\"')) {
@@ -622,7 +622,7 @@ static int coco_options_read_string(std::string_view options, std::string_view n
       stop = options.size();
   } else {
     stop = start;
-    while ((stop < options.size()) && !isspace((unsigned char)options[stop]))
+    while ((stop < options.size()) && !isspace(static_cast<unsigned char>(options[stop])))
       stop++;
   }
 
@@ -651,8 +651,8 @@ static size_t coco_options_read_values(std::string_view options, std::string_vie
   if (start == std::string_view::npos)
     return 0;
 
-  for (size_t i = start; (i < options.size()) && !isalpha((unsigned char)options[i]); i++) {
-    if (!isspace((unsigned char)options[i]))
+  for (size_t i = start; (i < options.size()) && !isalpha(static_cast<unsigned char>(options[i])); i++) {
+    if (!isspace(static_cast<unsigned char>(options[i])))
       value += options[i];
   }
   return value.size();
@@ -667,9 +667,9 @@ static size_t coco_options_read_values(std::string_view options, std::string_vie
 /**@{*/
 
 /**
- * @brief  Returns 1 if |a - b| < precision and 0 otherwise.
+ * @brief  Returns whether |a - b| < precision.
  */
-static int coco_double_almost_equal(const double a, const double b, const double precision) {
+static bool coco_double_almost_equal(const double a, const double b, const double precision) {
   return (fabs(a - b) < precision);
 }
 
@@ -728,20 +728,20 @@ static double coco_double_min(const double a, const double b) {
  * TODO: This method could (should?) check for overflow when casting (similarly as is done in
  * coco_double_to_int()).
  */
-static size_t coco_double_to_size_t(const double number) { return (size_t)coco_double_round(number); }
+static size_t coco_double_to_size_t(const double number) { return static_cast<size_t>(coco_double_round(number)); }
 
 /**
  * @brief Rounds the given double to the nearest integer (returns the number in int type)
  */
 static int coco_double_to_int(const double number) {
-  if (number > (double)INT_MAX) {
+  if (number > static_cast<double>(INT_MAX)) {
     coco_error("coco_double_to_int(): Cannot cast %f to the nearest integer, max %d allowed", number, INT_MAX);
     return -1; /* Never reached */
-  } else if (number < (double)INT_MIN) {
+  } else if (number < static_cast<double> INT_MIN) {
     coco_error("coco_double_to_int(): Cannot cast %f to the nearest integer, min %d allowed", number, INT_MIN);
     return -1; /* Never reached */
   } else {
-    return (int)(number + 0.5);
+    return static_cast<int>(number + 0.5);
   }
 }
 
@@ -755,22 +755,22 @@ static int coco_double_to_int(const double number) {
 /**@{*/
 
 /**
- * @brief Returns 1 if x is NAN and 0 otherwise.
+ * @brief Returns whether x is NAN.
  */
-static int coco_is_nan(const double x) {
+static bool coco_is_nan(const double x) {
   return (isnan(x) || (x != x) || !(x == x) ||
           ((x >= NAN / (1 + chosen_precision)) && (x <= NAN * (1 + chosen_precision))));
 }
 
 /**
- * @brief Returns 1 if the input vector of dimension dim contains any NAN values and 0 otherwise.
+ * @brief Returns whether the input vector of dimension dim contains any NAN values.
  */
-static int coco_vector_contains_nan(const double *x, const size_t dim) {
+static bool coco_vector_contains_nan(const double *x, const size_t dim) {
   for (size_t i = 0; i < dim; i++) {
     if (COCO_UNLIKELY(coco_is_nan(x[i])))
-      return 1;
+      return true;
   }
-  return 0;
+  return false;
 }
 
 /**
@@ -783,11 +783,11 @@ static void coco_vector_set_to_nan(double *y, const size_t dim) {
 }
 
 /**
- * @brief Returns 1 if x is INFINITY and 0 otherwise.
+ * @brief Returns whether x is INFINITY.
  */
-static int coco_is_inf(const double x) {
+static bool coco_is_inf(const double x) {
   if (coco_is_nan(x))
-    return 0;
+    return false;
   return (isinf(x) || (x <= -INFINITY) || (x >= INFINITY));
 }
 
@@ -801,20 +801,20 @@ static void coco_vector_set_to_inf(double *y, const size_t dim) {
 }
 
 /**
- * @brief Returns 1 if the input vector of dimension dim contains no NaN of inf values, and 0 otherwise.
+ * @brief Returns whether the input vector of dimension dim contains no NaN or inf values.
  */
-static int coco_vector_isfinite(const double *x, const size_t dim) {
+static bool coco_vector_isfinite(const double *x, const size_t dim) {
   for (size_t i = 0; i < dim; i++) {
     if (COCO_UNLIKELY(coco_is_nan(x[i])) || COCO_UNLIKELY(coco_is_inf(x[i])))
-      return 0;
+      return false;
   }
-  return 1;
+  return true;
 }
 
 /**
- * @brief Returns 1 if the point x is feasible, and 0 otherwise.
+ * @brief Returns whether the point x is feasible.
  *
- * Allows constraint_values == NULL, otherwise constraint_values
+ * Allows constraint_values == nullptr, otherwise constraint_values
  * must be a valid double* pointer and contains the g-values of x
  * on "return".
  *
@@ -827,7 +827,7 @@ static int coco_vector_isfinite(const double *x, const size_t dim) {
  * @param x Decision vector.
  * @param constraint_values Vector of contraints values resulting from evaluation.
  */
-int coco_problem_s::is_feasible(const double *x, double *constraint_values) {
+bool coco_problem_s::is_feasible(const double *x, double *constraint_values) {
 
   double *cons_values = constraint_values;
   std::vector<double> buffer;
@@ -835,10 +835,10 @@ int coco_problem_s::is_feasible(const double *x, double *constraint_values) {
 
   /* Return 0 if the decision vector contains any INFINITY or NaN values */
   if (!coco_vector_isfinite(x, coco_problem_get_dimension(this)))
-    return 0;
+    return false;
 
   if (coco_problem_get_number_of_constraints(this) <= 0)
-    return 1;
+    return true;
 
   if (constraint_values == nullptr) {
     buffer.resize(number_of_constraints);
@@ -869,7 +869,7 @@ int coco_problem_s::is_feasible(const double *x, double *constraint_values) {
 /**
  * @brief Returns the current time as a string.
  */
-static std::string coco_current_time_get_string(void) {
+static std::string coco_current_time_get_string() {
   time_t timer;
   char time_string[30];
   struct tm *tm_info;
@@ -963,14 +963,14 @@ bool coco_matrix_t::is_orthogonal() const {
 }
 
 /**
- * @brief Returns 1 if the input vector x is (close to) zero and 0 otherwise.
+ * @brief Returns whether the input vector x is (close to) zero.
  */
-static int coco_vector_is_zero(const double *x, const size_t dim) {
+static bool coco_vector_is_zero(const double *x, const size_t dim) {
   size_t i = 0;
   bool is_zero = true;
 
   if (coco_vector_contains_nan(x, dim))
-    return 0;
+    return false;
 
   while (i < dim && is_zero) {
     is_zero = coco_double_almost_equal(x[i], 0, chosen_precision);

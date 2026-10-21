@@ -31,15 +31,10 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
    */
   void evaluate_function(const double *x, double *y) override {
 
-    if (coco_vector_contains_nan(x, coco_problem_get_dimension(this))) {
-      coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
-      return;
-    }
-
     for (size_t i = 0; i < number_of_variables; ++i) {
       scaled_x[i] = factor * x[i];
     }
-    coco_evaluate_function(inner_problem.get(), scaled_x.data(), y);
+    inner_problem->evaluate_function(scaled_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 

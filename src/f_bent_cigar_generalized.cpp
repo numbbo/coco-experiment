@@ -29,7 +29,7 @@ struct f_bent_cigar_generalized_t final : public coco_problem_s {
   f_bent_cigar_generalized_t(const size_t number_of_variables, size_t proportion_long_axes_denom)
       : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("generalized bent cigar function", -5.0, 5.0, 0.0);
-    set_id("%s_d%04lu", "bent_cigar", number_of_variables);
+    set_id("%s_d%04zu", "bent_cigar", number_of_variables);
     this->proportion_long_axes_denom = proportion_long_axes_denom;
 
     /* Compute best solution */
@@ -53,10 +53,8 @@ struct f_bent_cigar_generalized_t final : public coco_problem_s {
 double f_bent_cigar_generalized_t::raw(const double *x) const {
 
   static const double condition = 1.0e6;
-  size_t nb_long_axes;
-  double result;
-  result = 0;
-  nb_long_axes = number_of_variables / proportion_long_axes_denom;
+  double result = 0;
+  size_t nb_long_axes = number_of_variables / proportion_long_axes_denom;
   if (number_of_variables % proportion_long_axes_denom != 0) {
     nb_long_axes += 1;
   }
@@ -84,22 +82,19 @@ static coco_problem_ptr_t f_bent_cigar_generalized_allocate(const size_t number_
 static coco_problem_ptr_t f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
   size_t nb_blocks;
-  size_t swap_range;
-  size_t nb_swaps;
   const size_t proportion_long_axes_denom = 40;
 
   std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
-  swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
   std::vector<double> xopt(dimension);
   bbob_compute_xopt(xopt.data(), rseed + 1000000, dimension, variant);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
 
   const coco_block_diagonal_matrix_t B = coco_compute_blockrotation(rseed + 1000000, block_sizes.data(), nb_blocks);
   coco_compute_truncated_uniform_swap_permutation(

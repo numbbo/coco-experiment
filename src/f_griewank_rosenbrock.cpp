@@ -30,7 +30,7 @@ struct f_griewank_rosenbrock_t final : public coco_problem_s {
   f_griewank_rosenbrock_t(const size_t number_of_variables, double facftrue)
       : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Griewank Rosenbrock function", -5.0, 5.0, 1);
-    set_id("%s_d%02lu", "griewank_rosenbrock", number_of_variables);
+    set_id("%s_d%02zu", "griewank_rosenbrock", number_of_variables);
 
     this->facftrue = facftrue;
 
@@ -56,20 +56,16 @@ double f_griewank_rosenbrock_t::raw(const double *x) const {
 
   size_t i = 0;
   double tmp = 0;
-  double result;
-
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
 
   /* Computation core */
-  result = 0.0;
+  double result = 0.0;
   for (i = 0; i < number_of_variables - 1; ++i) {
     const double c1 = x[i] * x[i] - x[i + 1];
     const double c2 = 1.0 - x[i];
     tmp = 100.0 * c1 * c1 + c2 * c2;
     result += tmp / 4000. - cos(tmp);
   }
-  result = facftrue + facftrue * result / (double)(number_of_variables - 1);
+  result = facftrue + facftrue * result / static_cast<double>(number_of_variables - 1);
 
   return result;
 }
@@ -89,22 +85,20 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
                                                                       const double facftrue,
                                                                       const char *problem_id_template,
                                                                       const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
 
   coco_matrix_t M(dimension, dimension);
   std::vector<double> b(dimension);
   std::vector<double> shift(dimension);
-  double scales;
   double tmp; /* Wassim: will serve to set the optimal solution "manually"*/
 
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
   for (size_t i = 0; i < dimension; ++i) {
     shift[i] = -0.5;
   }
 
   coco_matrix_t rot1 = bbob2009_compute_rotation(rseed, dimension);
-  scales = coco_double_max(1., sqrt((double)dimension) / 8.);
+  double scales = coco_double_max(1., sqrt(static_cast<double>(dimension)) / 8.);
   for (size_t i = 0; i < dimension; ++i) {
     for (size_t j = 0; j < dimension; ++j) {
       rot1(i, j) *= scales;
@@ -144,27 +138,21 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
 static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed, const double facftrue,
     const char *problem_id_template, const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
-  double scales;
-  size_t next_bs_change;
 
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
-  size_t block_size;
   size_t nb_blocks;
-  size_t swap_range;
-  size_t nb_swaps;
   double tmp;                                               /* Manh: will serve to set the optimal solution "manually"*/
   std::vector<double> best_parameter(dimension); /* Manh: will serve to set the optimal solution "manually"*/
 
   std::vector<size_t> block_sizes = coco_get_block_sizes(&nb_blocks, dimension, "bbob-largescale");
-  block_size = coco_rotation_matrix_block_size(dimension);
-  swap_range = coco_get_swap_range(dimension, "bbob-largescale");
-  nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
+  size_t block_size = coco_rotation_matrix_block_size(dimension);
+  size_t swap_range = coco_get_swap_range(dimension, "bbob-largescale");
+  size_t nb_swaps = coco_get_nb_swaps(dimension, "bbob-largescale");
 
-  fopt = bbob2009_compute_fopt(function, instance);
-  scales = coco_double_max(1.0, sqrt((double)block_size) / 8.0);
+  double fopt = bbob2009_compute_fopt(function, instance);
+  double scales = coco_double_max(1.0, sqrt(static_cast<double>(block_size)) / 8.0);
   std::vector<double> shift(dimension);
   for (size_t i = 0; i < dimension; ++i) {
     shift[i] = -0.5;
@@ -184,7 +172,7 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
   problem = transform_obj_shift(std::move(problem), fopt);
 
   /* Manh: manually set xopt = rot1^T ones(dimension)/(2*scales) */
-  next_bs_change = 0;
+  size_t next_bs_change = 0;
   for (size_t k = 0; k < nb_blocks; ++k) {
     for (size_t j = 0; j < block_sizes[k];
          ++j) { /* Manh: firstly, set xopt_1 = (B^T)*(P_2^T)*ones(dimension)/(2*scales) */

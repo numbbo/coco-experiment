@@ -17,24 +17,12 @@
  * @brief Implements the linear slope function without connections to any COCO
  * structures.
  */
-static double f_linear_slope_raw(const double *x, const size_t number_of_variables, const double *best_parameter) {
-
-  static const double alpha = 100.0;
+static double f_linear_slope_raw(const double *x, const size_t number_of_variables, const double *best_parameter,
+                                 const double *slopes) {
   double result = 0.0;
 
-  if (coco_vector_contains_nan(x, number_of_variables))
-    return NAN;
-
   for (size_t i = 0; i < number_of_variables; ++i) {
-    double base, exponent, si;
-
-    base = sqrt(alpha);
-    exponent = (double)(long)i / ((double)(long)number_of_variables - 1);
-    if (best_parameter[i] > 0.0) {
-      si = pow(base, exponent);
-    } else {
-      si = -pow(base, exponent);
-    }
+    const double si = best_parameter[i] > 0.0 ? slopes[i] : -slopes[i];
     /* boundary handling */
     if (x[i] * best_parameter[i] < 25.0) {
       result += 5.0 * fabs(si) - si * x[i];
@@ -50,11 +38,17 @@ static double f_linear_slope_raw(const double *x, const size_t number_of_variabl
  * @brief The linear slope function.
  */
 struct f_linear_slope_t final : public coco_problem_s {
+  std::vector<double> slopes; /**< @brief |s_i| = sqrt(alpha)^(i / (n - 1)) */
+
   f_linear_slope_t(const size_t number_of_variables, const double *best_parameter)
-      : coco_problem_s(number_of_variables, 1, 0) {
+      : coco_problem_s(number_of_variables, 1, 0), slopes(number_of_variables) {
+    static const double alpha = 100.0;
+    for (size_t i = 0; i < number_of_variables; ++i)
+      slopes[i] = pow(sqrt(alpha), static_cast<double>(i) / (static_cast<double>(number_of_variables) - 1));
+
     /* best_parameter will be overwritten below */
     init_from_scalars("linear slope function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02lu", "linear_slope", number_of_variables);
+    set_id("%s_d%02zu", "linear_slope", number_of_variables);
 
     /* Compute best solution */
     for (size_t i = 0; i < number_of_variables; ++i) {
@@ -72,28 +66,16 @@ struct f_linear_slope_t final : public coco_problem_s {
    */
   void evaluate_function(const double *x, double *y) override {
     assert(number_of_objectives == 1);
-    y[0] = f_linear_slope_raw(x, number_of_variables, best_parameter.data());
+    y[0] = f_linear_slope_raw(x, number_of_variables, best_parameter.data(), slopes.data());
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the linear slope function.
    */
-  void evaluate_gradient(const double *x, double *y) override {
-    static const double alpha = 100.0;
-    double base, exponent, si;
-
-    (void)x; /* silence (C89) compiliers */
-    for (size_t i = 0; i < number_of_variables; ++i) {
-      base = sqrt(alpha);
-      exponent = (double)(long)i / ((double)(long)number_of_variables - 1);
-      if (best_parameter[i] > 0.0) {
-        si = pow(base, exponent);
-      } else {
-        si = -pow(base, exponent);
-      }
-      y[i] = -si;
-    }
+  void evaluate_gradient(const double *, double *y) override {
+    for (size_t i = 0; i < number_of_variables; ++i)
+      y[i] = best_parameter[i] > 0.0 ? -slopes[i] : slopes[i];
   }
 };
 
@@ -112,12 +94,11 @@ static coco_problem_ptr_t f_linear_slope_bbob_problem_allocate(const size_t func
                                                                const coco_bbob_variant_t variant,
                                                                const char *problem_id_template,
                                                                const char *problem_name_template) {
-  double fopt;
   coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
-  fopt = bbob2009_compute_fopt(function, instance);
+  double fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_linear_slope_allocate(dimension, xopt.data());
 
