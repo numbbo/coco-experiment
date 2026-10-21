@@ -235,8 +235,8 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     }
 
     /* Check whether the two extreme points are equal */
-    problem1_disc = ProblemAsStacked(FromC(problem_disc))->problem1();
-    problem2_disc = ProblemAsStacked(FromC(problem_disc))->problem2();
+    problem1_disc = static_cast<BiobjProblem *>(FromC(problem_disc))->objective1();
+    problem2_disc = static_cast<BiobjProblem *>(FromC(problem_disc))->objective2();
     problem1_tmp = ProblemAsTransformed(FromC(problem1_disc))->inner_problem();
     problem2_tmp = ProblemAsTransformed(FromC(problem2_disc))->inner_problem();
     problem1_cont = ProblemAsTransformed(FromC(problem1_tmp))->inner_problem();

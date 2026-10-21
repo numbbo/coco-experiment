@@ -10,9 +10,6 @@
 #include "coco_problem.cpp"
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_shift.cpp"
 
 namespace coco {
 
@@ -121,59 +118,6 @@ private:
   const double fopt_;
   std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
-
-/**
- * @brief Creates the bbob-constrained different powers problem.
- */
-static ProblemPtr DifferentPowersBbobConstrainedProblemAllocate(const size_t function, const size_t dimension,
-                                                                const size_t instance, const long rseed,
-                                                                const BbobVariant variant,
-                                                                const char *problem_id_template,
-                                                                const char *problem_name_template) {
-  /* Different powers function used in bbob-constrained test suite.
-   * In this version, the (unconstrained) optimum, xopt, is set to
-   * a distance of 1e-2 to the origin. By doing so, the optimum of
-   * the constrained problem is at a "reasonable" distance from
-   * the unconstrained one and, hence, the constrained problem is not too easy.
-   */
-
-  double fopt, result;
-  ProblemPtr problem;
-
-  Matrix M(dimension, dimension);
-  std::vector<double> b(dimension);
-
-  std::vector<double> xopt(dimension);
-  fopt = Bbob2009ComputeFopt(function, instance);
-  BbobComputeXopt(xopt, rseed, variant);
-
-  /* Compute Euclidean norm of xopt */
-  /* CAVEAT: this implementation is not ideal for large dimensions */
-  result = 0.0;
-  for (size_t i = 0; i < dimension; ++i) {
-    result += xopt[i] * xopt[i];
-  }
-  result = sqrt(result);
-
-  /* Scale xopt such that the distance to the origin is 1e-2 */
-  for (size_t i = 0; i < dimension; ++i) {
-    xopt[i] *= 1e-2 / result;
-  }
-
-  const Matrix rot1 = Bbob2009ComputeRotation(rseed + 1000000, dimension);
-  M = rot1;
-
-  problem = std::make_unique<DifferentPowers>(dimension);
-  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
-  problem = std::make_unique<TransformVarsAffine>(std::move(problem), M, b);
-  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
-
-  problem->SetId(problem_id_template, function, instance, dimension);
-  problem->SetName(problem_name_template, function, instance, dimension);
-  problem->SetType("3-ill-conditioned");
-
-  return problem;
-}
 
 /**
  * @brief The different powers function f14 of the bbob-largescale suite, with a permuted block rotation.

@@ -10,8 +10,6 @@
 #include "coco_problem.cpp"
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_shift.cpp"
 
 namespace coco {
 
@@ -96,28 +94,5 @@ private:
   const bool normalize_;
   std::vector<double> z_; /**< @brief The transformed decision values */
 };
-
-/**
- * @brief Creates the sphere problem for the constrained BBOB suite.
- */
-static ProblemPtr SphereConsBbobProblemAllocate(const size_t function, const size_t dimension, const size_t instance,
-                                                const long rseed, const char *problem_id_template,
-                                                const char *problem_name_template) {
-  ProblemPtr problem;
-
-  std::vector<double> xopt(dimension);
-  BbobComputeXopt(xopt, rseed, BbobVariant::BBOB);
-  double fopt = Bbob2009ComputeFopt(function, instance);
-
-  problem = std::make_unique<Sphere>(dimension);
-  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
-  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
-
-  problem->SetId(problem_id_template, function, instance, dimension);
-  problem->SetName(problem_name_template, function, instance, dimension);
-  problem->SetType("1-separable");
-
-  return problem;
-}
 
 } // namespace coco

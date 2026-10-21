@@ -49,10 +49,9 @@ static bool SuiteBiobjCheckInstConsistency(const size_t dimension, size_t functi
    * vector of doubles of the right dimension) */
   const std::vector<double> smallest_values_of_interest(dimension, -100);
   const std::vector<double> largest_values_of_interest(dimension, 100);
-  const Problem *problem1_view = problem1.get();
-  const Problem *problem2_view = problem2.get();
-  const ProblemPtr problem = std::make_unique<StackedProblem>(std::move(problem1), std::move(problem2),
-                                                              smallest_values_of_interest, largest_values_of_interest);
+  const ProblemPtr problem = std::make_unique<BiobjProblem>(std::move(problem1), std::move(problem2),
+                                                            smallest_values_of_interest, largest_values_of_interest);
+  const BiobjProblem &biobj = static_cast<const BiobjProblem &>(*problem);
 
   /* Check whether the ideal and nadir points are too close in the objective space */
   double norm = MoGetNorm(problem->best_value(), problem->nadir_value());
@@ -66,7 +65,7 @@ static bool SuiteBiobjCheckInstConsistency(const size_t dimension, size_t functi
   }
 
   /* Check whether the extreme optimal points are too close in the decision space */
-  norm = MoGetNorm(problem1_view->best_parameter(), problem2_view->best_parameter());
+  norm = MoGetNorm(biobj.objective1()->best_parameter(), biobj.objective2()->best_parameter());
   if (norm < apart_enough) {
     coco_debug("SuiteBiobjCheckInstConsistency(): The extreme points of %s are too close in the decision space",
                problem->id().c_str());
@@ -171,11 +170,9 @@ static size_t SuiteBiobjGetNewInstance(SuiteBiobjNewInstances &new_instances, co
 }
 
 /**
- * @brief Creates and returns a bi-objective problem without needing a suite.
+ * @brief Creates and returns the two single-objective problems of a bi-objective problem.
  *
- * Useful for creating suites based on the bi-objective problems.
- *
- * Creates the bi-objective problem by constructing it from two single-objective problems. If the
+ * Useful for creating suites based on the bi-objective problems. If the
  * invoked instance number is not in suite_biobj_instances, the function uses the following formula
  * to construct a new appropriate instance:
  *   problem1_instance = 2 * biobj_instance + 1
@@ -190,12 +187,13 @@ static size_t SuiteBiobjGetNewInstance(SuiteBiobjNewInstances &new_instances, co
  * @param new_instances The new instances computed so far (new ones are added).
  * @param dimensions An array of dimensions to take into account when creating new instances.
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
- * @return The problem that corresponds to the given parameters.
+ * @return The two single-objective problems that correspond to the given parameters.
  */
-static ProblemPtr GetBiobjProblem(const size_t function, const size_t dimension, const size_t instance,
-                                  const GetProblemFunction coco_get_problem_function,
-                                  SuiteBiobjNewInstances &new_instances, const size_t *dimensions,
-                                  const size_t num_dimensions) {
+static std::pair<ProblemPtr, ProblemPtr> GetBiobjObjectives(const size_t function, const size_t dimension,
+                                                            const size_t instance,
+                                                            const GetProblemFunction coco_get_problem_function,
+                                                            SuiteBiobjNewInstances &new_instances,
+                                                            const size_t *dimensions, const size_t num_dimensions) {
 
   /* Selected functions from the bbob suite that are used to construct the original bbob-biobj suite. */
   const size_t sel_bbob_functions[] = {1, 2, 6, 8, 13, 14, 15, 17, 20, 21};
@@ -207,16 +205,12 @@ static ProblemPtr GetBiobjProblem(const size_t function, const size_t dimension,
 
   ProblemPtr problem1;
   ProblemPtr problem2;
-  ProblemPtr problem;
   size_t instance1 = 0, instance2 = 0;
   size_t function1_idx, function2_idx;
   const size_t function_idx = function - 1;
 
   const size_t num_existing_instances = sizeof(SUITE_BIOBJ_INSTANCES) / sizeof(SUITE_BIOBJ_INSTANCES[0]);
   bool instance_found = false;
-
-  const std::vector<double> smallest_values_of_interest(dimension, -100);
-  const std::vector<double> largest_values_of_interest(dimension, 100);
 
   /* Determine the corresponding single-objective function indices */
   if (function_idx < 55) {
@@ -388,19 +382,28 @@ static ProblemPtr GetBiobjProblem(const size_t function, const size_t dimension,
     problem2->set_suite_dep_function(all_bbob_functions[function2_idx]);
   }
 
-  const std::string problem_type1 = problem1->type();
-  const std::string problem_type2 = problem2->type();
-  problem = std::make_unique<StackedProblem>(std::move(problem1), std::move(problem2), smallest_values_of_interest,
-                                             largest_values_of_interest);
+  return {std::move(problem1), std::move(problem2)};
+}
 
-  /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  problem->SetName("%s", problem->id().c_str());
-  /* Attention! Any change to the problem id affects also archive processing! */
+/**
+ * @brief Creates and returns a bi-objective problem without needing a suite.
+ *
+ * The parameters are the same as for GetBiobjObjectives(). The region of interest is [-100, 100]^n.
+ */
+static ProblemPtr GetBiobjProblem(const size_t function, const size_t dimension, const size_t instance,
+                                  const GetProblemFunction coco_get_problem_function,
+                                  SuiteBiobjNewInstances &new_instances, const size_t *dimensions,
+                                  const size_t num_dimensions) {
+  auto [problem1, problem2] = GetBiobjObjectives(function, dimension, instance, coco_get_problem_function,
+                                                 new_instances, dimensions, num_dimensions);
+  const std::vector<double> smallest_values_of_interest(dimension, -100);
+  const std::vector<double> largest_values_of_interest(dimension, 100);
+  ProblemPtr problem = std::make_unique<BiobjProblem>(std::move(problem1), std::move(problem2),
+                                                      smallest_values_of_interest, largest_values_of_interest);
+
+  /* The name is made of the ids of both problems. Attention! Any change to the problem id affects also archive
+   * processing! */
   problem->SetId("bbob-biobj_f%02zu_i%02zu_d%02zu", function, instance, dimension);
-
-  /* Construct problem type */
-  problem->SetType("%s_%s", problem_type1.c_str(), problem_type2.c_str());
-
   return problem;
 }
 

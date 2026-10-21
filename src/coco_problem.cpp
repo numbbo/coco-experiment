@@ -284,9 +284,6 @@ static size_t ProblemGetSuiteDepInstance(const Problem *problem) {
 }
 /**@}*/
 
-/* We need a forward declaration of this for `bbob_biobj_problem_best_parameter_print` */
-static StackedProblem *ProblemAsStacked(const Problem *problem);
-
 /***********************************************************************************************************/
 
 /**
@@ -377,112 +374,42 @@ static ProblemPtr ProblemTransformedFreeKeepInner(ProblemPtr problem) {
 /***********************************************************************************************************/
 
 /**
- * @name Methods regarding the stacked COCO problem
+ * @name Methods regarding the bi-objective COCO problem
  */
 /**@{*/
 
-/**
- * @brief Returns the stacked problem behind the given problem pointer.
- */
-static StackedProblem *ProblemAsStacked(const Problem *problem) {
-  assert(problem != nullptr);
-  assert(dynamic_cast<const StackedProblem *>(problem) != nullptr);
-  return static_cast<StackedProblem *>(const_cast<Problem *>(problem));
-}
+BiobjProblem::BiobjProblem(ProblemPtr objective1, ProblemPtr objective2,
+                           std::span<const double> smallest_values_of_interest,
+                           std::span<const double> largest_values_of_interest)
+    : Problem(objective1->number_of_variables(), 2, 0), objective1_(std::move(objective1)),
+      objective2_(std::move(objective2)) {
+  assert(objective1_->number_of_objectives() == 1 && objective1_->number_of_constraints() == 0);
+  assert(objective2_->number_of_objectives() == 1 && objective2_->number_of_constraints() == 0);
+  assert(objective1_->number_of_variables() == objective2_->number_of_variables());
 
-StackedProblem::StackedProblem(ProblemPtr first, ProblemPtr second, std::span<const double> smallest_values_of_interest,
-                               std::span<const double> largest_values_of_interest)
-    : Problem(coco_problem_get_dimension(first.get()),
-              coco_problem_get_number_of_objectives(first.get()) + coco_problem_get_number_of_objectives(second.get()),
-              coco_problem_get_number_of_constraints(first.get()) +
-                  coco_problem_get_number_of_constraints(second.get())),
-      problem1_(std::move(first)), problem2_(std::move(second)) {
+  SetId("%s__%s", objective1_->id().c_str(), objective2_->id().c_str());
+  SetName("%s", id().c_str());
+  SetType("%s_%s", objective1_->type().c_str(), objective2_->type().c_str());
 
-  assert(problem1_);
-  assert(problem2_);
-  assert(coco_problem_get_dimension(problem1_.get()) == coco_problem_get_dimension(problem2_.get()));
+  for (size_t i = 0; i < number_of_variables_; ++i)
+    SetRegionOfInterest(i, smallest_values_of_interest[i], largest_values_of_interest[i]);
+  assert(objective1_->number_of_integer_variables() == objective2_->number_of_integer_variables());
+  number_of_integer_variables_ = objective1_->number_of_integer_variables();
 
-  SetId("%s__%s", problem1_->id().c_str(), problem2_->id().c_str());
-  SetName("%s + %s", problem1_->name().c_str(), problem2_->name().c_str());
-
-  /* Without an explicit region of interest, use the one of the second problem */
-  if (smallest_values_of_interest.empty())
-    smallest_values_of_interest = problem2_->smallest_values_of_interest();
-  if (largest_values_of_interest.empty())
-    largest_values_of_interest = problem2_->largest_values_of_interest();
-
-  for (size_t i = 0; i < number_of_variables_; ++i) {
-    this->smallest_values_of_interest_[i] = smallest_values_of_interest[i];
-    this->largest_values_of_interest_[i] = largest_values_of_interest[i];
-  }
-  assert(problem1_->number_of_integer_variables() == problem2_->number_of_integer_variables());
-  number_of_integer_variables_ = problem1_->number_of_integer_variables();
-
-  assert(!best_value_.empty());
-
-  if (number_of_constraints_ > 0) {
-
-    /* The best_value must be set up afterwards in suite_cons_bbob_problems.cpp */
-    best_value_[0] = -FLT_MAX;
-
-    /* Define initial_solution as problem2->initial_solution */
-    if (coco_problem_get_number_of_constraints(problem2_.get()) > 0 && !problem2_->initial_solution().empty())
-      initial_solution_ = problem2_->initial_solution();
-
-  } else {
-
-    /* Compute the ideal and nadir values */
-    assert(!nadir_value_.empty());
-
-    best_value_[0] = problem1_->best_value()[0];
-    best_value_[1] = problem2_->best_value()[0];
-    coco_evaluate_function(problem1_.get(), problem2_->best_parameter().data(), &nadir_value_[0]);
-    coco_evaluate_function(problem2_.get(), problem1_->best_parameter().data(), &nadir_value_[1]);
-  }
+  /* Compute the ideal and nadir values */
+  best_value_[0] = objective1_->best_value()[0];
+  best_value_[1] = objective2_->best_value()[0];
+  coco_evaluate_function(objective1_.get(), objective2_->best_parameter().data(), &nadir_value_[0]);
+  coco_evaluate_function(objective2_.get(), objective1_->best_parameter().data(), &nadir_value_[1]);
 }
 
 /**
- * @brief Evaluates the objective functions of the underlying problems.
+ * @brief Evaluates both objective functions.
  */
-void StackedProblem::EvaluateFunction(std::span<const double> x, std::span<double> y) {
-  const size_t number_of_objectives_problem1 = coco_problem_get_number_of_objectives(problem1_.get());
-  const size_t number_of_objectives_problem2 = coco_problem_get_number_of_objectives(problem2_.get());
-  assert(coco_problem_get_number_of_objectives(this) == number_of_objectives_problem1 + number_of_objectives_problem2);
-
-  if (number_of_objectives_problem1 > 0)
-    problem1_->EvaluateFunction(x, y.first(number_of_objectives_problem1));
-  if (number_of_objectives_problem2 > 0)
-    problem2_->EvaluateFunction(x, y.subspan(number_of_objectives_problem1));
-
-  /* Make sure that no feasible point has a function value lower
-   * than the minimum's.
-   */
-  if (number_of_constraints_ > 0)
-    AssertNotBelowBestValue(x, y);
+void BiobjProblem::EvaluateFunction(std::span<const double> x, std::span<double> y) {
+  objective1_->EvaluateFunction(x, y.first(1));
+  objective2_->EvaluateFunction(x, y.subspan(1));
 }
-
-/**
- * @brief Evaluates the constraints of the underlying problems.
- */
-void StackedProblem::EvaluateConstraint(std::span<const double> x, std::span<double> y, int update_counter) {
-  const size_t number_of_constraints_problem1 = coco_problem_get_number_of_constraints(problem1_.get());
-  const size_t number_of_constraints_problem2 = coco_problem_get_number_of_constraints(problem2_.get());
-
-  if (number_of_constraints_ == 0) {
-    Problem::EvaluateConstraint(x, y, update_counter);
-    return;
-  }
-
-  assert(coco_problem_get_number_of_constraints(this) ==
-         number_of_constraints_problem1 + number_of_constraints_problem2);
-
-  if (number_of_constraints_problem1 > 0)
-    problem1_->EvaluateConstraint(x, y.first(number_of_constraints_problem1), update_counter);
-  if (number_of_constraints_problem2 > 0)
-    problem2_->EvaluateConstraint(x, y.subspan(number_of_constraints_problem1), update_counter);
-}
-
-/* TODO: Missing coco_problem_stacked_recommend_solution function! */
 
 /**@}*/
 
@@ -760,32 +687,28 @@ void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
 
 void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
   coco::File file;
-  coco::Problem *problem1, *problem2;
 
-  /* We need the underlying single objective problems of the stacked problem, which are not accessible
+  /* We need the underlying single objective problems of the bi-objective problem, which are not accessible
    * once the problem has been wrapped, e.g. with a logger.
    */
-  if (dynamic_cast<const coco::StackedProblem *>(FromC(problem)) == nullptr) {
+  const auto *biobj = dynamic_cast<const coco::BiobjProblem *>(FromC(problem));
+  if (biobj == nullptr) {
     coco_warning("I'm sorry, Dave. I'm afraid I can't do that.");
     /* In case this function was called previously, overwrite any results. */
     file.Open("._bbob_biobj_problem_best_parameter.txt", "w");
     return;
   }
 
-  assert(problem != nullptr);
-  problem1 = ProblemAsStacked(FromC(problem))->problem1();
-  assert(problem1 != nullptr);
+  const coco::Problem *problem1 = biobj->objective1();
+  const coco::Problem *problem2 = biobj->objective2();
   assert(!problem1->best_parameter().empty());
-
-  problem2 = ProblemAsStacked(FromC(problem))->problem2();
-  assert(problem2 != nullptr);
   assert(!problem2->best_parameter().empty());
 
   if (file.Open("._bbob_biobj_problem_best_parameter.txt", "w")) {
-    for (size_t i = 0; i < FromC(problem)->number_of_variables(); ++i)
+    for (size_t i = 0; i < biobj->number_of_variables(); ++i)
       fprintf(file, " %.16f ", problem1->best_parameter()[i]);
     fprintf(file, "\n");
-    for (size_t i = 0; i < FromC(problem)->number_of_variables(); ++i)
+    for (size_t i = 0; i < biobj->number_of_variables(); ++i)
       fprintf(file, " %.16f ", problem2->best_parameter()[i]);
   }
 }

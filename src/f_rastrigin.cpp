@@ -11,9 +11,6 @@
 #include "coco_problem.cpp"
 #include "coco_utilities.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_shift.cpp"
 #include "bbob_problem.cpp"
 #include "transform_functions.cpp"
 
@@ -237,63 +234,6 @@ static void RastriginConsComputeXopt(std::span<double> xopt, const long rseed) {
     for (size_t i = 0; i < xopt.size(); ++i) {
       xopt[i] = static_cast<int>(i % 9) - 4;
     }
-}
-
-/**
- * @brief Creates the Rastrigin problem for the constrained BBOB suite.
- */
-static ProblemPtr RastriginConsBbobProblemAllocate(const size_t function, const size_t dimension, const size_t instance,
-                                                   const long rseed, const char *problem_id_template,
-                                                   const char *problem_name_template) {
-
-  ProblemPtr problem;
-
-  std::vector<double> xopt(dimension);
-  RastriginConsComputeXopt(xopt, rseed);
-  double fopt = Bbob2009ComputeFopt(function, instance);
-
-  problem = std::make_unique<Rastrigin>(dimension);
-  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
-  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
-
-  problem->SetId(problem_id_template, function, instance, dimension);
-  problem->SetName(problem_name_template, function, instance, dimension);
-  problem->SetType("1-separable");
-
-  return problem;
-}
-
-/**
- * @brief Creates the rotated Rastrigin problem for the constrained BBOB suite.
- */
-static ProblemPtr RastriginRotatedConsBbobProblemAllocate(const size_t function, const size_t dimension,
-                                                          const size_t instance, const long rseed,
-                                                          const char *problem_id_template,
-                                                          const char *problem_name_template) {
-
-  ProblemPtr problem;
-
-  Matrix M(dimension, dimension);
-  std::vector<double> b(dimension);
-
-  const Matrix rot1 = Bbob2009ComputeRotation(rseed + 1000000, dimension);
-  M = rot1;
-
-  std::vector<double> xopt(dimension);
-  RastriginConsComputeXopt(xopt, rseed);
-  double fopt = Bbob2009ComputeFopt(function, instance);
-
-  problem = std::make_unique<Rastrigin>(dimension);
-  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
-  problem = std::make_unique<TransformVarsAffine>(std::move(problem), M,
-                                                  b); /* Rotate after shifting so R dot xopt is also rotated */
-  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
-
-  problem->SetId(problem_id_template, function, instance, dimension);
-  problem->SetName(problem_name_template, function, instance, dimension);
-  problem->SetType("1-separable");
-
-  return problem;
 }
 
 } // namespace coco

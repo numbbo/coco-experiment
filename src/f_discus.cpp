@@ -9,9 +9,6 @@
 #include "coco_problem.cpp"
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
-#include "transform_obj_shift.cpp"
-#include "transform_vars_affine.cpp"
-#include "transform_vars_shift.cpp"
 
 namespace coco {
 
@@ -101,36 +98,5 @@ private:
   const double fopt_;
   std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
-
-/**
- * @brief Creates the discus problem for the constrained BBOB suite.
- */
-static ProblemPtr DiscusConsBbobProblemAllocate(const size_t function, const size_t dimension, const size_t instance,
-                                                const long rseed, const BbobVariant variant,
-                                                const char *problem_id_template, const char *problem_name_template) {
-
-  ProblemPtr problem;
-
-  Matrix M(dimension, dimension);
-  std::vector<double> b(dimension);
-
-  std::vector<double> xopt(dimension);
-  double fopt = Bbob2009ComputeFopt(function, instance);
-  BbobComputeXopt(xopt, rseed, variant);
-
-  const Matrix rot1 = Bbob2009ComputeRotation(rseed + 1000000, dimension);
-  M = rot1;
-
-  problem = std::make_unique<Discus>(dimension);
-  problem = std::make_unique<TransformVarsAffine>(std::move(problem), M, b);
-  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
-  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
-
-  problem->SetId(problem_id_template, function, instance, dimension);
-  problem->SetName(problem_name_template, function, instance, dimension);
-  problem->SetType("3-ill-conditioned");
-
-  return problem;
-}
 
 } // namespace coco

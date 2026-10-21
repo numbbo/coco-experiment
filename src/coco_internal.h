@@ -31,9 +31,9 @@ struct coco_observer_s {};
 
 namespace coco {
 
-struct Problem;
-struct Suite;
-struct Observer;
+class Problem;
+class Suite;
+class Observer;
 
 /***********************************************************************************************************/
 /**
@@ -102,8 +102,8 @@ using OptionKeys = std::vector<std::string>;
  *
  * The default implementations of the evaluation methods report that the method is not implemented.
  */
-struct Problem : public coco_problem_s {
-
+class Problem : public coco_problem_s {
+public:
   Problem(const size_t number_of_variables, const size_t number_of_objectives, const size_t number_of_constraints);
   virtual ~Problem() = default;
 
@@ -327,34 +327,23 @@ protected:
 };
 
 /**
- * @brief A problem constructed by stacking two problems.
+ * @brief A bi-objective problem whose objectives are two single-objective problems. It owns both problems.
  *
- * Especially useful for constructing multi-objective problems or adding constraints to a problem. It owns
- * both problems.
+ * The id and the name are made of the ids of both problems, the type of their types.
  */
-struct StackedProblem : public Problem {
-  /**
-   * @brief Stacks the two problems. Uses the given region of interest or, if it is empty, the one of the second
-   * problem.
-   */
-  StackedProblem(ProblemPtr first, ProblemPtr second, std::span<const double> smallest_values_of_interest = {},
-                 std::span<const double> largest_values_of_interest = {});
+class BiobjProblem final : public Problem {
+public:
+  BiobjProblem(ProblemPtr objective1, ProblemPtr objective2, std::span<const double> smallest_values_of_interest,
+               std::span<const double> largest_values_of_interest);
 
   void EvaluateFunction(std::span<const double> x, std::span<double> y) override;
-  void EvaluateConstraint(std::span<const double> x, std::span<double> y, int update_counter) override;
 
-  Problem *problem1() const { return problem1_.get(); }
-  Problem *problem2() const { return problem2_.get(); }
-
-  /** @brief Takes the first problem out of this problem, which is left without it. */
-  ProblemPtr ReleaseProblem1() { return std::move(problem1_); }
-
-  /** @brief Takes the second problem out of this problem, which is left without it. */
-  ProblemPtr ReleaseProblem2() { return std::move(problem2_); }
+  Problem *objective1() const { return objective1_.get(); }
+  Problem *objective2() const { return objective2_.get(); }
 
 private:
-  ProblemPtr problem1_; /**< @brief The first problem (objective) */
-  ProblemPtr problem2_; /**< @brief The second problem (objective or constraints) */
+  ProblemPtr objective1_;
+  ProblemPtr objective2_;
 };
 
 /**
@@ -389,8 +378,8 @@ struct ObserverSettings {
  * problem with the corresponding logger). Every observer is a subclass that implements AddLogger(). The
  * settings are available to the subclasses and their loggers.
  */
-struct Observer : public coco_observer_s, protected ObserverSettings {
-
+class Observer : public coco_observer_s, protected ObserverSettings {
+public:
   explicit Observer(const ObserverSettings &observer_settings) : ObserverSettings(observer_settings), active_(true) {}
   virtual ~Observer() = default;
 
@@ -434,8 +423,8 @@ private:
  * while the instances are defined dynamically. The suite can be filtered - only the chosen functions,
  * dimensions and instances will be taken into account when iterating through the suite.
  */
-struct Suite : public coco_suite_s {
-
+class Suite : public coco_suite_s {
+public:
   /**
    * @brief Sets the functions and dimensions contained in the suite, while the instances are set by
    * coco_suite_set_instance().

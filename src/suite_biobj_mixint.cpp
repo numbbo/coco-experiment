@@ -27,7 +27,7 @@ static std::string_view SuiteBiobjMixintGetInstancesByYear(const int) { return "
  * bbob-mixint suite.
  *
  * The problem is constructed by first finding the underlying single-objective continuous problems,
- * then discretizing the problems, then scaling them to adjust their difficulty and finally stacking
+ * then discretizing the problems, then scaling them to adjust their difficulty and finally combining
  * them to get a bi-objective mixed-integer problem.
  *
  * @param function Function
@@ -44,11 +44,7 @@ static ProblemPtr GetBiobjMixintProblem(const size_t function, const size_t dime
                                         SuiteBiobjNewInstances &new_instances, const size_t *dimensions,
                                         const size_t num_dimensions) {
 
-  ProblemPtr problem_cont;
-
   ProblemPtr problem;
-  ProblemPtr problem1;
-  ProblemPtr problem2;
   ProblemPtr problem1_mixint;
   ProblemPtr problem2_mixint;
 
@@ -64,15 +60,8 @@ static ProblemPtr GetBiobjMixintProblem(const size_t function, const size_t dime
     coco_error("GetBiobjMixintProblem(): dimension %zu not supported for suite_bbob_mixint", dimension);
 
   /* First, find the underlying single-objective continuous problems */
-  problem_cont = GetBiobjProblem(function, dimension, instance, coco_get_problem_function, new_instances, dimensions,
-                                 num_dimensions);
-  assert(problem_cont != nullptr);
-  /* Take the two single-objective problems out of the stacked problem and free only the latter */
-  problem1 = ProblemAsStacked(problem_cont.get())->ReleaseProblem1();
-  problem2 = ProblemAsStacked(problem_cont.get())->ReleaseProblem2();
-  assert(problem1);
-  assert(problem2);
-  problem_cont.reset();
+  auto [problem1, problem2] = GetBiobjObjectives(function, dimension, instance, coco_get_problem_function,
+                                                 new_instances, dimensions, num_dimensions);
 
   /* Set the ROI of the outer problem according to the given cardinality of variables and the ROI of the
    * inner problems to [-4, 4] for variables that will be discretized */
@@ -97,8 +86,6 @@ static ProblemPtr GetBiobjMixintProblem(const size_t function, const size_t dime
 
   const size_t function1 = ProblemGetSuiteDepFunction(problem1.get());
   const size_t function2 = ProblemGetSuiteDepFunction(problem2.get());
-  const std::string problem_type1 = problem1->type();
-  const std::string problem_type2 = problem2->type();
 
   /* Second, discretize the single-objective problems */
   problem1_mixint = std::make_unique<TransformVarsDiscretize>(std::move(problem1), smallest_values_of_interest,
@@ -113,15 +100,11 @@ static ProblemPtr GetBiobjMixintProblem(const size_t function, const size_t dime
       std::make_unique<TransformObjScale>(std::move(problem2_mixint), SUITE_BBOB_MIXINT_SCALING_FACTORS[function2 - 1]);
 
   /* Fourth, combine the problems in a bi-objective mixed-integer problem */
-  problem = std::make_unique<StackedProblem>(std::move(problem1_mixint), std::move(problem2_mixint),
-                                             smallest_values_of_interest, largest_values_of_interest);
+  problem = std::make_unique<BiobjProblem>(std::move(problem1_mixint), std::move(problem2_mixint),
+                                           smallest_values_of_interest, largest_values_of_interest);
 
-  /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  problem->SetName("%s", problem->id().c_str());
+  /* The name is made of the ids of both problems */
   problem->SetId("bbob-biobj-mixint_f%03zu_i%02zu_d%03zu", function, instance, dimension);
-
-  /* Construct problem type */
-  problem->SetType("%s_%s", problem_type1.c_str(), problem_type2.c_str());
 
   return problem;
 }

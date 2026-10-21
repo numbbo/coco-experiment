@@ -12,25 +12,17 @@ static const size_t DIMENSION = 6;
 struct Recorder final : public Problem {
   std::vector<double> last_x;
 
-  Recorder(const size_t number_of_objectives, const size_t number_of_constraints)
-      : Problem(DIMENSION, number_of_objectives, number_of_constraints), last_x(DIMENSION) {
+  Recorder() : Problem(DIMENSION, 1, 0), last_x(DIMENSION) {
     for (size_t i = 0; i < DIMENSION; ++i) {
       smallest_values_of_interest_[i] = -5.0;
       largest_values_of_interest_[i] = 5.0;
       best_parameter_[i] = 0.0;
     }
-    if (number_of_objectives > 0)
-      best_value_[0] = 0.0;
+    best_value_[0] = 0.0;
     SetId("recorder_d%02lu", (unsigned long)DIMENSION);
   }
 
   void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
-    last_x.assign(x.begin(), x.end());
-    y[0] = 0.0;
-  }
-
-  void EvaluateConstraint(std::span<const double> x, std::span<double> y, int update_counter) override {
-    (void)update_counter;
     last_x.assign(x.begin(), x.end());
     y[0] = 0.0;
   }
@@ -48,8 +40,8 @@ static std::vector<double> base_point() {
  * Checks that evaluating the problem built by make at FromBaseCoordinates(base_x) passes base_x to the base
  * problem again, up to the given relative precision (0 means exactly).
  */
-template <typename Make> static int maps_back(Make make, const double precision, const bool constraint = false) {
-  auto owned = std::make_unique<Recorder>(constraint ? 0 : 1, constraint ? 1 : 0);
+template <typename Make> static int maps_back(Make make, const double precision) {
+  auto owned = std::make_unique<Recorder>();
   Recorder *recorder = owned.get();
   ProblemPtr problem = make(std::move(owned));
   const std::vector<double> base_x = base_point();
@@ -57,10 +49,7 @@ template <typename Make> static int maps_back(Make make, const double precision,
 
   if (!problem->FromBaseCoordinates(base_x, x))
     return 0;
-  if (constraint)
-    problem->EvaluateConstraint(x, y, 0);
-  else
-    problem->EvaluateFunction(x, y);
+  problem->EvaluateFunction(x, y);
   for (size_t i = 0; i < DIMENSION; ++i) {
     if (fabs(recorder->last_x[i] - base_x[i]) > precision * DoubleMax(1.0, fabs(base_x[i])))
       return 0;
@@ -70,7 +59,7 @@ template <typename Make> static int maps_back(Make make, const double precision,
 
 /** Checks that FromBaseCoordinates() reports that the problem built by make cannot be inverted. */
 template <typename Make> static int is_not_invertible(Make make) {
-  ProblemPtr problem = make(std::make_unique<Recorder>(1, 0));
+  ProblemPtr problem = make(std::make_unique<Recorder>());
   const std::vector<double> base_x = base_point();
   std::vector<double> x(DIMENSION);
   return !problem->FromBaseCoordinates(base_x, x);
@@ -96,11 +85,10 @@ MU_TEST(test_exact_inverses) {
   const std::vector<double> offset = {0.5, -1.0, 2.0, -0.25, 3.0, 0.0};
   const size_t permutation[] = {3, 0, 5, 1, 4, 2};
 
-  mu_check(
-      maps_back([&](ProblemPtr p) { return std::make_unique<TransformVarsShift>(std::move(p), offset, 0); }, 1e-15));
   mu_check(maps_back([](ProblemPtr p) { return std::make_unique<TransformVarsEnforceBox>(std::move(p)); }, 0));
-  mu_check(maps_back([](ProblemPtr p) { return std::make_unique<TransformObjShift>(std::move(p), 10.0); }, 0));
+  mu_check(maps_back([](ProblemPtr p) { return std::make_unique<TransformObjScale>(std::move(p), 10.0); }, 0));
 
+  mu_check(inverts(VarsShift(offset), 1e-15));
   mu_check(inverts(VarsScale(2.5, DIMENSION), 1e-15));
   mu_check(inverts(VarsConditioning(100.0, DIMENSION), 1e-15));
   mu_check(inverts(VarsPermutation(permutation, false), 0));
@@ -118,51 +106,32 @@ MU_TEST(test_rotation_inverses) {
 
   const Matrix R = Bbob2009ComputeRotation(12345, DIMENSION);
   const std::vector<double> b = {0.5, -1.0, 2.0, -0.25, 3.0, 0.0};
-  mu_check(maps_back([&](ProblemPtr p) { return std::make_unique<TransformVarsAffine>(std::move(p), R, b); }, 1e-13));
+  mu_check(inverts(VarsAffine(R, b), 1e-13));
 
   /* A matrix that is not orthogonal is inverted by solving the linear system */
   Matrix M = R;
   M(0, 0) *= 2.0;
-  mu_check(maps_back([&](ProblemPtr p) { return std::make_unique<TransformVarsAffine>(std::move(p), M, b); }, 1e-12));
+  mu_check(inverts(VarsAffine(M, b), 1e-12));
 
   /* A singular matrix is not invertible */
   for (size_t j = 0; j < DIMENSION; ++j)
     M(1, j) = M(0, j);
-  mu_check(is_not_invertible([&](ProblemPtr p) { return std::make_unique<TransformVarsAffine>(std::move(p), M, b); }));
+  std::vector<double> x(DIMENSION);
+  mu_check(!VarsAffine(M, b).Inverse(base_point(), x));
 }
 
 MU_TEST(test_numerical_inverses) {
-  mu_check(maps_back([](ProblemPtr p) { return std::make_unique<TransformVarsOscillate>(std::move(p)); }, 1e-9));
-  mu_check(maps_back([](ProblemPtr p) { return std::make_unique<TransformVarsAsymmetric>(std::move(p), 0.2); }, 1e-9));
-  /* The composition used by the constrained suite */
-  mu_check(maps_back(
-      [](ProblemPtr p) {
-        return std::make_unique<TransformVarsOscillate>(std::make_unique<TransformVarsAsymmetric>(std::move(p), 0.2));
-      },
-      1e-9));
+  mu_check(inverts(VarsOscillate(), 1e-9));
+  mu_check(inverts(VarsAsymmetric(0.2, DIMENSION), 1e-9));
 }
 
 MU_TEST(test_chain_inverse) {
-  const std::vector<double> offset = {0.5, -1.0, 2.0, -0.25, 3.0, 0.0};
-  const Matrix R = Bbob2009ComputeRotation(12345, DIMENSION);
   mu_check(maps_back(
-      [&](ProblemPtr p) {
-        p = std::make_unique<TransformVarsAffine>(std::move(p), R, offset);
-        p = std::make_unique<TransformObjShift>(std::move(p), 1.0);
-        p = std::make_unique<TransformVarsAsymmetric>(std::move(p), 0.2);
-        return std::make_unique<TransformVarsShift>(std::move(p), offset, 0);
+      [](ProblemPtr p) {
+        p = std::make_unique<TransformObjScale>(std::move(p), 2.0);
+        return std::make_unique<TransformVarsEnforceBox>(std::move(p));
       },
-      1e-9));
-}
-
-MU_TEST(test_constraint_inverse) {
-  const std::vector<double> gradient = {1.0, -2.0, 0.5, 3.0, -0.25, 1.5};
-  mu_check(maps_back([&](ProblemPtr p) { return std::make_unique<CLinear>(std::move(p), gradient, 0.5, 2.0); }, 1e-14,
-                     true));
-
-  const std::vector<double> zero_gradient = {1.0, 0.0, 0.5, 3.0, -0.25, 1.5};
-  mu_check(is_not_invertible(
-      [&](ProblemPtr p) { return std::make_unique<CLinear>(std::move(p), zero_gradient, 0.5, 2.0); }));
+      0));
 }
 
 MU_TEST(test_rounding_is_not_invertible) {
@@ -181,7 +150,6 @@ int main(void) {
   MU_RUN_TEST(coco::test_rotation_inverses);
   MU_RUN_TEST(coco::test_numerical_inverses);
   MU_RUN_TEST(coco::test_chain_inverse);
-  MU_RUN_TEST(coco::test_constraint_inverse);
   MU_RUN_TEST(coco::test_rounding_is_not_invertible);
 
   MU_REPORT();

@@ -71,7 +71,7 @@ The core in `src/` is C++20 that is amalgamated into a single `coco.cpp` and exp
   that implement `AddLogger()` (and `SignalRestart()` if supported).
 - Problems are owned through `ProblemPtr` (a `std::unique_ptr<Problem>`). Functions and transformations
   that wrap a problem take it by value and the caller hands it over with `std::move()`, e.g.
-  `problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);`. Ownership is only released to
+  `problem = std::make_unique<TransformObjScale>(std::move(problem), factor);`. Ownership is only released to
   a raw pointer at the C interface.
 - Pass arrays of values as `std::span` (`std::span<const double>` for input, `std::span<double>` for output)
   instead of a pointer and a length. Raw pointers to arrays only appear in the C interface, where they are
