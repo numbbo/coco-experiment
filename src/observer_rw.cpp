@@ -38,8 +38,8 @@ enum observer_rw_log_e { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS };
  * - "log_time: 0/1" determines whether the time needed to evaluate each solution is logged (0) or not (1).
  * The default value is 0.
  */
-struct observer_rw_t final : public coco_observer_s {
-
+class observer_rw_t final : public coco_observer_s {
+public:
   observer_rw_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                 coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings), log_vars_mode(LOG_ALWAYS), log_cons_mode(LOG_ALWAYS) {
@@ -83,6 +83,9 @@ struct observer_rw_t final : public coco_observer_s {
 
   coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
 
+private:
+  friend class logger_rw_t; /* Reads the settings */
+
   observer_rw_log_e log_vars_mode; /**< @brief When the decision variables are logged. */
   observer_rw_log_e log_cons_mode; /**< @brief When the constraints are logged. */
   size_t low_dim_vars;             /**< @brief "Low dimension" for decision variables. */
@@ -91,4 +94,3 @@ struct observer_rw_t final : public coco_observer_s {
                                       ones (only for the single-objective problems). */
   bool log_time = false;           /**< @brief Whether to log time. */
 };
-

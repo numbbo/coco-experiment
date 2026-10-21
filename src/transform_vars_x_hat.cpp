@@ -12,13 +12,11 @@
 /**
  * @brief Multiplies the decision values by a random vector of 1 and -1.
  */
-struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
-  const long seed;
-  std::vector<double> x_hat; /**< @brief The transformed decision values */
-
+class transform_vars_x_hat_t final : public coco_problem_transformed_t {
+public:
   transform_vars_x_hat_t(coco_problem_ptr_t inner, const long seed)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_x_hat"), seed(seed),
-        x_hat(inner_problem->number_of_variables) {
+        x_hat(inner_problem->get_number_of_variables()) {
     size_t i;
     if (best_parameter_not_zero()) {
       bbob2009_unif(x_hat.data(), number_of_variables, seed);
@@ -54,6 +52,10 @@ struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
       x[i] = random_numbers[i] < 0.5 ? -inner_x[i] : inner_x[i];
     return true;
   }
+
+private:
+  const long seed;
+  std::vector<double> x_hat; /**< @brief The transformed decision values */
 };
 
 /**

@@ -36,8 +36,8 @@ MU_TEST(test_logger_biobj_evaluate) {
   while ((problem = coco_suite_get_next_problem(suite, observer)) != NULL) {
 
     /* Tests the ideal and nadir points */
-    mu_check(about_equal_2d(problem->best_value.data(), 3.914e+01, -4.328e+01));
-    mu_check(about_equal_2d(problem->nadir_value.data(), 1.080278978306634e+02, -3.795129793854297e+01));
+    mu_check(about_equal_2d(problem->get_best_value().data(), 3.914e+01, -4.328e+01));
+    mu_check(about_equal_2d(problem->get_nadir_value().data(), 1.080278978306634e+02, -3.795129793854297e+01));
 
     while (f_results) {
 
@@ -54,10 +54,10 @@ MU_TEST(test_logger_biobj_evaluate) {
       mu_check(about_equal_vector(y, y_eval, 2));
 
       logger = logger_biobj_t::from(problem);
-      indicator = logger->indicators[0].get();
+      indicator = logger->get_indicator(0);
 
       /* Checks the hypervolume */
-      mu_check(about_equal_value(hypervolume, indicator->current_value));
+      mu_check(about_equal_value(hypervolume, indicator->get_current_value()));
     }
 
   }
@@ -91,13 +91,13 @@ MU_TEST(test_logger_biobj_evaluate2) {
   while ((problem = coco_suite_get_next_problem(suite, observer)) != NULL) {
 
     logger = logger_biobj_t::from(problem);
-    indicator = logger->indicators[0].get();
+    indicator = logger->get_indicator(0);
 
     /* Tests the ideal and nadir points */
-    mu_check(about_equal_2d(problem->best_value.data(), 2.872000000000000e+001, 6.587000000000001e+001));
-    mu_check(about_equal_2d(problem->nadir_value.data(), 8.182999486471047e+006, 2.973909225537448e+005));
+    mu_check(about_equal_2d(problem->get_best_value().data(), 2.872000000000000e+001, 6.587000000000001e+001));
+    mu_check(about_equal_2d(problem->get_nadir_value().data(), 8.182999486471047e+006, 2.973909225537448e+005));
 
-    indicator->best_value = 9.999761801899431e-01;
+    indicator->set_best_value(9.999761801899431e-01);
 
     x[0] = 3.70126935e+00;
     x[1] = 4.86336949e+00;
@@ -155,33 +155,33 @@ MU_TEST(test_coco_logger_biobj_feed_solution) {
   mu_check(problem != NULL);
 
   logger = logger_biobj_t::from(problem);
-  indicator = logger->indicators[0].get();
+  indicator = logger->get_indicator(0);
 
-  indicator->best_value = 9.999545292785900e-01;
+  indicator->set_best_value(9.999545292785900e-01);
 
   number_of_evaluations = 1;
   y[0] = 3.998010498047934e+06;
   y[1] = 3.032832203646995e+05;
   coco_logger_biobj_feed_solution(problem, number_of_evaluations, y);
-  mu_check(about_equal_value(indicator->overall_value, 5.627463907182547e-01));
+  mu_check(about_equal_value(indicator->get_overall_value(), 5.627463907182547e-01));
 
   number_of_evaluations = 3;
   y[0] = 2.455928115758100e+06;
   y[1] = 4.832453316303584e+05;
   coco_logger_biobj_feed_solution(problem, number_of_evaluations, y);
-  mu_check(about_equal_value(indicator->overall_value, 5.517002077559761e-01));
+  mu_check(about_equal_value(indicator->get_overall_value(), 5.517002077559761e-01));
 
   number_of_evaluations = 7;
   y[0] = 1.905500967744320e+06;
   y[1] = 7.225364079041419e+05;
   coco_logger_biobj_feed_solution(problem, number_of_evaluations, y);
-  mu_check(about_equal_value(indicator->overall_value, 5.517002077559761e-01));
+  mu_check(about_equal_value(indicator->get_overall_value(), 5.517002077559761e-01));
 
   number_of_evaluations = 15;
   y[0] = 5.134664589788270e+06;
   y[1] = 2.859068205979772e+05;
   coco_logger_biobj_feed_solution(problem, number_of_evaluations, y);
-  mu_check(about_equal_value(indicator->overall_value, 5.282781576255882e-01));
+  mu_check(about_equal_value(indicator->get_overall_value(), 5.282781576255882e-01));
 
   coco_free_memory(y);
   coco_observer_free(observer);

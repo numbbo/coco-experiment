@@ -36,12 +36,31 @@ static const double weight_constraints =
 /**
  * @brief The bbob-old logger, which wraps the observed problem.
  */
-struct logger_bbob_old_t final : public coco_problem_transformed_t {
+class logger_bbob_old_t final : public coco_problem_transformed_t {
+public:
+  /*char *path;// relative path to the data folder. //Wassim: now fetched from the observer */
+
+  logger_bbob_old_t(observer_bbob_old_t &observer, coco_problem_ptr_t inner);
+
+  ~logger_bbob_old_t() override;
+
+  void evaluate_function(const double *x, double *y) override;
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+
+private:
+  /** @brief Generates the files and folders needed by the logger if they don't already exist. */
+  void initialize();
+
+  /** @brief Creates the index file fileName_prefix+problem_id+file_extension in folder_path. */
+  void open_index_file(const std::string &folder_path, const char *indexFile_prefix, const std::string &function_id,
+                       const std::string &dataFile_path, const std::string &suite_name);
+
   std::shared_ptr<logger_bbob_old_info_state_t> info_state; /**< @brief Shared with the observer */
   std::string result_folder;  /**< @brief Copied from the observer, which might be freed before the logger. */
   std::string algorithm_name; /**< @brief Copied from the observer, which might be freed before the logger. */
   bool is_initialized{};
-  /*char *path;// relative path to the data folder. //Wassim: now fetched from the observer */
   /*const char *alg_name; the alg name, for now, temporarily the same as the path. Wassim: Now in the observer */
   coco_file_t index_file; /* index file */
   coco_file_t fdata_file; /* function value aligned data file */
@@ -60,18 +79,8 @@ struct logger_bbob_old_t final : public coco_problem_transformed_t {
    * form it.*/
   bool log_discrete_as_int{}; /**< @brief Whether to output discrete variables in int or double format. */
   double optimal_fvalue{};
-
-  coco_observer_log_targets_t targets;     /**< @brief Triggers based on target values. */
+  coco_observer_log_targets_t targets;             /**< @brief Triggers based on target values. */
   coco_observer_evaluations_t evaluation_triggers; /**< @brief Triggers based on the number of evaluations. */
-
-  logger_bbob_old_t(observer_bbob_old_t &observer, coco_problem_ptr_t inner);
-
-  ~logger_bbob_old_t() override;
-
-  void evaluate_function(const double *x, double *y) override;
-
-  /** @brief The decision values are not transformed. */
-  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**
@@ -186,29 +195,25 @@ static void logger_bbob_old_open_dataFile(coco_file_t &target_file, const std::s
   }
 }
 
-/**
- * Creates the index file fileName_prefix+problem_id+file_extension in
- * folder_path
- */
-static void logger_bbob_old_openIndexFile(logger_bbob_old_t *logger, const std::string &folder_path,
-                                          const char *indexFile_prefix, const std::string &function_id,
-                                          const std::string &dataFile_path, const std::string &suite_name) {
+void logger_bbob_old_t::open_index_file(const std::string &folder_path, const char *indexFile_prefix,
+                                        const std::string &function_id, const std::string &dataFile_path,
+                                        const std::string &suite_name) {
   /* to add the instance number TODO: this should be done outside to avoid redoing this for the .*dat files */
   std::string used_dataFile_path = dataFile_path;
   int errnum, newLine = 0; /* newLine is at 1 if we need a new line in the info file */
   coco_file_t tmp_file;    /* to check whether the file already exists */
-  if (logger->info_state->first_instance == 0) {
-    logger->info_state->first_instance = logger->suite_dep_instance;
+  if (info_state->first_instance == 0) {
+    info_state->first_instance = get_suite_dep_instance();
   }
-  const std::string function_id_char = coco_string_format("%zu", logger->suite_dep_function);
-  logger->info_state->first_instance_string = coco_string_format("%zu", logger->info_state->first_instance);
-  coco_file_t &target_file = logger->index_file;
+  const std::string function_id_char = coco_string_format("%zu", get_suite_dep_function());
+  info_state->first_instance_string = coco_string_format("%zu", info_state->first_instance);
+  coco_file_t &target_file = index_file;
   std::string file_path = coco_join_path(folder_path, std::string(indexFile_prefix) + "_f" + function_id_char + "_i" +
-                                                          logger->info_state->first_instance_string + ".info");
+                                                          info_state->first_instance_string + ".info");
   if (target_file == nullptr) {
     tmp_file.open(file_path, "r"); /* to check for existence */
-    if ((tmp_file) && (logger->info_state->current_dimension == logger->number_of_variables) &&
-        (logger->info_state->current_function == logger->suite_dep_function)) {
+    if ((tmp_file) && (info_state->current_dimension == number_of_variables) &&
+        (info_state->current_function == get_suite_dep_function())) {
       /* new instance of current funId and current dim */
       target_file.open(file_path, "a+");
       if (target_file == nullptr) {
@@ -218,39 +223,38 @@ static void logger_bbob_old_openIndexFile(logger_bbob_old_t *logger, const std::
       tmp_file.close();
     } else { /* either file doesn't exist (new funId) or new Dim */
       /* check that the dim was not already present earlier in the file, if so, create a new info file */
-      if (logger->info_state->current_dimension != logger->number_of_variables) {
+      if (info_state->current_dimension != number_of_variables) {
         size_t i;
-        for (i = 0; i < logger_bbob_old_info_state_t::number_of_dimensions &&
-                    logger->info_state->dimensions_in_info_file[i] != 0 &&
-                    logger->info_state->dimensions_in_info_file[i] != logger->number_of_variables;
+        for (i = 0;
+             i < logger_bbob_old_info_state_t::number_of_dimensions && info_state->dimensions_in_info_file[i] != 0 &&
+             info_state->dimensions_in_info_file[i] != number_of_variables;
              i++) {
           ; /* checks whether dimension already present in the current infoFile */
         }
-        if (i < logger_bbob_old_info_state_t::number_of_dimensions &&
-            logger->info_state->dimensions_in_info_file[i] == 0) {
+        if (i < logger_bbob_old_info_state_t::number_of_dimensions && info_state->dimensions_in_info_file[i] == 0) {
           /* new dimension seen for the first time */
-          logger->info_state->dimensions_in_info_file[i] = logger->number_of_variables;
+          info_state->dimensions_in_info_file[i] = number_of_variables;
           newLine = 1;
         } else {
           if (i < logger_bbob_old_info_state_t::number_of_dimensions) { /* dimension already present, need to create a
                                                                            new file */
             newLine = 0;
             /* truncate the instance part ("_i" + instance + ".info") */
-            file_path.resize(file_path.size() - logger->info_state->first_instance_string.size() - 7);
-            logger->info_state->first_instance = logger->suite_dep_instance;
-            logger->info_state->first_instance_string = coco_string_format("%zu", logger->info_state->first_instance);
-            file_path += "_i" + logger->info_state->first_instance_string + ".info";
+            file_path.resize(file_path.size() - info_state->first_instance_string.size() - 7);
+            info_state->first_instance = get_suite_dep_instance();
+            info_state->first_instance_string = coco_string_format("%zu", info_state->first_instance);
+            file_path += "_i" + info_state->first_instance_string + ".info";
           } else { /* we have all dimensions */
             newLine = 1;
           }
           for (size_t j = 0; j < logger_bbob_old_info_state_t::number_of_dimensions;
                j++) { /* new info file, reinitialize list of dims */
-            logger->info_state->dimensions_in_info_file[j] = 0;
+            info_state->dimensions_in_info_file[j] = 0;
           }
-          logger->info_state->dimensions_in_info_file[i] = logger->number_of_variables;
+          info_state->dimensions_in_info_file[i] = number_of_variables;
         }
       } else {
-        if (logger->info_state->current_function != logger->suite_dep_function) {
+        if (info_state->current_function != get_suite_dep_function()) {
           /*new function in the same file */
           newLine = 1;
         }
@@ -269,24 +273,19 @@ static void logger_bbob_old_openIndexFile(logger_bbob_old_t *logger, const std::
       fprintf(target_file,
               "suite = '%s', funcId = %d, DIM = %zu, Precision = %.3e, algId = '%s', coco_version = '%s', logger = "
               "'%s', data_format = '%s'\n",
-              suite_name.c_str(), static_cast<int>(strtol(function_id.c_str(), nullptr, 10)),
-              logger->number_of_variables, pow(10, -8), logger->algorithm_name.c_str(), coco_version, logger_name,
-              data_format);
+              suite_name.c_str(), static_cast<int>(strtol(function_id.c_str(), nullptr, 10)), number_of_variables,
+              pow(10, -8), algorithm_name.c_str(), coco_version, logger_name, data_format);
 
       fprintf(target_file, "%%\n");
-      used_dataFile_path += "_i" + logger->info_state->first_instance_string;
+      used_dataFile_path += "_i" + info_state->first_instance_string;
       fprintf(target_file, "%s.dat", used_dataFile_path.c_str()); /* dataFile_path does not have the extension */
-      logger->info_state->current_dimension = logger->number_of_variables;
-      logger->info_state->current_function = logger->suite_dep_function;
+      info_state->current_dimension = number_of_variables;
+      info_state->current_function = get_suite_dep_function();
     }
   }
 }
 
-/**
- * Generates the different files and folder needed by the logger to store the
- * data if these don't already exist
- */
-static void logger_bbob_old_initialize(logger_bbob_old_t *logger, coco_problem_t *inner_problem) {
+void logger_bbob_old_t::initialize() {
   /*
    Creates/opens the data and index files
    */
@@ -294,36 +293,33 @@ static void logger_bbob_old_initialize(logger_bbob_old_t *logger, coco_problem_t
   char indexFile_prefix[10] =
       "bbobexp"; /* TODO (minor): make the prefix bbobexp a parameter that the user can modify */
 
-  assert(logger != nullptr);
   assert(inner_problem != nullptr);
-  assert(!inner_problem->problem_id.empty());
+  assert(!inner_problem->get_id().empty());
 
-  const std::string tmpc_funId = coco_string_format("%zu", coco_problem_get_suite_dep_function(inner_problem));
-  const std::string tmpc_dim = coco_string_format("%zu", inner_problem->number_of_variables);
-  const std::string &result_folder = logger->result_folder;
+  const std::string tmpc_funId = coco_string_format("%zu", coco_problem_get_suite_dep_function(inner_problem.get()));
+  const std::string tmpc_dim = coco_string_format("%zu", inner_problem->get_number_of_variables());
 
   /* prepare paths and names */
   coco_create_directory(coco_join_path(result_folder, "data_f" + tmpc_funId));
   dataFile_path = "data_f" + tmpc_funId + "/bbobexp_f" + tmpc_funId + "_DIM" + tmpc_dim;
 
   /* index/info file */
-  assert(inner_problem->suite);
-  logger_bbob_old_openIndexFile(logger, result_folder, indexFile_prefix, tmpc_funId, dataFile_path,
-                                inner_problem->suite->suite_name);
-  fprintf(logger->index_file, ", %zu", coco_problem_get_suite_dep_instance(inner_problem));
+  assert(inner_problem->get_suite());
+  open_index_file(result_folder, indexFile_prefix, tmpc_funId, dataFile_path, inner_problem->get_suite()->get_name());
+  fprintf(index_file, ", %zu", coco_problem_get_suite_dep_instance(inner_problem.get()));
   /* data files */
   /* TODO: definitely improvable but works for now */
-  dataFile_path += "_i" + logger->info_state->first_instance_string;
+  dataFile_path += "_i" + info_state->first_instance_string;
 
-  logger_bbob_old_open_dataFile(logger->fdata_file, result_folder, dataFile_path, ".dat");
-  fprintf(logger->fdata_file, bbob_old_file_header_str, logger->optimal_fvalue);
+  logger_bbob_old_open_dataFile(fdata_file, result_folder, dataFile_path, ".dat");
+  fprintf(fdata_file, bbob_old_file_header_str, optimal_fvalue);
 
-  logger_bbob_old_open_dataFile(logger->tdata_file, result_folder, dataFile_path, ".tdat");
-  fprintf(logger->tdata_file, bbob_old_file_header_str, logger->optimal_fvalue);
+  logger_bbob_old_open_dataFile(tdata_file, result_folder, dataFile_path, ".tdat");
+  fprintf(tdata_file, bbob_old_file_header_str, optimal_fvalue);
 
-  logger_bbob_old_open_dataFile(logger->rdata_file, result_folder, dataFile_path, ".rdat");
-  fprintf(logger->rdata_file, bbob_old_file_header_str, logger->optimal_fvalue);
-  logger->is_initialized = 1;
+  logger_bbob_old_open_dataFile(rdata_file, result_folder, dataFile_path, ".rdat");
+  fprintf(rdata_file, bbob_old_file_header_str, optimal_fvalue);
+  is_initialized = true;
 }
 
 /**
@@ -334,10 +330,10 @@ void logger_bbob_old_t::evaluate_function(const double *x, double *y) {
   const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, nullptr);
 
   if (!is_initialized) {
-    logger_bbob_old_initialize(this, inner_problem.get());
+    initialize();
   }
   if ((coco_log_level >= COCO_DEBUG) && number_of_evaluations == 0) {
-    coco_debug("%4zu: ", inner_problem->suite_dep_index);
+    coco_debug("%4zu: ", inner_problem->get_suite_dep_index());
     coco_debug("on problem %s ... ", coco_problem_get_id(inner_problem.get()));
   }
 
@@ -440,24 +436,24 @@ logger_bbob_old_t::logger_bbob_old_t(observer_bbob_old_t &observer, coco_problem
   info_state = observer.info_state;
   algorithm_name = observer.algorithm_name;
 
-  if (inner_problem->number_of_objectives != 1) {
+  if (inner_problem->get_number_of_objectives() != 1) {
     coco_warning("logger_bbob_old_t(): The bbob_old logger shouldn't be used to log a problem with %zu objectives",
-                 inner_problem->number_of_objectives);
+                 inner_problem->get_number_of_objectives());
   }
 
   if (observer.info_state->logger_is_open)
     coco_error("The current bbob_old_logger (observer) must be closed before a new one is opened");
-  if (inner_problem->best_value.empty()) {
+  if (inner_problem->get_best_value().empty()) {
     /* Setting the value to 0 results in the assertion y>=optimal_fvalue being susceptible to failure */
     coco_warning("undefined optimal f value. Set to 0");
     optimal_fvalue = 0;
   } else {
-    optimal_fvalue = inner_problem->best_value[0];
+    optimal_fvalue = inner_problem->get_best_value()[0];
   }
 
   number_of_evaluations = 0;
   number_of_evaluations_constraints = 0;
-  best_solution.resize(inner_problem->number_of_variables);
+  best_solution.resize(inner_problem->get_number_of_variables());
   /* TODO: the following inits are just to be in the safe side and
    * should eventually be removed. Some fields of the bbob_old_logger struct
    * might be useless
@@ -470,7 +466,7 @@ logger_bbob_old_t::logger_bbob_old_t(observer_bbob_old_t &observer, coco_problem
   /* Initialize triggers based on target values and number of evaluations */
   targets = coco_observer_log_targets_t(observer.number_target_triggers, observer.log_target_precision);
   evaluation_triggers = coco_observer_evaluations_t(
-      observer.number_evaluation_triggers, observer.base_evaluation_triggers, inner_problem->number_of_variables);
+      observer.number_evaluation_triggers, observer.base_evaluation_triggers, inner_problem->get_number_of_variables());
 
   observer.info_state->logger_is_open = true;
 }

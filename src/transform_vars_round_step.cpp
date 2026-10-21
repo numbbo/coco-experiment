@@ -22,14 +22,11 @@ struct f_step_ellipsoid_shared_data_t {
  *
  * Also sets \hat{z}_1 in the data shared with the step ellipsoid function.
  */
-struct transform_vars_round_step_t final : public coco_problem_transformed_t {
-  const double alpha;
-  std::vector<double> rounded_x;
-  f_step_ellipsoid_shared_data_t *const shared; /**< @brief Owned by the step ellipsoid function */
-
+class transform_vars_round_step_t final : public coco_problem_transformed_t {
+public:
   transform_vars_round_step_t(coco_problem_ptr_t inner, const double alpha, f_step_ellipsoid_shared_data_t *shared)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_round_step"), alpha(alpha),
-        rounded_x(inner_problem->number_of_variables + 1), shared(shared) {
+        rounded_x(inner_problem->get_number_of_variables() + 1), shared(shared) {
     /* Compute best parameter */
     for (size_t i = 0; i < number_of_variables; i++) {
       if (fabs(best_parameter[i]) > 0.5) {
@@ -49,11 +46,11 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
     shared->zhat_1 =
         fabs(x[0]) *
         static_cast<double>(
-            inner_problem->number_of_variables); /* TODO: Discuss: consider not pre-imptively multiplying by dim to not
-                                                   change the outcome of the max in the core function even though we
-                                                   might want to keep it as it is since otherwise, the sum part of the
-                                                   max may take over as dim increases */
-    for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
+            inner_problem->get_number_of_variables()); /* TODO: Discuss: consider not pre-imptively multiplying by dim
+                                                   to not change the outcome of the max in the core function even though
+                                                   we might want to keep it as it is since otherwise, the sum part of
+                                                   the max may take over as dim increases */
+    for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i) {
       if (fabs(x[i]) > 0.5) {
         rounded_x[i] = coco_double_round(x[i]);
       } else {
@@ -66,6 +63,11 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
 
   /** @brief Rounding is not invertible. */
   bool inverse(const double *, double *) const override { return false; }
+
+private:
+  const double alpha;
+  std::vector<double> rounded_x;
+  f_step_ellipsoid_shared_data_t *const shared; /**< @brief Owned by the step ellipsoid function */
 };
 
 /**

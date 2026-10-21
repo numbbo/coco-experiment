@@ -17,7 +17,7 @@
  * The archive structure is used for pre-processing archives of non-dominated solutions.
  */
 struct coco_archive_s {
-
+public:
   /** @brief Creates the archive of the given problem, holding its two extreme points. */
   coco_archive_s(std::string_view suite_name, const size_t function, const size_t dimension, const size_t instance);
   ~coco_archive_s();
@@ -34,24 +34,21 @@ struct coco_archive_s {
   size_t get_number_of_solutions();
   double get_hypervolume();
 
-  avl_tree_t *tree;          /**< @brief The AVL tree with non-dominated solutions. */
-  std::vector<double> ideal; /**< @brief The ideal point. */
-  std::vector<double> nadir; /**< @brief The nadir point. */
-
-  size_t number_of_objectives; /**< @brief Number of objectives (clearly equal to 2). */
-
-  bool is_up_to_date;         /**< @brief Whether archive fields have been updated since last addition. */
-  size_t number_of_solutions; /**< @brief Number of solutions in the archive. */
-  double hypervolume;         /**< @brief Hypervolume of the solutions in the archive. */
-
-  avl_node_t *current_solution;  /**< @brief Current solution (to return). */
-  avl_node_t *extreme1;          /**< @brief Pointer to the first extreme solution. */
-  avl_node_t *extreme2;          /**< @brief Pointer to the second extreme solution. */
-  bool extremes_already_returned; /**< @brief Whether the extreme solutions have already been returned. */
-
 private:
   /** @brief Updates the fields returned by the getters. */
   void update();
+
+  avl_tree_t *tree;               /**< @brief The AVL tree with non-dominated solutions. */
+  std::vector<double> ideal;      /**< @brief The ideal point. */
+  std::vector<double> nadir;      /**< @brief The nadir point. */
+  size_t number_of_objectives;    /**< @brief Number of objectives (clearly equal to 2). */
+  bool is_up_to_date;             /**< @brief Whether archive fields have been updated since last addition. */
+  size_t number_of_solutions;     /**< @brief Number of solutions in the archive. */
+  double hypervolume;             /**< @brief Hypervolume of the solutions in the archive. */
+  avl_node_t *current_solution;   /**< @brief Current solution (to return). */
+  avl_node_t *extreme1;           /**< @brief Pointer to the first extreme solution. */
+  avl_node_t *extreme2;           /**< @brief Pointer to the second extreme solution. */
+  bool extremes_already_returned; /**< @brief Whether the extreme solutions have already been returned. */
 };
 
 /**
@@ -119,8 +116,8 @@ coco_archive_s::coco_archive_s(std::string_view suite_name, const size_t functio
   }
 
   /* Store the ideal and nadir points */
-  ideal.assign(problem->best_value.begin(), problem->best_value.begin() + 2);
-  nadir.assign(problem->nadir_value.begin(), problem->nadir_value.begin() + 2);
+  ideal.assign(problem->get_best_value().begin(), problem->get_best_value().begin() + 2);
+  nadir.assign(problem->get_nadir_value().begin(), problem->get_nadir_value().begin() + 2);
 
   /* Add the extreme points to the archive */
   text = coco_string_format("0\t%.*e\t%.*e\n", output_precision, nadir[0], output_precision, ideal[1]);

@@ -12,7 +12,8 @@
 /**
  * @brief Oscillates the objective value(s) of the inner problem.
  */
-struct transform_obj_oscillate_t final : public coco_problem_transformed_t {
+class transform_obj_oscillate_t final : public coco_problem_transformed_t {
+public:
   explicit transform_obj_oscillate_t(coco_problem_ptr_t inner)
       : coco_problem_transformed_t(std::move(inner), "transform_obj_oscillate") {
     /* Compute best value */

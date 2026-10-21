@@ -47,16 +47,14 @@ static double tasy_uv_inv(double yi, const tasy_data *d) {
 /**
  * @brief Applies the asymmetric non-linear transformation to the decision values.
  */
-struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
-  std::vector<double> asymmetric_x; /**< @brief The transformed decision values */
-  const double beta;
-
+class transform_vars_asymmetric_t final : public coco_problem_transformed_t {
+public:
   transform_vars_asymmetric_t(coco_problem_ptr_t inner, const double beta)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_asymmetric"),
-        asymmetric_x(inner_problem->number_of_variables), beta(beta) {
-    if (inner_problem->number_of_objectives > 0 && inner_problem->best_parameter_not_zero()) {
+        asymmetric_x(inner_problem->get_number_of_variables()), beta(beta) {
+    if (inner_problem->get_number_of_objectives() > 0 && inner_problem->best_parameter_not_zero()) {
       coco_warning("transform_vars_asymmetric(): 'best_parameter' not updated, set to NAN");
-      coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
+      inner_problem->set_best_parameter_to_nan();
     }
   }
 
@@ -79,7 +77,7 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed function.
    */
   void evaluate_function(const double *x, double *y) override {
-    if (inner_problem->number_of_objectives == 0) {
+    if (inner_problem->get_number_of_objectives() == 0) {
       inner_problem->evaluate_function(x, y);
       return;
     }
@@ -97,7 +95,7 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
   void evaluate_constraint(const double *x, double *y, int update_counter) override {
     double exponent;
 
-    if (inner_problem->number_of_constraints == 0) {
+    if (inner_problem->get_number_of_constraints() == 0) {
       inner_problem->evaluate_constraint(x, y, update_counter);
       return;
     }
@@ -130,6 +128,10 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
     }
     return true;
   }
+
+private:
+  std::vector<double> asymmetric_x; /**< @brief The transformed decision values */
+  const double beta;
 };
 
 /**

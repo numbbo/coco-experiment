@@ -272,7 +272,8 @@ static coco_problem_ptr_t coco_get_bbob_noisy_problem(const size_t function, con
 /**
  * @brief The bbob-noisy suite.
  */
-struct suite_bbob_noisy_t final : public coco_suite_s {
+class suite_bbob_noisy_t final : public coco_suite_s {
+public:
   using coco_suite_s::coco_suite_s;
 
   std::string_view get_instances_by_year(const int year) const override {

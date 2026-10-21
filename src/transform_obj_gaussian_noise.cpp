@@ -9,19 +9,18 @@
 /**
  * @brief Applies multiplicative Gaussian noise to the objective value of the inner problem.
  */
-struct transform_obj_gaussian_noise_t final : public coco_problem_transformed_t {
-  const double beta;
-
+class transform_obj_gaussian_noise_t final : public coco_problem_transformed_t {
+public:
   transform_obj_gaussian_noise_t(coco_problem_ptr_t inner, const double beta)
       : coco_problem_transformed_t(std::move(inner), "gaussian_noise_model"), beta(beta) {
-    is_noisy = 1;
+    noisy = true;
   }
 
   /**
    * @brief Evaluates the transformed objective function by applying gaussian multiplicative noise.
    */
   void evaluate_function(const double *x, double *y) override {
-    double fopt = inner_problem->best_value[0];
+    double fopt = inner_problem->get_best_value()[0];
     double gaussian_noise = coco_sample_gaussian_noise();
     gaussian_noise = exp(beta * gaussian_noise);
     double tol = 1e-8;
@@ -36,6 +35,9 @@ struct transform_obj_gaussian_noise_t final : public coco_problem_transformed_t 
 
   /** @brief The decision values are not transformed. */
   bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+
+private:
+  const double beta;
 };
 
 /**

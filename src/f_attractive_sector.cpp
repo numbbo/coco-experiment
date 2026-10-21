@@ -22,9 +22,8 @@
 /**
  * @brief The attractive sector function.
  */
-struct f_attractive_sector_t final : public coco_problem_s {
-  std::vector<double> xopt;
-
+class f_attractive_sector_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x) const;
 
@@ -47,6 +46,9 @@ struct f_attractive_sector_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  std::vector<double> xopt;
 };
 
 /**

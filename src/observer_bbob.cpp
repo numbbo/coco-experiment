@@ -6,7 +6,7 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-struct logger_bbob_t;
+class logger_bbob_t;
 
 /**
  * @brief The bbob observer.
@@ -19,8 +19,8 @@ struct logger_bbob_t;
  *
  * - "prefix: STRING" defines the prefix of the name of the info files. The default value is "bbobexp".
  */
-struct observer_bbob_t final : public coco_observer_s {
-
+class observer_bbob_t final : public coco_observer_s {
+public:
   observer_bbob_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                   coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings), observed_problem(nullptr), prefix("bbobexp"), last_function(0),
@@ -38,13 +38,14 @@ struct observer_bbob_t final : public coco_observer_s {
 
   void signal_restart(coco_problem_t *problem) override;
 
-  logger_bbob_t *observed_problem;  /**< @brief The logger of the observed problem (nullptr if none is observed) */
-  std::string prefix;               /**< @brief Prefix in the name of the info and data files */
+private:
+  friend class logger_bbob_t; /* Keeps the state of the last logged problem in the observer */
 
+  logger_bbob_t *observed_problem; /**< @brief The logger of the observed problem (nullptr if none is observed) */
+  std::string prefix;              /**< @brief Prefix in the name of the info and data files */
   /* Store the information on the last function, dimension and dat file used, to be able to tell when the
    * logger needs to write in a new dat file.  */
   size_t last_function;      /**< @brief The function that was logged last */
   size_t last_dimension;     /**< @brief The dimension that was logged last */
   std::string last_dat_file; /**< @brief The name of the .dat file that was last used for logging */
 };
-

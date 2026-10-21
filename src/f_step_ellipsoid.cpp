@@ -29,32 +29,40 @@
 /**
  * @brief The BBOB step ellipsoid function.
  */
-struct f_step_ellipsoid_t final : public coco_problem_s {
-  std::vector<double> z_hat, z;
-  std::vector<double> xopt;
-  std::vector<double> c1;     /**< @brief sqrt((condition / 10)^(i / (n - 1))), scales the rows of rot2 */
-  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
-  double fopt{}, penalty_scale{};
-  coco_matrix_t rot1, rot2;
-
+class f_step_ellipsoid_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x);
 
-  explicit f_step_ellipsoid_t(const size_t dimension) : coco_problem_s(dimension, 1, 0) {
+  /** @brief Creates the step ellipsoid function of the given instance (random seed). */
+  f_step_ellipsoid_t(const size_t dimension, const long rseed, const coco_bbob_variant_t variant, const double fopt,
+                     const double penalty_scale)
+      : coco_problem_s(dimension, 1, 0), fopt(fopt), penalty_scale(penalty_scale) {
     static const double condition = 100;
     init_from_scalars("step ellipsoid function", -5.0, 5.0, 0);
-    /* Allocate temporary storage and space for the rotation matrices */
+    /* Allocate temporary storage */
     z_hat.resize(dimension);
     z.resize(dimension);
     xopt.resize(dimension);
-    rot1 = coco_matrix_t(dimension, dimension);
-    rot2 = coco_matrix_t(dimension, dimension);
     c1.resize(dimension);
     scales.resize(dimension);
     for (size_t i = 0; i < dimension; ++i) {
       c1[i] = sqrt(pow(condition / 10., static_cast<double>(i) / static_cast<double>(dimension - 1)));
       scales[i] = pow(condition, static_cast<double>(i) / (static_cast<double>(dimension) - 1.0));
     }
+    bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+    rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+    rot2 = bbob2009_compute_rotation(rseed, dimension);
+
+    /* Compute best solution
+     *
+     * OME: Dirty hack for now because I did not want to invert the
+     * transformations to find the best_parameter :/
+     */
+    for (size_t i = 0; i < number_of_variables; i++) {
+      best_parameter[i] = xopt[i];
+    }
+    best_value[0] = fopt;
   }
 
   /**
@@ -65,6 +73,14 @@ struct f_step_ellipsoid_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  std::vector<double> z_hat, z;
+  std::vector<double> xopt;
+  std::vector<double> c1;     /**< @brief sqrt((condition / 10)^(i / (n - 1))), scales the rows of rot2 */
+  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
+  double fopt{}, penalty_scale{};
+  coco_matrix_t rot1, rot2;
 };
 
 /**
@@ -120,23 +136,8 @@ f_step_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimen
                                        const long rseed, const coco_bbob_variant_t variant, const double penalty_scale,
                                        const char *problem_id_template, const char *problem_name_template) {
 
-  std::unique_ptr<f_step_ellipsoid_t> problem = std::make_unique<f_step_ellipsoid_t>(dimension);
-
-  problem->fopt = bbob2009_compute_fopt(function, instance);
-  problem->penalty_scale = penalty_scale;
-  bbob_compute_xopt(problem->xopt.data(), rseed, dimension, variant);
-  problem->rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
-  problem->rot2 = bbob2009_compute_rotation(rseed, dimension);
-
-  /* Compute best solution
-   *
-   * OME: Dirty hack for now because I did not want to invert the
-   * transformations to find the best_parameter :/
-   */
-  for (size_t i = 0; i < problem->number_of_variables; i++) {
-    problem->best_parameter[i] = problem->xopt[i];
-  }
-  problem->best_value[0] = problem->fopt;
+  coco_problem_ptr_t problem = std::make_unique<f_step_ellipsoid_t>(
+      dimension, rseed, variant, bbob2009_compute_fopt(function, instance), penalty_scale);
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
   problem->set_type("2-moderate");
@@ -163,10 +164,8 @@ static double f_step_ellipsoid_core(const double *x, const size_t number_of_vari
  *
  * Shares \hat{z}_1 with transform_vars_round_step, which sets it.
  */
-struct f_step_ellipsoid_permblock_t final : public coco_problem_s {
-  f_step_ellipsoid_shared_data_t shared;
-  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
-
+class f_step_ellipsoid_permblock_t final : public coco_problem_s {
+public:
   explicit f_step_ellipsoid_permblock_t(const size_t number_of_variables)
       : coco_problem_s(number_of_variables, 1, 0), scales(number_of_variables) {
     static const double condition = 100;
@@ -188,6 +187,13 @@ struct f_step_ellipsoid_permblock_t final : public coco_problem_s {
     y[0] = f_step_ellipsoid_core(x, number_of_variables, scales.data(), &shared);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief The data shared with the transformations and sub problems of this function. */
+  f_step_ellipsoid_shared_data_t &shared_data() { return shared; }
+
+private:
+  f_step_ellipsoid_shared_data_t shared;
+  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
 };
 
 /**
@@ -248,7 +254,7 @@ static coco_problem_ptr_t f_step_ellipsoid_permblockdiag_bbob_problem_allocate(
   problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
   problem = transform_vars_blockrotation(std::move(problem), B1);
   problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
-  problem = transform_vars_round_step(std::move(problem), alpha, &raw_problem->shared);
+  problem = transform_vars_round_step(std::move(problem), alpha, &raw_problem->shared_data());
 
   problem = transform_vars_conditioning(std::move(problem), 10.0);
   problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);

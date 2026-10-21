@@ -11,13 +11,11 @@
 /**
  * @brief Scales the decision values by a factor.
  */
-struct transform_vars_scale_t final : public coco_problem_transformed_t {
-  const double factor;
-  std::vector<double> scaled_x; /**< @brief The scaled decision values */
-
+class transform_vars_scale_t final : public coco_problem_transformed_t {
+public:
   transform_vars_scale_t(coco_problem_ptr_t inner, const double factor)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_scale"), factor(factor),
-        scaled_x(inner_problem->number_of_variables) {
+        scaled_x(inner_problem->get_number_of_variables()) {
     /* Compute best parameter */
     if (factor != 0.) {
       for (size_t i = 0; i < number_of_variables; i++) {
@@ -46,6 +44,10 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
       x[i] = inner_x[i] / factor;
     return true;
   }
+
+private:
+  const double factor;
+  std::vector<double> scaled_x; /**< @brief The scaled decision values */
 };
 
 /**

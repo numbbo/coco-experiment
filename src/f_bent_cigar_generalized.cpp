@@ -20,9 +20,8 @@
 /**
  * @brief The generalized bent cigar function.
  */
-struct f_bent_cigar_generalized_t final : public coco_problem_s {
-  size_t proportion_long_axes_denom{};
-
+class f_bent_cigar_generalized_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x) const;
 
@@ -44,6 +43,9 @@ struct f_bent_cigar_generalized_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  size_t proportion_long_axes_denom{};
 };
 
 /**

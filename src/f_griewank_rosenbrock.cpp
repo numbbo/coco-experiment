@@ -21,9 +21,8 @@
 /**
  * @brief The Griewank-Rosenbrock function.
  */
-struct f_griewank_rosenbrock_t final : public coco_problem_s {
-  double facftrue{};
-
+class f_griewank_rosenbrock_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x) const;
 
@@ -46,6 +45,9 @@ struct f_griewank_rosenbrock_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  double facftrue{};
 };
 
 /**
@@ -110,20 +112,21 @@ static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size
   problem = transform_vars_shift(std::move(problem), shift.data(), 0);
   M = rot1;
 
-  for (size_t i = 0; i < dimension; i++) {
-    problem->best_parameter[i] =
-        0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine():
-              'best_parameter' not updated, set to NAN")*/
-  }
+  /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine(): 'best_parameter'
+   * not updated, set to NAN") */
+  const std::vector<double> origin(dimension, 0.0);
+  problem->set_best_parameter(origin.data());
   problem = transform_vars_affine(std::move(problem), M, b);
+  std::vector<double> xopt(dimension);
   for (size_t j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T
                                        ones(dimension)/(2*factor) */
     tmp = 0;
     for (size_t i = 0; i < dimension; ++i) {
       tmp += rot1(i, j);
     }
-    problem->best_parameter[j] = tmp / (2. * scales);
+    xopt[j] = tmp / (2. * scales);
   }
+  problem->set_best_parameter(xopt.data());
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);
@@ -185,9 +188,11 @@ static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_
     next_bs_change += block_sizes[k];
   }
 
+  std::vector<double> xopt(dimension);
   for (size_t j = 0; j < dimension; ++j) { /* Manh: secondly, set xopt = (P_1^T)* xopt_1 */
-    problem->best_parameter[P1[j]] = best_parameter[j];
+    xopt[P1[j]] = best_parameter[j];
   }
+  problem->set_best_parameter(xopt.data());
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);

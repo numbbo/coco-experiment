@@ -18,9 +18,8 @@
 /**
  * @brief The generalized discus function.
  */
-struct f_discus_generalized_t final : public coco_problem_s {
-  size_t proportion_short_axes_denom{};
-
+class f_discus_generalized_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x) const;
 
@@ -42,6 +41,9 @@ struct f_discus_generalized_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  size_t proportion_short_axes_denom{};
 };
 
 /**

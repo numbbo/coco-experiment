@@ -19,9 +19,8 @@
 /**
  * @brief The ellipsoid function.
  */
-struct f_ellipsoid_t final : public coco_problem_s {
-  std::vector<double> scales; /**< @brief conditioning^(i / (n - 1)) */
-
+class f_ellipsoid_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x) const;
 
@@ -56,6 +55,9 @@ struct f_ellipsoid_t final : public coco_problem_s {
     for (size_t i = 0; i < number_of_variables; ++i)
       y[i] = 2.0 * scales[i] * x[i];
   }
+
+private:
+  std::vector<double> scales; /**< @brief conditioning^(i / (n - 1)) */
 };
 
 /**

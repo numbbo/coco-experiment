@@ -12,7 +12,8 @@
 /**
  * @brief Normalizes the objective value of the inner problem by the dimension.
  */
-struct transform_obj_norm_by_dim_t final : public coco_problem_transformed_t {
+class transform_obj_norm_by_dim_t final : public coco_problem_transformed_t {
+public:
   explicit transform_obj_norm_by_dim_t(coco_problem_ptr_t inner)
       : coco_problem_transformed_t(std::move(inner), "transform_obj_norm_by_dim") {}
 

@@ -17,20 +17,18 @@
 /**
  * @brief Applies a block-diagonal rotation matrix to the decision values.
  */
-struct transform_vars_blockrotation_t final : public coco_problem_transformed_t {
-  const coco_block_diagonal_matrix_t B; /**< @brief The block-diagonal rotation matrix */
-  std::vector<double> Bx;
-
+class transform_vars_blockrotation_t final : public coco_problem_transformed_t {
+public:
   transform_vars_blockrotation_t(coco_problem_ptr_t inner, coco_block_diagonal_matrix_t B)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_blockrotation"), B(std::move(B)),
-        Bx(inner_problem->number_of_variables) {
+        Bx(inner_problem->get_number_of_variables()) {
 
     if (inner_problem->best_parameter_not_zero()) {
       coco_debug("transform_vars_blockrotation(): 'best_parameter' not updated, "
                  "set to NAN");
-      coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
+      inner_problem->set_best_parameter_to_nan();
       /* The best parameter is copied from the inner problem */
-      best_parameter = inner_problem->best_parameter;
+      best_parameter = inner_problem->get_best_parameter();
     }
 
     if (number_of_variables < 100) {
@@ -69,10 +67,14 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
     B.multiply_transposed(inner_x, x);
     return true;
   }
+
+private:
+  const coco_block_diagonal_matrix_t B; /**< @brief The block-diagonal rotation matrix */
+  std::vector<double> Bx;
 };
 
 static coco_problem_ptr_t transform_vars_blockrotation(coco_problem_ptr_t inner_problem,
                                                        coco_block_diagonal_matrix_t B) {
-  assert(B.dimension() == inner_problem->number_of_variables);
+  assert(B.dimension() == inner_problem->get_number_of_variables());
   return std::make_unique<transform_vars_blockrotation_t>(std::move(inner_problem), std::move(B));
 }

@@ -42,7 +42,8 @@ static double f_rosenbrock_raw(const double *x,
 /**
  * @brief The Rosenbrock function.
  */
-struct f_rosenbrock_t final : public coco_problem_s {
+class f_rosenbrock_t final : public coco_problem_s {
+public:
   explicit f_rosenbrock_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Rosenbrock function", -5.0, 5.0, 1.0);
     set_id("%s_d%02zu", "rosenbrock", number_of_variables);
@@ -140,21 +141,22 @@ static coco_problem_ptr_t f_rosenbrock_rotated_bbob_problem_allocate(const size_
   }
 
   problem = f_rosenbrock_allocate(dimension);
-  for (size_t row = 0; row < dimension; row++) {
-    problem->best_parameter[row] =
-        0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine():
-              'best_parameter' not updated, set to NAN")*/
-  }
+  /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine(): 'best_parameter'
+   * not updated, set to NAN") */
+  const std::vector<double> origin(dimension, 0.0);
+  problem->set_best_parameter(origin.data());
   problem = transform_vars_affine(std::move(problem), M, b);
   problem = transform_obj_shift(std::move(problem), fopt);
+  std::vector<double> xopt(dimension);
   for (size_t column = 0; column < dimension; ++column) { /* Wassim: manually set xopt = rot1^T
                                                              ones(dimension)/(2*factor) */
     tmp = 0;
     for (size_t row = 0; row < dimension; ++row) {
       tmp += rot1(row, column);
     }
-    problem->best_parameter[column] = tmp / (2. * factor);
+    xopt[column] = tmp / (2. * factor);
   }
+  problem->set_best_parameter(xopt.data());
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);

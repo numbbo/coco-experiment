@@ -32,7 +32,8 @@ static double f_sphere_raw(const double *x, const size_t number_of_variables) {
 /**
  * @brief The sphere function.
  */
-struct f_sphere_t final : public coco_problem_s {
+class f_sphere_t final : public coco_problem_s {
+public:
   explicit f_sphere_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("sphere function", -5.0, 5.0, 0.0);
     set_id("%s_d%02zu", "sphere", number_of_variables);

@@ -62,15 +62,15 @@ MU_TEST(test_coco_observer_log_targets_trigger) {
 
   update = targets.trigger(99.99999);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 100));
+  mu_check(about_equal_value(targets.get_value(), 100));
 
   update = targets.trigger(10);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 10));
+  mu_check(about_equal_value(targets.get_value(), 10));
 
   update = targets.trigger(1.00000);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 1));
+  mu_check(about_equal_value(targets.get_value(), 1));
 
   update = targets.trigger(10);
   mu_check(!update);
@@ -80,33 +80,32 @@ MU_TEST(test_coco_observer_log_targets_trigger) {
 
   update = targets.trigger(0.00001);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 0.00001));
+  mu_check(about_equal_value(targets.get_value(), 0.00001));
 
   update = targets.trigger(12);
   mu_check(!update);
 
   update = targets.trigger(1e-8);
   mu_check(update);
-  mu_check(about_equal_value(targets.value,  1e-8));
+  mu_check(about_equal_value(targets.get_value(), 1e-8));
 
   update = targets.trigger(1e-9);
   mu_check(!update);
 
   update = targets.trigger(-1e-8);
   mu_check(update);
-  mu_check(about_equal_value(targets.value,  -1e-8));
+  mu_check(about_equal_value(targets.get_value(), -1e-8));
 
   update = targets.trigger(-1e-7);
   mu_check(update);
-  mu_check(about_equal_value(targets.value,  -1e-7));
+  mu_check(about_equal_value(targets.get_value(), -1e-7));
 
   update = targets.trigger(2);
   mu_check(!update);
 
   update = targets.trigger(-1000.000);
   mu_check(update);
-  mu_check(about_equal_value(targets.value,  -1000));
-
+  mu_check(about_equal_value(targets.get_value(), -1000));
 
   targets = coco_observer_log_targets_t(10, 1e-8);
   update = targets.trigger(1e-9);
@@ -129,29 +128,28 @@ MU_TEST(test_coco_observer_log_targets_trigger) {
  */
 MU_TEST(test_coco_observer_lin_targets_trigger) {
 
-  coco_observer_lin_targets_t targets;
-  targets.precision = 1e-3;
+  coco_observer_lin_targets_t targets(1e-3);
   int update;
 
   update = targets.trigger(12);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 12));
+  mu_check(about_equal_value(targets.get_value(), 12));
 
   update = targets.trigger(10);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 10));
+  mu_check(about_equal_value(targets.get_value(), 10));
 
   update = targets.trigger(2);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 2));
+  mu_check(about_equal_value(targets.get_value(), 2));
 
   update = targets.trigger(1.2);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 1.2));
+  mu_check(about_equal_value(targets.get_value(), 1.2));
 
   update = targets.trigger(0.12);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 0.12));
+  mu_check(about_equal_value(targets.get_value(), 0.12));
 
   update = targets.trigger(10);
   mu_check(!update);
@@ -161,7 +159,7 @@ MU_TEST(test_coco_observer_lin_targets_trigger) {
 
   update = targets.trigger(0.000013);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 0.001));
+  mu_check(about_equal_value(targets.get_value(), 0.001));
 
   update = targets.trigger(0.000012);
   mu_check(!update);
@@ -171,14 +169,14 @@ MU_TEST(test_coco_observer_lin_targets_trigger) {
 
   update = targets.trigger(0);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, 0));
+  mu_check(about_equal_value(targets.get_value(), 0));
 
   update = targets.trigger(-1.2e-8);
   mu_check(!update);
 
   update = targets.trigger(-0.001);
   mu_check(update);
-  mu_check(about_equal_value(targets.value, -0.001));
+  mu_check(about_equal_value(targets.get_value(), -0.001));
 
   update = targets.trigger(-0.0015);
   mu_check(!update);

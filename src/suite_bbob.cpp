@@ -167,7 +167,8 @@ coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimens
 /**
  * @brief The bbob suite.
  */
-struct suite_bbob_t final : public coco_suite_s {
+class suite_bbob_t final : public coco_suite_s {
+public:
   using coco_suite_s::coco_suite_s;
 
   std::string_view get_instances_by_year(const int year) const override {

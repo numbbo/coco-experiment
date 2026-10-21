@@ -22,6 +22,7 @@ static constexpr size_t COCO_LONG_LAG = 607;
  * @brief A structure containing the state of the COCO random generator.
  */
 struct coco_random_state_s {
+public:
   explicit coco_random_state_s(uint32_t seed);
 
   /** @brief Returns the next uniformly distributed random number in [0, 1). */
@@ -30,11 +31,11 @@ struct coco_random_state_s {
   /** @brief Returns an approximately N(0, 1) distributed random number. */
   double normal();
 
-  double x[COCO_LONG_LAG];
-  size_t index;
-
 private:
   void generate();
+
+  double x[COCO_LONG_LAG];
+  size_t index;
 };
 
 /**

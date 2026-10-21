@@ -11,13 +11,11 @@
 /**
  * @brief The z^hat transformation of decision values for the BBOB Schwefel problem.
  */
-struct transform_vars_z_hat_t final : public coco_problem_transformed_t {
-  const std::vector<double> xopt;
-  std::vector<double> z; /**< @brief The transformed decision values */
-
+class transform_vars_z_hat_t final : public coco_problem_transformed_t {
+public:
   transform_vars_z_hat_t(coco_problem_ptr_t inner, const double *xopt)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_z_hat"),
-        xopt(xopt, xopt + inner_problem->number_of_variables), z(inner_problem->number_of_variables) {
+        xopt(xopt, xopt + inner_problem->get_number_of_variables()), z(inner_problem->get_number_of_variables()) {
     /* TODO: implement best_parameter transformation if needed in the case of not zero:
        see also issue #814.
     The correct update of best_parameter seems not too difficult and should not anymore
@@ -61,6 +59,10 @@ struct transform_vars_z_hat_t final : public coco_problem_transformed_t {
       x[i] = inner_x[i] - 0.25 * (x[i - 1] - 2.0 * fabs(xopt[i - 1]));
     return true;
   }
+
+private:
+  const std::vector<double> xopt;
+  std::vector<double> z; /**< @brief The transformed decision values */
 };
 
 /**

@@ -12,11 +12,8 @@
 /**
  * @brief Permutes the decision values (or applies the inverse permutation).
  */
-struct transform_vars_permutation_t final : public coco_problem_transformed_t {
-  const bool is_inverse;
-  std::vector<double> permuted_x;    /**< @brief The permuted decision values */
-  std::vector<size_t> P; /**< @brief the permutation matrices*/
-
+class transform_vars_permutation_t final : public coco_problem_transformed_t {
+public:
   transform_vars_permutation_t(coco_problem_ptr_t inner, const size_t *P, const size_t number_of_variables,
                                const bool inverse)
       : coco_problem_transformed_t(std::move(inner),
@@ -26,11 +23,11 @@ struct transform_vars_permutation_t final : public coco_problem_transformed_t {
   void evaluate_function(const double *x, double *y) override {
 
     if (is_inverse) {
-      for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
+      for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i) {
         permuted_x[P[i]] = x[i];
       }
     } else {
-      for (size_t i = 0; i < inner_problem->number_of_variables; ++i) {
+      for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i) {
         permuted_x[i] = x[P[i]];
       }
     }
@@ -48,6 +45,11 @@ struct transform_vars_permutation_t final : public coco_problem_transformed_t {
     }
     return true;
   }
+
+private:
+  const bool is_inverse;
+  std::vector<double> permuted_x; /**< @brief The permuted decision values */
+  std::vector<size_t> P;          /**< @brief the permutation matrices*/
 };
 
 /**
@@ -55,7 +57,7 @@ struct transform_vars_permutation_t final : public coco_problem_transformed_t {
  */
 static coco_problem_ptr_t transform_vars_permutation(coco_problem_ptr_t inner_problem, const size_t *P,
                                                      const size_t number_of_variables) {
-  assert(number_of_variables == inner_problem->number_of_variables); /*tmp*/
+  assert(number_of_variables == inner_problem->get_number_of_variables()); /*tmp*/
   return std::make_unique<transform_vars_permutation_t>(std::move(inner_problem), P, number_of_variables, false);
 }
 
@@ -64,6 +66,6 @@ static coco_problem_ptr_t transform_vars_permutation(coco_problem_ptr_t inner_pr
  */
 static coco_problem_ptr_t transform_vars_inverse_permutation(coco_problem_ptr_t inner_problem, const size_t *P,
                                                              const size_t number_of_variables) {
-  assert(number_of_variables == inner_problem->number_of_variables);
+  assert(number_of_variables == inner_problem->get_number_of_variables());
   return std::make_unique<transform_vars_permutation_t>(std::move(inner_problem), P, number_of_variables, true);
 }

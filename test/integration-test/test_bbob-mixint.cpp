@@ -74,7 +74,8 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
   coco_suite_t *suite;
   coco_problem_t *problem_cont, *problem_disc, *problem_tmp;
   size_t j, k1, k2, k3, k4;
-  double *xopt_cont, *fopt_cont, fopt_disc;
+  const double *xopt_cont;
+  double fopt_cont, fopt_disc;
   double *x, *f;
   size_t num_points[5];
   size_t all_points;
@@ -90,23 +91,22 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
 
     /* Skip problems of dimension != 5, those with more than MAX_NUM discrete points or those that
      * whose continuous ROIs do not match */
-    if (problem_disc->number_of_variables != 5)
+    if (problem_disc->get_number_of_variables() != 5)
       continue;
 
     /* Compute the number of points and check that the continuous ROIs match */
     matching_roi = 1;
     all_points = 1;
     for (j = 0; j < 5; j++) {
-      if (j < problem_disc->number_of_integer_variables) {
-        num_points[j] = (unsigned long)(problem_disc->largest_values_of_interest[j] -
-            problem_disc->smallest_values_of_interest[j] + 1);
+      if (j < problem_disc->get_number_of_integer_variables()) {
+        num_points[j] = (unsigned long)(problem_disc->get_largest_values_of_interest()[j] -
+                                        problem_disc->get_smallest_values_of_interest()[j] + 1);
         all_points *= num_points[j];
-      }
-      else {
+      } else {
         num_points[j] = 1;
-        matching_roi = matching_roi &&
-            coco_double_almost_equal(problem_disc->largest_values_of_interest[j],
-          problem_disc->largest_values_of_interest[j], 1e-10);
+        matching_roi =
+            matching_roi && coco_double_almost_equal(problem_disc->get_largest_values_of_interest()[j],
+                                                     problem_disc->get_largest_values_of_interest()[j], 1e-10);
       }
     }
 
@@ -121,10 +121,10 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
     }
 
     /* Compute and compare the optima */
-    problem_tmp = coco_problem_as_transformed(problem_disc)->inner_problem.get();
-    problem_cont = coco_problem_as_transformed(problem_tmp)->inner_problem.get();
-    xopt_cont = problem_cont->best_parameter.data();
-    fopt_cont = problem_cont->best_value.data();
+    problem_tmp = coco_problem_as_transformed(problem_disc)->get_inner_problem();
+    problem_cont = coco_problem_as_transformed(problem_tmp)->get_inner_problem();
+    xopt_cont = problem_cont->get_best_parameter().data();
+    fopt_cont = problem_cont->get_best_value()[0];
     fopt_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? xopt_cont[0] : (double)j);
@@ -145,13 +145,13 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
         }
       }
     }
-    fopt_cont[0] *= suite_bbob_mixint_scaling_factors[coco_problem_get_suite_dep_function(problem_disc) - 1];
-    if (!coco_double_almost_equal(fopt_cont[0], fopt_disc, 1e-10)) {
+    fopt_cont *= suite_bbob_mixint_scaling_factors[coco_problem_get_suite_dep_function(problem_disc) - 1];
+    if (!coco_double_almost_equal(fopt_cont, fopt_disc, 1e-10)) {
       coco_free_memory(x);
       coco_free_memory(f);
       coco_error("check_discretization_single(): The optima of the original "
           "and mixed-integer problem %s do not match, %f != %f!",
-          coco_problem_get_id(problem_disc), fopt_cont[0], fopt_disc);
+          coco_problem_get_id(problem_disc), fopt_cont, fopt_disc);
     }
     counter++;
   }
@@ -187,7 +187,7 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
   coco_problem_t *problem1_cont, *problem2_cont;
   coco_problem_t *problem1_tmp, *problem2_tmp;
   size_t j, k1, k2, k3, k4;
-  double *x_ext_cont;
+  const double *x_ext_cont;
   double f_ext1_cont, f_ext2_cont;
   double f_ext1_disc, f_ext2_disc;
   double *x, *f;
@@ -205,23 +205,22 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
 
     /* Skip problems of dimension != 5, those with more than MAX_NUM discrete points or those that
      * whose continuous ROIs do not match */
-    if (problem_disc->number_of_variables != 5)
+    if (problem_disc->get_number_of_variables() != 5)
       continue;
 
     /* Compute the number of points and check that the continuous ROIs match */
     matching_roi = 1;
     all_points = 1;
     for (j = 0; j < 5; j++) {
-      if (j < problem_disc->number_of_integer_variables) {
-        num_points[j] = (unsigned long)(problem_disc->largest_values_of_interest[j] -
-            problem_disc->smallest_values_of_interest[j] + 1);
+      if (j < problem_disc->get_number_of_integer_variables()) {
+        num_points[j] = (unsigned long)(problem_disc->get_largest_values_of_interest()[j] -
+                                        problem_disc->get_smallest_values_of_interest()[j] + 1);
         all_points *= num_points[j];
-      }
-      else {
+      } else {
         num_points[j] = 1;
-        matching_roi = matching_roi &&
-            coco_double_almost_equal(problem_disc->largest_values_of_interest[j],
-          problem_disc->largest_values_of_interest[j], 1e-10);
+        matching_roi =
+            matching_roi && coco_double_almost_equal(problem_disc->get_largest_values_of_interest()[j],
+                                                     problem_disc->get_largest_values_of_interest()[j], 1e-10);
       }
     }
 
@@ -236,17 +235,17 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     }
 
     /* Check whether the two extreme points are equal */
-    problem1_disc = coco_problem_as_stacked(problem_disc)->problem1.get();
-    problem2_disc = coco_problem_as_stacked(problem_disc)->problem2.get();
-    problem1_tmp = coco_problem_as_transformed(problem1_disc)->inner_problem.get();
-    problem2_tmp = coco_problem_as_transformed(problem2_disc)->inner_problem.get();
-    problem1_cont = coco_problem_as_transformed(problem1_tmp)->inner_problem.get();
-    problem2_cont = coco_problem_as_transformed(problem2_tmp)->inner_problem.get();
-    f_ext1_cont = problem1_cont->best_value[0];
-    f_ext2_cont = problem2_cont->best_value[0];
+    problem1_disc = coco_problem_as_stacked(problem_disc)->get_problem1();
+    problem2_disc = coco_problem_as_stacked(problem_disc)->get_problem2();
+    problem1_tmp = coco_problem_as_transformed(problem1_disc)->get_inner_problem();
+    problem2_tmp = coco_problem_as_transformed(problem2_disc)->get_inner_problem();
+    problem1_cont = coco_problem_as_transformed(problem1_tmp)->get_inner_problem();
+    problem2_cont = coco_problem_as_transformed(problem2_tmp)->get_inner_problem();
+    f_ext1_cont = problem1_cont->get_best_value()[0];
+    f_ext2_cont = problem2_cont->get_best_value()[0];
 
     /* The first extreme point */
-    x_ext_cont = problem1_cont->best_parameter.data();
+    x_ext_cont = problem1_cont->get_best_parameter().data();
     f_ext1_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? x_ext_cont[0] : (double)j);
@@ -277,7 +276,7 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     }
 
     /* The second extreme point */
-    x_ext_cont = problem2_cont->best_parameter.data();
+    x_ext_cont = problem2_cont->get_best_parameter().data();
     f_ext2_disc = DBL_MAX;
     for (j = 0; j < num_points[0]; j++) {
       x[0] = ((num_points[0] == 1) ? x_ext_cont[0] : (double)j);

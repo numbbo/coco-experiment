@@ -61,6 +61,38 @@ add_test(NAME test_coco_suite
          COMMAND $<TARGET_FILE:test_coco_suite>
          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_executable(test_coco_api test_coco_api.c coco.cpp)
+if (LIBM)
+  target_link_libraries(test_coco_api PUBLIC ${LIBM})
+endif()
+add_test(NAME test_coco_api
+         COMMAND $<TARGET_FILE:test_coco_api>
+         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+## Calls of the public C interface that must fail with the given error message
+add_executable(test_coco_api_errors test_coco_api_errors.c coco.cpp)
+if (LIBM)
+  target_link_libraries(test_coco_api_errors PUBLIC ${LIBM})
+endif()
+foreach(error_case IN ITEMS
+        "unknown_suite@unknown problem suite"
+        "allocate_zero@called with 0 size"
+        "function_index@function index exceeding"
+        "dimension_index@dimensions index exceeding"
+        "instance_index@instance index exceeding"
+        "fvalues_of_interest@undefined for single-objective problems"
+        "remove_other_observer@trying to remove observer toy instead of bbob"
+        "feed_solution_order@Evaluation 2 came before evaluation 1")
+  string(REPLACE "@" ";" error_case "${error_case}")
+  list(GET error_case 0 error_name)
+  list(GET error_case 1 error_message)
+  add_test(NAME test_coco_api_error-${error_name}
+           COMMAND $<TARGET_FILE:test_coco_api_errors> ${error_name}
+           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_property(TEST test_coco_api_error-${error_name}
+               PROPERTY PASS_REGULAR_EXPRESSION "COCO FATAL ERROR: [^\n]*${error_message}")
+endforeach()
+
 add_test(NAME test_tainted-bbob COMMAND $<TARGET_FILE:test_tainted_problem> bbob)
 set_property(TEST test_tainted-bbob PROPERTY WILL_FAIL YES)
 add_test(NAME test_tainted-bbob-largescale COMMAND $<TARGET_FILE:test_tainted_problem> bbob-largescale)

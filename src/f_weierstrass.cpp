@@ -25,11 +25,8 @@ static constexpr size_t F_WEIERSTRASS_SUMMANDS = 12;
 /**
  * @brief The Weierstrass function.
  */
-struct f_weierstrass_t final : public coco_problem_s {
-  double f0{};
-  double ak[F_WEIERSTRASS_SUMMANDS]{};
-  double bk[F_WEIERSTRASS_SUMMANDS]{};
-
+class f_weierstrass_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x) const;
 
@@ -58,6 +55,11 @@ struct f_weierstrass_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  double f0{};
+  double ak[F_WEIERSTRASS_SUMMANDS]{};
+  double bk[F_WEIERSTRASS_SUMMANDS]{};
 };
 
 /**

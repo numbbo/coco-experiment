@@ -50,13 +50,11 @@ static double tosz_uv_inv(double yi, const tosz_data *d) {
 /**
  * @brief Applies the oscillating non-linear transformation to the decision values.
  */
-struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
-  const double alpha;
-  std::vector<double> oscillated_x;
-
+class transform_vars_oscillate_t final : public coco_problem_transformed_t {
+public:
   explicit transform_vars_oscillate_t(coco_problem_ptr_t inner)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_oscillate"), alpha(0.1),
-        oscillated_x(inner_problem->number_of_variables) {}
+        oscillated_x(inner_problem->get_number_of_variables()) {}
 
   /**
    * @brief Multivariate, coordinate-wise, oscillating non-linear transformation.
@@ -75,7 +73,7 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
    * @brief Evaluates the transformed objective functions.
    */
   void evaluate_function(const double *x, double *y) override {
-    if (inner_problem->number_of_objectives == 0) {
+    if (inner_problem->get_number_of_objectives() == 0) {
       inner_problem->evaluate_function(x, y);
       return;
     }
@@ -93,7 +91,7 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
   void evaluate_constraint(const double *x, double *y, int update_counter) override {
     double tmp, base;
 
-    if (inner_problem->number_of_constraints == 0) {
+    if (inner_problem->get_number_of_constraints() == 0) {
       inner_problem->evaluate_constraint(x, y, update_counter);
       return;
     }
@@ -122,6 +120,10 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
       x[i] = tosz_uv_inv(inner_x[i], &d);
     return true;
   }
+
+private:
+  const double alpha;
+  std::vector<double> oscillated_x;
 };
 
 /**

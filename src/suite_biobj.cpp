@@ -40,7 +40,8 @@ static std::string_view suite_biobj_get_instances_by_year(const int year) {
 /**
  * @brief The bbob-biobj and bbob-biobj-ext suites.
  */
-struct suite_biobj_t final : public coco_suite_s {
+class suite_biobj_t final : public coco_suite_s {
+public:
   using coco_suite_s::coco_suite_s;
 
   std::string_view get_instances_by_year(const int year) const override {
@@ -52,13 +53,14 @@ struct suite_biobj_t final : public coco_suite_s {
     coco_problem_ptr_t problem;
 
     problem = coco_get_biobj_problem(function, dimension, instance, coco_make_bbob_problem, new_instances,
-                                     dimensions.data(), dimensions.size());
+                                     get_dimensions().data(), get_dimensions().size());
 
-    problem->is_opt_known = 1;
+    problem->set_opt_known(true);
 
     return problem;
   }
 
+private:
   suite_biobj_new_instances_t new_instances; /**< @brief The new instances computed so far. */
 };
 

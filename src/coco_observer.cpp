@@ -31,13 +31,18 @@ static constexpr size_t OBSERVER_DEFAULT_NUMBER_OF_TARGET_TRIGGERS = 20;
  * at 0, and from -precision on with step -10**(exponent/number_of_triggers)
  * until negative infinity.
  */
-struct coco_observer_log_targets_t {
+class coco_observer_log_targets_t {
+public:
   coco_observer_log_targets_t() = default;
   coco_observer_log_targets_t(const size_t number_of_triggers, const double precision);
 
   /** @brief Returns whether the given value triggers logging and updates the target if so. */
   bool trigger(const double given_value);
 
+  /** @brief Returns the currently hit target. */
+  double get_value() const { return value; }
+
+private:
   int exponent = INT_MAX;        /**< @brief Value used to compare with the previously hit
                                     target. */
   double value = DBL_MAX;        /**< @brief Value of the currently hit target. */
@@ -53,10 +58,18 @@ struct coco_observer_log_targets_t {
  * The target values that trigger logging are at every precision * integer
  * value.
  */
-struct coco_observer_lin_targets_t {
+class coco_observer_lin_targets_t {
+public:
+  coco_observer_lin_targets_t() = default;
+  explicit coco_observer_lin_targets_t(const double precision) : precision(precision) {}
+
   /** @brief Returns whether the given value triggers logging and updates the target if so. */
   bool trigger(const double given_value);
 
+  /** @brief Returns the currently hit target. */
+  double get_value() const { return value; }
+
+private:
   double value = DBL_MAX; /**< @brief Value of the currently hit target. */
   double precision = 0;   /**< @brief Precision of interest. */
 };
@@ -68,7 +81,8 @@ struct coco_observer_lin_targets_t {
  * The linear targets are always used, while the logarithmic ones are used only
  * on problems with known optima.
  */
-struct coco_observer_targets_t {
+class coco_observer_targets_t {
+public:
   coco_observer_targets_t() = default;
   coco_observer_targets_t(const int optima_known, const double lin_precision, const size_t number_of_targets,
                           const double log_precision);
@@ -79,6 +93,7 @@ struct coco_observer_targets_t {
   /** @brief Returns the last triggered target. */
   double last_target() const;
 
+private:
   bool use_log_targets = false;
   coco_observer_lin_targets_t lin_targets;
   coco_observer_log_targets_t log_targets; /**< @brief Only used if use_log_targets is set. */
@@ -91,13 +106,18 @@ struct coco_observer_targets_t {
  * - every 10**(exponent1/number_of_triggers) for exponent1 >= 0
  * - every base_evaluation * dimension * (10**exponent2) for exponent2 >= 0
  */
-struct coco_observer_evaluations_t {
+class coco_observer_evaluations_t {
+public:
   coco_observer_evaluations_t() = default;
   coco_observer_evaluations_t(const size_t number_evaluation_triggers, std::string_view base_evaluations,
                               const size_t dimension);
 
   /** @brief Returns whether the given evaluation number triggers logging. */
   bool trigger(const size_t evaluation_number);
+
+private:
+  bool trigger_first(const size_t evaluation_number);
+  bool trigger_second(const size_t evaluation_number);
 
   /* First trigger */
   size_t value1 = 1;             /**< @brief The next value for the first trigger. */
@@ -106,18 +126,14 @@ struct coco_observer_evaluations_t {
                                     and 10**(i+1) for any i. */
 
   /* Second trigger */
-  size_t value2 = 0;            /**< @brief The next value for the second trigger. */
-  size_t exponent2 = 0;         /**< @brief Exponent used to compute the second trigger. */
+  size_t value2 = 0;                    /**< @brief The next value for the second trigger. */
+  size_t exponent2 = 0;                 /**< @brief Exponent used to compute the second trigger. */
   std::vector<size_t> base_evaluations; /**< @brief The base evaluation numbers used to
                                            compute the actual evaluation numbers that
                                            trigger logging. */
-  size_t base_index = 0;        /**< @brief The next index of the base evaluations. */
-  size_t dimension = 0;         /**< @brief Dimension used in the calculation of the first
-                                   trigger. */
-
-private:
-  bool trigger_first(const size_t evaluation_number);
-  bool trigger_second(const size_t evaluation_number);
+  size_t base_index = 0;                /**< @brief The next index of the base evaluations. */
+  size_t dimension = 0;                 /**< @brief Dimension used in the calculation of the first
+                                           trigger. */
 };
 
 /**
@@ -244,9 +260,8 @@ bool coco_observer_lin_targets_t::trigger(const double given_value) {
  */
 coco_observer_targets_t::coco_observer_targets_t(const int optima_known, const double lin_precision,
                                                  const size_t number_of_targets, const double log_precision)
-    : use_log_targets((number_of_targets > 0) && optima_known), log_targets(number_of_targets, log_precision) {
-  lin_targets.precision = lin_precision;
-}
+    : use_log_targets((number_of_targets > 0) && optima_known), lin_targets(lin_precision),
+      log_targets(number_of_targets, log_precision) {}
 
 /**
  * @brief Computes and returns whether the given value should trigger logging.
@@ -262,10 +277,10 @@ bool coco_observer_targets_t::trigger(const double given_value) {
  * @brief Returns the last triggered target.
  */
 double coco_observer_targets_t::last_target() const {
-  double last_target = lin_targets.value;
+  double last_target = lin_targets.get_value();
 
   if (use_log_targets) {
-    double last_log_target = log_targets.value;
+    double last_log_target = log_targets.get_value();
     if (last_log_target < last_target) {
       last_target = last_log_target;
     }
@@ -650,7 +665,7 @@ coco_problem_ptr_t coco_observer_s::observe(coco_problem_ptr_t problem) {
   if (problem == nullptr)
     return nullptr;
 
-  if (is_active == 0) {
+  if (!active) {
     coco_warning("coco_problem_add_observer(): The problem will not be observed. (observer not active)");
     return problem;
   }
@@ -689,7 +704,7 @@ coco_problem_t *coco_problem_add_observer(coco_problem_t *problem, coco_observer
  */
 coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_observer_t *observer) {
 
-  if ((observer == nullptr) || (observer->is_active == 0)) {
+  if ((observer == nullptr) || !observer->is_active()) {
     coco_warning("coco_problem_remove_observer(): The problem was not observed. %s",
                  observer == nullptr ? "(observer == NULL)" : "(observer not active)");
     return problem;
@@ -701,11 +716,11 @@ coco_problem_t *coco_problem_remove_observer(coco_problem_t *problem, coco_obser
    * This is a hack - it assumes that the name of the problem is formatted as
    * "observer_name(problem_name)". While not elegant, it does the job and is
    * better than nothing. */
-  const std::string prefix = coco_remove_from_string(problem->problem_name, "(", "");
-  if (prefix != observer->observer_name) {
+  const std::string prefix = coco_remove_from_string(problem->get_name(), "(", "");
+  if (prefix != observer->get_name()) {
     coco_error("coco_problem_remove_observer(): trying to remove observer %s "
                "instead of %s",
-               observer->observer_name.c_str(), prefix.c_str());
+               observer->get_name().c_str(), prefix.c_str());
   }
 
   /* Keep the inner problem and free the logger */
@@ -725,12 +740,12 @@ const char *coco_observer_get_result_folder(const coco_observer_t *observer) {
     coco_warning("coco_observer_get_result_folder(): no observer to get "
                  "result_folder from");
     return "";
-  } else if (observer->is_active == 0) {
+  } else if (!observer->is_active()) {
     coco_warning("coco_observer_get_result_folder(): observer is not active, "
                  "returning empty string");
     return "";
   }
-  return observer->result_folder.c_str();
+  return observer->get_result_folder().c_str();
 }
 
 /**
@@ -742,7 +757,7 @@ const char *coco_observer_get_result_folder(const coco_observer_t *observer) {
  */
 void coco_observer_signal_restart(coco_observer_t *observer, coco_problem_t *problem) {
 
-  if ((observer == nullptr) || (observer->is_active == 0)) {
+  if ((observer == nullptr) || !observer->is_active()) {
     coco_warning("coco_observer_signal_restart(): The problem is not being observed. %s",
                  observer == nullptr ? "(observer == NULL)" : "(observer not active)");
     return;

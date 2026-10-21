@@ -15,7 +15,8 @@
 /**
  * @brief The toy suite.
  */
-struct suite_toy_t final : public coco_suite_s {
+class suite_toy_t final : public coco_suite_s {
+public:
   using coco_suite_s::coco_suite_s;
 
   /** @brief Returns the problem with the given function, dimension and instance. */

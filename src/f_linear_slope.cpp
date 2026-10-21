@@ -37,9 +37,8 @@ static double f_linear_slope_raw(const double *x, const size_t number_of_variabl
 /**
  * @brief The linear slope function.
  */
-struct f_linear_slope_t final : public coco_problem_s {
-  std::vector<double> slopes; /**< @brief |s_i| = sqrt(alpha)^(i / (n - 1)) */
-
+class f_linear_slope_t final : public coco_problem_s {
+public:
   f_linear_slope_t(const size_t number_of_variables, const double *best_parameter)
       : coco_problem_s(number_of_variables, 1, 0), slopes(number_of_variables) {
     static const double alpha = 100.0;
@@ -77,6 +76,9 @@ struct f_linear_slope_t final : public coco_problem_s {
     for (size_t i = 0; i < number_of_variables; ++i)
       y[i] = best_parameter[i] > 0.0 ? -slopes[i] : slopes[i];
   }
+
+private:
+  std::vector<double> slopes; /**< @brief |s_i| = sqrt(alpha)^(i / (n - 1)) */
 };
 
 /**

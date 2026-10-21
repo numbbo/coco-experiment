@@ -76,12 +76,11 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
       smallest_values_of_interest[i] = 0;
       largest_values_of_interest[i] = static_cast<double>(cardinality) - 1;
       /* Inner problem */
-      problem->smallest_values_of_interest[i] = -4;
-      problem->largest_values_of_interest[i] = 4;
+      problem->set_region_of_interest(i, -4, 4);
     }
   }
 
-  inner_problem_id = problem->problem_id;
+  inner_problem_id = problem->get_id();
 
   problem = transform_vars_discretize(std::move(problem), smallest_values_of_interest.data(),
                                       largest_values_of_interest.data(), num_integer);
@@ -97,7 +96,8 @@ static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, co
 /**
  * @brief The bbob-mixint suite.
  */
-struct suite_bbob_mixint_t final : public coco_suite_s {
+class suite_bbob_mixint_t final : public coco_suite_s {
+public:
   using coco_suite_s::coco_suite_s;
 
   std::string_view get_instances_by_year(const int year) const override {

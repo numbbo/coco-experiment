@@ -20,9 +20,8 @@
 /**
  * @brief The sharp ridge function.
  */
-struct f_sharp_ridge_generalized_t final : public coco_problem_s {
-  size_t proportion_of_linear_dims{};
-
+class f_sharp_ridge_generalized_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x) const;
 
@@ -45,6 +44,9 @@ struct f_sharp_ridge_generalized_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  size_t proportion_of_linear_dims{};
 };
 
 /**

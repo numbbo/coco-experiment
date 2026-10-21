@@ -9,13 +9,11 @@
 /**
  * @brief Applies multiplicative uniform noise to the objective value of the inner problem.
  */
-struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
-  const double alpha;
-  const double beta;
-
+class transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
+public:
   transform_obj_uniform_noise_t(coco_problem_ptr_t inner, const double alpha, const double beta)
       : coco_problem_transformed_t(std::move(inner), "uniform_noise_model"), alpha(alpha), beta(beta) {
-    is_noisy = 1;
+    noisy = true;
   }
 
   /**
@@ -23,7 +21,7 @@ struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
    */
   void evaluate_function(const double *x, double *y) override {
     double uniform_noise_term1, uniform_noise_term2;
-    double fopt = inner_problem->best_value[0];
+    double fopt = inner_problem->get_best_value()[0];
     uniform_noise_term1 = coco_sample_uniform_noise();
     uniform_noise_term2 = coco_sample_uniform_noise();
     double uniform_noise_factor = pow(uniform_noise_term1, beta);
@@ -43,6 +41,10 @@ struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
 
   /** @brief The decision values are not transformed. */
   bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+
+private:
+  const double alpha;
+  const double beta;
 };
 
 /**

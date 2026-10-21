@@ -12,8 +12,8 @@
  * Possible options:
  * - file_name: string (name of the output file; default value is "first_hitting_times.dat")
  */
-struct observer_toy_t final : public coco_observer_s {
-
+class observer_toy_t final : public coco_observer_s {
+public:
   observer_toy_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                  coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings) {
@@ -40,6 +40,8 @@ struct observer_toy_t final : public coco_observer_s {
 
   coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
 
+private:
+  friend class logger_toy_t; /* Writes to the log file */
+
   coco_file_t log_file; /**< @brief File used for logging. */
 };
-

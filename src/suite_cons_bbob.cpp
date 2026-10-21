@@ -144,7 +144,8 @@ static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name
 /**
  * @brief The bbob-constrained suites.
  */
-struct suite_cons_bbob_t final : public coco_suite_s {
+class suite_cons_bbob_t final : public coco_suite_s {
+public:
   using coco_suite_s::coco_suite_s;
 
   std::string_view get_instances_by_year(const int year) const override {
@@ -155,13 +156,13 @@ struct suite_cons_bbob_t final : public coco_suite_s {
   coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
     coco_problem_ptr_t problem;
 
-    problem = coco_get_cons_bbob_problem(suite_name, function, dimension, instance);
+    problem = coco_get_cons_bbob_problem(get_name(), function, dimension, instance);
 
     /* Use the standard stacked problem_id as problem_name and
      * construct a new suite-specific problem_id
      */
-    problem->set_id("%s_f%03zu_i%02zu_d%02zu", suite_name.c_str(), function, instance, dimension);
-    problem->set_name("%s suite problem f%zu instance %zu in %zuD", suite_name.c_str(), function, instance, dimension);
+    problem->set_id("%s_f%03zu_i%02zu_d%02zu", get_name().c_str(), function, instance, dimension);
+    problem->set_name("%s suite problem f%zu instance %zu in %zuD", get_name().c_str(), function, instance, dimension);
 
     return problem;
   }

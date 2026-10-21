@@ -26,14 +26,12 @@
 /**
  * @brief Makes the first number_of_integer_variables variables of the inner problem discrete.
  */
-struct transform_vars_discretize_t final : public coco_problem_transformed_t {
-  std::vector<double> offset;
-  std::vector<double> discretized_x;
-
+class transform_vars_discretize_t final : public coco_problem_transformed_t {
+public:
   transform_vars_discretize_t(coco_problem_ptr_t inner, const double *smallest_values_of_interest,
                               const double *largest_values_of_interest, const size_t number_of_integer_variables)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_discretize"),
-        offset(inner_problem->number_of_variables), discretized_x(inner_problem->number_of_variables) {
+        offset(inner_problem->get_number_of_variables()), discretized_x(inner_problem->get_number_of_variables()) {
     double l, u, inner_l, inner_u, outer_l, outer_u;
     double outer_xopt, inner_xopt, inner_approx_xopt;
     const double precision_offset = 1e-7; /* Needed to avoid issues with rounding doubles */
@@ -51,14 +49,14 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
         /* Compute the offset for integer variables */
         outer_l = this->smallest_values_of_interest[i];
         outer_u = this->largest_values_of_interest[i];
-        l = inner_problem->smallest_values_of_interest[i];
-        u = inner_problem->largest_values_of_interest[i];
+        l = inner_problem->get_smallest_values_of_interest()[i];
+        u = inner_problem->get_largest_values_of_interest()[i];
         n = coco_double_to_int(outer_u) - coco_double_to_int(outer_l) + 1; /* number of integer values */
         assert(n > 1);
         inner_l = l + (u - l) / (n + 1);
         inner_u = u - (u - l) / (n + 1);
         /* Find the location of the optimum in the coordinates of the outer problem */
-        inner_xopt = inner_problem->best_parameter[i];
+        inner_xopt = inner_problem->get_best_parameter()[i];
         outer_xopt = outer_l + (outer_u - outer_l) * (inner_xopt - inner_l) / (inner_u - inner_l);
         outer_xopt = coco_double_round(outer_xopt + precision_offset);
         /* Make sure you the bounds are respected */
@@ -85,7 +83,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
     double l, u, inner_l, inner_u, outer_l, outer_u;
     int n;
 
-    if (inner_problem->number_of_objectives == 0) {
+    if (inner_problem->get_number_of_objectives() == 0) {
       inner_problem->evaluate_function(x, y);
       return;
     }
@@ -95,8 +93,8 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
     for (size_t i = 0; i < number_of_integer_variables; ++i) {
       outer_l = smallest_values_of_interest[i];
       outer_u = largest_values_of_interest[i];
-      l = inner_problem->smallest_values_of_interest[i];
-      u = inner_problem->largest_values_of_interest[i];
+      l = inner_problem->get_smallest_values_of_interest()[i];
+      u = inner_problem->get_largest_values_of_interest()[i];
       n = coco_double_to_int(outer_u) - coco_double_to_int(outer_l) + 1; /* number of integer values in this coordinate */
       assert(n > 1);
       inner_l = l + (u - l) / (n + 1);
@@ -123,6 +121,10 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
 
   /** @brief Rounding to the integers is not invertible. */
   bool inverse(const double *, double *) const override { return false; }
+
+private:
+  std::vector<double> offset;
+  std::vector<double> discretized_x;
 };
 
 /**

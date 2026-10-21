@@ -35,7 +35,8 @@ static double f_bueche_rastrigin_raw(const double *x,
 /**
  * @brief The Bueche-Rastrigin function.
  */
-struct f_bueche_rastrigin_t final : public coco_problem_s {
+class f_bueche_rastrigin_t final : public coco_problem_s {
+public:
   explicit f_bueche_rastrigin_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Bueche-Rastrigin function", -5.0, 5.0, 0.0);
     set_id("%s_d%02zu", "bueche-rastrigin", number_of_variables);

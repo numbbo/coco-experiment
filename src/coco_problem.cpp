@@ -28,8 +28,6 @@
  */
 void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y) {
   /* implements a safer version of problem->evaluate(problem, x, y) */
-  bool feasible;
-
   assert(problem != nullptr);
 
   /* Set objective vector to INFINITY if the decision vector contains any INFINITY values */
@@ -49,20 +47,7 @@ void coco_evaluate_function(coco_problem_t *problem, const double *x, double *y)
   }
 
   problem->evaluate_function(x, y);
-  problem->evaluations++; /* each derived class has its own counter, only the most outer will be visible */
-
-  /* A little bit of bookkeeping */
-  if (y[0] < problem->best_observed_fvalue[0]) {
-    feasible = 1;
-    if (coco_problem_get_number_of_constraints(problem) > 0) {
-      std::vector<double> z(coco_problem_get_number_of_constraints(problem));
-      feasible = problem->is_feasible(x, z.data());
-    }
-    if (feasible) {
-      problem->best_observed_fvalue[0] = y[0];
-      problem->best_observed_evaluation[0] = problem->evaluations;
-    }
-  }
+  problem->count_evaluation(x, y);
 }
 
 /**
@@ -96,7 +81,7 @@ void coco_evaluate_constraint_optional_update(coco_problem_t *problem, const dou
 
   problem->evaluate_constraint(x, y, update_counter);
   if (update_counter)
-    problem->evaluations_constraints++;
+    problem->count_constraint_evaluation();
 }
 
 void coco_evaluate_constraint(coco_problem_t *problem, const double *x, double *y) {
@@ -168,25 +153,25 @@ coco_problem_s::coco_problem_s(const size_t number_of_variables, const size_t nu
   largest_values_of_interest.assign(number_of_variables, 0.0);
   number_of_integer_variables = 0; /* No integer variables by default */
 
-  is_noisy = 0;
+  noisy = false;
   if (number_of_objectives > 0)
     last_noise_free_values.assign(number_of_objectives, 0.0);
   if (number_of_objectives > 1) {
-    is_opt_known = 0; /* Optimum of multi-objective problems is unknown by default */
+    opt_known = false; /* Optimum of multi-objective problems is unknown by default */
     best_value.assign(number_of_objectives, 0.0);
     nadir_value.assign(number_of_objectives, 0.0);
   } else {
-    is_opt_known = 1; /* Optimum of single-objective problems is known by default */
+    opt_known = true; /* Optimum of single-objective problems is known by default */
     best_parameter.assign(number_of_variables, 0.0);
     best_value.assign(1, 0.0);
   }
-  is_tainted = 0;
+  tainted = false;
 
   evaluations = 0;
   evaluations_constraints = 0;
-  final_target_delta[0] = 1e-8; /* in case to be modified by the benchmark */
-  best_observed_fvalue[0] = DBL_MAX;
-  best_observed_evaluation[0] = 0;
+  final_target_delta = 1e-8; /* in case to be modified by the benchmark */
+  best_observed_fvalue = DBL_MAX;
+  best_observed_evaluation = 0;
   suite = nullptr; /* To be initialized in the coco_suite_get_problem_from_indices() function */
   suite_dep_index = 0;
   suite_dep_function = 0;
@@ -203,13 +188,13 @@ void coco_problem_s::copy_properties_from(const coco_problem_s &other) {
   largest_values_of_interest = other.largest_values_of_interest;
   if (!other.best_parameter.empty())
     best_parameter = other.best_parameter;
-  is_tainted = other.is_tainted;
+  tainted = other.tainted;
 
   number_of_integer_variables = other.number_of_integer_variables;
 
   initial_solution = other.initial_solution;
 
-  is_opt_known = other.is_opt_known;
+  opt_known = other.opt_known;
   if (!other.best_value.empty())
     best_value = other.best_value;
   if (!other.nadir_value.empty())
@@ -221,14 +206,41 @@ void coco_problem_s::copy_properties_from(const coco_problem_s &other) {
 
   evaluations = other.evaluations;
   evaluations_constraints = other.evaluations_constraints;
-  final_target_delta[0] = other.final_target_delta[0];
-  best_observed_fvalue[0] = other.best_observed_fvalue[0];
-  best_observed_evaluation[0] = other.best_observed_evaluation[0];
+  final_target_delta = other.final_target_delta;
+  best_observed_fvalue = other.best_observed_fvalue;
+  best_observed_evaluation = other.best_observed_evaluation;
 
   suite = other.suite;
   suite_dep_index = other.suite_dep_index;
   suite_dep_function = other.suite_dep_function;
   suite_dep_instance = other.suite_dep_instance;
+}
+
+void coco_problem_s::count_evaluation(const double *x, const double *y) {
+  evaluations++; /* each derived class has its own counter, only the most outer will be visible */
+
+  /* A little bit of bookkeeping */
+  if (y[0] < best_observed_fvalue) {
+    bool feasible = true;
+    if (number_of_constraints > 0) {
+      std::vector<double> z(number_of_constraints);
+      feasible = is_feasible(x, z.data());
+    }
+    if (feasible) {
+      best_observed_fvalue = y[0];
+      best_observed_evaluation = evaluations;
+    }
+  }
+}
+
+void coco_problem_s::set_best_parameter_to_nan() { coco_vector_set_to_nan(best_parameter.data(), number_of_variables); }
+
+void coco_problem_s::set_suite_dependent(coco_suite_t *suite, const size_t index, const size_t function,
+                                         const size_t instance) {
+  this->suite = suite;
+  suite_dep_index = index;
+  suite_dep_function = function;
+  suite_dep_instance = instance;
 }
 
 /**
@@ -317,12 +329,12 @@ void coco_problem_s::set_type(const char *format, ...) {
 
 size_t coco_problem_get_evaluations(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  return problem->evaluations;
+  return problem->get_evaluations();
 }
 
 size_t coco_problem_get_evaluations_constraints(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  return problem->evaluations_constraints;
+  return problem->get_evaluations_constraints();
 }
 
 /**
@@ -350,16 +362,17 @@ int coco_problem_final_target_hit(const coco_problem_t *problem) {
   assert(problem != nullptr);
   if (coco_problem_get_number_of_objectives(problem) != 1 || coco_problem_get_evaluations(problem) < 1)
     return 0;
-  if (problem->best_value.empty())
+  if (problem->get_best_value().empty())
     return 0;
-  return problem->best_observed_fvalue[0] <= problem->best_value[0] + problem->final_target_delta[0] ? 1 : 0;
+  return problem->get_best_observed_fvalue() <= problem->get_best_value()[0] + problem->get_final_target_delta() ? 1
+                                                                                                                 : 0;
 }
 /**
  * @note Tentative...
  */
 double coco_problem_get_best_observed_fvalue1(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  return problem->best_observed_fvalue[0];
+  return problem->get_best_observed_fvalue();
 }
 
 /**
@@ -367,8 +380,8 @@ double coco_problem_get_best_observed_fvalue1(const coco_problem_t *problem) {
  */
 double coco_problem_get_best_value(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(!problem->best_value.empty());
-  return problem->best_value[0];
+  assert(!problem->get_best_value().empty());
+  return problem->get_best_value()[0];
 }
 
 /**
@@ -377,8 +390,8 @@ double coco_problem_get_best_value(const coco_problem_t *problem) {
  */
 double coco_problem_get_final_target_fvalue1(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(!problem->best_value.empty());
-  return problem->best_value[0] + problem->final_target_delta[0];
+  assert(!problem->get_best_value().empty());
+  return problem->get_best_value()[0] + problem->get_final_target_delta();
 }
 
 /**
@@ -387,8 +400,8 @@ double coco_problem_get_final_target_fvalue1(const coco_problem_t *problem) {
  */
 const char *coco_problem_get_name(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(!problem->problem_name.empty());
-  return problem->problem_name.c_str();
+  assert(!problem->get_name().empty());
+  return problem->get_name().c_str();
 }
 
 /**
@@ -402,57 +415,57 @@ const char *coco_problem_get_name(const coco_problem_t *problem) {
  */
 const char *coco_problem_get_id(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(!problem->problem_id.empty());
-  return problem->problem_id.c_str();
+  assert(!problem->get_id().empty());
+  return problem->get_id().c_str();
 }
 
 const char *coco_problem_get_type(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(!problem->problem_type.empty());
-  return problem->problem_type.c_str();
+  assert(!problem->get_type().empty());
+  return problem->get_type().c_str();
 }
 
 size_t coco_problem_get_dimension(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(problem->number_of_variables > 0);
-  return problem->number_of_variables;
+  assert(problem->get_number_of_variables() > 0);
+  return problem->get_number_of_variables();
 }
 
 size_t coco_problem_get_number_of_objectives(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  return problem->number_of_objectives;
+  return problem->get_number_of_objectives();
 }
 
 size_t coco_problem_get_number_of_constraints(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  return problem->number_of_constraints;
+  return problem->get_number_of_constraints();
 }
 
 const double *coco_problem_get_smallest_values_of_interest(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(!problem->smallest_values_of_interest.empty());
-  return problem->smallest_values_of_interest.data();
+  assert(!problem->get_smallest_values_of_interest().empty());
+  return problem->get_smallest_values_of_interest().data();
 }
 
 const double *coco_problem_get_largest_values_of_interest(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(!problem->largest_values_of_interest.empty());
-  return problem->largest_values_of_interest.data();
+  assert(!problem->get_largest_values_of_interest().empty());
+  return problem->get_largest_values_of_interest().data();
 }
 
 size_t coco_problem_get_number_of_integer_variables(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  return problem->number_of_integer_variables;
+  return problem->get_number_of_integer_variables();
 }
 
 const double *coco_problem_get_largest_fvalues_of_interest(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  if (problem->number_of_objectives == 1)
+  if (problem->get_number_of_objectives() == 1)
     coco_error(
         "coco_problem_get_largest_fvalues_of_interest(): f-values of interest undefined for single-objective problems");
-  if (problem->nadir_value.empty())
+  if (problem->get_nadir_value().empty())
     coco_error("coco_problem_get_largest_fvalues_of_interest(): f-values of interest undefined");
-  return problem->nadir_value.data();
+  return problem->get_nadir_value().data();
 }
 
 /**
@@ -467,17 +480,18 @@ void coco_problem_get_initial_solution(const coco_problem_t *problem, double *in
 
 
   assert(problem != nullptr);
-  if (!problem->initial_solution.empty()) {
-    for (size_t i = 0; i < problem->number_of_variables; ++i)
-      initial_solution[i] = problem->initial_solution[i];
+  if (!problem->get_initial_solution().empty()) {
+    for (size_t i = 0; i < problem->get_number_of_variables(); ++i)
+      initial_solution[i] = problem->get_initial_solution()[i];
   } else {
-    assert(!problem->smallest_values_of_interest.empty());
-    assert(!problem->largest_values_of_interest.empty());
-    for (size_t i = 0; i < problem->number_of_variables; ++i)
-      initial_solution[i] = problem->smallest_values_of_interest[i] +
-                            0.5 * (problem->largest_values_of_interest[i] - problem->smallest_values_of_interest[i]);
-    if (problem->number_of_integer_variables > 0) {
-      for (size_t i = 0; i < problem->number_of_integer_variables; ++i) {
+    assert(!problem->get_smallest_values_of_interest().empty());
+    assert(!problem->get_largest_values_of_interest().empty());
+    for (size_t i = 0; i < problem->get_number_of_variables(); ++i)
+      initial_solution[i] =
+          problem->get_smallest_values_of_interest()[i] +
+          0.5 * (problem->get_largest_values_of_interest()[i] - problem->get_smallest_values_of_interest()[i]);
+    if (problem->get_number_of_integer_variables() > 0) {
+      for (size_t i = 0; i < problem->get_number_of_integer_variables(); ++i) {
         initial_solution[i] = coco_double_round(initial_solution[i]);
       }
     }
@@ -486,19 +500,19 @@ void coco_problem_get_initial_solution(const coco_problem_t *problem, double *in
 
 size_t coco_problem_get_suite_dep_index(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  return problem->suite_dep_index;
+  return problem->get_suite_dep_index();
 }
 
 static size_t coco_problem_get_suite_dep_function(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(problem->suite_dep_function > 0);
-  return problem->suite_dep_function;
+  assert(problem->get_suite_dep_function() > 0);
+  return problem->get_suite_dep_function();
 }
 
 static size_t coco_problem_get_suite_dep_instance(const coco_problem_t *problem) {
   assert(problem != nullptr);
-  assert(problem->suite_dep_instance > 0);
-  return problem->suite_dep_instance;
+  assert(problem->get_suite_dep_instance() > 0);
+  return problem->get_suite_dep_instance();
 }
 /**@}*/
 
@@ -514,15 +528,15 @@ static size_t coco_problem_get_suite_dep_instance(const coco_problem_t *problem)
 int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parameter) {
   assert(problem != nullptr);
 
-  if (problem->best_parameter.empty() || problem->number_of_objectives != 1) {
+  if (problem->get_best_parameter().empty() || problem->get_number_of_objectives() != 1) {
     return 0;
   }
 
   // No more benchmarking on this problem!
-  problem->is_tainted = 1;
+  problem->taint();
 
-  for (size_t i = 0; i < problem->number_of_variables; ++i) {
-    best_parameter[i] = problem->best_parameter[i];
+  for (size_t i = 0; i < problem->get_number_of_variables(); ++i) {
+    best_parameter[i] = problem->get_best_parameter()[i];
   }
 
   return 1;
@@ -535,15 +549,15 @@ int coco_problem_get_best_parameter(coco_problem_t *problem, double *best_parame
  *
  * @returns true if problem is tainted, otherwise returns false.re
  */
-int coco_problem_is_tainted(const coco_problem_t *problem) { return problem->is_tainted; }
+int coco_problem_is_tainted(const coco_problem_t *problem) { return problem->is_tainted(); }
 
 void bbob_problem_best_parameter_print(const coco_problem_t *problem) {
   coco_file_t file;
   assert(problem != nullptr);
-  assert(!problem->best_parameter.empty());
+  assert(!problem->get_best_parameter().empty());
   if (file.open("._bbob_problem_best_parameter.txt", "w")) {
-    for (size_t i = 0; i < problem->number_of_variables; ++i)
-      fprintf(file, " %.16f ", problem->best_parameter[i]);
+    for (size_t i = 0; i < problem->get_number_of_variables(); ++i)
+      fprintf(file, " %.16f ", problem->get_best_parameter()[i]);
   }
 }
 
@@ -565,20 +579,20 @@ void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
   }
 
   assert(problem != nullptr);
-  problem1 = coco_problem_as_stacked(problem)->problem1.get();
+  problem1 = coco_problem_as_stacked(problem)->get_problem1();
   assert(problem1 != nullptr);
-  assert(!problem1->best_parameter.empty());
+  assert(!problem1->get_best_parameter().empty());
 
-  problem2 = coco_problem_as_stacked(problem)->problem2.get();
+  problem2 = coco_problem_as_stacked(problem)->get_problem2();
   assert(problem2 != nullptr);
-  assert(!problem2->best_parameter.empty());
+  assert(!problem2->get_best_parameter().empty());
 
   if (file.open("._bbob_biobj_problem_best_parameter.txt", "w")) {
-    for (size_t i = 0; i < problem->number_of_variables; ++i)
-      fprintf(file, " %.16f ", problem1->best_parameter[i]);
+    for (size_t i = 0; i < problem->get_number_of_variables(); ++i)
+      fprintf(file, " %.16f ", problem1->get_best_parameter()[i]);
     fprintf(file, "\n");
-    for (size_t i = 0; i < problem->number_of_variables; ++i)
-      fprintf(file, " %.16f ", problem2->best_parameter[i]);
+    for (size_t i = 0; i < problem->get_number_of_variables(); ++i)
+      fprintf(file, " %.16f ", problem2->get_best_parameter()[i]);
   }
 }
 
@@ -605,10 +619,11 @@ static coco_problem_transformed_t *coco_problem_as_transformed(const coco_proble
  * in order to reflect the transformation somewhere.
  */
 coco_problem_transformed_s::coco_problem_transformed_s(coco_problem_ptr_t inner, std::string_view name_prefix)
-    : coco_problem_s(inner->number_of_variables, inner->number_of_objectives, inner->number_of_constraints),
+    : coco_problem_s(inner->get_number_of_variables(), inner->get_number_of_objectives(),
+                     inner->get_number_of_constraints()),
       inner_problem(std::move(inner)) {
   copy_properties_from(*inner_problem);
-  problem_name = std::string(name_prefix) + "(" + inner_problem->problem_name + ")";
+  set_name("%.*s(%s)", static_cast<int>(name_prefix.size()), name_prefix.data(), inner_problem->get_name().c_str());
 }
 
 /**
@@ -641,7 +656,7 @@ void coco_problem_transformed_s::recommend_solution(const double *x) { coco_reco
  * @brief Maps base_x to the coordinates of the inner problem and from there to the coordinates of this problem.
  */
 bool coco_problem_transformed_s::from_base_coordinates(const double *base_x, double *x) const {
-  std::vector<double> inner_x(inner_problem->number_of_variables);
+  std::vector<double> inner_x(inner_problem->get_number_of_variables());
   return inner_problem->from_base_coordinates(base_x, inner_x.data()) && inverse(inner_x.data(), x);
 }
 
@@ -654,7 +669,7 @@ bool coco_problem_transformed_s::identity_inverse(const double *inner_x, double 
  * @brief Frees the transformed problem but not its inner problem, which is returned instead.
  */
 static coco_problem_ptr_t coco_problem_transformed_free_keep_inner(coco_problem_ptr_t problem) {
-  return std::move(coco_problem_as_transformed(problem.get())->inner_problem);
+  return coco_problem_as_transformed(problem.get())->release_inner_problem();
 }
 
 /**@}*/
@@ -689,21 +704,21 @@ coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_pr
   assert(problem2);
   assert(coco_problem_get_dimension(problem1.get()) == coco_problem_get_dimension(problem2.get()));
 
-  problem_id = problem1->problem_id + "__" + problem2->problem_id;
-  problem_name = problem1->problem_name + " + " + problem2->problem_name;
+  set_id("%s__%s", problem1->get_id().c_str(), problem2->get_id().c_str());
+  set_name("%s + %s", problem1->get_name().c_str(), problem2->get_name().c_str());
 
   /* Without an explicit region of interest, use the one of the second problem */
   if (smallest_values_of_interest == nullptr)
-    smallest_values_of_interest = problem2->smallest_values_of_interest.data();
+    smallest_values_of_interest = problem2->get_smallest_values_of_interest().data();
   if (largest_values_of_interest == nullptr)
-    largest_values_of_interest = problem2->largest_values_of_interest.data();
+    largest_values_of_interest = problem2->get_largest_values_of_interest().data();
 
   for (size_t i = 0; i < number_of_variables; ++i) {
     this->smallest_values_of_interest[i] = smallest_values_of_interest[i];
     this->largest_values_of_interest[i] = largest_values_of_interest[i];
   }
-  assert(problem1->number_of_integer_variables == problem2->number_of_integer_variables);
-  number_of_integer_variables = problem1->number_of_integer_variables;
+  assert(problem1->get_number_of_integer_variables() == problem2->get_number_of_integer_variables());
+  number_of_integer_variables = problem1->get_number_of_integer_variables();
 
   assert(!best_value.empty());
 
@@ -713,18 +728,18 @@ coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_pr
     best_value[0] = -FLT_MAX;
 
     /* Define initial_solution as problem2->initial_solution */
-    if (coco_problem_get_number_of_constraints(problem2.get()) > 0 && !problem2->initial_solution.empty())
-      initial_solution = problem2->initial_solution;
+    if (coco_problem_get_number_of_constraints(problem2.get()) > 0 && !problem2->get_initial_solution().empty())
+      initial_solution = problem2->get_initial_solution();
 
   } else {
 
     /* Compute the ideal and nadir values */
     assert(!nadir_value.empty());
 
-    best_value[0] = problem1->best_value[0];
-    best_value[1] = problem2->best_value[0];
-    coco_evaluate_function(problem1.get(), problem2->best_parameter.data(), &nadir_value[0]);
-    coco_evaluate_function(problem2.get(), problem1->best_parameter.data(), &nadir_value[1]);
+    best_value[0] = problem1->get_best_value()[0];
+    best_value[1] = problem2->get_best_value()[0];
+    coco_evaluate_function(problem1.get(), problem2->get_best_parameter().data(), &nadir_value[0]);
+    coco_evaluate_function(problem2.get(), problem1->get_best_parameter().data(), &nadir_value[1]);
   }
 }
 

@@ -157,26 +157,110 @@ struct coco_problem_s {
   /** @brief Sets the problem_type using formatted printing (as in printf). */
   void set_type(const char *format, ...) COCO_FORMAT(2, 3);
 
+  /**
+   * @brief Counts an evaluation of the objective function(s) at x with the result y and keeps track of the best
+   * observed feasible value.
+   */
+  void count_evaluation(const double *x, const double *y);
+
+  /** @brief Counts an evaluation of the constraints. */
+  void count_constraint_evaluation() { ++evaluations_constraints; }
+
+  /** @brief Resets the evaluation counters, e.g. after evaluations needed to construct the problem. */
+  void reset_evaluation_counters() {
+    evaluations = 0;
+    evaluations_constraints = 0;
+  }
+
+  /** @brief Marks the problem as tainted because its best parameter has been revealed. */
+  void taint() { tainted = true; }
+
+  /** @brief Sets the containing suite and the suite-dependent index, function and instance. */
+  void set_suite_dependent(coco_suite_t *suite, const size_t index, const size_t function, const size_t instance);
+
+  /** @brief Sets the suite-dependent function. */
+  void set_suite_dep_function(const size_t function) { suite_dep_function = function; }
+
+  /** @brief Sets whether the optimal (best) value is actually known for this problem. */
+  void set_opt_known(const bool known) { opt_known = known; }
+
+  /**
+   * @brief Sets the best parameter, for the problem constructions that compute it after applying the
+   * transformations.
+   */
+  void set_best_parameter(const double *x) { best_parameter.assign(x, x + number_of_variables); }
+
+  /** @brief Sets the best parameter to NaN, for transformations that cannot map it. */
+  void set_best_parameter_to_nan();
+
+  /** @brief Sets the best value to the objective value(s) at the best parameter. */
+  void evaluate_best_value() { evaluate_best_value(best_parameter.data()); }
+
+  /** @brief Sets the best value to the objective value(s) at x. */
+  void evaluate_best_value(const double *x) { evaluate_function(x, best_value.data()); }
+
+  /** @brief Sets the initial solution, which should be feasible. */
+  void set_initial_solution(const double *x) { initial_solution.assign(x, x + number_of_variables); }
+
+  /** @brief Sets the region of interest of the variable with the given index. */
+  void set_region_of_interest(const size_t i, const double smallest, const double largest) {
+    smallest_values_of_interest[i] = smallest;
+    largest_values_of_interest[i] = largest;
+  }
+
+  size_t get_number_of_variables() const { return number_of_variables; }
+  size_t get_number_of_objectives() const { return number_of_objectives; }
+  size_t get_number_of_constraints() const { return number_of_constraints; }
+  size_t get_number_of_integer_variables() const { return number_of_integer_variables; }
+  const std::vector<double> &get_smallest_values_of_interest() const { return smallest_values_of_interest; }
+  const std::vector<double> &get_largest_values_of_interest() const { return largest_values_of_interest; }
+  bool is_noisy() const { return noisy; }
+  const std::vector<double> &get_last_noise_free_values() const { return last_noise_free_values; }
+  const std::vector<double> &get_initial_solution() const { return initial_solution; }
+  bool is_opt_known() const { return opt_known; }
+  const std::vector<double> &get_best_value() const { return best_value; }
+  const std::vector<double> &get_nadir_value() const { return nadir_value; }
+  /** @brief Returns the best parameter without tainting the problem (see taint()). */
+  const std::vector<double> &get_best_parameter() const { return best_parameter; }
+  bool is_tainted() const { return tainted; }
+  const std::string &get_name() const { return problem_name; }
+  const std::string &get_id() const { return problem_id; }
+  const std::string &get_type() const { return problem_type; }
+  size_t get_evaluations() const { return evaluations; }
+  size_t get_evaluations_constraints() const { return evaluations_constraints; }
+  double get_final_target_delta() const { return final_target_delta; }
+  double get_best_observed_fvalue() const { return best_observed_fvalue; }
+  size_t get_best_observed_evaluation() const { return best_observed_evaluation; }
+  coco_suite_t *get_suite() const { return suite; }
+  size_t get_suite_dep_index() const { return suite_dep_index; }
+  size_t get_suite_dep_function() const { return suite_dep_function; }
+  size_t get_suite_dep_instance() const { return suite_dep_instance; }
+
+protected:
+  /* The definition of the problem, which the subclasses set up in their constructors */
+
   size_t number_of_variables;   /**< @brief Number of variables expected by the function, i.e.
                                 problem dimension */
   size_t number_of_objectives;  /**< @brief Number of objectives. */
   size_t number_of_constraints; /**< @brief Number of constraints. */
 
   std::vector<double> smallest_values_of_interest; /**< @brief The lower bounds of the ROI in the decision space. */
-  std::vector<double> largest_values_of_interest; /**< @brief The upper bounds of the ROI in the decision space. */
-  size_t number_of_integer_variables;  /**< @brief Number of integer variables (if > 0, all integer variables come
+  std::vector<double> largest_values_of_interest;  /**< @brief The upper bounds of the ROI in the decision space. */
+  size_t number_of_integer_variables; /**< @brief Number of integer variables (if > 0, all integer variables come
                                        before any continuous ones). */
 
-  bool is_noisy;                              /**< @brief*/
+  bool noisy;                                 /**< @brief Whether the problem is noisy. */
   std::vector<double> last_noise_free_values; /**< @brief Empty if the problem has no objectives. */
 
   std::vector<double> initial_solution; /**< @brief Initial feasible solution (empty if not defined). */
-  bool is_opt_known;              /**< @brief Whether the optimal (best) value is actually known for this problem. */
+  bool opt_known;                 /**< @brief Whether the optimal (best) value is actually known for this problem. */
   std::vector<double> best_value; /**< @brief Optimal (smallest) function value if known, otherwise a reference
                                        value defined in the problem construction. */
-  std::vector<double> nadir_value; /**< @brief The nadir point (empty unless number_of_objectives > 1) */
+  std::vector<double> nadir_value;    /**< @brief The nadir point (empty unless number_of_objectives > 1) */
   std::vector<double> best_parameter; /**< @brief Optimal decision vector (empty unless unique) */
-  bool is_tainted; /**< @brief Is the problem tainted, i.e. has the optimal parameter setting been retrieved? */
+
+private:
+  bool tainted; /**< @brief Is the problem tainted, i.e. has the optimal parameter setting been retrieved? */
 
   std::string problem_name; /**< @brief Problem name. */
   std::string problem_id;   /**< @brief Problem ID (unique in the containing suite) */
@@ -185,13 +269,10 @@ struct coco_problem_s {
   size_t evaluations;             /**< @brief Number of objective function evaluations performed on the problem. */
   size_t evaluations_constraints; /**< @brief Number of constraint function evaluations performed on the problem. */
 
-  /* Convenience fields for output generation */
-  /* If at some point in time these arrays are changed to pointers, checks need to be added in the code to make sure
-   * they are not nullptr.*/
-
-  double final_target_delta[1];       /**< @brief Final target delta. */
-  double best_observed_fvalue[1];     /**< @brief The best observed value so far. */
-  size_t best_observed_evaluation[1]; /**< @brief The evaluation when the best value so far was achieved. */
+  /* Fields for output generation */
+  double final_target_delta;       /**< @brief Final target delta. */
+  double best_observed_fvalue;     /**< @brief The best observed value so far. */
+  size_t best_observed_evaluation; /**< @brief The evaluation when the best value so far was achieved. */
 
   /* Fields depending on the containing benchmark suite */
 
@@ -223,11 +304,16 @@ struct coco_problem_transformed_s : public coco_problem_s {
    */
   virtual bool inverse(const double *inner_x, double *x) const = 0;
 
-  coco_problem_ptr_t inner_problem; /**< @brief The inner problem, owned by this problem */
+  coco_problem_t *get_inner_problem() const { return inner_problem.get(); }
+
+  /** @brief Takes the inner problem out of this problem, which is left without one. */
+  coco_problem_ptr_t release_inner_problem() { return std::move(inner_problem); }
 
 protected:
   /** @brief The inverse of a transformation that does not change the decision values. */
   bool identity_inverse(const double *inner_x, double *x) const;
+
+  coco_problem_ptr_t inner_problem; /**< @brief The inner problem, owned by this problem */
 };
 using coco_problem_transformed_t = coco_problem_transformed_s;
 
@@ -249,6 +335,16 @@ struct coco_problem_stacked_s : public coco_problem_s {
   void evaluate_function(const double *x, double *y) override;
   void evaluate_constraint(const double *x, double *y, int update_counter) override;
 
+  coco_problem_t *get_problem1() const { return problem1.get(); }
+  coco_problem_t *get_problem2() const { return problem2.get(); }
+
+  /** @brief Takes the first problem out of this problem, which is left without it. */
+  coco_problem_ptr_t release_problem1() { return std::move(problem1); }
+
+  /** @brief Takes the second problem out of this problem, which is left without it. */
+  coco_problem_ptr_t release_problem2() { return std::move(problem2); }
+
+private:
   coco_problem_ptr_t problem1; /**< @brief The first problem (objective) */
   coco_problem_ptr_t problem2; /**< @brief The second problem (objective or constraints) */
 };
@@ -283,12 +379,13 @@ struct coco_observer_settings_s {
  *
  * An observer observes the whole benchmark process. It is independent of suites and problems. Each time a
  * new problem of the suite is being observed, the observer initializes a new logger (wraps the observed
- * problem with the corresponding logger). Every observer is a subclass that implements add_logger().
+ * problem with the corresponding logger). Every observer is a subclass that implements add_logger(). The
+ * settings are available to the subclasses and their loggers.
  */
-struct coco_observer_s : public coco_observer_settings_s {
+struct coco_observer_s : protected coco_observer_settings_s {
 
   explicit coco_observer_s(const coco_observer_settings_s &observer_settings)
-      : coco_observer_settings_s(observer_settings), is_active(1) {}
+      : coco_observer_settings_s(observer_settings), active(true) {}
   virtual ~coco_observer_s() = default;
 
   coco_observer_s(const coco_observer_s &) = delete;
@@ -309,7 +406,18 @@ struct coco_observer_s : public coco_observer_settings_s {
    */
   coco_problem_ptr_t observe(coco_problem_ptr_t problem);
 
-  bool is_active; /**< @brief Whether the observer is active (the logger will log some output). */
+  /** @brief Returns whether the observer is active (the logger will log some output). */
+  bool is_active() const { return active; }
+
+  const std::string &get_name() const { return observer_name; }
+  const std::string &get_result_folder() const { return result_folder; }
+
+protected:
+  /** @brief Makes the observer inactive, e.g. because its options do not ask for any output. */
+  void deactivate() { active = false; }
+
+private:
+  bool active; /**< @brief Whether the observer is active (the logger will log some output). */
 };
 
 /**
@@ -353,6 +461,47 @@ struct coco_suite_s {
   coco_problem_ptr_t get_problem_from_indices(const size_t function_idx, const size_t dimension_idx,
                                               const size_t instance_idx);
 
+  /** @brief Sets the instances of the suite. */
+  void set_instances(const std::vector<size_t> &instance_numbers);
+
+  /** @brief Filters out the functions whose indices (starting from 1) are not in the given indices. */
+  void filter_function_indices(const std::vector<size_t> &indices);
+
+  /** @brief Filters out the instances whose indices (starting from 1) are not in the given indices. */
+  void filter_instance_indices(const std::vector<size_t> &indices);
+
+  /** @brief Filters out the dimensions whose indices (starting from 1) are not in the given indices. */
+  void filter_dimension_indices(const std::vector<size_t> &indices);
+
+  /** @brief Filters out the dimensions that are not in the given dimension numbers. */
+  void filter_dimensions(const std::vector<size_t> &dimension_numbers);
+
+  /**
+   * @brief Sets the current indices such that the next call of get_next_problem() returns the first problem
+   * that is not filtered out.
+   */
+  void start_iteration();
+
+  /**
+   * @brief Returns the next problem that is not filtered out, wrapped with the observer unless it is nullptr,
+   * or nullptr if there is no next problem. The suite owns the problem until the next call.
+   */
+  coco_problem_t *get_next_problem(coco_observer_t *observer);
+
+  /** @brief Makes the suite forget its current problem, which is then owned by the caller. */
+  void forget_current_problem() { (void)current_problem.release(); }
+
+  const std::string &get_name() const { return suite_name; }
+  const std::vector<size_t> &get_dimensions() const { return dimensions; }
+  const std::vector<size_t> &get_functions() const { return functions; }
+  const std::vector<size_t> &get_instances() const { return instances; }
+  const std::string &get_default_instances() const { return default_instances; }
+  bool has_known_optima() const { return known_optima; }
+
+  /** @brief Sets whether the problems of the suite have known optimal values, which the tests use. */
+  void set_known_optima(const bool known) { known_optima = known; }
+
+private:
   /** @brief Moves to the next instance that is not filtered out, returns 0 if it wrapped around. */
   bool next_instance();
 
@@ -369,15 +518,15 @@ struct coco_suite_s {
 
   std::vector<size_t> functions; /**< @brief The functions contained in the suite (0 if filtered out). */
 
-  std::string default_instances;  /**< @brief The instances contained in the suite by default. */
+  std::string default_instances; /**< @brief The instances contained in the suite by default. */
   std::vector<size_t> instances; /**< @brief The instances contained in the suite (0 if filtered out). */
 
   bool known_optima; /**< @brief Whether the problems of the suite have known optimal values */
 
   coco_problem_ptr_t current_problem; /**< @brief The currently tackled problem. */
-  long current_dimension_idx;      /**< @brief The dimension index of the currently tackled problem. */
-  long current_function_idx;       /**< @brief The function index of the currently tackled problem. */
-  long current_instance_idx;       /**< @brief The instance index of the currently tackled problem. */
+  long current_dimension_idx;         /**< @brief The dimension index of the currently tackled problem. */
+  long current_function_idx;          /**< @brief The function index of the currently tackled problem. */
+  long current_instance_idx;          /**< @brief The instance index of the currently tackled problem. */
 };
 
 /***********************************************************************************************************/

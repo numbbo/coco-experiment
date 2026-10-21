@@ -67,8 +67,8 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
                                         dimensions, num_dimensions);
   assert(problem_cont != nullptr);
   /* Take the two single-objective problems out of the stacked problem and free only the latter */
-  problem1 = std::move(coco_problem_as_stacked(problem_cont.get())->problem1);
-  problem2 = std::move(coco_problem_as_stacked(problem_cont.get())->problem2);
+  problem1 = coco_problem_as_stacked(problem_cont.get())->release_problem1();
+  problem2 = coco_problem_as_stacked(problem_cont.get())->release_problem2();
   assert(problem1);
   assert(problem2);
   problem_cont.reset();
@@ -89,17 +89,15 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
       smallest_values_of_interest[i] = 0;
       largest_values_of_interest[i] = static_cast<double>(variable_cardinality[j]) - 1;
       /* Inner problems */
-      problem1->smallest_values_of_interest[i] = -4;
-      problem1->largest_values_of_interest[i] = 4;
-      problem2->smallest_values_of_interest[i] = -4;
-      problem2->largest_values_of_interest[i] = 4;
+      problem1->set_region_of_interest(i, -4, 4);
+      problem2->set_region_of_interest(i, -4, 4);
     }
   }
 
   const size_t function1 = coco_problem_get_suite_dep_function(problem1.get());
   const size_t function2 = coco_problem_get_suite_dep_function(problem2.get());
-  const std::string problem_type1 = problem1->problem_type;
-  const std::string problem_type2 = problem2->problem_type;
+  const std::string problem_type1 = problem1->get_type();
+  const std::string problem_type2 = problem2->get_type();
 
   /* Second, discretize the single-objective problems */
   problem1_mixint = transform_vars_discretize(std::move(problem1), smallest_values_of_interest.data(),
@@ -116,7 +114,7 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
                                           smallest_values_of_interest.data(), largest_values_of_interest.data());
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  problem->set_name("%s", problem->problem_id.c_str());
+  problem->set_name("%s", problem->get_id().c_str());
   problem->set_id("bbob-biobj-mixint_f%03zu_i%02zu_d%03zu", function, instance, dimension);
 
   /* Construct problem type */
@@ -127,7 +125,8 @@ static coco_problem_ptr_t coco_get_biobj_mixint_problem(const size_t function, c
 /**
  * @brief The bbob-biobj-mixint suite.
  */
-struct suite_biobj_mixint_t final : public coco_suite_s {
+class suite_biobj_mixint_t final : public coco_suite_s {
+public:
   using coco_suite_s::coco_suite_s;
 
   std::string_view get_instances_by_year(const int year) const override {
@@ -141,14 +140,15 @@ struct suite_biobj_mixint_t final : public coco_suite_s {
 
     if (dimension < dim_large_scale)
       problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_make_bbob_problem, new_instances,
-                                              dimensions.data(), dimensions.size());
+                                              get_dimensions().data(), get_dimensions().size());
     else
       problem = coco_get_biobj_mixint_problem(function, dimension, instance, coco_get_largescale_problem, new_instances,
-                                              dimensions.data(), dimensions.size());
+                                              get_dimensions().data(), get_dimensions().size());
 
     return problem;
   }
 
+private:
   suite_biobj_new_instances_t new_instances; /**< @brief The new instances computed so far. */
 };
 

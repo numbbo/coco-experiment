@@ -33,7 +33,8 @@ static double f_bent_cigar_raw(const double *x,
 /**
  * @brief The bent cigar function.
  */
-struct f_bent_cigar_t final : public coco_problem_s {
+class f_bent_cigar_t final : public coco_problem_s {
+public:
   explicit f_bent_cigar_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("bent cigar function", -5.0, 5.0, 0.0);
     set_id("%s_d%02zu", "bent_cigar", number_of_variables);

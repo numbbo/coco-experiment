@@ -15,7 +15,7 @@ enum observer_biobj_log_nondom_e { LOG_NONDOM_NONE, LOG_NONDOM_FINAL, LOG_NONDOM
 /** @brief Enum for denoting when the decision variables are logged. */
 enum observer_biobj_log_vars_e { LOG_VARS_NEVER, LOG_VARS_LOW_DIM, LOG_VARS_ALWAYS };
 
-struct logger_biobj_t;
+class logger_biobj_t;
 
 /**
  * @brief The bi-objective observer.
@@ -45,8 +45,8 @@ struct logger_biobj_t;
  * "log_decision_variables: low_dim" and "compute_indicators: 1". If set to 0, it does not change the values
  * of the other options. The default value is 0.
  */
-struct observer_biobj_t final : public coco_observer_s {
-
+class observer_biobj_t final : public coco_observer_s {
+public:
   observer_biobj_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                    coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings), observed_problem(nullptr), log_nondom_mode(LOG_NONDOM_ALL),
@@ -93,7 +93,7 @@ struct observer_biobj_t final : public coco_observer_s {
 
     if ((log_nondom_mode == LOG_NONDOM_NONE) && (!compute_indicators)) {
       /* No logging required */
-      is_active = 0;
+      deactivate();
     }
   }
 
@@ -103,16 +103,17 @@ struct observer_biobj_t final : public coco_observer_s {
 
   void signal_restart(coco_problem_t *problem) override;
 
-  logger_biobj_t *observed_problem; /**< @brief The logger of the observed problem (nullptr if none is observed) */
+private:
+  /* The logger and its indicators read the settings and keep the state of the last logged problem */
+  friend class logger_biobj_t;
+  friend class logger_biobj_indicator_t;
 
+  logger_biobj_t *observed_problem; /**< @brief The logger of the observed problem (nullptr if none is observed) */
   observer_biobj_log_nondom_e log_nondom_mode; /**< @brief Handling of the nondominated solutions. */
   observer_biobj_log_vars_e log_vars_mode;     /**< @brief When the decision variables are logged. */
-
-  bool compute_indicators;      /**< @brief Whether to compute indicators. */
-  bool produce_all_data;        /**< @brief Whether to produce all data. */
+  bool compute_indicators;                     /**< @brief Whether to compute indicators. */
+  bool produce_all_data;                       /**< @brief Whether to produce all data. */
   bool large_mdat_file_warning; /**< @brief Whether the large mdat file warning has already been output. */
-
-  long previous_function;  /**< @brief Function of the previous logged problem. */
-  long previous_dimension; /**< @brief Dimension of the previous logged problem */
+  long previous_function;       /**< @brief Function of the previous logged problem. */
+  long previous_dimension;      /**< @brief Dimension of the previous logged problem */
 };
-

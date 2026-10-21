@@ -42,7 +42,8 @@ static double f_sharp_ridge_raw(const double *x,
 /**
  * @brief The sharp ridge function.
  */
-struct f_sharp_ridge_t final : public coco_problem_s {
+class f_sharp_ridge_t final : public coco_problem_s {
+public:
   explicit f_sharp_ridge_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("sharp ridge function", -5.0, 5.0, 0.0);
     set_id("%s_d%02zu", "sharp_ridge", number_of_variables);

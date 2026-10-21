@@ -32,11 +32,15 @@ struct logger_bbob_old_info_state_t {
 /**
  * @brief The bbob_old observer (has no options of its own).
  */
-struct observer_bbob_old_t final : public coco_observer_s {
+class observer_bbob_old_t final : public coco_observer_s {
+public:
   explicit observer_bbob_old_t(const coco_observer_settings_s &observer_settings)
       : coco_observer_s(observer_settings), info_state(std::make_shared<logger_bbob_old_info_state_t>()) {}
 
   coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
+
+private:
+  friend class logger_bbob_old_t; /* Shares the info file state with the observer */
 
   std::shared_ptr<logger_bbob_old_info_state_t> info_state; /**< @brief Shared with the loggers */
 };

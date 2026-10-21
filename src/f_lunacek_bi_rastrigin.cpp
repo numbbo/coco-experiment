@@ -18,21 +18,18 @@
 /**
  * @brief The BBOB Lunacek bi-Rastrigin function.
  */
-struct f_lunacek_bi_rastrigin_t final : public coco_problem_s {
-  std::vector<double> x_hat, z, tmpvect;
-  std::vector<double> xopt;
-  std::vector<double> c1; /**< @brief sqrt(condition)^(i / (n - 1)), scales the rows of rot2 */
-  double fopt{};
-  coco_matrix_t rot1, rot2;
-  long rseed{};
-
+class f_lunacek_bi_rastrigin_t final : public coco_problem_s {
+public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
   double raw(const double *x);
 
-  explicit f_lunacek_bi_rastrigin_t(const size_t dimension) : coco_problem_s(dimension, 1, 0) {
+  /** @brief Creates the Lunacek bi-Rastrigin function of the given instance (random seed). */
+  f_lunacek_bi_rastrigin_t(const size_t dimension, const long rseed, const coco_bbob_variant_t variant)
+      : coco_problem_s(dimension, 1, 0) {
     static const double condition = 100.;
+    static const double mu0 = 2.5;
     init_from_scalars("Lunacek's bi-Rastrigin function", -5.0, 5.0, 0.0);
-    /* Allocate temporary storage and space for the rotation matrices */
+    /* Allocate temporary storage */
     x_hat.resize(dimension);
     z.resize(dimension);
     tmpvect.resize(dimension);
@@ -40,8 +37,22 @@ struct f_lunacek_bi_rastrigin_t final : public coco_problem_s {
     for (size_t i = 0; i < dimension; ++i)
       c1[i] = pow(sqrt(condition), (static_cast<double>(i)) / static_cast<double>(dimension - 1));
     xopt.resize(dimension);
-    rot1 = coco_matrix_t(dimension, dimension);
-    rot2 = coco_matrix_t(dimension, dimension);
+
+    bbob_compute_xopt(xopt.data(), rseed, dimension, variant);
+    rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+    rot2 = bbob2009_compute_rotation(rseed, dimension);
+
+    /* Compute best solution */
+    std::vector<double> signs(dimension);
+    bbob2009_gauss(signs.data(), dimension, rseed);
+    for (size_t i = 0; i < dimension; ++i) {
+      xopt[i] = 0.5 * mu0;
+      if (signs[i] < 0.0) {
+        xopt[i] *= -1.0;
+      }
+      best_parameter[i] = xopt[i];
+    }
+    evaluate_function(best_parameter.data(), best_value.data());
   }
 
   /**
@@ -52,6 +63,12 @@ struct f_lunacek_bi_rastrigin_t final : public coco_problem_s {
     y[0] = raw(x);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+private:
+  std::vector<double> x_hat, z, tmpvect;
+  std::vector<double> xopt;
+  std::vector<double> c1; /**< @brief sqrt(condition)^(i / (n - 1)), scales the rows of rot2 */
+  coco_matrix_t rot1, rot2;
 };
 
 /**
@@ -114,34 +131,9 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_bbob_problem_allocate(const siz
                                                                        const char *problem_id_template,
                                                                        const char *problem_name_template) {
 
-  std::unique_ptr<f_lunacek_bi_rastrigin_t> owned = std::make_unique<f_lunacek_bi_rastrigin_t>(dimension);
-  f_lunacek_bi_rastrigin_t *lunacek = owned.get(); /* Stays valid, the transformations take ownership of it */
-  coco_problem_ptr_t problem = std::move(owned);
+  coco_problem_ptr_t problem = std::make_unique<f_lunacek_bi_rastrigin_t>(dimension, rseed, variant);
 
-  const double mu0 = 2.5;
-
-  double fopt;
-
-  lunacek->rseed = rseed;
-
-  lunacek->fopt = bbob2009_compute_fopt(24, instance);
-  bbob_compute_xopt(lunacek->xopt.data(), rseed, dimension, variant);
-  lunacek->rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
-  lunacek->rot2 = bbob2009_compute_rotation(rseed, dimension);
-
-  /* Compute best solution */
-  std::vector<double> tmpvect(dimension);
-  bbob2009_gauss(tmpvect.data(), dimension, rseed);
-  for (size_t i = 0; i < dimension; ++i) {
-    lunacek->xopt[i] = 0.5 * mu0;
-    if (tmpvect[i] < 0.0) {
-      lunacek->xopt[i] *= -1.0;
-    }
-    problem->best_parameter[i] = lunacek->xopt[i];
-  }
-  problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
-
-  fopt = bbob2009_compute_fopt(function, instance);
+  const double fopt = bbob2009_compute_fopt(function, instance);
   problem = transform_obj_shift(std::move(problem), fopt);
 
   problem->set_id(problem_id_template, function, instance, dimension);
@@ -157,7 +149,8 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_bbob_problem_allocate(const siz
 /**
  * @brief A sub problem of the large-scale Lunacek bi-Rastrigin function (a sphere function).
  */
-struct f_lunacek_bi_rastrigin_sub_t final : public coco_problem_s {
+class f_lunacek_bi_rastrigin_sub_t final : public coco_problem_s {
+public:
   explicit f_lunacek_bi_rastrigin_sub_t(const size_t number_of_variables)
       : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("lunacek_bi_rastrigin_sub function", -5.0, 5.0, 0.0);
@@ -218,9 +211,8 @@ f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
  *
  * Shares x_hat with transform_vars_x_hat_generic, which sets it. Owns the two sub problems.
  */
-struct f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
-  f_lunacek_bi_rastrigin_shared_data_t shared;
-
+class f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
+public:
   explicit f_lunacek_bi_rastrigin_ls_t(const size_t number_of_variables)
       : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("lunacek_bi_rastrigin function", -5.0, 5.0, 0.0);
@@ -239,6 +231,12 @@ struct f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
     y[0] = f_lunacek_bi_rastrigin_core(x, number_of_variables, &shared);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief The data shared with the transformations and sub problems of this function. */
+  f_lunacek_bi_rastrigin_shared_data_t &shared_data() { return shared; }
+
+private:
+  f_lunacek_bi_rastrigin_shared_data_t shared;
 };
 
 /**
@@ -305,10 +303,8 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
     mu1_vector[i] = mu1;
   }
   /* allocate sub-problems */
-  raw_problem->shared.sub_problem_mu0 =
-      f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
-  raw_problem->shared.sub_problem_mu1 =
-      f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
+  raw_problem->shared_data().sub_problem_mu0 = f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
+  raw_problem->shared_data().sub_problem_mu1 = f_lunacek_bi_rastrigin_sub_problem_allocate(dimension);
 
   /* set sign_vector */
   std::vector<double> tmp_normal(dimension);
@@ -324,10 +320,10 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
   }
 
   /* apply transformations to sub-problems */
-  sub_problem_tmp = &raw_problem->shared.sub_problem_mu0;
+  sub_problem_tmp = &raw_problem->shared_data().sub_problem_mu0;
   *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu0_vector.data(), 0);
 
-  sub_problem_tmp = &raw_problem->shared.sub_problem_mu1;
+  sub_problem_tmp = &raw_problem->shared_data().sub_problem_mu1;
   *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu1_vector.data(), 0);
   *sub_problem_tmp = transform_obj_scale(std::move(*sub_problem_tmp), s); /* Manh: need to use s */
   *sub_problem_tmp = transform_obj_shift(std::move(*sub_problem_tmp), d * static_cast<double>(dimension));
@@ -342,16 +338,18 @@ static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allo
   problem = transform_vars_blockrotation(std::move(problem), B2);
   problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
   problem = transform_vars_shift(std::move(problem), mu0_vector.data(), 0);
-  problem = transform_vars_x_hat_generic(std::move(problem), sign_vector.data(), &raw_problem->shared);
+  problem = transform_vars_x_hat_generic(std::move(problem), sign_vector.data(), &raw_problem->shared_data());
 
   problem = transform_obj_norm_by_dim(std::move(problem));
   problem = transform_obj_penalize(std::move(problem), penalty_factor);
   problem = transform_obj_shift(std::move(problem), fopt);
 
   /* set best_parameter and best value*/
-  for (size_t i = 0; i < dimension; i++) {                   /* Wassim: to silence warning about best_parameter*/
-    problem->best_parameter[i] = 0.5 * mu0 * sign_vector[i]; /* TODO: Documentation no 0.5 in documentation! */
+  std::vector<double> xopt(dimension);
+  for (size_t i = 0; i < dimension; i++) { /* Wassim: to silence warning about best_parameter*/
+    xopt[i] = 0.5 * mu0 * sign_vector[i];  /* TODO: Documentation no 0.5 in documentation! */
   }
+  problem->set_best_parameter(xopt.data());
 
   problem->set_id(problem_id_template, function, instance, dimension);
   problem->set_name(problem_name_template, function, instance, dimension);

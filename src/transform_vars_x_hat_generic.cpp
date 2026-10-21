@@ -25,16 +25,13 @@ struct f_lunacek_bi_rastrigin_shared_data_t {
  *
  * Also stores the result in x_hat of the data shared with the Lunacek bi-Rastrigin function.
  */
-struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t {
-  const std::vector<double> sign_vector;
-  std::vector<double> x_hat; /**< @brief The transformed decision values */
-  f_lunacek_bi_rastrigin_shared_data_t *const shared; /**< @brief Owned by the Lunacek bi-Rastrigin function */
-
+class transform_vars_x_hat_generic_t final : public coco_problem_transformed_t {
+public:
   transform_vars_x_hat_generic_t(coco_problem_ptr_t inner, const double *sign_vector,
                                  f_lunacek_bi_rastrigin_shared_data_t *shared)
       : coco_problem_transformed_t(std::move(inner), "transform_vars_x_hat_generic"),
-        sign_vector(sign_vector, sign_vector + inner_problem->number_of_variables),
-        x_hat(inner_problem->number_of_variables), shared(shared) {}
+        sign_vector(sign_vector, sign_vector + inner_problem->get_number_of_variables()),
+        x_hat(inner_problem->get_number_of_variables()), shared(shared) {}
 
   /**
    * @brief Evaluates the transformation.
@@ -55,6 +52,11 @@ struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t 
       x[i] = inner_x[i] / (2.0 * sign_vector[i]);
     return true;
   }
+
+private:
+  const std::vector<double> sign_vector;
+  std::vector<double> x_hat;                          /**< @brief The transformed decision values */
+  f_lunacek_bi_rastrigin_shared_data_t *const shared; /**< @brief Owned by the Lunacek bi-Rastrigin function */
 };
 
 /**

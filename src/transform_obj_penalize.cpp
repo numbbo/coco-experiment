@@ -12,9 +12,8 @@
 /**
  * @brief Adds a penalty for solutions outside of the region of interest to the objective value(s).
  */
-struct transform_obj_penalize_t final : public coco_problem_transformed_t {
-  const double factor;
-
+class transform_obj_penalize_t final : public coco_problem_transformed_t {
+public:
   transform_obj_penalize_t(coco_problem_ptr_t inner, const double factor)
       : coco_problem_transformed_t(std::move(inner), "transform_obj_penalize"), factor(factor) {
     /* No need to update the best value as the best parameter is feasible */
@@ -48,6 +47,9 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
 
   /** @brief The decision values are not transformed. */
   bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+
+private:
+  const double factor;
 };
 
 /**

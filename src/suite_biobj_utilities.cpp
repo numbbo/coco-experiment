@@ -53,22 +53,22 @@ static bool suite_biobj_check_inst_consistency(const size_t dimension, size_t fu
       std::move(problem1), std::move(problem2), smallest_values_of_interest.data(), largest_values_of_interest.data());
 
   /* Check whether the ideal and nadir points are too close in the objective space */
-  double norm = mo_get_norm(problem->best_value.data(), problem->nadir_value.data(), 2);
+  double norm = mo_get_norm(problem->get_best_value().data(), problem->get_nadir_value().data(), 2);
   if (norm < 1e-1) { /* TODO How to set this value in a sensible manner? */
     coco_debug(
         "suite_biobj_check_inst_consistency(): The ideal and nadir points of %s are too close in the objective space",
-        problem->problem_id.c_str());
-    coco_debug("norm = %e, ideal = %e\t%e, nadir = %e\t%e", norm, problem->best_value[0], problem->best_value[1],
-               problem->nadir_value[0], problem->nadir_value[1]);
+        problem->get_id().c_str());
+    coco_debug("norm = %e, ideal = %e\t%e, nadir = %e\t%e", norm, problem->get_best_value()[0],
+               problem->get_best_value()[1], problem->get_nadir_value()[0], problem->get_nadir_value()[1]);
     break_search = true;
   }
 
   /* Check whether the extreme optimal points are too close in the decision space */
-  norm = mo_get_norm(problem1_view->best_parameter.data(), problem2_view->best_parameter.data(),
-                     problem->number_of_variables);
+  norm = mo_get_norm(problem1_view->get_best_parameter().data(), problem2_view->get_best_parameter().data(),
+                     problem->get_number_of_variables());
   if (norm < apart_enough) {
     coco_debug("suite_biobj_check_inst_consistency(): The extreme points of %s are too close in the decision space",
-               problem->problem_id.c_str());
+               problem->get_id().c_str());
     coco_debug("norm = %e", norm);
     break_search = true;
   }
@@ -380,23 +380,23 @@ static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const si
     problem1 = coco_get_problem_function(sel_bbob_functions[function1_idx], dimension, instance1);
     problem2 = coco_get_problem_function(sel_bbob_functions[function2_idx], dimension, instance2);
     /* Store function numbers of the underlying problems */
-    problem1->suite_dep_function = sel_bbob_functions[function1_idx];
-    problem2->suite_dep_function = sel_bbob_functions[function2_idx];
+    problem1->set_suite_dep_function(sel_bbob_functions[function1_idx]);
+    problem2->set_suite_dep_function(sel_bbob_functions[function2_idx]);
 
   } else {
     problem1 = coco_get_problem_function(all_bbob_functions[function1_idx], dimension, instance1);
     problem2 = coco_get_problem_function(all_bbob_functions[function2_idx], dimension, instance2);
-    problem1->suite_dep_function = all_bbob_functions[function1_idx];
-    problem2->suite_dep_function = all_bbob_functions[function2_idx];
+    problem1->set_suite_dep_function(all_bbob_functions[function1_idx]);
+    problem2->set_suite_dep_function(all_bbob_functions[function2_idx]);
   }
 
-  const std::string problem_type1 = problem1->problem_type;
-  const std::string problem_type2 = problem2->problem_type;
+  const std::string problem_type1 = problem1->get_type();
+  const std::string problem_type2 = problem2->get_type();
   problem = coco_problem_stacked_allocate(std::move(problem1), std::move(problem2), smallest_values_of_interest.data(),
                                           largest_values_of_interest.data());
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  problem->set_name("%s", problem->problem_id.c_str());
+  problem->set_name("%s", problem->get_id().c_str());
   /* Attention! Any change to the problem id affects also archive processing! */
   problem->set_id("bbob-biobj_f%02zu_i%02zu_d%02zu", function, instance, dimension);
 

@@ -55,39 +55,8 @@ static constexpr size_t LOGGER_BBOB_NUMBER_OF_VARIABLES_THRESHOLD = 7;
 /**
  * @brief The bbob logger, which wraps the observed problem.
  */
-struct logger_bbob_t final : public coco_problem_transformed_t {
-  observer_bbob_t *observer{}; /**< @brief Pointer to the observer (might be nullptr at the end) */
-  std::string suite_name;    /**< @brief The suite name */
-  bool is_initialized{};     /**< @brief Whether the logger was already initialized */
-  bool algorithm_restarted{}; /**< @brief Whether the algorithm has restarted (output information to .rdat file). */
-
-  coco_file_t info_file; /**< @brief Index file */
-  coco_file_t dat_file;  /**< @brief File with function value aligned data */
-  coco_file_t tdat_file; /**< @brief File with number of evaluations aligned data */
-  coco_file_t rdat_file; /**< @brief File with restart information */
-  coco_file_t mdat_file; /**< @brief File with evaluated recommendations */
-
-  size_t num_func_evaluations{};  /**< @brief The number of function evaluations performed so far. */
-  size_t num_cons_evaluations{};  /**< @brief The number of evaluations of constraints performed so far. */
-  size_t last_logged_eval_dat{};  /**< @brief The last evaluation logged in the dat file (needed for finalization) */
-  size_t last_logged_eval_tdat{}; /**< @brief The last evaluation logged in the tdat file (needed for finalization) */
-  size_t last_logged_eval_mdat{}; /**< @brief The last evaluation logged in the mdat file (needed for finalization) */
-
-  std::vector<double> best_found_solution; /**< @brief The best found solution to this problem. */
-  double best_found_value{};               /**< @brief The best found value for this problem. */
-  double current_value{};                  /**< @brief The current value for this problem. */
-  double
-      optimal_value{}; /**< @brief The optimal value for this problem (if it is known, otherwise a reference value). */
-
-  std::vector<double> best_recommended_solution; /**< @brief The best recommended solution for this problem. */
-  double best_recommended_value{};               /**< @brief The best recommended value for this problem. */
-
-  bool log_discrete_as_int{}; /**< @brief Whether to output discrete variables in integer or double format. */
-
-  coco_observer_targets_t targets;      /**< @brief Triggers based on target values. */
-  coco_observer_evaluations_t evaluation_triggers; /**< @brief Triggers based on the number of evaluations. */
-  coco_observer_targets_t mdat_targets; /**< @brief Triggers based on target values for recommendations. */
-
+class logger_bbob_t final : public coco_problem_transformed_t {
+public:
   logger_bbob_t(observer_bbob_t &observer, coco_problem_ptr_t inner);
 
   ~logger_bbob_t() override;
@@ -97,6 +66,15 @@ struct logger_bbob_t final : public coco_problem_transformed_t {
 
   /** @brief Saves the information that the algorithm has restarted. */
   void signal_restart();
+
+  /** @brief Makes the logger forget its observer (which is being deleted). */
+  void forget_observer() { observer = nullptr; }
+
+  double get_best_found_value() const { return best_found_value; }
+  double get_optimal_value() const { return optimal_value; }
+
+  /** @brief Returns the triggers based on target values (which the tests use directly). */
+  coco_observer_targets_t &get_targets() { return targets; }
 
   /** @brief Returns the bbob logger behind the given problem (which must be one). */
   static logger_bbob_t *from(const coco_problem_t *problem);
@@ -109,12 +87,47 @@ private:
   void open_info_file(const std::string &folder, const std::string &function_string, const std::string &data_file_name,
                       int start_new_line);
 
+  /**
+   * @brief Decides whether a new line in the info file (and therefore a new set of .?dat files) should be
+   * started, which is the case when the current dimension or function differ from the last logged ones.
+   */
+  bool start_new_line(size_t current_dimension, size_t current_function) const {
+    assert(observer != nullptr);
+    return (current_function != observer->last_function) || (current_dimension != observer->last_dimension);
+  }
+
   /** @brief Outputs a formatted line to a data file. */
   void output(FILE *data_file, const double *x, double logged_value, double logged_best_value,
               const double *constraints) const;
 
   /** @brief The decision values are not transformed. */
   bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+
+  observer_bbob_t *observer{};    /**< @brief Pointer to the observer (might be nullptr at the end) */
+  std::string suite_name;         /**< @brief The suite name */
+  bool is_initialized{};          /**< @brief Whether the logger was already initialized */
+  bool algorithm_restarted{};     /**< @brief Whether the algorithm has restarted (output information to .rdat file). */
+  coco_file_t info_file;          /**< @brief Index file */
+  coco_file_t dat_file;           /**< @brief File with function value aligned data */
+  coco_file_t tdat_file;          /**< @brief File with number of evaluations aligned data */
+  coco_file_t rdat_file;          /**< @brief File with restart information */
+  coco_file_t mdat_file;          /**< @brief File with evaluated recommendations */
+  size_t num_func_evaluations{};  /**< @brief The number of function evaluations performed so far. */
+  size_t num_cons_evaluations{};  /**< @brief The number of evaluations of constraints performed so far. */
+  size_t last_logged_eval_dat{};  /**< @brief The last evaluation logged in the dat file (needed for finalization) */
+  size_t last_logged_eval_tdat{}; /**< @brief The last evaluation logged in the tdat file (needed for finalization) */
+  size_t last_logged_eval_mdat{}; /**< @brief The last evaluation logged in the mdat file (needed for finalization) */
+  std::vector<double> best_found_solution; /**< @brief The best found solution to this problem. */
+  double best_found_value{};               /**< @brief The best found value for this problem. */
+  double current_value{};                  /**< @brief The current value for this problem. */
+  double
+      optimal_value{}; /**< @brief The optimal value for this problem (if it is known, otherwise a reference value). */
+  std::vector<double> best_recommended_solution; /**< @brief The best recommended solution for this problem. */
+  double best_recommended_value{};               /**< @brief The best recommended value for this problem. */
+  bool log_discrete_as_int{};      /**< @brief Whether to output discrete variables in integer or double format. */
+  coco_observer_targets_t targets; /**< @brief Triggers based on target values. */
+  coco_observer_evaluations_t evaluation_triggers; /**< @brief Triggers based on the number of evaluations. */
+  coco_observer_targets_t mdat_targets;            /**< @brief Triggers based on target values for recommendations. */
 };
 
 /**
@@ -175,22 +188,6 @@ static int logger_bbob_single_digit_constraint(const double c) {
     if (c <= limits[i])
       return i;
   return 9;
-}
-
-/**
- * @brief Decides whether a new line in the info file (and therefore a new set of .?dat files)
- * should be started
- *
- * A new line should be started when the current dimension or the current function differ from
- * the last logged dimension and function.
- */
-static bool logger_bbob_start_new_line(const observer_bbob_t *observer, size_t current_dimension,
-                                       size_t current_function) {
-  assert(observer != nullptr);
-
-  if ((current_function == observer->last_function) && (current_dimension == observer->last_dimension))
-    return false;
-  return true;
 }
 
 /**
@@ -278,7 +275,7 @@ void logger_bbob_t::open_info_file(const std::string &folder, const std::string 
               "suite = '%s', funcId = %zu, DIM = %zu, Precision = %.3e, "
               "algId = '%s', coco_version = '%s', logger = '%s', "
               "data_format = '%s', settings = '%s'\n",
-              suite_name.c_str(), suite_dep_function, number_of_variables, pow(10, -8),
+              suite_name.c_str(), get_suite_dep_function(), number_of_variables, pow(10, -8),
               observer->algorithm_name.c_str(), coco_version, observer->observer_name.c_str(), logger_bbob_data_format,
               observer->settings.c_str());
       fprintf(info_file, "%% %s\n", observer->algorithm_info.c_str());
@@ -300,7 +297,7 @@ void logger_bbob_t::initialize() {
 
   coco_debug("Started logger_bbob_t::initialize()");
 
-  if (is_opt_known == 0)
+  if (opt_known == 0)
     str_pointer = "Fref";
   else
     str_pointer = "Fopt";
@@ -308,7 +305,7 @@ void logger_bbob_t::initialize() {
   assert(observer != nullptr);
   observer_data = observer;
 
-  const std::string function_string = coco_string_format("%zu", suite_dep_function);
+  const std::string function_string = coco_string_format("%zu", get_suite_dep_function());
   const std::string dimension_string = coco_string_format("%zu", number_of_variables);
   const std::string &result_folder = observer->result_folder;
 
@@ -317,19 +314,19 @@ void logger_bbob_t::initialize() {
   relative_path = "data_f" + function_string + "/bbobexp_f" + function_string + "_DIM" + dimension_string;
 
   /* Find out whether a new line in the info file (and a new .?dat file) is needed */
-  int start_new_line = logger_bbob_start_new_line(observer, number_of_variables, suite_dep_function);
-  if (start_new_line) {
+  const bool new_line = start_new_line(number_of_variables, get_suite_dep_function());
+  if (new_line) {
     relative_path = coco_create_unique_filename(result_folder, relative_path, ".dat");
     observer_data->last_dat_file = relative_path;
-    observer_data->last_function = suite_dep_function;
+    observer_data->last_function = get_suite_dep_function();
     observer_data->last_dimension = number_of_variables;
   } else {
     relative_path = observer_data->last_dat_file;
   }
 
   /* info file */
-  open_info_file(result_folder, function_string, relative_path, start_new_line);
-  fprintf(info_file, ", %zu", suite_dep_instance);
+  open_info_file(result_folder, function_string, relative_path, new_line);
+  fprintf(info_file, ", %zu", get_suite_dep_instance());
 
   /* data files */
   logger_bbob_open_data_file(dat_file, result_folder, relative_path, ".dat");
@@ -354,7 +351,7 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
   double y_logged, max_value = 0, sum_constraints;
   const bool feasible = number_of_constraints <= 0 || inner_problem->is_feasible(x, nullptr);
 
-  if (is_tainted || inner_problem->is_tainted) {
+  if (is_tainted() || inner_problem->is_tainted()) {
     coco_error("Though shalt not cheat! Trying to evaluate a tainted observed problem. Do _not_ call "
                "coco_problem_best_parameter() on a problem you want to benchmark.");
   }
@@ -365,7 +362,7 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
     initialize();
   }
   if ((coco_log_level >= COCO_DEBUG) && num_func_evaluations == 0) {
-    coco_debug("%4zu: ", inner_problem->suite_dep_index);
+    coco_debug("%4zu: ", inner_problem->get_suite_dep_index());
     coco_debug("on problem %s ... ", coco_problem_get_id(inner_problem.get()));
   }
 
@@ -374,9 +371,9 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
   num_func_evaluations++;
   current_value = y[0];
   y_logged = y[0];
-  if (inner_problem->is_noisy == 1) {
-    current_value = inner_problem->last_noise_free_values[0];
-    y_logged = inner_problem->last_noise_free_values[0];
+  if (inner_problem->is_noisy() == 1) {
+    current_value = inner_problem->get_last_noise_free_values()[0];
+    y_logged = inner_problem->get_last_noise_free_values()[0];
   }
   if (coco_is_nan(y_logged))
     y_logged = NAN_FOR_LOGGING;
@@ -384,7 +381,7 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
     y_logged = INFINITY_FOR_LOGGING;
 
   /* Do sanity check */
-  if ((is_opt_known) && (feasible)) {
+  if ((opt_known) && (feasible)) {
     /* Infeasible solutions can have much better y0 values */
     assert(y_logged + 1e-13 >= optimal_value);
   }
@@ -393,7 +390,7 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
   std::vector<double> constraints(number_of_constraints);
   if (number_of_constraints > 0)
     inner_problem->evaluate_constraint(x, constraints.data(), 0);
-  num_cons_evaluations = evaluations_constraints;
+  num_cons_evaluations = get_evaluations_constraints();
 
   /* Compute the sum of positive constraint values */
   sum_constraints = 0;
@@ -407,7 +404,7 @@ void logger_bbob_t::evaluate_function(const double *x, double *y) {
   else if (coco_is_inf(sum_constraints))
     sum_constraints = INFINITY_FOR_LOGGING;
 
-  if (is_opt_known)
+  if (opt_known)
     max_value = coco_double_max(y_logged, optimal_value);
   else {
     /* Problems with unknown optimal values */
@@ -471,7 +468,7 @@ void logger_bbob_t::recommend_solution(const double *x) {
     y_logged = INFINITY_FOR_LOGGING;
 
   /* Do sanity check */
-  if ((is_opt_known) && (feasible)) {
+  if ((opt_known) && (feasible)) {
     /* Infeasible solutions can have much better y0 values */
     assert(y_logged + 1e-13 >= optimal_value);
   }
@@ -494,7 +491,7 @@ void logger_bbob_t::recommend_solution(const double *x) {
     sum_constraints = INFINITY_FOR_LOGGING;
 
   double max_value;
-  if (is_opt_known)
+  if (opt_known)
     max_value = coco_double_max(y_logged, optimal_value);
   else {
     /* Problems with unknown optimal values */
@@ -554,7 +551,7 @@ logger_bbob_t::~logger_bbob_t() {
   }
 
   /* The observer might not exist at this point */
-  if ((observer != nullptr) && (observer->is_active == 1)) {
+  if ((observer != nullptr) && observer->is_active()) {
     /* If the observer still exists (if it does not, observed_problem does not matter any longer) */
     observer->observed_problem = nullptr;
   }
@@ -587,7 +584,7 @@ observer_bbob_t::~observer_bbob_t() {
   coco_debug("Started observer_bbob_t::~observer_bbob_t()");
   /* Make sure that the observed problem's pointer to the observer points to nullptr */
   if (observed_problem != nullptr) {
-    observed_problem->observer = nullptr;
+    observed_problem->forget_observer();
     observed_problem = nullptr;
   }
   coco_debug("Ended   observer_bbob_t::~observer_bbob_t()");
@@ -598,17 +595,17 @@ logger_bbob_t::logger_bbob_t(observer_bbob_t &observer, coco_problem_ptr_t inner
   coco_debug("Started logger_bbob_t()");
 
   assert(inner_problem.get());
-  assert(inner_problem->suite);
-  const coco_suite_t *problem_suite = inner_problem->suite;
-  if (inner_problem->number_of_objectives != 1) {
+  assert(inner_problem->get_suite());
+  const coco_suite_t *problem_suite = inner_problem->get_suite();
+  if (inner_problem->get_number_of_objectives() != 1) {
     coco_warning("logger_bbob_t(): The bbob logger shouldn't be used to log a problem with %zu objectives",
-                 inner_problem->number_of_objectives);
+                 inner_problem->get_number_of_objectives());
   }
   if (observer.observed_problem != nullptr) {
     coco_error("logger_bbob_t(): The observed problem must be closed before a new problem can be observed");
   }
   this->observer = &observer;
-  suite_name = inner_problem->suite->suite_name;
+  suite_name = inner_problem->get_suite()->get_name();
   is_initialized = 0;
   algorithm_restarted = 0;
 
@@ -616,23 +613,23 @@ logger_bbob_t::logger_bbob_t(observer_bbob_t &observer, coco_problem_ptr_t inner
   num_cons_evaluations = 0;
   last_logged_eval_mdat = 0;
 
-  best_found_solution.resize(inner_problem->number_of_variables);
+  best_found_solution.resize(inner_problem->get_number_of_variables());
   best_found_value = DBL_MAX;
-  optimal_value = inner_problem->best_value[0];
+  optimal_value = inner_problem->get_best_value()[0];
 
   current_value = DBL_MAX;
 
-  best_recommended_solution.resize(inner_problem->number_of_variables);
+  best_recommended_solution.resize(inner_problem->get_number_of_variables());
   best_recommended_value = INFINITY_FOR_LOGGING;
 
   log_discrete_as_int = observer.log_discrete_as_int;
 
   /* Initialize triggers performance and evaluation triggers depending on the observer option */
-  targets = coco_observer_targets_t(problem_suite->known_optima, observer.lin_target_precision,
+  targets = coco_observer_targets_t(problem_suite->has_known_optima(), observer.lin_target_precision,
                                     observer.number_target_triggers, observer.log_target_precision);
   evaluation_triggers = coco_observer_evaluations_t(
-      observer.number_evaluation_triggers, observer.base_evaluation_triggers, inner_problem->number_of_variables);
-  mdat_targets = coco_observer_targets_t(problem_suite->known_optima, observer.lin_target_precision,
+      observer.number_evaluation_triggers, observer.base_evaluation_triggers, inner_problem->get_number_of_variables());
+  mdat_targets = coco_observer_targets_t(problem_suite->has_known_optima(), observer.lin_target_precision,
                                          observer.number_target_triggers, observer.log_target_precision);
 
   coco_debug("Ended   logger_bbob_t()");

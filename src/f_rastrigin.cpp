@@ -45,7 +45,8 @@ static double f_rastrigin_raw(const double *x,
 /**
  * @brief The Rastrigin function.
  */
-struct f_rastrigin_t final : public coco_problem_s {
+class f_rastrigin_t final : public coco_problem_s {
+public:
   explicit f_rastrigin_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
     init_from_scalars("Rastrigin function", -5.0, 5.0, 0.0);
     /* TODO: make sure the gradient is computed correctly for the rotated Rastrigin */

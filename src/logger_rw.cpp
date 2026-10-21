@@ -29,30 +29,29 @@
  * @note Some fields from the observers (coco_observer as well as observer_rw) are copied here because the
  * observers can be deleted before the logger is finalized and we need these fields for finalization.
  */
-struct logger_rw_t final : public coco_problem_transformed_t {
-  coco_file_t out_file;          /**< @brief File for logging. */
-  size_t num_func_evaluations{}; /**< @brief The number of function evaluations performed so far. */
-  size_t num_cons_evaluations{}; /**< @brief The number of evaluations of constraints performed so far. */
-
-  double best_found_value{}; /**< @brief The best-so-far value. */
-  double current_value{};    /**< @brief The current value. */
-
-  bool log_vars{};        /**< @brief Whether to log the decision values. */
-  bool log_cons{};        /**< @brief Whether to log the constraints. */
-  bool log_only_better{}; /**< @brief Whether to log only solutions that are better than previous ones. */
-  bool log_time{};        /**< @brief Whether to log evaluation time. */
-
-  int precision_x{};         /**< @brief Precision for outputting decision values. */
-  int precision_f{};         /**< @brief Precision for outputting objective values. */
-  int precision_g{};         /**< @brief Precision for outputting constraint values. */
-  bool log_discrete_as_int{}; /**< @brief Whether to output discrete variables in int or double format. */
-
+class logger_rw_t final : public coco_problem_transformed_t {
+public:
   logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner);
 
   void evaluate_function(const double *x, double *y) override;
 
   /** @brief The decision values are not transformed. */
   bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+
+private:
+  coco_file_t out_file;          /**< @brief File for logging. */
+  size_t num_func_evaluations{}; /**< @brief The number of function evaluations performed so far. */
+  size_t num_cons_evaluations{}; /**< @brief The number of evaluations of constraints performed so far. */
+  double best_found_value{};     /**< @brief The best-so-far value. */
+  double current_value{};        /**< @brief The current value. */
+  bool log_vars{};               /**< @brief Whether to log the decision values. */
+  bool log_cons{};               /**< @brief Whether to log the constraints. */
+  bool log_only_better{};        /**< @brief Whether to log only solutions that are better than previous ones. */
+  bool log_time{};               /**< @brief Whether to log evaluation time. */
+  int precision_x{};             /**< @brief Precision for outputting decision values. */
+  int precision_f{};             /**< @brief Precision for outputting objective values. */
+  int precision_g{};             /**< @brief Precision for outputting constraint values. */
+  bool log_discrete_as_int{};    /**< @brief Whether to output discrete variables in int or double format. */
 };
 
 /**
@@ -78,7 +77,7 @@ void logger_rw_t::evaluate_function(const double *x, double *y) {
   /* Evaluate the constraints */
   if (number_of_constraints > 0)
     inner_problem->evaluate_constraint(x, constraints.data(), 0);
-  num_cons_evaluations = evaluations_constraints;
+  num_cons_evaluations = get_evaluations_constraints();
 
   /* Time the evaluations */
   if (log_time)
@@ -133,19 +132,20 @@ logger_rw_t::logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner)
   precision_g = observer.precision_g;
   log_discrete_as_int = observer.log_discrete_as_int;
 
-  if (((observer.log_vars_mode == LOG_LOW_DIM) && (inner_problem->number_of_variables > observer.low_dim_vars)) ||
+  if (((observer.log_vars_mode == LOG_LOW_DIM) && (inner_problem->get_number_of_variables() > observer.low_dim_vars)) ||
       (observer.log_vars_mode == LOG_NEVER))
     log_vars = 0;
   else
     log_vars = 1;
 
-  if (((observer.log_cons_mode == LOG_LOW_DIM) && (inner_problem->number_of_constraints > observer.low_dim_cons)) ||
-      (observer.log_cons_mode == LOG_NEVER) || (inner_problem->number_of_constraints == 0))
+  if (((observer.log_cons_mode == LOG_LOW_DIM) &&
+       (inner_problem->get_number_of_constraints() > observer.low_dim_cons)) ||
+      (observer.log_cons_mode == LOG_NEVER) || (inner_problem->get_number_of_constraints() == 0))
     log_cons = 0;
   else
     log_cons = 1;
 
-  log_only_better = (observer.log_only_better) && (inner_problem->number_of_objectives == 1);
+  log_only_better = (observer.log_only_better) && (inner_problem->get_number_of_objectives() == 1);
   log_time = observer.log_time;
 
   best_found_value = DBL_MAX;
@@ -165,18 +165,18 @@ logger_rw_t::logger_rw_t(observer_rw_t &observer, coco_problem_ptr_t inner)
 
   /* Output header information */
   fprintf(out_file, "\n%% suite = '%s', problem_id = '%s', problem_name = '%s', coco_version = '%s'\n",
-          inner_problem->suite->suite_name.c_str(), coco_problem_get_id(inner_problem.get()),
+          inner_problem->get_suite()->get_name().c_str(), coco_problem_get_id(inner_problem.get()),
           coco_problem_get_name(inner_problem.get()), coco_version);
-  fprintf(out_file, "%% f-evaluations | g-evaluations | %zu objective", inner_problem->number_of_objectives);
-  if (inner_problem->number_of_objectives > 1)
+  fprintf(out_file, "%% f-evaluations | g-evaluations | %zu objective", inner_problem->get_number_of_objectives());
+  if (inner_problem->get_number_of_objectives() > 1)
     fprintf(out_file, "s");
   if (log_vars)
-    fprintf(out_file, " | %zu variable", inner_problem->number_of_variables);
-  if (inner_problem->number_of_variables > 1)
+    fprintf(out_file, " | %zu variable", inner_problem->get_number_of_variables());
+  if (inner_problem->get_number_of_variables() > 1)
     fprintf(out_file, "s");
   if (log_cons)
-    fprintf(out_file, " | %zu constraint", inner_problem->number_of_constraints);
-  if (inner_problem->number_of_constraints > 1)
+    fprintf(out_file, " | %zu constraint", inner_problem->get_number_of_constraints());
+  if (inner_problem->get_number_of_constraints() > 1)
     fprintf(out_file, "s");
   if (log_time)
     fprintf(out_file, " | evaluation time (s)");

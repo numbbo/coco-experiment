@@ -9,13 +9,11 @@
 /**
  * @brief Adds Cauchy noise to the objective value of the inner problem.
  */
-struct transform_obj_cauchy_noise_t final : public coco_problem_transformed_t {
-  const double alpha;
-  const double p;
-
+class transform_obj_cauchy_noise_t final : public coco_problem_transformed_t {
+public:
   transform_obj_cauchy_noise_t(coco_problem_ptr_t inner, const double alpha, const double p)
       : coco_problem_transformed_t(std::move(inner), "cauchy_noise_model"), alpha(alpha), p(p) {
-    is_noisy = 1;
+    noisy = true;
   }
 
   /**
@@ -41,6 +39,10 @@ struct transform_obj_cauchy_noise_t final : public coco_problem_transformed_t {
 
   /** @brief The decision values are not transformed. */
   bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
+
+private:
+  const double alpha;
+  const double p;
 };
 
 /**

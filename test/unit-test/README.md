@@ -8,6 +8,11 @@ We use the following naming convention for unit test files: you add a prefix `te
 All test files should be included in this folder. Each test file should contain a central function, in which the tests from the file are called (e.g. `test_all_coco_utilities` in `test_coco_utilities.cpp`).
 A specific test should be testing a small part of the code. See `test_coco_utilities.cpp` for some test examples.
 
+The public C interface (`coco.h`) is tested from C, without any internal headers, in `test_coco_api.c`.
+Calls that must end in `coco_error()` are cases of `test_coco_api_errors.c`; each case is its own test that
+passes if the expected error message is printed (see `CMakeLists.txt`). When you add a function to `coco.h`,
+please add a test for it there.
+
 ## Running the Tests
 
 > [!NOTE]
