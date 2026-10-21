@@ -2,6 +2,8 @@
 
 #include "coco.cpp"
 
+namespace coco {
+
 /**
  * Tests coco_string-related functions.
  */
@@ -34,15 +36,17 @@ MU_TEST(test_coco_string_trim) {
 	int index;
 
 	for (index = 0; sample_strings[index] != NULL; ++index) {
-		mu_check(coco_string_trim(sample_strings[index]) == result_strings[index]);
-	}
+          mu_check(StringTrim(sample_strings[index]) == result_strings[index]);
+        }
 }
+
+} // namespace coco
 
 /**
  * Run all tests in this file.
  */
 int main(void) {
-  MU_RUN_TEST(test_coco_string_trim);
+  MU_RUN_TEST(coco::test_coco_string_trim);
 
   MU_REPORT();
 

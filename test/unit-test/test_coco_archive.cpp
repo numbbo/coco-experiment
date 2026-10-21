@@ -2,6 +2,8 @@
 #include "minunit.h"
 #include "coco.cpp"
 
+namespace coco {
+
 /**
  * Tests coco_archive-related functions.
  */
@@ -37,7 +39,10 @@ MU_TEST(test_coco_archive) {
       break;
 
     /* Add solution to the archive */
-    coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\t%f\t%f\t%f\n", number_of_evaluations, x[0], x[1], y[0], y[1], hypervolume_read).c_str());
+    coco_archive_add_solution(
+        archive, y[0], y[1],
+        StringFormat("%lu\t%f\t%f\t%f\t%f\t%f\n", number_of_evaluations, x[0], x[1], y[0], y[1], hypervolume_read)
+            .c_str());
   }
   fclose(f_results);
 
@@ -77,17 +82,20 @@ MU_TEST(test_coco_archive_extreme_solutions) {
   number_of_evaluations = 0;
   y[0] = 5.222459558139120e+03;
   y[1] = -1.054000000000000e+01;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   number_of_evaluations = 0;
   y[0] = 2.070000000000000e+001;
   y[1] = 3.604904192800397e+002;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   number_of_evaluations = 1;
   y[0] = 5.2222140666e+03;
   y[1] = -1.0540000000e+01;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   /* Checks that the computed hypervolume is correct */
   mu_check(coco_archive_get_number_of_solutions(archive) == 2);
@@ -97,7 +105,8 @@ MU_TEST(test_coco_archive_extreme_solutions) {
   number_of_evaluations = 1;
   y[0] = 5.2220345785e+03;
   y[1] = -1.0539999999e+01;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   /* Checks that the computed hypervolume is correct */
   mu_check(coco_archive_get_number_of_solutions(archive) == 3);
@@ -125,7 +134,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 0;
   y[0] = 4.262796608000000e+02;
   y[1] = -1.520400000000000e+02;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   hypervolume = coco_archive_get_hypervolume(archive);
@@ -135,7 +145,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 0;
   y[0] = 3.944800000000000e+02;
   y[1] = -1.202403392000000e+02;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   hypervolume = coco_archive_get_hypervolume(archive);
@@ -145,7 +156,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 342;
   y[0] = 4.262796567880355e+02;
   y[1] = -1.520399999999999e+02;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   hypervolume = coco_archive_get_hypervolume(archive);
@@ -155,7 +167,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 351;
   y[0] = 4.262796555526893e+02;
   y[1] = -1.520399999999998e+02;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   mu_check(count == 2);
@@ -164,7 +177,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 2240;
   y[0] = 4.262796544864155e+02;
   y[1] = -1.520399999999997e+02;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   mu_check(count == 2);
@@ -179,7 +193,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 1;
   y[0] = 2815;
   y[1] = 100;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   hypervolume = coco_archive_get_hypervolume(archive);
@@ -189,7 +204,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 1;
   y[0] = 2790;
   y[1] = 306;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   hypervolume = coco_archive_get_hypervolume(archive);
@@ -199,7 +215,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 5118865;
   y[0] = 2.809875541591976e+03;
   y[1] = 3.059972106158142e+02 ;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   hypervolume = coco_archive_get_hypervolume(archive);
@@ -209,7 +226,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 2173490;
   y[0] = 2.814996411168355e+03;
   y[1] = 3.047803494075471e+02;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   mu_check(count == 6);
@@ -217,7 +235,8 @@ MU_TEST(test_coco_archive_precision_issues) {
   number_of_evaluations = 361541;
   y[0] = 2.940001451714048e+03;
   y[1] = 2.886826783155979e+02;
-  coco_archive_add_solution(archive, y[0], y[1], coco_string_format("%lu\t%f\t%f\n", (unsigned long) number_of_evaluations, y[0], y[1]).c_str());
+  coco_archive_add_solution(archive, y[0], y[1],
+                            StringFormat("%lu\t%f\t%f\n", (unsigned long)number_of_evaluations, y[0], y[1]).c_str());
 
   count = coco_archive_get_number_of_solutions(archive);
   mu_check(count == 6);
@@ -226,12 +245,14 @@ MU_TEST(test_coco_archive_precision_issues) {
   coco_archive_free(archive);
 }
 
+} // namespace coco
+
 int main(void) {
-  MU_RUN_TEST(test_coco_archive);
-  MU_RUN_TEST(test_coco_archive_extreme_solutions);
-  MU_RUN_TEST(test_coco_archive_precision_issues);
-	
-	MU_REPORT();
+  MU_RUN_TEST(coco::test_coco_archive);
+  MU_RUN_TEST(coco::test_coco_archive_extreme_solutions);
+  MU_RUN_TEST(coco::test_coco_archive_precision_issues);
+
+  MU_REPORT();
 
   return MU_EXIT_CODE;
 }

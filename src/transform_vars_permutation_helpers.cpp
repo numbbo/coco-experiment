@@ -15,13 +15,15 @@
 
 #include <algorithm>
 
+namespace coco {
+
 /* TODO: Document this file in doxygen style! */
 
 /**
  * @brief Sorts the indices in P by the corresponding values. Used as a random permutation generator when the
  * values are random. Indices with equal values keep their order.
  */
-static void coco_sort_indices_by_values(std::span<size_t> P, std::span<const double> values) {
+static void SortIndicesByValues(std::span<size_t> P, std::span<const double> values) {
   std::stable_sort(P.begin(), P.end(), [values](const size_t a, const size_t b) { return values[a] < values[b]; });
 }
 
@@ -29,25 +31,25 @@ static void coco_sort_indices_by_values(std::span<size_t> P, std::span<const dou
  * @brief generates a random, uniformly sampled, permutation and puts it in P
  * Wassim: move to coco_utilities?
  */
-static void coco_compute_random_permutation(std::span<size_t> P, long seed) {
+static void ComputeRandomPermutation(std::span<size_t> P, long seed) {
 
   std::vector<double> random_data(P.size());
-  bbob2009_gauss(random_data, seed);
+  Bbob2009Gauss(random_data, seed);
   for (size_t i = 0; i < P.size(); i++) {
     P[i] = i;
   }
-  coco_sort_indices_by_values(P, random_data);
+  SortIndicesByValues(P, random_data);
 }
 
 /**
  * @brief generates a permutation by sorting a sequence and puts it in P
  */
-static void coco_compute_permutation_from_sequence(std::span<size_t> P, std::span<const double> seq) {
+static void ComputePermutationFromSequence(std::span<size_t> P, std::span<const double> seq) {
   assert(P.size() == seq.size());
   for (size_t i = 0; i < P.size(); i++) {
     P[i] = i;
   }
-  coco_sort_indices_by_values(P, seq);
+  SortIndicesByValues(P, seq);
 }
 
 /**
@@ -55,10 +57,10 @@ static void coco_compute_permutation_from_sequence(std::span<size_t> P, std::spa
  * without using coco_random_new.
  * Move to coco_utilities?
  */
-static long coco_random_unif_integer(long lower_bound, long upper_bound, long seed) {
+static long RandomUnifInteger(long lower_bound, long upper_bound, long seed) {
   long range, rand_int;
   std::vector<double> tmp_uniform(1);
-  bbob2009_unif(tmp_uniform, seed);
+  Bbob2009Unif(tmp_uniform, seed);
   range = upper_bound - lower_bound + 1;
   rand_int = (static_cast<long>(tmp_uniform[0] * static_cast<double>(range))) + lower_bound;
   return rand_int;
@@ -70,8 +72,7 @@ static long coco_random_unif_integer(long lower_bound, long upper_bound, long se
  * for now so dynamic is implemented (simple since no need for tracking indices
  * if swap_range is 0, a random uniform permutation is generated
  */
-static void coco_compute_truncated_uniform_swap_permutation(std::span<size_t> P, long seed, size_t nb_swaps,
-                                                            size_t swap_range) {
+static void ComputeTruncatedUniformSwapPermutation(std::span<size_t> P, long seed, size_t nb_swaps, size_t swap_range) {
   const size_t n = P.size();
   size_t lower_bound, upper_bound, first_swap_var, second_swap_var, tmp;
 
@@ -83,7 +84,7 @@ static void coco_compute_truncated_uniform_swap_permutation(std::span<size_t> P,
   }
 
   std::vector<double> random_data(n);
-  bbob2009_unif(random_data, seed);
+  Bbob2009Unif(random_data, seed);
 
   std::vector<size_t> idx_order(n);
   for (size_t i = 0; i < n; i++) {
@@ -93,8 +94,8 @@ static void coco_compute_truncated_uniform_swap_permutation(std::span<size_t> P,
 
   if (swap_range > 0) {
     /*sort the random data in random_data and arrange idx_order accordingly*/
-    /*did not use coco_compute_random_permutation to only use the seed once*/
-    coco_sort_indices_by_values(idx_order, random_data);
+    /*did not use ComputeRandomPermutation to only use the seed once*/
+    SortIndicesByValues(idx_order, random_data);
     for (size_t idx_swap = 0; idx_swap < nb_swaps; idx_swap++) {
       first_swap_var = idx_order[idx_swap];
       if (first_swap_var < swap_range) {
@@ -108,9 +109,9 @@ static void coco_compute_truncated_uniform_swap_permutation(std::span<size_t> P,
         upper_bound = first_swap_var + swap_range;
       }
 
-      second_swap_var = static_cast<size_t>(coco_random_unif_integer(static_cast<long>(lower_bound),
-                                                                     static_cast<long>(upper_bound) - 1,
-                                                                     seed + static_cast<long>(1 + idx_swap) * 1000));
+      second_swap_var =
+          static_cast<size_t>(RandomUnifInteger(static_cast<long>(lower_bound), static_cast<long>(upper_bound) - 1,
+                                                seed + static_cast<long>(1 + idx_swap) * 1000));
       if (second_swap_var >= first_swap_var) {
         second_swap_var += 1;
       }
@@ -121,18 +122,18 @@ static void coco_compute_truncated_uniform_swap_permutation(std::span<size_t> P,
     }
   } else {
     /* generate random permutation instead */
-    coco_compute_random_permutation(P, seed);
+    ComputeRandomPermutation(P, seed);
   }
 }
 
 /**
  * @brief return the swap_range corresponding to the problem in the given suite
  */
-static size_t coco_get_swap_range(size_t dimension, std::string_view suite_name) {
+static size_t GetSwapRange(size_t dimension, std::string_view suite_name) {
   if (suite_name == "bbob-largescale") {
     return dimension / 3;
   } else {
-    coco_error("coco_get_swap_range(): unknown problem suite");
+    coco_error("GetSwapRange(): unknown problem suite");
     return 0;
   }
 }
@@ -140,11 +141,13 @@ static size_t coco_get_swap_range(size_t dimension, std::string_view suite_name)
 /**
  * @brief return the number of swaps corresponding to the problem in the given suite
  */
-size_t coco_get_nb_swaps(size_t dimension, std::string_view suite_name) {
+size_t GetNbSwaps(size_t dimension, std::string_view suite_name) {
   if (suite_name == "bbob-largescale") {
     return dimension;
   } else {
-    coco_error("coco_get_nb_swaps(): unknown problem suite");
+    coco_error("GetNbSwaps(): unknown problem suite");
     return 0;
   }
 }
+
+} // namespace coco

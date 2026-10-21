@@ -11,19 +11,21 @@
 #include <assert.h>
 #include "coco.h"
 
+namespace coco {
+
 /** @brief Computes the minimum of the two values. */
-static double bbob2009_fmin(double a, double b) { return (a < b) ? a : b; }
+static double Bbob2009Fmin(double a, double b) { return (a < b) ? a : b; }
 
 /** @brief Computes the maximum of the two values. */
-static double bbob2009_fmax(double a, double b) { return (a > b) ? a : b; }
+static double Bbob2009Fmax(double a, double b) { return (a > b) ? a : b; }
 
 /** @brief Rounds the given value. */
-static double bbob2009_round(double x) { return floor(x + 0.5); }
+static double Bbob2009Round(double x) { return floor(x + 0.5); }
 
 /**
  * @brief Generates r.size() uniform random numbers using inseed as the seed and stores them in r.
  */
-static void bbob2009_unif(std::span<double> r, long inseed) {
+static void Bbob2009Unif(std::span<double> r, long inseed) {
   /* generates N uniform numbers with starting seed */
   long tmp;
   long rgrand[32];
@@ -61,7 +63,7 @@ static void bbob2009_unif(std::span<double> r, long inseed) {
 /**
  * @brief Converts from packed (column-major) storage to a matrix.
  */
-static void bbob2009_reshape(coco_matrix_t &B, std::span<const double> vector, const size_t m, const size_t n) {
+static void Bbob2009Reshape(Matrix &B, std::span<const double> vector, const size_t m, const size_t n) {
   assert(vector.size() == m * n);
   for (size_t i = 0; i < m; i++) {
     for (size_t j = 0; j < n; j++) {
@@ -73,10 +75,10 @@ static void bbob2009_reshape(coco_matrix_t &B, std::span<const double> vector, c
 /**
  * @brief Generates g.size() Gaussian random numbers using the given seed and stores them in g.
  */
-static void bbob2009_gauss(std::span<double> g, const long seed) {
+static void Bbob2009Gauss(std::span<double> g, const long seed) {
   const size_t N = g.size();
   std::vector<double> uniftmp(2 * N);
-  bbob2009_unif(uniftmp, seed);
+  Bbob2009Unif(uniftmp, seed);
 
   for (size_t i = 0; i < N; i++) {
     g[i] = sqrt(-2 * log(uniftmp[i])) * cos(2 * coco_pi * uniftmp[N + i]);
@@ -89,13 +91,13 @@ static void bbob2009_gauss(std::span<double> g, const long seed) {
 /**
  * @brief Computes a DIM by DIM rotation matrix based on seed.
  */
-static coco_matrix_t bbob2009_compute_rotation(const long seed, const size_t DIM) {
-  coco_matrix_t B(DIM, DIM);
+static Matrix Bbob2009ComputeRotation(const long seed, const size_t DIM) {
+  Matrix B(DIM, DIM);
   double prod;
   std::vector<double> gvect(DIM * DIM);
 
-  bbob2009_gauss(gvect, seed);
-  bbob2009_reshape(B, gvect, DIM, DIM);
+  Bbob2009Gauss(gvect, seed);
+  Bbob2009Reshape(B, gvect, DIM, DIM);
   /*1st coordinate is row, 2nd is column.*/
 
   for (size_t i = 0; i < DIM; i++) {
@@ -118,8 +120,8 @@ static coco_matrix_t bbob2009_compute_rotation(const long seed, const size_t DIM
 /**
  * @brief Randomly computes the location of the global optimum.
  */
-static void bbob2009_compute_xopt(std::span<double> xopt, const long seed) {
-  bbob2009_unif(xopt, seed);
+static void Bbob2009ComputeXopt(std::span<double> xopt, const long seed) {
+  Bbob2009Unif(xopt, seed);
   for (size_t i = 0; i < xopt.size(); i++) {
     xopt[i] = 8 * floor(1e4 * xopt[i]) / 1e4 - 4;
     if (xopt[i] == 0.0)
@@ -129,10 +131,10 @@ static void bbob2009_compute_xopt(std::span<double> xopt, const long seed) {
 
 /**
  * @brief Randomly computes the location of the global optimum in the larger space
- * of [-5, 5]^DIM compared to `bbob2009_compute_xopt`.
+ * of [-5, 5]^DIM compared to `Bbob2009ComputeXopt`.
  */
-static void sbox_cost_compute_xopt(std::span<double> xopt, const long seed) {
-  bbob2009_unif(xopt, seed);
+static void SboxCostComputeXopt(std::span<double> xopt, const long seed) {
+  Bbob2009Unif(xopt, seed);
   for (size_t i = 0; i < xopt.size(); i++) {
     xopt[i] = 10 * floor(1e4 * xopt[i]) / 1e4 - 5;
     if (xopt[i] == 0.0)
@@ -146,31 +148,31 @@ static void sbox_cost_compute_xopt(std::span<double> xopt, const long seed) {
  * The functions differ slightly between the suites: bbob-boxed places the optimum in [-5, 5]^DIM and
  * bbob-largescale normalizes the objective value by the dimension and scales by the block size.
  */
-enum class coco_bbob_variant_t { bbob, boxed, largescale };
+enum class BbobVariant { BBOB, BOXED, LARGESCALE };
 
 /**
  * @brief Randomly computes the location of the global optimum for the given suite variant.
  */
-static void bbob_compute_xopt(std::span<double> xopt, const long seed, const coco_bbob_variant_t variant) {
-  if (variant == coco_bbob_variant_t::boxed)
-    sbox_cost_compute_xopt(xopt, seed);
+static void BbobComputeXopt(std::span<double> xopt, const long seed, const BbobVariant variant) {
+  if (variant == BbobVariant::BOXED)
+    SboxCostComputeXopt(xopt, seed);
   else
-    bbob2009_compute_xopt(xopt, seed);
+    Bbob2009ComputeXopt(xopt, seed);
 }
 
 /**
- * @brief Returns the location of the global optimum for the given suite variant, see bbob_compute_xopt().
+ * @brief Returns the location of the global optimum for the given suite variant, see BbobComputeXopt().
  */
-static std::vector<double> bbob_xopt(const long seed, const size_t DIM, const coco_bbob_variant_t variant) {
+static std::vector<double> BbobXopt(const long seed, const size_t DIM, const BbobVariant variant) {
   std::vector<double> xopt(DIM);
-  bbob_compute_xopt(xopt, seed, variant);
+  BbobComputeXopt(xopt, seed, variant);
   return xopt;
 }
 
 /**
  * @brief Randomly chooses the objective offset for the given function and instance.
  */
-static double bbob2009_compute_fopt(const size_t function, const size_t instance) {
+static double Bbob2009ComputeFopt(const size_t function, const size_t instance) {
   long rseed, rrseed;
   double gval, gval2;
 
@@ -200,7 +202,9 @@ static double bbob2009_compute_fopt(const size_t function, const size_t instance
     rseed = static_cast<long>(function);
 
   rrseed = rseed + static_cast<long>(10000 * instance);
-  bbob2009_gauss({&gval, 1}, rrseed);
-  bbob2009_gauss({&gval2, 1}, rrseed + 1);
-  return bbob2009_fmin(1000., bbob2009_fmax(-1000., bbob2009_round(100. * 100. * gval / gval2) / 100.));
+  Bbob2009Gauss({&gval, 1}, rrseed);
+  Bbob2009Gauss({&gval2, 1}, rrseed + 1);
+  return Bbob2009Fmin(1000., Bbob2009Fmax(-1000., Bbob2009Round(100. * 100. * gval / gval2) / 100.));
 }
+
+} // namespace coco

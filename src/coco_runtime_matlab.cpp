@@ -14,6 +14,8 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
+/* C interface (declared in coco.h) */
+
 void coco_error(const char *message, ...) {
   va_list args;
 

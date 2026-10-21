@@ -3,8 +3,10 @@
 #include "coco.cpp"
 #include "about_equal.h"
 
+namespace coco {
+
 /**
- * Tests the function mo_get_norm.
+ * Tests the function MoGetNorm.
  */
 MU_TEST(test_mo_get_norm) {
 
@@ -17,33 +19,33 @@ MU_TEST(test_mo_get_norm) {
       0.23, 0.39, 0.93, 0.52, 0.21, 0.38, 0.14, 0.54, 0.67, 0.02, 0.73, 0.89, 0.32, 0.77, 0.99, 0.76, 0.18,
       0.53, 0.84, 0.94, 0.78, 0.38, 0.78, 0.58, 0.27, 0.57 };
 
-  norm = mo_get_norm(std::span(first).first(1), std::span(second).first(1));
+  norm = MoGetNorm(std::span(first).first(1), std::span(second).first(1));
   mu_check(norm >= 0.04999);  mu_check(norm <= 0.05001);
 
-  norm = mo_get_norm(std::span(first).first(2), std::span(second).first(2));
+  norm = MoGetNorm(std::span(first).first(2), std::span(second).first(2));
   mu_check(norm >= 0.40310);  mu_check(norm <= 0.40312);
 
-  norm = mo_get_norm(std::span(first).first(3), std::span(second).first(3));
+  norm = MoGetNorm(std::span(first).first(3), std::span(second).first(3));
   mu_check(norm >= 0.40754);  mu_check(norm <= 0.40756);
 
-  norm = mo_get_norm(std::span(first).first(4), std::span(second).first(4));
+  norm = MoGetNorm(std::span(first).first(4), std::span(second).first(4));
   mu_check(norm >= 0.40865);  mu_check(norm <= 0.40867);
 
-  norm = mo_get_norm(std::span(first).first(5), std::span(second).first(5));
+  norm = MoGetNorm(std::span(first).first(5), std::span(second).first(5));
   mu_check(norm >= 0.70950);  mu_check(norm <= 0.70952);
 
-  norm = mo_get_norm(std::span(first).first(10), std::span(second).first(10));
+  norm = MoGetNorm(std::span(first).first(10), std::span(second).first(10));
   mu_check(norm >= 1.00493);  mu_check(norm <= 1.00495);
 
-  norm = mo_get_norm(std::span(first).first(20), std::span(second).first(20));
+  norm = MoGetNorm(std::span(first).first(20), std::span(second).first(20));
   mu_check(norm >= 1.65465);  mu_check(norm <= 1.65467);
 
-  norm = mo_get_norm(std::span(first).first(40), std::span(second).first(40));
+  norm = MoGetNorm(std::span(first).first(40), std::span(second).first(40));
   mu_check(norm >= 2.17183);  mu_check(norm <= 2.17185);
 }
 
 /**
- * Tests the function mo_normalize.
+ * Tests the function MoNormalize.
  */
 MU_TEST(test_mo_normalize) {
 
@@ -57,22 +59,22 @@ MU_TEST(test_mo_normalize) {
   nadir[0] = 200;
   nadir[1] = 0.22;
 
-  result = mo_normalize({ideal, 2}, {ideal, 2}, {nadir, 2});
+  result = MoNormalize({ideal, 2}, {ideal, 2}, {nadir, 2});
   /* Note that the ideal point gets adjusted to be equal to an extreme point! */
   mu_check(about_equal_2d(result.data(), 0, 1));
 
-  result = mo_normalize({nadir, 2}, {ideal, 2}, {nadir, 2});
+  result = MoNormalize({nadir, 2}, {ideal, 2}, {nadir, 2});
   mu_check(about_equal_2d(result.data(), 1, 1));
 
   y[0] = 50;
   y[1] = 0.1;
-  result = mo_normalize({y, 2}, {ideal, 2}, {nadir, 2});
+  result = MoNormalize({y, 2}, {ideal, 2}, {nadir, 2});
   /* Note that a point better than the ideal point gets adjusted to be equal to an extreme point! */
   mu_check(about_equal_2d(result.data(), 0, 1));
 
   y[0] = 180;
   y[1] = 0.21;
-  result = mo_normalize({y, 2}, {ideal, 2}, {nadir, 2});
+  result = MoNormalize({y, 2}, {ideal, 2}, {nadir, 2});
   mu_check(about_equal_2d(result.data(), 0.8, 0.5));
 
   coco_free_memory(y);
@@ -81,7 +83,7 @@ MU_TEST(test_mo_normalize) {
 }
 
 /**
- * Tests the function mo_get_dominance.
+ * Tests the function MoGetDominance.
  */
 MU_TEST(test_mo_get_dominance) {
 
@@ -95,11 +97,11 @@ MU_TEST(test_mo_get_dominance) {
   c[0] = 0.6;  c[1] = 0.4;
   d[0] = 0.6;  d[1] = 0.4;
 
-  mu_check(mo_get_dominance({a, 2}, {b, 2}) == 0);
-  mu_check(mo_get_dominance({c, 2}, {b, 2}) == -1);
-  mu_check(mo_get_dominance({b, 2}, {d, 2}) == 1);
-  mu_check(mo_get_dominance({c, 2}, {d, 2}) == -2);
-  mu_check(mo_get_dominance({a, 2}, {a, 2}) == -2);
+  mu_check(MoGetDominance({a, 2}, {b, 2}) == 0);
+  mu_check(MoGetDominance({c, 2}, {b, 2}) == -1);
+  mu_check(MoGetDominance({b, 2}, {d, 2}) == 1);
+  mu_check(MoGetDominance({c, 2}, {d, 2}) == -2);
+  mu_check(MoGetDominance({a, 2}, {a, 2}) == -2);
 
   coco_free_memory(a);
   coco_free_memory(b);
@@ -108,32 +110,32 @@ MU_TEST(test_mo_get_dominance) {
 }
 
 /**
- * Tests the function mo_is_within_ROI.
+ * Tests the function MoIsWithinRoi.
  */
 MU_TEST(test_mo_is_within_ROI) {
 
   double *y = coco_allocate_vector(2);
 
   y[0] = 0.5; y[1] = 0.2;
-  mu_check(mo_is_within_ROI({y, 2}) == 1);
+  mu_check(MoIsWithinRoi({y, 2}) == 1);
 
   y[0] = 0; y[1] = 0;
-  mu_check(mo_is_within_ROI({y, 2}) == 1);
+  mu_check(MoIsWithinRoi({y, 2}) == 1);
 
   y[0] = 1; y[1] = 1;
-  mu_check(mo_is_within_ROI({y, 2}) == 1);
+  mu_check(MoIsWithinRoi({y, 2}) == 1);
 
   y[0] = -0.00001; y[1] = 1;
-  mu_check(mo_is_within_ROI({y, 2}) == 0);
+  mu_check(MoIsWithinRoi({y, 2}) == 0);
 
   y[0] = 1.2; y[1] = 0.5;
-  mu_check(mo_is_within_ROI({y, 2}) == 0);
+  mu_check(MoIsWithinRoi({y, 2}) == 0);
 
   coco_free_memory(y);
 }
 
 /**
- * Tests the function mo_get_distance_to_ROI.
+ * Tests the function MoGetDistanceToRoi.
  */
 MU_TEST(test_mo_get_distance_to_ROI) {
 
@@ -141,34 +143,36 @@ MU_TEST(test_mo_get_distance_to_ROI) {
   double result;
 
   y[0] = 0.5; y[1] = 0.2;
-  mu_check(about_equal_value(mo_get_distance_to_ROI({y, 2}), 0));
+  mu_check(about_equal_value(MoGetDistanceToRoi({y, 2}), 0));
 
   y[0] = 0; y[1] = 0;
-  mu_check(about_equal_value(mo_get_distance_to_ROI({y, 2}), 0));
+  mu_check(about_equal_value(MoGetDistanceToRoi({y, 2}), 0));
 
   y[0] = 1; y[1] = 1;
-  mu_check(about_equal_value(mo_get_distance_to_ROI({y, 2}), 0));
+  mu_check(about_equal_value(MoGetDistanceToRoi({y, 2}), 0));
 
   y[0] = 1.00001; y[1] = 1;
-  result = mo_get_distance_to_ROI({y, 2});
+  result = MoGetDistanceToRoi({y, 2});
   mu_check(about_equal_value(result, 0.00001));
 
   y[0] = 1.2; y[1] = 1.5;
-  result = mo_get_distance_to_ROI({y, 2});
-  mu_check(about_equal_value(mo_get_distance_to_ROI({y, 2}), 0.53851648071345037));
+  result = MoGetDistanceToRoi({y, 2});
+  mu_check(about_equal_value(MoGetDistanceToRoi({y, 2}), 0.53851648071345037));
 
   coco_free_memory(y);
 }
+
+} // namespace coco
 
 /**
  * Run all tests in this file.
  */
 int main(void) {
-  MU_RUN_TEST(test_mo_get_norm);
-  MU_RUN_TEST(test_mo_normalize);
-  MU_RUN_TEST(test_mo_get_dominance);
-  MU_RUN_TEST(test_mo_is_within_ROI);
-  MU_RUN_TEST(test_mo_get_distance_to_ROI);
+  MU_RUN_TEST(coco::test_mo_get_norm);
+  MU_RUN_TEST(coco::test_mo_normalize);
+  MU_RUN_TEST(coco::test_mo_get_dominance);
+  MU_RUN_TEST(coco::test_mo_is_within_ROI);
+  MU_RUN_TEST(coco::test_mo_get_distance_to_ROI);
 
   MU_REPORT();
 

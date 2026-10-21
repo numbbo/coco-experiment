@@ -13,11 +13,13 @@
 #include "transform_obj_shift.cpp"
 #include "transform_vars_shift.cpp"
 
+namespace coco {
+
 /**
  * @brief Implements the sphere function without connections to any COCO
  * structures.
  */
-static double f_sphere_raw(std::span<const double> x) {
+static double SphereRaw(std::span<const double> x) {
   const size_t number_of_variables = x.size();
 
   size_t i = 0;
@@ -33,31 +35,31 @@ static double f_sphere_raw(std::span<const double> x) {
 /**
  * @brief The sphere function.
  */
-class f_sphere_t final : public coco_problem_s {
+class Sphere final : public Problem {
 public:
-  explicit f_sphere_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("sphere function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02zu", "sphere", number_of_variables);
+  explicit Sphere(const size_t number_of_variables) : Problem(number_of_variables, 1, 0) {
+    InitFromScalars("sphere function", -5.0, 5.0, 0.0);
+    SetId("%s_d%02zu", "sphere", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+    EvaluateFunction(best_parameter_, best_value_);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_sphere_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = SphereRaw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the sphere function.
    */
-  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
+  void EvaluateGradient(std::span<const double> x, std::span<double> y) override {
 
-    for (size_t i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables_; ++i) {
       y[i] = 2.0 * x[i];
     }
   }
@@ -68,53 +70,54 @@ public:
  *
  * f(x) = f_sphere(x - xopt) + fopt, normalized by the dimension before fopt is added in the large-scale suite.
  */
-class bbob_sphere_t final : public bbob_problem_t<bbob_sphere_t> {
+class BbobSphere final : public BbobProblem<BbobSphere> {
 public:
-  bbob_sphere_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                const coco_bbob_variant_t variant, const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)), fopt(bbob2009_compute_fopt(function, instance)),
-        normalize(variant == coco_bbob_variant_t::largescale), z(dimension) {
+  BbobSphere(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+             const BbobVariant variant, const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)), fopt_(Bbob2009ComputeFopt(function, instance)),
+        normalize_(variant == BbobVariant::LARGESCALE), z_(dimension) {
     /* The optimum of the sphere function is the origin, map it back through the transformation */
-    shift.inverse(best_parameter, best_parameter);
-    set_best_value_at_best_parameter();
+    shift_.Inverse(best_parameter_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z);
-    double y = f_sphere_raw(z);
-    if (normalize)
-      y *= coco_norm_by_dim_factor(number_of_variables);
-    return y + fopt;
+    shift_.Apply(x, z_);
+    double y = SphereRaw(z_);
+    if (normalize_)
+      y *= NormByDimFactor(number_of_variables_);
+    return y + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const double fopt;
-  const bool normalize;
-  std::vector<double> z; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const double fopt_;
+  const bool normalize_;
+  std::vector<double> z_; /**< @brief The transformed decision values */
 };
 
 /**
  * @brief Creates the sphere problem for the constrained BBOB suite.
  */
-static coco_problem_ptr_t f_sphere_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                              const size_t instance, const long rseed,
-                                                              const char *problem_id_template,
-                                                              const char *problem_name_template) {
-  coco_problem_ptr_t problem;
+static ProblemPtr SphereConsBbobProblemAllocate(const size_t function, const size_t dimension, const size_t instance,
+                                                const long rseed, const char *problem_id_template,
+                                                const char *problem_name_template) {
+  ProblemPtr problem;
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt, rseed, coco_bbob_variant_t::bbob);
-  double fopt = bbob2009_compute_fopt(function, instance);
+  BbobComputeXopt(xopt, rseed, BbobVariant::BBOB);
+  double fopt = Bbob2009ComputeFopt(function, instance);
 
-  problem = std::make_unique<f_sphere_t>(dimension);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = std::make_unique<Sphere>(dimension);
+  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
+  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("1-separable");
+  problem->SetId(problem_id_template, function, instance, dimension);
+  problem->SetName(problem_name_template, function, instance, dimension);
+  problem->SetType("1-separable");
 
   return problem;
 }
+
+} // namespace coco

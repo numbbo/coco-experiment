@@ -8,10 +8,12 @@
 #include "coco.h"
 #include "coco_internal.h"
 
+namespace coco {
+
 /**
  * @brief Implements the Schwefel function for large scale.
  */
-static double f_schwefel_generalized_raw(std::span<const double> x) {
+static double SchwefelGeneralizedRaw(std::span<const double> x) {
   const size_t number_of_variables = x.size();
 
   size_t i = 0;
@@ -35,3 +37,5 @@ static double f_schwefel_generalized_raw(std::span<const double> x) {
 
   return result;
 }
+
+} // namespace coco

@@ -16,90 +16,86 @@
 #include "coco_problem.cpp"
 #include "transform_functions.cpp"
 
+namespace coco {
+
 /**
  * @brief Applies the affine transformation x |-> Mx + b to the decision values.
  */
-class transform_vars_affine_t final : public coco_problem_transformed_t {
+class TransformVarsAffine final : public TransformedProblem {
 public:
-  transform_vars_affine_t(coco_problem_ptr_t inner, coco_matrix_t M, std::vector<double> b)
-      : coco_problem_transformed_t(std::move(inner), "transform_vars_affine"), affine(std::move(M), std::move(b)),
-        transformed_x(inner_problem->get_number_of_variables()) {
-    update_best_parameter();
+  TransformVarsAffine(ProblemPtr inner, Matrix M, std::vector<double> b)
+      : TransformedProblem(std::move(inner), "transform_vars_affine"), affine_(std::move(M), std::move(b)),
+        transformed_x_(inner_problem_->number_of_variables()) {
+    /*
+     * TODOs:
+     * - Calculate new smallest/largest values of interest?
+     * - Resize bounds vectors if input and output dimensions do not match
+     */
+    assert(affine_.matrix().number_of_rows() == inner_problem_->number_of_variables());
+    UpdateBestParameter();
   }
 
   /**
    * @brief Evaluates the transformed objective function.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    if (inner_problem->get_number_of_objectives() == 0) {
-      inner_problem->evaluate_function(x, y);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    if (inner_problem_->number_of_objectives() == 0) {
+      inner_problem_->EvaluateFunction(x, y);
       return;
     }
 
-    affine.apply(x, transformed_x);
-    inner_problem->evaluate_function(transformed_x, y);
+    affine_.Apply(x, transformed_x_);
+    inner_problem_->EvaluateFunction(transformed_x_, y);
 
-    assert_not_below_best_value(x, y);
+    AssertNotBelowBestValue(x, y);
   }
 
   /**
    * @brief Evaluates the transformed constraint.
    */
-  void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) override {
-    if (inner_problem->get_number_of_constraints() == 0) {
-      inner_problem->evaluate_constraint(x, y, update_counter);
+  void EvaluateConstraint(std::span<const double> x, std::span<double> y, int update_counter) override {
+    if (inner_problem_->number_of_constraints() == 0) {
+      inner_problem_->EvaluateConstraint(x, y, update_counter);
       return;
     }
 
-    affine.apply(x, transformed_x);
-    inner_problem->evaluate_constraint(transformed_x, y, update_counter);
+    affine_.Apply(x, transformed_x_);
+    inner_problem_->EvaluateConstraint(transformed_x_, y, update_counter);
   }
 
   /**
    * @brief Evaluates the gradient of the transformed function.
    */
-  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
+  void EvaluateGradient(std::span<const double> x, std::span<double> y) override {
 
-    std::vector<double> gradient(inner_problem->get_number_of_variables(), 0.0);
+    std::vector<double> gradient(inner_problem_->number_of_variables(), 0.0);
 
-    affine.apply(x, transformed_x);
-    inner_problem->evaluate_gradient(transformed_x, y);
+    affine_.Apply(x, transformed_x_);
+    inner_problem_->EvaluateGradient(transformed_x_, y);
 
     /* grad_(f o g )(x), where g(x) = M * x + b, equals to
      * M^T * grad_f(M *x + b)
      */
-    const coco_matrix_t &M = affine.matrix();
-    for (size_t j = 0; j < inner_problem->get_number_of_variables(); ++j) {
-      for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i) {
+    const Matrix &M = affine_.matrix();
+    for (size_t j = 0; j < inner_problem_->number_of_variables(); ++j) {
+      for (size_t i = 0; i < inner_problem_->number_of_variables(); ++i) {
         gradient[j] += y[i] * M(i, j);
       }
     }
-    for (size_t i = 0; i < inner_problem->get_number_of_variables(); ++i)
+    for (size_t i = 0; i < inner_problem_->number_of_variables(); ++i)
       y[i] = gradient[i];
   }
 
   /**
    * @brief Solves M x = inner_x - b, which is M^T (inner_x - b) if M is orthogonal. Not possible if M is singular.
    */
-  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
-    return affine.inverse(inner_x, x);
+  bool Inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return affine_.Inverse(inner_x, x);
   }
 
 private:
-  const vars_affine_t affine;
-  std::vector<double> transformed_x; /**< @brief The transformed decision values */
+  const VarsAffine affine_;
+  std::vector<double> transformed_x_; /**< @brief The transformed decision values */
 };
 
-/**
- * @brief Creates the transformation.
- */
-static coco_problem_ptr_t transform_vars_affine(coco_problem_ptr_t inner_problem, coco_matrix_t M,
-                                                std::vector<double> b) {
-  /*
-   * TODOs:
-   * - Calculate new smallest/largest values of interest?
-   * - Resize bounds vectors if input and output dimensions do not match
-   */
-  assert(M.number_of_rows() == inner_problem->get_number_of_variables() && b.size() == M.number_of_rows());
-  return std::make_unique<transform_vars_affine_t>(std::move(inner_problem), std::move(M), std::move(b));
-}
+} // namespace coco

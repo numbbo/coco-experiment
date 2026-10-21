@@ -12,33 +12,35 @@
 #include "f_rosenbrock.cpp"
 #include "f_sphere.cpp"
 
+namespace coco {
+
 /**
  * @brief The toy suite.
  */
-class suite_toy_t final : public coco_suite_s {
+class SuiteToy final : public Suite {
 public:
-  using coco_suite_s::coco_suite_s;
+  using Suite::Suite;
 
   /** @brief Returns the problem with the given function, dimension and instance. */
-  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension,
-                                 const size_t /* instance: the toy functions have none */) override {
-    coco_problem_ptr_t problem;
+  ProblemPtr GetProblem(const size_t function, const size_t dimension,
+                        const size_t /* instance: the toy functions have none */) override {
+    ProblemPtr problem;
 
     if (function == 1) {
-      problem = std::make_unique<f_sphere_t>(dimension);
+      problem = std::make_unique<Sphere>(dimension);
     } else if (function == 2) {
-      problem = std::make_unique<f_ellipsoid_t>(dimension, 1.0e6);
+      problem = std::make_unique<Ellipsoid>(dimension, 1.0e6);
     } else if (function == 3) {
-      problem = std::make_unique<f_rastrigin_t>(dimension);
+      problem = std::make_unique<Rastrigin>(dimension);
     } else if (function == 4) {
-      problem = std::make_unique<f_bueche_rastrigin_t>(dimension);
+      problem = std::make_unique<BuecheRastrigin>(dimension);
     } else if (function == 5) {
       double xopt[40] = {5.0};
-      problem = std::make_unique<f_linear_slope_t>(dimension, std::span(xopt).first(dimension));
+      problem = std::make_unique<LinearSlope>(dimension, std::span(xopt).first(dimension));
     } else if (function == 6) {
-      problem = std::make_unique<f_rosenbrock_t>(dimension);
+      problem = std::make_unique<Rosenbrock>(dimension);
     } else {
-      coco_error("suite_toy_t::get_problem(): function %zu does not exist in this suite", function);
+      coco_error("suite_toy_t::GetProblem(): function %zu does not exist in this suite", function);
       return nullptr; /* Never reached */
     }
 
@@ -49,13 +51,15 @@ public:
 /**
  * @brief Sets the dimensions and default instances for the toy suite.
  */
-static coco_suite_t *suite_toy_initialize() {
+static Suite *SuiteToyInitialize() {
 
-  coco_suite_t *suite;
+  Suite *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
-  suite = new suite_toy_t("toy", 6, num_dimensions, dimensions, "instances: 1", 1);
+  suite = new SuiteToy("toy", 6, num_dimensions, dimensions, "instances: 1", 1);
 
   return suite;
 }
+
+} // namespace coco

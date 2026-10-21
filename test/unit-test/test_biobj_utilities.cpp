@@ -11,19 +11,19 @@ MU_TEST(test_biobj_utilities_instances) {
   coco_problem_t *problem;
 
   problem = coco_suite_get_next_problem(suite, NULL);
-  mu_check(coco_problem_get_suite_dep_instance(problem) == 16);
+  mu_check(ProblemGetSuiteDepInstance(FromC(problem)) == 16);
 
   problem = coco_suite_get_next_problem(suite, NULL);
-  mu_check(coco_problem_get_suite_dep_instance(problem) == 17);
+  mu_check(ProblemGetSuiteDepInstance(FromC(problem)) == 17);
 
   problem = coco_suite_get_next_problem(suite, NULL);
-  mu_check(coco_problem_get_suite_dep_instance(problem) == 18);
+  mu_check(ProblemGetSuiteDepInstance(FromC(problem)) == 18);
 
   problem = coco_suite_get_next_problem(suite, NULL);
-  mu_check(coco_problem_get_suite_dep_instance(problem) == 19);
+  mu_check(ProblemGetSuiteDepInstance(FromC(problem)) == 19);
 
   problem = coco_suite_get_next_problem(suite, NULL);
-  mu_check(coco_problem_get_suite_dep_instance(problem) == 20);
+  mu_check(ProblemGetSuiteDepInstance(FromC(problem)) == 20);
 
   coco_suite_free(suite);
 }

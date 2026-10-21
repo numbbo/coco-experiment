@@ -23,122 +23,113 @@
 #include "coco.h"
 #include "coco_problem.cpp"
 
+namespace coco {
+
 /**
  * @brief Makes the first number_of_integer_variables variables of the inner problem discrete.
  */
-class transform_vars_discretize_t final : public coco_problem_transformed_t {
+class TransformVarsDiscretize final : public TransformedProblem {
 public:
-  transform_vars_discretize_t(coco_problem_ptr_t inner, std::span<const double> smallest_values_of_interest,
-                              std::span<const double> largest_values_of_interest,
-                              const size_t number_of_integer_variables)
-      : coco_problem_transformed_t(std::move(inner), "transform_vars_discretize"),
-        offset(inner_problem->get_number_of_variables()), discretized_x(inner_problem->get_number_of_variables()) {
+  TransformVarsDiscretize(ProblemPtr inner, std::span<const double> smallest_values_of_interest,
+                          std::span<const double> largest_values_of_interest, const size_t number_of_integer_variables)
+      : TransformedProblem(std::move(inner), "transform_vars_discretize"),
+        offset_(inner_problem_->number_of_variables()), discretized_x_(inner_problem_->number_of_variables()) {
     double l, u, inner_l, inner_u, outer_l, outer_u;
     double outer_xopt, inner_xopt, inner_approx_xopt;
     const double precision_offset = 1e-7; /* Needed to avoid issues with rounding doubles */
     int n;
 
     assert(number_of_integer_variables > 0);
-    assert(smallest_values_of_interest.size() == number_of_variables &&
-           largest_values_of_interest.size() == number_of_variables);
-    this->number_of_integer_variables = number_of_integer_variables;
+    assert(smallest_values_of_interest.size() == number_of_variables_ &&
+           largest_values_of_interest.size() == number_of_variables_);
+    this->number_of_integer_variables_ = number_of_integer_variables;
 
-    for (size_t i = 0; i < number_of_variables; i++) {
+    for (size_t i = 0; i < number_of_variables_; i++) {
       assert(smallest_values_of_interest[i] < largest_values_of_interest[i]);
-      this->smallest_values_of_interest[i] = smallest_values_of_interest[i];
-      this->largest_values_of_interest[i] = largest_values_of_interest[i];
-      offset[i] = 0;
+      this->smallest_values_of_interest_[i] = smallest_values_of_interest[i];
+      this->largest_values_of_interest_[i] = largest_values_of_interest[i];
+      offset_[i] = 0;
       if (i < number_of_integer_variables) {
         /* Compute the offset for integer variables */
-        outer_l = this->smallest_values_of_interest[i];
-        outer_u = this->largest_values_of_interest[i];
-        l = inner_problem->get_smallest_values_of_interest()[i];
-        u = inner_problem->get_largest_values_of_interest()[i];
-        n = coco_double_to_int(outer_u) - coco_double_to_int(outer_l) + 1; /* number of integer values */
+        outer_l = this->smallest_values_of_interest_[i];
+        outer_u = this->largest_values_of_interest_[i];
+        l = inner_problem_->smallest_values_of_interest()[i];
+        u = inner_problem_->largest_values_of_interest()[i];
+        n = DoubleToInt(outer_u) - DoubleToInt(outer_l) + 1; /* number of integer values */
         assert(n > 1);
         inner_l = l + (u - l) / (n + 1);
         inner_u = u - (u - l) / (n + 1);
         /* Find the location of the optimum in the coordinates of the outer problem */
-        inner_xopt = inner_problem->get_best_parameter()[i];
+        inner_xopt = inner_problem_->best_parameter()[i];
         outer_xopt = outer_l + (outer_u - outer_l) * (inner_xopt - inner_l) / (inner_u - inner_l);
-        outer_xopt = coco_double_round(outer_xopt + precision_offset);
+        outer_xopt = DoubleRound(outer_xopt + precision_offset);
         /* Make sure you the bounds are respected */
         if (outer_xopt < outer_l)
           outer_xopt = outer_l;
         if (outer_xopt > outer_u)
           outer_xopt = outer_u;
-        best_parameter[i] = outer_xopt;
+        best_parameter_[i] = outer_xopt;
         /* Find the value corresponding to outer_xopt in the coordinates of the inner problem */
         inner_approx_xopt = inner_l + (inner_u - inner_l) * (outer_xopt - outer_l) / (outer_u - outer_l);
         /* Compute the difference between the inner_approx_xopt and inner_xopt */
-        offset[i] = inner_approx_xopt - inner_xopt;
+        offset_[i] = inner_approx_xopt - inner_xopt;
       }
     }
 
-    if (number_of_constraints > 0)
-      coco_error("transform_vars_discretize(): Constraints not supported yet.");
+    if (number_of_constraints_ > 0)
+      coco_error("TransformVarsDiscretize(): Constraints not supported yet.");
   }
 
   /**
    * @brief Evaluates the transformed objective function.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
     double l, u, inner_l, inner_u, outer_l, outer_u;
     int n;
 
-    if (inner_problem->get_number_of_objectives() == 0) {
-      inner_problem->evaluate_function(x, y);
+    if (inner_problem_->number_of_objectives() == 0) {
+      inner_problem_->EvaluateFunction(x, y);
       return;
     }
 
     /* Transform x to fit in the discretized space */
-    discretized_x.assign(x.begin(), x.end());
-    for (size_t i = 0; i < number_of_integer_variables; ++i) {
-      outer_l = smallest_values_of_interest[i];
-      outer_u = largest_values_of_interest[i];
-      l = inner_problem->get_smallest_values_of_interest()[i];
-      u = inner_problem->get_largest_values_of_interest()[i];
-      n = coco_double_to_int(outer_u) - coco_double_to_int(outer_l) + 1; /* number of integer values in this coordinate */
+    discretized_x_.assign(x.begin(), x.end());
+    for (size_t i = 0; i < number_of_integer_variables_; ++i) {
+      outer_l = smallest_values_of_interest_[i];
+      outer_u = largest_values_of_interest_[i];
+      l = inner_problem_->smallest_values_of_interest()[i];
+      u = inner_problem_->largest_values_of_interest()[i];
+      n = DoubleToInt(outer_u) - DoubleToInt(outer_l) + 1; /* number of integer values in this coordinate */
       assert(n > 1);
       inner_l = l + (u - l) / (n + 1);
       inner_u = u - (u - l) / (n + 1);
       /* Make sure you the bounds are respected */
-      discretized_x[i] = coco_double_round(x[i]);
-      if (discretized_x[i] < outer_l)
-        discretized_x[i] = outer_l;
-      if (discretized_x[i] > outer_u)
-        discretized_x[i] = outer_u;
-      discretized_x[i] = inner_l + (inner_u - inner_l) * (discretized_x[i] - outer_l) / (outer_u - outer_l) - offset[i];
+      discretized_x_[i] = DoubleRound(x[i]);
+      if (discretized_x_[i] < outer_l)
+        discretized_x_[i] = outer_l;
+      if (discretized_x_[i] > outer_u)
+        discretized_x_[i] = outer_u;
+      discretized_x_[i] =
+          inner_l + (inner_u - inner_l) * (discretized_x_[i] - outer_l) / (outer_u - outer_l) - offset_[i];
     }
 
-    inner_problem->evaluate_function(discretized_x, y);
+    inner_problem_->EvaluateFunction(discretized_x_, y);
   }
 
   /** @brief Constraints are not supported yet (TODO?). */
-  void evaluate_constraint(std::span<const double> x, std::span<double> y, int update_counter) override {
-    coco_problem_s::evaluate_constraint(x, y, update_counter);
+  void EvaluateConstraint(std::span<const double> x, std::span<double> y, int update_counter) override {
+    Problem::EvaluateConstraint(x, y, update_counter);
   }
 
   /** @brief Gradients are not supported yet (TODO?). */
-  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
-    coco_problem_s::evaluate_gradient(x, y);
-  }
+  void EvaluateGradient(std::span<const double> x, std::span<double> y) override { Problem::EvaluateGradient(x, y); }
 
   /** @brief Rounding to the integers is not invertible. */
-  bool inverse(std::span<const double>, std::span<double>) const override { return false; }
+  bool Inverse(std::span<const double>, std::span<double>) const override { return false; }
 
 private:
-  std::vector<double> offset;
-  std::vector<double> discretized_x;
+  std::vector<double> offset_;
+  std::vector<double> discretized_x_;
 };
 
-/**
- * @brief Creates the transformation.
- */
-static coco_problem_ptr_t transform_vars_discretize(coco_problem_ptr_t inner_problem,
-                                                    std::span<const double> smallest_values_of_interest,
-                                                    std::span<const double> largest_values_of_interest,
-                                                    const size_t number_of_integer_variables) {
-  return std::make_unique<transform_vars_discretize_t>(std::move(inner_problem), smallest_values_of_interest,
-                                                       largest_values_of_interest, number_of_integer_variables);
-}
+} // namespace coco

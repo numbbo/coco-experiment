@@ -24,12 +24,14 @@
 #include "suite_biobj_utilities.cpp"
 #include "suite_bbob.cpp"
 
+namespace coco {
+
 /**
  * @brief Sets the instances associated with years for the bbob-biobj suites.
  *
  * @note The instances of the bi-objective suites generally do not changes with years.
  */
-static std::string_view suite_biobj_get_instances_by_year(const int year) {
+static std::string_view SuiteBiobjGetInstancesByYear(const int year) {
 
   if ((year == 2016) || (year == 0000)) { /* test case */
     return "1-10";
@@ -40,20 +42,18 @@ static std::string_view suite_biobj_get_instances_by_year(const int year) {
 /**
  * @brief The bbob-biobj and bbob-biobj-ext suites.
  */
-class suite_biobj_t final : public coco_suite_s {
+class SuiteBiobj final : public Suite {
 public:
-  using coco_suite_s::coco_suite_s;
+  using Suite::Suite;
 
-  std::string_view get_instances_by_year(const int year) const override {
-    return suite_biobj_get_instances_by_year(year);
-  }
+  std::string_view GetInstancesByYear(const int year) const override { return SuiteBiobjGetInstancesByYear(year); }
 
   /** @brief Returns the problem with the given function, dimension and instance. */
-  coco_problem_ptr_t get_problem(const size_t function, const size_t dimension, const size_t instance) override {
-    coco_problem_ptr_t problem;
+  ProblemPtr GetProblem(const size_t function, const size_t dimension, const size_t instance) override {
+    ProblemPtr problem;
 
-    problem = coco_get_biobj_problem(function, dimension, instance, coco_make_bbob_problem, new_instances,
-                                     get_dimensions().data(), get_dimensions().size());
+    problem = GetBiobjProblem(function, dimension, instance, GetBbobProblem, new_instances_, dimensions().data(),
+                              dimensions().size());
 
     problem->set_opt_known(true);
 
@@ -61,26 +61,28 @@ public:
   }
 
 private:
-  suite_biobj_new_instances_t new_instances; /**< @brief The new instances computed so far. */
+  SuiteBiobjNewInstances new_instances_; /**< @brief The new instances computed so far. */
 };
 
 /**
  * @brief Sets the dimensions and default instances for the bbob-biobj suites.
  */
-static coco_suite_t *suite_biobj_initialize(std::string_view suite_name) {
+static Suite *SuiteBiobjInitialize(std::string_view suite_name) {
 
-  coco_suite_t *suite;
+  Suite *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};
   const size_t num_dimensions = sizeof(dimensions) / sizeof(dimensions[0]);
 
   if (suite_name == "bbob-biobj") {
-    suite = new suite_biobj_t("bbob-biobj", 55, num_dimensions, dimensions, "instances: 1-15", 1);
+    suite = new SuiteBiobj("bbob-biobj", 55, num_dimensions, dimensions, "instances: 1-15", 1);
   } else if (suite_name == "bbob-biobj-ext") {
-    suite = new suite_biobj_t("bbob-biobj-ext", 55 + 37, num_dimensions, dimensions, "instances: 1-15", 1);
+    suite = new SuiteBiobj("bbob-biobj-ext", 55 + 37, num_dimensions, dimensions, "instances: 1-15", 1);
   } else {
-    coco_error("suite_biobj_initialize(): unknown problem suite");
+    coco_error("SuiteBiobjInitialize(): unknown problem suite");
     return nullptr;
   }
 
   return suite;
 }
+
+} // namespace coco

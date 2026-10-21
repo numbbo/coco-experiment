@@ -6,17 +6,18 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
+namespace coco {
+
 /**
  * @brief The toy observer.
  *
  * Possible options:
  * - file_name: string (name of the output file; default value is "first_hitting_times.dat")
  */
-class observer_toy_t final : public coco_observer_s {
+class ObserverToy final : public Observer {
 public:
-  observer_toy_t(const coco_observer_settings_s &observer_settings, std::string_view options,
-                 coco_option_keys_t &option_keys)
-      : coco_observer_s(observer_settings) {
+  ObserverToy(const ObserverSettings &observer_settings, std::string_view options, OptionKeys &option_keys)
+      : Observer(observer_settings) {
 
     std::string file_name = "first_hitting_times.dat";
 
@@ -25,23 +26,25 @@ public:
     option_keys = {"file_name"};
 
     /* Read file_name from the options and use it to initialize the observer */
-    coco_options_read_string(options, "file_name", file_name);
+    OptionsReadString(options, "file_name", file_name);
 
     /* Open log_file */
-    coco_create_directory(result_folder);
-    const std::string path = coco_join_path(result_folder, file_name);
+    CreateDirectory(result_folder);
+    const std::string path = JoinPath(result_folder, file_name);
 
-    log_file.open(path, "a");
-    if (log_file == nullptr) {
-      coco_error("observer_toy_t(): failed to open file %s.", path.c_str());
+    log_file_.Open(path, "a");
+    if (log_file_ == nullptr) {
+      coco_error("ObserverToy(): failed to open file %s.", path.c_str());
       return; /* Never reached */
     }
   }
 
-  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
+  ProblemPtr AddLogger(ProblemPtr problem) override;
 
 private:
-  friend class logger_toy_t; /* Writes to the log file */
+  friend class LoggerToy; /* Writes to the log file */
 
-  coco_file_t log_file; /**< @brief File used for logging. */
+  File log_file_; /**< @brief File used for logging. */
 };
+
+} // namespace coco

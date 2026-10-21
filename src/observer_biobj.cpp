@@ -9,13 +9,15 @@
 #include "coco_utilities.cpp"
 #include "mo_utilities.cpp"
 
+namespace coco {
+
 /** @brief Enum for denoting the way in which the nondominated solutions are treated. */
-enum observer_biobj_log_nondom_e { LOG_NONDOM_NONE, LOG_NONDOM_FINAL, LOG_NONDOM_ALL, LOG_NONDOM_READ };
+enum ObserverBiobjLogNondom { LOG_NONDOM_NONE, LOG_NONDOM_FINAL, LOG_NONDOM_ALL, LOG_NONDOM_READ };
 
 /** @brief Enum for denoting when the decision variables are logged. */
-enum observer_biobj_log_vars_e { LOG_VARS_NEVER, LOG_VARS_LOW_DIM, LOG_VARS_ALWAYS };
+enum ObserverBiobjLogVars { LOG_VARS_NEVER, LOG_VARS_LOW_DIM, LOG_VARS_ALWAYS };
 
-class logger_biobj_t;
+class LoggerBiobj;
 
 /**
  * @brief The bi-objective observer.
@@ -45,13 +47,12 @@ class logger_biobj_t;
  * "log_decision_variables: low_dim" and "compute_indicators: 1". If set to 0, it does not change the values
  * of the other options. The default value is 0.
  */
-class observer_biobj_t final : public coco_observer_s {
+class ObserverBiobj final : public Observer {
 public:
-  observer_biobj_t(const coco_observer_settings_s &observer_settings, std::string_view options,
-                   coco_option_keys_t &option_keys)
-      : coco_observer_s(observer_settings), observed_problem(nullptr), log_nondom_mode(LOG_NONDOM_ALL),
-        log_vars_mode(LOG_VARS_LOW_DIM), compute_indicators(true), produce_all_data(false),
-        large_mdat_file_warning(false), previous_function(-1), previous_dimension(-1) {
+  ObserverBiobj(const ObserverSettings &observer_settings, std::string_view options, OptionKeys &option_keys)
+      : Observer(observer_settings), observed_problem_(nullptr), log_nondom_mode_(LOG_NONDOM_ALL),
+        log_vars_mode_(LOG_VARS_LOW_DIM), compute_indicators_(true), produce_all_data_(false),
+        large_mdat_file_warning_(false), previous_function_(-1), previous_dimension_(-1) {
 
     std::string string_value;
 
@@ -59,61 +60,63 @@ public:
      * IMPORTANT: This list should be up-to-date with the code and the documentation */
     option_keys = {"log_nondominated", "log_decision_variables", "compute_indicators", "produce_all_data"};
 
-    if (coco_options_read_string(options, "log_nondominated", string_value) > 0) {
+    if (OptionsReadString(options, "log_nondominated", string_value) > 0) {
       if (string_value == "none")
-        log_nondom_mode = LOG_NONDOM_NONE;
+        log_nondom_mode_ = LOG_NONDOM_NONE;
       else if (string_value == "final")
-        log_nondom_mode = LOG_NONDOM_FINAL;
+        log_nondom_mode_ = LOG_NONDOM_FINAL;
       else if (string_value == "all")
-        log_nondom_mode = LOG_NONDOM_ALL;
+        log_nondom_mode_ = LOG_NONDOM_ALL;
       else if (string_value == "read")
-        log_nondom_mode = LOG_NONDOM_READ;
+        log_nondom_mode_ = LOG_NONDOM_READ;
     }
 
-    if (coco_options_read_string(options, "log_decision_variables", string_value) > 0) {
+    if (OptionsReadString(options, "log_decision_variables", string_value) > 0) {
       if (string_value == "none")
-        log_vars_mode = LOG_VARS_NEVER;
+        log_vars_mode_ = LOG_VARS_NEVER;
       else if (string_value == "all")
-        log_vars_mode = LOG_VARS_ALWAYS;
+        log_vars_mode_ = LOG_VARS_ALWAYS;
       else if (string_value == "low_dim")
-        log_vars_mode = LOG_VARS_LOW_DIM;
+        log_vars_mode_ = LOG_VARS_LOW_DIM;
     }
 
-    if (coco_options_read_flag(options, "compute_indicators", &compute_indicators) == 0)
-      compute_indicators = true;
+    if (OptionsReadFlag(options, "compute_indicators", &compute_indicators_) == 0)
+      compute_indicators_ = true;
 
-    if (coco_options_read_flag(options, "produce_all_data", &produce_all_data) == 0)
-      produce_all_data = false;
+    if (OptionsReadFlag(options, "produce_all_data", &produce_all_data_) == 0)
+      produce_all_data_ = false;
 
-    if (produce_all_data) {
-      compute_indicators = 1;
-      log_nondom_mode = LOG_NONDOM_ALL;
-      log_vars_mode = LOG_VARS_LOW_DIM;
+    if (produce_all_data_) {
+      compute_indicators_ = 1;
+      log_nondom_mode_ = LOG_NONDOM_ALL;
+      log_vars_mode_ = LOG_VARS_LOW_DIM;
     }
 
-    if ((log_nondom_mode == LOG_NONDOM_NONE) && (!compute_indicators)) {
+    if ((log_nondom_mode_ == LOG_NONDOM_NONE) && (!compute_indicators_)) {
       /* No logging required */
-      deactivate();
+      Deactivate();
     }
   }
 
-  ~observer_biobj_t() override;
+  ~ObserverBiobj() override;
 
-  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
+  ProblemPtr AddLogger(ProblemPtr problem) override;
 
-  void signal_restart(coco_problem_t *problem) override;
+  void SignalRestart(Problem *problem) override;
 
 private:
   /* The logger and its indicators read the settings and keep the state of the last logged problem */
-  friend class logger_biobj_t;
-  friend class logger_biobj_indicator_t;
+  friend class LoggerBiobj;
+  friend class LoggerBiobjIndicator;
 
-  logger_biobj_t *observed_problem; /**< @brief The logger of the observed problem (nullptr if none is observed) */
-  observer_biobj_log_nondom_e log_nondom_mode; /**< @brief Handling of the nondominated solutions. */
-  observer_biobj_log_vars_e log_vars_mode;     /**< @brief When the decision variables are logged. */
-  bool compute_indicators;                     /**< @brief Whether to compute indicators. */
-  bool produce_all_data;                       /**< @brief Whether to produce all data. */
-  bool large_mdat_file_warning; /**< @brief Whether the large mdat file warning has already been output. */
-  long previous_function;       /**< @brief Function of the previous logged problem. */
-  long previous_dimension;      /**< @brief Dimension of the previous logged problem */
+  LoggerBiobj *observed_problem_; /**< @brief The logger of the observed problem (nullptr if none is observed) */
+  ObserverBiobjLogNondom log_nondom_mode_;      /**< @brief Handling of the nondominated solutions. */
+  ObserverBiobjLogVars log_vars_mode_;          /**< @brief When the decision variables are logged. */
+  bool compute_indicators_;                     /**< @brief Whether to compute indicators. */
+  bool produce_all_data_;                       /**< @brief Whether to produce all data. */
+  bool large_mdat_file_warning_; /**< @brief Whether the large mdat file warning has already been output. */
+  long previous_function_;       /**< @brief Function of the previous logged problem. */
+  long previous_dimension_;      /**< @brief Dimension of the previous logged problem */
 };
+
+} // namespace coco

@@ -54,13 +54,25 @@ The core in `src/` is C++20 that is amalgamated into a single `coco.cpp` and exp
   (such as `std::vector::at()` or `std::stoi()`).
 - Manage memory with standard containers and RAII instead of `coco_allocate_memory()`/`coco_free_memory()`,
   which remain part of the C interface.
-- Problems, transformations and loggers are subclasses of `coco_problem_s`. Suites are subclasses of
-  `coco_suite_s` that implement `get_problem()` (and `get_instances_by_year()` if needed). Observers are
-  subclasses of `coco_observer_s` that implement `add_logger()` (and `signal_restart()` if supported).
-- Problems are owned through `coco_problem_ptr_t` (a `std::unique_ptr<coco_problem_t>`). Functions that wrap
-  a problem take it by value and the caller hands it over with `std::move()`, e.g.
-  `problem = transform_obj_shift(std::move(problem), fopt);`. Ownership is only released to a raw pointer
-  at the C interface.
+- Names follow the Google C++ style, except for constants:
+  - All internal code is in `namespace coco`.
+  - Types and functions are PascalCase (`BbobSphere`, `EvaluateFunction()`).
+  - Accessors that only return a value are named like the value (`best_value()`), and simple setters
+    `set_best_value()`.
+  - Data members of classes end in an underscore (`best_value_`); plain structs keep plain member names.
+  - Constants and enumerators are ALL_CAPS (`PENALTY_FACTOR`, `BbobVariant::LARGESCALE`).
+  - Local variables and parameters are snake_case.
+- The C interface keeps its names. Each source file ends with a "C interface" section outside the
+  namespace. The structures declared in `coco.h` (`coco_problem_s` etc.) are empty base classes of
+  `coco::Problem`, `coco::Suite`, `coco::Observer`, `coco::Archive` and `coco::RandomState`; the C interface
+  converts its pointers with `FromC()`.
+- Problems, transformations and loggers are subclasses of `Problem`. Suites are subclasses of `Suite` that
+  implement `GetProblem()` (and `GetInstancesByYear()` if needed). Observers are subclasses of `Observer`
+  that implement `AddLogger()` (and `SignalRestart()` if supported).
+- Problems are owned through `ProblemPtr` (a `std::unique_ptr<Problem>`). Functions and transformations
+  that wrap a problem take it by value and the caller hands it over with `std::move()`, e.g.
+  `problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);`. Ownership is only released to
+  a raw pointer at the C interface.
 - Pass arrays of values as `std::span` (`std::span<const double>` for input, `std::span<double>` for output)
   instead of a pointer and a length. Raw pointers to arrays only appear in the C interface, where they are
   wrapped into spans of the problem's dimension (or number of objectives or constraints).

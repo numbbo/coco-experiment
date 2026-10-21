@@ -10,11 +10,13 @@
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
 
+namespace coco {
+
 /**
  * @brief Implements the Rosenbrock function without connections to any COCO
  * structures.
  */
-static double f_rosenbrock_raw(std::span<const double> x) {
+static double RosenbrockRaw(std::span<const double> x) {
   const size_t number_of_variables = x.size();
 
   size_t i = 0;
@@ -36,32 +38,31 @@ static double f_rosenbrock_raw(std::span<const double> x) {
 /**
  * @brief The Rosenbrock function.
  */
-class f_rosenbrock_t final : public coco_problem_s {
+class Rosenbrock final : public Problem {
 public:
-  explicit f_rosenbrock_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("Rosenbrock function", -5.0, 5.0, 1.0);
-    set_id("%s_d%02zu", "rosenbrock", number_of_variables);
+  explicit Rosenbrock(const size_t number_of_variables) : Problem(number_of_variables, 1, 0) {
+    InitFromScalars("Rosenbrock function", -5.0, 5.0, 1.0);
+    SetId("%s_d%02zu", "rosenbrock", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+    EvaluateFunction(best_parameter_, best_value_);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_rosenbrock_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = RosenbrockRaw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 };
 
 /**
  * @brief The location of the optimum of the BBOB Rosenbrock functions before the shift to (1, ..., 1): 0.75 xopt.
  */
-static std::vector<double> rosenbrock_xopt(const long rseed, const size_t dimension,
-                                           const coco_bbob_variant_t variant) {
-  std::vector<double> xopt = bbob_xopt(rseed, dimension, variant);
+static std::vector<double> RosenbrockXopt(const long rseed, const size_t dimension, const BbobVariant variant) {
+  std::vector<double> xopt = BbobXopt(rseed, dimension, variant);
   for (size_t i = 0; i < dimension; ++i)
     xopt[i] *= 0.75;
   return xopt;
@@ -71,12 +72,12 @@ static std::vector<double> rosenbrock_xopt(const long rseed, const size_t dimens
  * @brief The scaling factor of the BBOB Rosenbrock functions: max(1, sqrt(n) / 8), where n is the block size in
  * the large-scale suite.
  */
-static double rosenbrock_factor(const size_t dimension, const coco_bbob_variant_t variant) {
-  if (variant == coco_bbob_variant_t::largescale) {
-    const size_t block_size = coco_rotation_matrix_block_size(dimension);
-    return coco_double_max(1.0, sqrt(static_cast<double>(block_size)) / 8.0);
+static double RosenbrockFactor(const size_t dimension, const BbobVariant variant) {
+  if (variant == BbobVariant::LARGESCALE) {
+    const size_t block_size = RotationMatrixBlockSize(dimension);
+    return DoubleMax(1.0, sqrt(static_cast<double>(block_size)) / 8.0);
   }
-  return coco_double_max(1.0, sqrt(static_cast<double>(dimension)) / 8.0);
+  return DoubleMax(1.0, sqrt(static_cast<double>(dimension)) / 8.0);
 }
 
 /**
@@ -85,40 +86,39 @@ static double rosenbrock_factor(const size_t dimension, const coco_bbob_variant_
  * f(x) = f_rosenbrock(s (x - 0.75 xopt) + 1) + fopt with s = max(1, sqrt(n) / 8), where n is the block size in the
  * large-scale suite; normalized by the dimension before fopt is added in the large-scale suite.
  */
-class bbob_rosenbrock_t final : public bbob_problem_t<bbob_rosenbrock_t> {
+class BbobRosenbrock final : public BbobProblem<BbobRosenbrock> {
 public:
-  bbob_rosenbrock_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                    const coco_bbob_variant_t variant, const char *problem_id_template,
-                    const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
-        shift(rosenbrock_xopt(rseed, dimension, variant)), scale(rosenbrock_factor(dimension, variant), dimension),
-        shift_to_one(std::vector<double>(dimension, -1.0)), fopt(bbob2009_compute_fopt(function, instance)),
-        normalize(variant == coco_bbob_variant_t::largescale), z(dimension) {
+  BbobRosenbrock(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                 const BbobVariant variant, const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
+        shift_(RosenbrockXopt(rseed, dimension, variant)), scale_(RosenbrockFactor(dimension, variant), dimension),
+        shift_to_one_(std::vector<double>(dimension, -1.0)), fopt_(Bbob2009ComputeFopt(function, instance)),
+        normalize_(variant == BbobVariant::LARGESCALE), z_(dimension) {
     /* The optimum of the Rosenbrock function is (1, ..., 1), map it back through the transformations */
-    std::fill(z.begin(), z.end(), 1.0);
-    shift_to_one.inverse(z, z);
-    scale.inverse(z, z);
-    shift.inverse(z, best_parameter);
-    set_best_value_at_best_parameter();
+    std::fill(z_.begin(), z_.end(), 1.0);
+    shift_to_one_.Inverse(z_, z_);
+    scale_.Inverse(z_, z_);
+    shift_.Inverse(z_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z);
-    scale.apply(z, z);
-    shift_to_one.apply(z, z);
-    double y = f_rosenbrock_raw(z);
-    if (normalize)
-      y *= coco_norm_by_dim_factor(number_of_variables);
-    return y + fopt;
+    shift_.Apply(x, z_);
+    scale_.Apply(z_, z_);
+    shift_to_one_.Apply(z_, z_);
+    double y = RosenbrockRaw(z_);
+    if (normalize_)
+      y *= NormByDimFactor(number_of_variables_);
+    return y + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const vars_scale_t scale;
-  const vars_shift_t shift_to_one; /**< @brief Adds 1 */
-  const double fopt;
-  const bool normalize;
-  std::vector<double> z; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsScale scale_;
+  const VarsShift shift_to_one_; /**< @brief Adds 1 */
+  const double fopt_;
+  const bool normalize_;
+  std::vector<double> z_; /**< @brief The transformed decision values */
 };
 
 /**
@@ -126,30 +126,30 @@ private:
  *
  * f(x) = f_rosenbrock(s R x + 0.5) + fopt with s = max(1, sqrt(n) / 8).
  */
-class bbob_rosenbrock_rotated_t final : public bbob_problem_t<bbob_rosenbrock_rotated_t> {
+class BbobRosenbrockRotated final : public BbobProblem<BbobRosenbrockRotated> {
 public:
-  bbob_rosenbrock_rotated_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                            const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
-        affine(scaled_rotation_matrix(rseed, dimension), std::vector<double>(dimension, 0.5)),
-        fopt(bbob2009_compute_fopt(function, instance)), z(dimension) {
+  BbobRosenbrockRotated(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                        const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
+        affine_(ScaledRotationMatrix(rseed, dimension), std::vector<double>(dimension, 0.5)),
+        fopt_(Bbob2009ComputeFopt(function, instance)), z_(dimension) {
     /* The optimum of the Rosenbrock function is (1, ..., 1), map it back through the transformation */
     const std::vector<double> ones(dimension, 1.0);
-    affine.inverse(ones, best_parameter);
+    affine_.Inverse(ones, best_parameter_);
     /* Evaluating at the best parameter could add rounding errors */
-    best_value[0] = f_rosenbrock_raw(ones) + fopt;
+    best_value_[0] = RosenbrockRaw(ones) + fopt_;
   }
 
   double operator()(std::span<const double> x) {
-    affine.apply(x, z);
-    return f_rosenbrock_raw(z) + fopt;
+    affine_.Apply(x, z_);
+    return RosenbrockRaw(z_) + fopt_;
   }
 
 private:
   /** @brief Returns s R with the rotation R. */
-  static coco_matrix_t scaled_rotation_matrix(const long rseed, const size_t dimension) {
-    const double factor = coco_double_max(1.0, sqrt(static_cast<double>(dimension)) / 8.0);
-    coco_matrix_t M = bbob2009_compute_rotation(rseed, dimension);
+  static Matrix ScaledRotationMatrix(const long rseed, const size_t dimension) {
+    const double factor = DoubleMax(1.0, sqrt(static_cast<double>(dimension)) / 8.0);
+    Matrix M = Bbob2009ComputeRotation(rseed, dimension);
     for (size_t row = 0; row < dimension; ++row) {
       for (size_t column = 0; column < dimension; ++column)
         M(row, column) = factor * M(row, column);
@@ -157,9 +157,9 @@ private:
     return M;
   }
 
-  const vars_affine_t affine;
-  const double fopt;
-  std::vector<double> z; /**< @brief The transformed decision values */
+  const VarsAffine affine_;
+  const double fopt_;
+  std::vector<double> z_; /**< @brief The transformed decision values */
 };
 
 /**
@@ -168,38 +168,41 @@ private:
  * f(x) = f_rosenbrock(s R (x - 0.75 xopt) + 1) / n + fopt with the permuted block rotation R and
  * s = max(1, sqrt(block size) / 8).
  */
-class bbob_rosenbrock_permblockdiag_t final : public bbob_problem_t<bbob_rosenbrock_permblockdiag_t> {
+class BbobRosenbrockPermblockdiag final : public BbobProblem<BbobRosenbrockPermblockdiag> {
 public:
-  bbob_rosenbrock_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
-                                  const long rseed, const coco_bbob_variant_t variant, const char *problem_id_template,
-                                  const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
-        shift(rosenbrock_xopt(rseed, dimension, variant)), rotation(dimension, rseed + 2000000, rseed, rseed + 3000000),
-        scale(rosenbrock_factor(dimension, coco_bbob_variant_t::largescale), dimension),
-        shift_to_one(std::vector<double>(dimension, -1.0)), fopt(bbob2009_compute_fopt(function, instance)),
-        z1(dimension), z2(dimension) {
+  BbobRosenbrockPermblockdiag(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                              const BbobVariant variant, const char *problem_id_template,
+                              const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
+        shift_(RosenbrockXopt(rseed, dimension, variant)),
+        rotation_(dimension, rseed + 2000000, rseed, rseed + 3000000),
+        scale_(RosenbrockFactor(dimension, BbobVariant::LARGESCALE), dimension),
+        shift_to_one_(std::vector<double>(dimension, -1.0)), fopt_(Bbob2009ComputeFopt(function, instance)),
+        z1_(dimension), z2_(dimension) {
     /* The optimum of the Rosenbrock function is (1, ..., 1), map it back through the transformations */
-    std::fill(z1.begin(), z1.end(), 1.0);
-    shift_to_one.inverse(z1, z1);
-    scale.inverse(z1, z1);
-    rotation.inverse(z1, z2);
-    shift.inverse(z2, best_parameter);
-    set_best_value_at_best_parameter();
+    std::fill(z1_.begin(), z1_.end(), 1.0);
+    shift_to_one_.Inverse(z1_, z1_);
+    scale_.Inverse(z1_, z1_);
+    rotation_.Inverse(z1_, z2_);
+    shift_.Inverse(z2_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z1);
-    rotation.apply(z1, z2);
-    scale.apply(z2, z2);
-    shift_to_one.apply(z2, z2);
-    return f_rosenbrock_raw(z2) * coco_norm_by_dim_factor(number_of_variables) + fopt;
+    shift_.Apply(x, z1_);
+    rotation_.Apply(z1_, z2_);
+    scale_.Apply(z2_, z2_);
+    shift_to_one_.Apply(z2_, z2_);
+    return RosenbrockRaw(z2_) * NormByDimFactor(number_of_variables_) + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const vars_permblockdiag_t rotation;
-  const vars_scale_t scale;
-  const vars_shift_t shift_to_one; /**< @brief Adds 1 */
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsPermblockdiag rotation_;
+  const VarsScale scale_;
+  const VarsShift shift_to_one_; /**< @brief Adds 1 */
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
+
+} // namespace coco

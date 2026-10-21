@@ -3,7 +3,7 @@
 #include "coco.cpp"
 
 /** The tolerance for the objective value at the best parameter, which may be computed on a different path. */
-static const double precision = 1e-8;
+static const double PRECISION = 1e-8;
 
 /**
  * Checks that the best parameter of every problem of the suite is an optimum: it lies in the region of interest
@@ -33,11 +33,11 @@ static size_t check_best_parameters(const char *suite_name, const char *suite_op
       in_region_of_interest = in_region_of_interest && lower[i] <= x[i] && x[i] <= upper[i];
 
     coco_evaluate_function(problem, x.data(), &y);
-    if (problem->is_noisy())
-      y = problem->get_last_noise_free_values()[0];
+    if (FromC(problem)->is_noisy())
+      y = FromC(problem)->last_noise_free_values()[0];
     const double best_value = coco_problem_get_best_value(problem);
 
-    if (!in_region_of_interest || !(fabs(y - best_value) <= precision)) {
+    if (!in_region_of_interest || !(fabs(y - best_value) <= PRECISION)) {
       printf("%s: f(best parameter) = %.17g, best value = %.17g%s\n", coco_problem_get_id(problem), y, best_value,
              in_region_of_interest ? "" : ", best parameter outside the region of interest");
       ++number_of_failures;

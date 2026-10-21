@@ -13,38 +13,40 @@
 
 #include <time.h> /*tmp*/
 
+namespace coco {
+
 /* TODO: Document this file in doxygen style! */
 
 /**
  * @brief Returns block size for block rotation matrices.
  *
  */
-static size_t coco_rotation_matrix_block_size(size_t const dimension) {
+static size_t RotationMatrixBlockSize(size_t const dimension) {
   const double BLOCK_SIZE_RELATIVE = 1;      /* for block rotations, relative to dimension */
   const size_t MAX_BLOCK_SIZE_ABSOLUTE = 40; /* for block rotations */
 
-  return coco_double_to_size_t(coco_double_min(BLOCK_SIZE_RELATIVE * static_cast<double>(dimension),
-                                               static_cast<double>(MAX_BLOCK_SIZE_ABSOLUTE)));
+  return DoubleToSizeT(
+      DoubleMin(BLOCK_SIZE_RELATIVE * static_cast<double>(dimension), static_cast<double>(MAX_BLOCK_SIZE_ABSOLUTE)));
 }
 
 /**
  * @brief Computes a block-diagonal rotation matrix with blocks of sizes block_sizes, each a random
  * rotation based on seed.
  */
-static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, std::span<const size_t> block_sizes) {
+static BlockDiagonalMatrix ComputeBlockrotation(long seed, std::span<const size_t> block_sizes) {
   size_t current_blocksize, cumsum_prev_block_sizes;
-  coco_block_diagonal_matrix_t B(block_sizes);
+  BlockDiagonalMatrix B(block_sizes);
 
   cumsum_prev_block_sizes = 0; /* shift in rows to account for the previous blocks */
   for (size_t idx_block = 0; idx_block < block_sizes.size(); idx_block++) {
     current_blocksize = block_sizes[idx_block];
-    const coco_matrix_t current_block =
-        bbob2009_compute_rotation(seed + static_cast<long>(1000000) * static_cast<long>(idx_block), current_blocksize);
+    const Matrix current_block =
+        Bbob2009ComputeRotation(seed + static_cast<long>(1000000) * static_cast<long>(idx_block), current_blocksize);
 
     /* now fill the block matrix*/
     for (size_t i = 0; i < current_blocksize; i++) {
       for (size_t j = 0; j < current_blocksize; j++) {
-        B.in_block(i + cumsum_prev_block_sizes, j) = current_block(i, j);
+        B.InBlock(i + cumsum_prev_block_sizes, j) = current_block(i, j);
       }
     }
 
@@ -58,12 +60,12 @@ static coco_block_diagonal_matrix_t coco_compute_blockrotation(long seed, std::s
  *
  * Returns an empty list for unknown suites.
  */
-static std::vector<size_t> coco_get_block_sizes(size_t *nb_blocks, size_t dimension, std::string_view suite_name) {
+static std::vector<size_t> GetBlockSizes(size_t *nb_blocks, size_t dimension, std::string_view suite_name) {
   std::vector<size_t> block_sizes;
   size_t block_size;
 
   if (suite_name == "bbob-largescale") {
-    block_size = coco_rotation_matrix_block_size(dimension);
+    block_size = RotationMatrixBlockSize(dimension);
     *nb_blocks = dimension / block_size + ((dimension % block_size) > 0);
     block_sizes.resize(*nb_blocks);
     for (size_t i = 0; i < *nb_blocks - 1; i++) {
@@ -73,3 +75,5 @@ static std::vector<size_t> coco_get_block_sizes(size_t *nb_blocks, size_t dimens
   }
   return block_sizes;
 }
+
+} // namespace coco

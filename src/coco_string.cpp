@@ -17,17 +17,19 @@
 
 #include "coco.h"
 
+namespace coco {
+
 /**
  * @brief Wraps a string that comes in through the C interface; NULL becomes an empty string.
  */
-static std::string_view coco_c_string_view(const char *string) {
+static std::string_view CStringView(const char *string) {
   return (string == nullptr) ? std::string_view() : std::string_view(string);
 }
 
 /**
  * @brief Formats a string (as in vsprintf) and returns it as std::string.
  */
-static std::string coco_string_vformat(const char *format, va_list args) {
+static std::string StringVFormat(const char *format, va_list args) {
   va_list args_copy;
   std::string result;
 
@@ -35,7 +37,7 @@ static std::string coco_string_vformat(const char *format, va_list args) {
   int length = vsnprintf(nullptr, 0, format, args_copy);
   va_end(args_copy);
   if (length < 0)
-    coco_error("coco_string_vformat(): vsnprintf failed on '%s'", format);
+    coco_error("StringVFormat(): vsnprintf failed on '%s'", format);
   result.resize(static_cast<size_t>(length) + 1);
   vsnprintf(&result[0], result.size(), format, args);
   result.resize(static_cast<size_t>(length));
@@ -45,35 +47,20 @@ static std::string coco_string_vformat(const char *format, va_list args) {
 /**
  * @brief Formats a string (as in sprintf) and returns it as std::string.
  */
-COCO_FORMAT(1, 2) static std::string coco_string_format(const char *format, ...) {
+COCO_FORMAT(1, 2) static std::string StringFormat(const char *format, ...) {
   va_list args;
   std::string result;
 
   va_start(args, format);
-  result = coco_string_vformat(format, args);
+  result = StringVFormat(format, args);
   va_end(args);
   return result;
 }
 
 /**
- * Optional arguments are used like in sprintf. The caller frees the result with coco_free_memory().
- */
-char *coco_strdupf(const char *str, ...) {
-  va_list args;
-
-  va_start(args, str);
-  const std::string string = coco_string_vformat(str, args);
-  va_end(args);
-
-  char *duplicate = static_cast<char *>(coco_allocate_memory(string.size() + 1));
-  memcpy(duplicate, string.c_str(), string.size() + 1);
-  return duplicate;
-}
-
-/**
  * @brief Returns the first index where seq occurs in base and -1 if it doesn't.
  */
-static long coco_strfind(std::string_view base, std::string_view seq) {
+static long StringFind(std::string_view base, std::string_view seq) {
   const size_t index = base.find(seq);
   return (index == std::string_view::npos) ? -1 : static_cast<long>(index);
 }
@@ -83,7 +70,7 @@ static long coco_strfind(std::string_view base, std::string_view seq) {
  *
  * Empty substrings (caused by consecutive delimiters or delimiters at the start or end) are skipped.
  */
-static std::vector<std::string> coco_string_split(std::string_view string, const char delimiter) {
+static std::vector<std::string> StringSplit(std::string_view string, const char delimiter) {
   std::vector<std::string> result;
   size_t start = 0;
 
@@ -104,13 +91,13 @@ static std::vector<std::string> coco_string_split(std::string_view string, const
  * If you wish to remove characters from the beginning of the string, set from to "".
  * If you wish to remove characters until the end of the string, set to to "".
  */
-static std::string coco_remove_from_string(const std::string &string, std::string_view from, std::string_view to) {
+static std::string RemoveFromString(const std::string &string, std::string_view from, std::string_view to) {
 
   const size_t start = from.empty() ? 0 : string.find(from);
   const size_t stop = to.empty() ? string.size() : string.find(to);
 
   if ((start == std::string::npos) || (stop == std::string::npos) || (stop < start)) {
-    coco_error("coco_remove_from_string(): failed to remove characters between %.*s and %.*s from string %s",
+    coco_error("RemoveFromString(): failed to remove characters between %.*s and %.*s from string %s",
                static_cast<int>(from.size()), from.data(), static_cast<int>(to.size()), to.data(), string.c_str());
     return std::string(); /* Never reached */
   }
@@ -126,22 +113,22 @@ static std::string coco_remove_from_string(const std::string &string, std::strin
  * problem with one of the ranges, the parsing stops and the current result is returned. An empty result
  * means that no numbers could be parsed.
  */
-static std::vector<size_t> coco_string_parse_ranges(std::string_view string, const size_t min, const size_t max,
-                                                    const char *name, const size_t max_count) {
+static std::vector<size_t> StringParseRanges(std::string_view string, const size_t min, const size_t max,
+                                             const char *name, const size_t max_count) {
 
   std::vector<size_t> result;
   size_t j, num[2];
 
   /* Check for empty string */
   if (string.empty()) {
-    coco_warning("coco_string_parse_ranges(): cannot parse empty ranges");
+    coco_warning("StringParseRanges(): cannot parse empty ranges");
     return result;
   }
 
   /* Check for disallowed characters */
   for (const char c : string) {
     if ((c != '-') && (c != ',') && !isdigit(static_cast<unsigned char>(c))) {
-      coco_warning("coco_string_parse_ranges(): problem parsing '%.*s' - cannot parse ranges with '%c'",
+      coco_warning("StringParseRanges(): problem parsing '%.*s' - cannot parse ranges with '%c'",
                    static_cast<int>(string.size()), string.data(), c);
       return result;
     }
@@ -149,19 +136,19 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
 
   /* Check for incorrect boundaries */
   if ((max > 0) && (min > max)) {
-    coco_warning("coco_string_parse_ranges(): incorrect boundaries");
+    coco_warning("StringParseRanges(): incorrect boundaries");
     return result;
   }
 
   /* Split string to ranges w.r.t commas and go over them */
-  for (const std::string &range : coco_string_split(string, ',')) {
+  for (const std::string &range : StringSplit(string, ',')) {
 
     const size_t count = static_cast<size_t>(std::count(range.begin(), range.end(), '-'));
 
     if (count > 1) {
       /* Incorrect number of '-' */
-      coco_warning("coco_string_parse_ranges(): problem parsing '%.*s' - too many '-'s",
-                   static_cast<int>(string.size()), string.data());
+      coco_warning("StringParseRanges(): problem parsing '%.*s' - too many '-'s", static_cast<int>(string.size()),
+                   string.data());
       return result;
     } else if (count == 0) {
       /* Range is in the format: n (no range) */
@@ -169,7 +156,7 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
       num[1] = num[0];
     } else {
       /* Range is in one of the following formats: n-m / -n / n- / - */
-      const std::vector<std::string> numbers = coco_string_split(range, '-');
+      const std::vector<std::string> numbers = StringSplit(range, '-');
       for (j = 0; j < numbers.size(); j++) {
         assert(j < 2);
         num[j] = static_cast<size_t>(strtol(numbers[j].c_str(), nullptr, 10));
@@ -178,7 +165,7 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
       if (numbers.empty()) {
         /* Range is in the format - (open ends) */
         if ((min == 0) || (max == 0)) {
-          coco_warning("coco_string_parse_ranges(): '%s' ranges cannot have an open ends; some ranges ignored", name);
+          coco_warning("StringParseRanges(): '%s' ranges cannot have an open ends; some ranges ignored", name);
           return result;
         }
         num[0] = min;
@@ -187,8 +174,7 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
         if (range[0] == '-') {
           /* Range is in the format -n */
           if (min == 0) {
-            coco_warning("coco_string_parse_ranges(): '%s' ranges cannot have an open beginning; some ranges ignored",
-                         name);
+            coco_warning("StringParseRanges(): '%s' ranges cannot have an open beginning; some ranges ignored", name);
             return result;
           }
           num[1] = num[0];
@@ -196,7 +182,7 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
         } else {
           /* Range is in the format n- */
           if (max == 0) {
-            coco_warning("coco_string_parse_ranges(): '%s' ranges cannot have an open end; some ranges ignored", name);
+            coco_warning("StringParseRanges(): '%s' ranges cannot have an open end; some ranges ignored", name);
             return result;
           }
           num[1] = max;
@@ -208,14 +194,14 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
     /* Make sure the boundaries are taken into account */
     if ((min > 0) && (num[0] < min)) {
       num[0] = min;
-      coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be >= %zu", name, min);
+      coco_warning("StringParseRanges(): '%s' ranges adjusted to be >= %zu", name, min);
     }
     if ((max > 0) && (num[1] > max)) {
       num[1] = max;
-      coco_warning("coco_string_parse_ranges(): '%s' ranges adjusted to be <= %zu", name, max);
+      coco_warning("StringParseRanges(): '%s' ranges adjusted to be <= %zu", name, max);
     }
     if (num[0] > num[1]) {
-      coco_warning("coco_string_parse_ranges(): '%s' ranges not within boundaries; some ranges ignored", name);
+      coco_warning("StringParseRanges(): '%s' ranges not within boundaries; some ranges ignored", name);
       return result;
     }
 
@@ -231,7 +217,7 @@ static std::vector<size_t> coco_string_parse_ranges(std::string_view string, con
 /**
  * @brief Returns the given string without leading and trailing white space.
  */
-static std::string coco_string_trim(std::string_view string) {
+static std::string StringTrim(std::string_view string) {
   size_t start = 0, stop = string.size();
 
   while ((start < stop) && isspace(static_cast<unsigned char>(string[start])))
@@ -239,4 +225,23 @@ static std::string coco_string_trim(std::string_view string) {
   while ((stop > start) && isspace(static_cast<unsigned char>(string[stop - 1])))
     stop--;
   return std::string(string.substr(start, stop - start));
+}
+
+} // namespace coco
+
+/* C interface (declared in coco.h) */
+
+/**
+ * Optional arguments are used like in sprintf. The caller frees the result with coco_free_memory().
+ */
+char *coco_strdupf(const char *str, ...) {
+  va_list args;
+
+  va_start(args, str);
+  const std::string string = coco::StringVFormat(str, args);
+  va_end(args);
+
+  char *duplicate = static_cast<char *>(coco_allocate_memory(string.size() + 1));
+  memcpy(duplicate, string.c_str(), string.size() + 1);
+  return duplicate;
 }

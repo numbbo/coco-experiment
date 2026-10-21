@@ -44,16 +44,18 @@
 
 #include <math.h>
 
+namespace coco {
+
 /*
   The sign test and the minimum below are written out on purpose: std::signbit differs for -0.0 and NaN, and
   std::min(a, b) differs if a is NaN. Keeping the original semantics keeps the results bit-identical.
 */
 
 /** @brief Returns whether x is negative (false for -0.0 and NaN). */
-static bool brentq_is_negative(const double x) { return x < 0; }
+static bool BrentqIsNegative(const double x) { return x < 0; }
 
 /** @brief Returns the smaller of a and b, b if they are not ordered (NaN). */
-static double brentq_min(const double a, const double b) { return a < b ? a : b; }
+static double BrentqMin(const double a, const double b) { return a < b ? a : b; }
 
 /*
   At the top of the loop the situation is the following:
@@ -88,7 +90,7 @@ static double brentq_min(const double a, const double b) { return a < b ? a : b;
  *
  * f is called as f(x).
  */
-template <typename F> static double brentq(F f, double y, double xa, double xb, double xtol, double rtol, int iter) {
+template <typename F> static double Brentq(F f, double y, double xa, double xb, double xtol, double rtol, int iter) {
 
   double xpre = xa, xcur = xb;
   double xblk = 0., fpre, fcur, fblk = 0., spre = 0., scur = 0., sbis;
@@ -112,7 +114,7 @@ template <typename F> static double brentq(F f, double y, double xa, double xb, 
   }
 
   for (int i = 0; i < iter; i++) {
-    if (fpre != 0 && fcur != 0 && (brentq_is_negative(fpre) != brentq_is_negative(fcur))) {
+    if (fpre != 0 && fcur != 0 && (BrentqIsNegative(fpre) != BrentqIsNegative(fcur))) {
       xblk = xpre;
       fblk = fpre;
       spre = scur = xcur - xpre;
@@ -144,7 +146,7 @@ template <typename F> static double brentq(F f, double y, double xa, double xb, 
         dblk = (fblk - fcur) / (xblk - xcur);
         stry = -fcur * (fblk * dblk - fpre * dpre) / (dblk * dpre * (fblk - fpre));
       }
-      if (2 * fabs(stry) < brentq_min(fabs(spre), 3 * fabs(sbis) - delta)) {
+      if (2 * fabs(stry) < BrentqMin(fabs(spre), 3 * fabs(sbis) - delta)) {
         /* good short step */
         spre = scur;
         scur = stry;
@@ -184,7 +186,7 @@ template <typename F> static double brentq(F f, double y, double xa, double xb, 
   proceeding with halving/doubling.
 */
 
-template <typename F> static double brentinv(F f, double y) {
+template <typename F> static double BrentInv(F f, double y) {
   double xres, xmin, xmax, fval;
 
   fval = f(y);
@@ -217,6 +219,8 @@ template <typename F> static double brentinv(F f, double y) {
     }
   }
 
-  xres = brentq(f, y, xmin, xmax, 1E-14, 1E-10, 200);
+  xres = Brentq(f, y, xmin, xmax, 1E-14, 1E-10, 200);
   return xres;
 }
+
+} // namespace coco

@@ -8,8 +8,10 @@
 
 #include "coco_utilities.cpp"
 
+namespace coco {
+
 /** @brief Enum for denoting when the decision variables and constraints are logged. */
-enum observer_rw_log_e { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS };
+enum ObserverRwLog { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS };
 
 /**
  * @brief The observer for real-world problems.
@@ -38,11 +40,10 @@ enum observer_rw_log_e { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS };
  * - "log_time: 0/1" determines whether the time needed to evaluate each solution is logged (0) or not (1).
  * The default value is 0.
  */
-class observer_rw_t final : public coco_observer_s {
+class ObserverRw final : public Observer {
 public:
-  observer_rw_t(const coco_observer_settings_s &observer_settings, std::string_view options,
-                coco_option_keys_t &option_keys)
-      : coco_observer_s(observer_settings), log_vars_mode(LOG_ALWAYS), log_cons_mode(LOG_ALWAYS) {
+  ObserverRw(const ObserverSettings &observer_settings, std::string_view options, OptionKeys &option_keys)
+      : Observer(observer_settings), log_vars_mode_(LOG_ALWAYS), log_cons_mode_(LOG_ALWAYS) {
 
     std::string string_value;
 
@@ -50,47 +51,49 @@ public:
      * IMPORTANT: This list should be up-to-date with the code and the documentation */
     option_keys = {"log_variables", "log_constraints", "low_dim_vars", "low_dim_cons", "log_only_better", "log_time"};
 
-    if (coco_options_read_string(options, "log_variables", string_value) > 0) {
+    if (OptionsReadString(options, "log_variables", string_value) > 0) {
       if (string_value == "none")
-        log_vars_mode = LOG_NEVER;
+        log_vars_mode_ = LOG_NEVER;
       else if (string_value == "all")
-        log_vars_mode = LOG_ALWAYS;
+        log_vars_mode_ = LOG_ALWAYS;
       else if (string_value == "low_dim")
-        log_vars_mode = LOG_LOW_DIM;
+        log_vars_mode_ = LOG_LOW_DIM;
     }
 
-    if (coco_options_read_string(options, "log_constraints", string_value) > 0) {
+    if (OptionsReadString(options, "log_constraints", string_value) > 0) {
       if (string_value == "none")
-        log_cons_mode = LOG_NEVER;
+        log_cons_mode_ = LOG_NEVER;
       else if (string_value == "all")
-        log_cons_mode = LOG_ALWAYS;
+        log_cons_mode_ = LOG_ALWAYS;
       else if (string_value == "low_dim")
-        log_cons_mode = LOG_LOW_DIM;
+        log_cons_mode_ = LOG_LOW_DIM;
     }
 
-    if (coco_options_read_size_t(options, "low_dim_vars", &low_dim_vars) == 0)
-      low_dim_vars = 10;
+    if (OptionsReadSizeT(options, "low_dim_vars", &low_dim_vars_) == 0)
+      low_dim_vars_ = 10;
 
-    if (coco_options_read_size_t(options, "low_dim_cons", &low_dim_cons) == 0)
-      low_dim_cons = 10;
+    if (OptionsReadSizeT(options, "low_dim_cons", &low_dim_cons_) == 0)
+      low_dim_cons_ = 10;
 
-    if (coco_options_read_flag(options, "log_only_better", &log_only_better) == 0)
-      log_only_better = false;
+    if (OptionsReadFlag(options, "log_only_better", &log_only_better_) == 0)
+      log_only_better_ = false;
 
-    if (coco_options_read_flag(options, "log_time", &log_time) == 0)
-      log_time = false;
+    if (OptionsReadFlag(options, "log_time", &log_time_) == 0)
+      log_time_ = false;
   }
 
-  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
+  ProblemPtr AddLogger(ProblemPtr problem) override;
 
 private:
-  friend class logger_rw_t; /* Reads the settings */
+  friend class LoggerRw; /* Reads the settings */
 
-  observer_rw_log_e log_vars_mode; /**< @brief When the decision variables are logged. */
-  observer_rw_log_e log_cons_mode; /**< @brief When the constraints are logged. */
-  size_t low_dim_vars;             /**< @brief "Low dimension" for decision variables. */
-  size_t low_dim_cons;             /**< @brief "Low dimension" for constraints. */
-  bool log_only_better = false;    /**< @brief Whether to log only solutions that are better than previous
+  ObserverRwLog log_vars_mode_;     /**< @brief When the decision variables are logged. */
+  ObserverRwLog log_cons_mode_;     /**< @brief When the constraints are logged. */
+  size_t low_dim_vars_;             /**< @brief "Low dimension" for decision variables. */
+  size_t low_dim_cons_;             /**< @brief "Low dimension" for constraints. */
+  bool log_only_better_ = false;    /**< @brief Whether to log only solutions that are better than previous
                                       ones (only for the single-objective problems). */
-  bool log_time = false;           /**< @brief Whether to log time. */
+  bool log_time_ = false;           /**< @brief Whether to log time. */
 };
+
+} // namespace coco

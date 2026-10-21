@@ -11,11 +11,13 @@
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
 
+namespace coco {
+
 /**
  * @brief Implements the Bueche-Rastrigin function without connections to any
  * COCO structures.
  */
-static double f_bueche_rastrigin_raw(std::span<const double> x) {
+static double BuecheRastriginRaw(std::span<const double> x) {
   const size_t number_of_variables = x.size();
   double tmp = 0., tmp2 = 0.;
 
@@ -30,23 +32,23 @@ static double f_bueche_rastrigin_raw(std::span<const double> x) {
 /**
  * @brief The Bueche-Rastrigin function.
  */
-class f_bueche_rastrigin_t final : public coco_problem_s {
+class BuecheRastrigin final : public Problem {
 public:
-  explicit f_bueche_rastrigin_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("Bueche-Rastrigin function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02zu", "bueche-rastrigin", number_of_variables);
+  explicit BuecheRastrigin(const size_t number_of_variables) : Problem(number_of_variables, 1, 0) {
+    InitFromScalars("Bueche-Rastrigin function", -5.0, 5.0, 0.0);
+    SetId("%s_d%02zu", "bueche-rastrigin", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+    EvaluateFunction(best_parameter_, best_value_);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_bueche_rastrigin_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = BuecheRastriginRaw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 };
 
@@ -56,37 +58,36 @@ public:
  * f(x) = f_rastrigin(s T_osz(x - xopt)) + fopt + 100 f_pen(x) with the 's_i scaling' s, normalized by the
  * dimension before fopt is added in the large-scale suite.
  */
-class bbob_bueche_rastrigin_t final : public bbob_problem_t<bbob_bueche_rastrigin_t> {
+class BbobBuecheRastrigin final : public BbobProblem<BbobBuecheRastrigin> {
 public:
-  bbob_bueche_rastrigin_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                          const coco_bbob_variant_t variant, const char *problem_id_template,
-                          const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
-        shift(xopt(rseed, dimension, variant)), brs(dimension), fopt(bbob2009_compute_fopt(function, instance)),
-        normalize(variant == coco_bbob_variant_t::largescale), z(dimension) {
+  BbobBuecheRastrigin(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                      const BbobVariant variant, const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        shift_(Xopt(rseed, dimension, variant)), brs_(dimension), fopt_(Bbob2009ComputeFopt(function, instance)),
+        normalize_(variant == BbobVariant::LARGESCALE), z_(dimension) {
     /* The optimum of the Bueche-Rastrigin function is the origin, map it back through the transformations */
-    brs.inverse(best_parameter, z);
-    oscillate.inverse(z, z);
-    shift.inverse(z, best_parameter);
-    set_best_value_at_best_parameter();
+    brs_.Inverse(best_parameter_, z_);
+    oscillate_.Inverse(z_, z_);
+    shift_.Inverse(z_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
-    shift.apply(x, z);
-    oscillate.apply(z, z);
-    brs.apply(z, z);
-    double y = f_bueche_rastrigin_raw(z);
-    if (normalize)
-      y *= coco_norm_by_dim_factor(number_of_variables);
-    y += fopt;
-    return y + penalty_factor * penalty;
+    const double penalty = BoundaryPenalty(x, smallest_values_of_interest_, largest_values_of_interest_);
+    shift_.Apply(x, z_);
+    oscillate_.Apply(z_, z_);
+    brs_.Apply(z_, z_);
+    double y = BuecheRastriginRaw(z_);
+    if (normalize_)
+      y *= NormByDimFactor(number_of_variables_);
+    y += fopt_;
+    return y + PENALTY_FACTOR * penalty;
   }
 
 private:
   /** @brief The location of the optimum: xopt with the absolute value of every other component. */
-  static std::vector<double> xopt(const long rseed, const size_t dimension, const coco_bbob_variant_t variant) {
-    std::vector<double> xopt = bbob_xopt(rseed, dimension, variant);
+  static std::vector<double> Xopt(const long rseed, const size_t dimension, const BbobVariant variant) {
+    std::vector<double> xopt = BbobXopt(rseed, dimension, variant);
     /* OME: This step is in the legacy C code but _not_ in the function
      * description. */
     for (size_t i = 0; i < dimension; i += 2) {
@@ -95,12 +96,14 @@ private:
     return xopt;
   }
 
-  static constexpr double penalty_factor = 100.0;
+  static constexpr double PENALTY_FACTOR = 100.0;
 
-  const vars_shift_t shift;
-  const vars_oscillate_t oscillate{};
-  const vars_brs_t brs;
-  const double fopt;
-  const bool normalize;
-  std::vector<double> z; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsOscillate oscillate_{};
+  const VarsBrs brs_;
+  const double fopt_;
+  const bool normalize_;
+  std::vector<double> z_; /**< @brief The transformed decision values */
 };
+
+} // namespace coco

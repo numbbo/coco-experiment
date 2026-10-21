@@ -17,11 +17,13 @@
 #include "bbob_problem.cpp"
 #include "transform_functions.cpp"
 
+namespace coco {
+
 /**
  * @brief Implements the Rastrigin function without connections to any COCO
  * structures.
  */
-static double f_rastrigin_raw(std::span<const double> x) {
+static double RastriginRaw(std::span<const double> x) {
   const size_t number_of_variables = x.size();
 
   size_t i = 0;
@@ -31,7 +33,7 @@ static double f_rastrigin_raw(std::span<const double> x) {
     sum1 += cos(coco_two_pi * x[i]);
     sum2 += x[i] * x[i];
   }
-  if (coco_is_inf(sum2)) /* cos(inf) -> nan */
+  if (IsInf(sum2)) /* cos(inf) -> nan */
     return sum2;
   double result = 10.0 * (static_cast<double>(number_of_variables) - sum1) + sum2;
 
@@ -41,32 +43,32 @@ static double f_rastrigin_raw(std::span<const double> x) {
 /**
  * @brief The Rastrigin function.
  */
-class f_rastrigin_t final : public coco_problem_s {
+class Rastrigin final : public Problem {
 public:
-  explicit f_rastrigin_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("Rastrigin function", -5.0, 5.0, 0.0);
+  explicit Rastrigin(const size_t number_of_variables) : Problem(number_of_variables, 1, 0) {
+    InitFromScalars("Rastrigin function", -5.0, 5.0, 0.0);
     /* TODO: make sure the gradient is computed correctly for the rotated Rastrigin */
-    set_id("%s_d%02zu", "rastrigin", number_of_variables);
+    SetId("%s_d%02zu", "rastrigin", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+    EvaluateFunction(best_parameter_, best_value_);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_rastrigin_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = RastriginRaw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the raw Rastrigin function.
    */
-  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
+  void EvaluateGradient(std::span<const double> x, std::span<double> y) override {
 
-    for (size_t i = 0; i < number_of_variables; ++i) {
+    for (size_t i = 0; i < number_of_variables_; ++i) {
       y[i] = 2.0 * (10. * coco_pi * sin(coco_two_pi * x[i]) + x[i]);
     }
   }
@@ -78,42 +80,40 @@ public:
  * f(x) = f_rastrigin(Λ^10 T_asy^0.2(T_osz(x - xopt))) + fopt, normalized by the dimension before fopt is added in
  * the large-scale suite.
  */
-class bbob_rastrigin_t final : public bbob_problem_t<bbob_rastrigin_t> {
+class BbobRastrigin final : public BbobProblem<BbobRastrigin> {
 public:
-  bbob_rastrigin_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                   const coco_bbob_variant_t variant, const char *problem_id_template,
-                   const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)), asymmetric(0.2, dimension), conditioning(10.0, dimension),
-        fopt(bbob2009_compute_fopt(function, instance)), normalize(variant == coco_bbob_variant_t::largescale),
-        z(dimension) {
+  BbobRastrigin(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                const BbobVariant variant, const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)), asymmetric_(0.2, dimension), conditioning_(10.0, dimension),
+        fopt_(Bbob2009ComputeFopt(function, instance)), normalize_(variant == BbobVariant::LARGESCALE), z_(dimension) {
     /* The optimum of the Rastrigin function is the origin, map it back through the transformations */
-    conditioning.inverse(best_parameter, z);
-    asymmetric.inverse(z, z);
-    oscillate.inverse(z, z);
-    shift.inverse(z, best_parameter);
-    set_best_value_at_best_parameter();
+    conditioning_.Inverse(best_parameter_, z_);
+    asymmetric_.Inverse(z_, z_);
+    oscillate_.Inverse(z_, z_);
+    shift_.Inverse(z_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z);
-    oscillate.apply(z, z);
-    asymmetric.apply(z, z);
-    conditioning.apply(z, z);
-    double y = f_rastrigin_raw(z);
-    if (normalize)
-      y *= coco_norm_by_dim_factor(number_of_variables);
-    return y + fopt;
+    shift_.Apply(x, z_);
+    oscillate_.Apply(z_, z_);
+    asymmetric_.Apply(z_, z_);
+    conditioning_.Apply(z_, z_);
+    double y = RastriginRaw(z_);
+    if (normalize_)
+      y *= NormByDimFactor(number_of_variables_);
+    return y + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const vars_oscillate_t oscillate{};
-  const vars_asymmetric_t asymmetric;
-  const vars_conditioning_t conditioning;
-  const double fopt;
-  const bool normalize;
-  std::vector<double> z; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsOscillate oscillate_{};
+  const VarsAsymmetric asymmetric_;
+  const VarsConditioning conditioning_;
+  const double fopt_;
+  const bool normalize_;
+  std::vector<double> z_; /**< @brief The transformed decision values */
 };
 
 /**
@@ -121,55 +121,54 @@ private:
  *
  * f(x) = f_rastrigin(R Λ^10 Q T_asy^0.2(T_osz(R (x - xopt)))) + fopt.
  */
-class bbob_rastrigin_rotated_t final : public bbob_problem_t<bbob_rastrigin_rotated_t> {
+class BbobRastriginRotated final : public BbobProblem<BbobRastriginRotated> {
 public:
-  bbob_rastrigin_rotated_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                           const coco_bbob_variant_t variant, const char *problem_id_template,
-                           const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)),
-        rotation(bbob2009_compute_rotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
-        asymmetric(0.2, dimension),
-        conditioned_rotation(conditioned_rotation_matrix(rseed, dimension), std::vector<double>(dimension)),
-        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+  BbobRastriginRotated(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                       const BbobVariant variant, const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)),
+        rotation_(Bbob2009ComputeRotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
+        asymmetric_(0.2, dimension),
+        conditioned_rotation_(ConditionedRotationMatrix(rseed, dimension), std::vector<double>(dimension)),
+        fopt_(Bbob2009ComputeFopt(function, instance)), z1_(dimension), z2_(dimension) {
     /* The optimum of the Rastrigin function is the origin, map it back through the transformations */
-    conditioned_rotation.inverse(best_parameter, z1);
-    asymmetric.inverse(z1, z1);
-    oscillate.inverse(z1, z1);
-    rotation.inverse(z1, z2);
-    shift.inverse(z2, best_parameter);
-    set_best_value_at_best_parameter();
+    conditioned_rotation_.Inverse(best_parameter_, z1_);
+    asymmetric_.Inverse(z1_, z1_);
+    oscillate_.Inverse(z1_, z1_);
+    rotation_.Inverse(z1_, z2_);
+    shift_.Inverse(z2_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z1);
-    rotation.apply(z1, z2);
-    oscillate.apply(z2, z2);
-    asymmetric.apply(z2, z2);
-    conditioned_rotation.apply(z2, z1);
-    return f_rastrigin_raw(z1) + fopt;
+    shift_.Apply(x, z1_);
+    rotation_.Apply(z1_, z2_);
+    oscillate_.Apply(z2_, z2_);
+    asymmetric_.Apply(z2_, z2_);
+    conditioned_rotation_.Apply(z2_, z1_);
+    return RastriginRaw(z1_) + fopt_;
   }
 
 private:
   /** @brief Returns R Λ^10 Q with the rotations R and Q. */
-  static coco_matrix_t conditioned_rotation_matrix(const long rseed, const size_t dimension) {
-    const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
-    const coco_matrix_t rot2 = bbob2009_compute_rotation(rseed, dimension);
+  static Matrix ConditionedRotationMatrix(const long rseed, const size_t dimension) {
+    const Matrix rot1 = Bbob2009ComputeRotation(rseed + 1000000, dimension);
+    const Matrix rot2 = Bbob2009ComputeRotation(rseed, dimension);
     std::vector<double> scales(dimension);
     for (size_t k = 0; k < dimension; ++k) {
       const double exponent = 1.0 * static_cast<int>(k) / (static_cast<double>(dimension) - 1.0);
       scales[k] = pow(sqrt(10), exponent);
     }
-    return coco_matrix_product_with_diagonal(rot1, scales, rot2);
+    return MatrixProductWithDiagonal(rot1, scales, rot2);
   }
 
-  const vars_shift_t shift;
-  const vars_affine_t rotation;
-  const vars_oscillate_t oscillate{};
-  const vars_asymmetric_t asymmetric;
-  const vars_affine_t conditioned_rotation;
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsAffine rotation_;
+  const VarsOscillate oscillate_{};
+  const VarsAsymmetric asymmetric_;
+  const VarsAffine conditioned_rotation_;
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
 
 /**
@@ -177,56 +176,56 @@ private:
  *
  * f(x) = f_rastrigin(R Λ^10 Q T_asy^0.2(T_osz(R (x - xopt)))) / n + fopt with the permuted block rotations R and Q.
  */
-class bbob_rastrigin_rotated_permblockdiag_t final : public bbob_problem_t<bbob_rastrigin_rotated_permblockdiag_t> {
+class BbobRastriginRotatedPermblockdiag final : public BbobProblem<BbobRastriginRotatedPermblockdiag> {
 public:
-  bbob_rastrigin_rotated_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
-                                         const long rseed, const coco_bbob_variant_t variant,
-                                         const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)),
-        rotation1(dimension, rseed + 3000000, rseed + 1000000, rseed + 4000000), asymmetric(0.2, dimension),
-        rotation2(dimension, rseed + 5000000, rseed, rseed + 6000000), conditioning(10.0, dimension),
-        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+  BbobRastriginRotatedPermblockdiag(const size_t function, const size_t dimension, const size_t instance,
+                                    const long rseed, const BbobVariant variant, const char *problem_id_template,
+                                    const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)),
+        rotation1_(dimension, rseed + 3000000, rseed + 1000000, rseed + 4000000), asymmetric_(0.2, dimension),
+        rotation2_(dimension, rseed + 5000000, rseed, rseed + 6000000), conditioning_(10.0, dimension),
+        fopt_(Bbob2009ComputeFopt(function, instance)), z1_(dimension), z2_(dimension) {
     /* The optimum of the Rastrigin function is the origin, map it back through the transformations */
-    rotation1.inverse(best_parameter, z1);
-    conditioning.inverse(z1, z1);
-    rotation2.inverse(z1, z2);
-    asymmetric.inverse(z2, z2);
-    oscillate.inverse(z2, z2);
-    rotation1.inverse(z2, z1);
-    shift.inverse(z1, best_parameter);
-    set_best_value_at_best_parameter();
+    rotation1_.Inverse(best_parameter_, z1_);
+    conditioning_.Inverse(z1_, z1_);
+    rotation2_.Inverse(z1_, z2_);
+    asymmetric_.Inverse(z2_, z2_);
+    oscillate_.Inverse(z2_, z2_);
+    rotation1_.Inverse(z2_, z1_);
+    shift_.Inverse(z1_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z1);
-    rotation1.apply(z1, z2);
-    oscillate.apply(z2, z2);
-    asymmetric.apply(z2, z2);
-    rotation2.apply(z2, z1);
-    conditioning.apply(z1, z1);
-    rotation1.apply(z1, z2);
-    const double y = f_rastrigin_raw(z2);
-    return y * coco_norm_by_dim_factor(number_of_variables) + fopt;
+    shift_.Apply(x, z1_);
+    rotation1_.Apply(z1_, z2_);
+    oscillate_.Apply(z2_, z2_);
+    asymmetric_.Apply(z2_, z2_);
+    rotation2_.Apply(z2_, z1_);
+    conditioning_.Apply(z1_, z1_);
+    rotation1_.Apply(z1_, z2_);
+    const double y = RastriginRaw(z2_);
+    return y * NormByDimFactor(number_of_variables_) + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const vars_permblockdiag_t rotation1;
-  const vars_oscillate_t oscillate{};
-  const vars_asymmetric_t asymmetric;
-  const vars_permblockdiag_t rotation2;
-  const vars_conditioning_t conditioning;
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsPermblockdiag rotation1_;
+  const VarsOscillate oscillate_{};
+  const VarsAsymmetric asymmetric_;
+  const VarsPermblockdiag rotation2_;
+  const VarsConditioning conditioning_;
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
 
 /**
  * @brief Computes xopt for constrained Rastrigin (alternative to
- * bbob2009_compute_xopt()) xopt is a vector of dim uniform random integers
+ * Bbob2009ComputeXopt()) xopt is a vector of dim uniform random integers
  */
-static void f_rastrigin_cons_compute_xopt(std::span<double> xopt, const long rseed) {
-  bbob2009_unif(xopt, rseed);
+static void RastriginConsComputeXopt(std::span<double> xopt, const long rseed) {
+  Bbob2009Unif(xopt, rseed);
 
   for (size_t i = 0; i < xopt.size(); ++i) {
     xopt[i] = 10 * xopt[i] - 5;
@@ -234,7 +233,7 @@ static void f_rastrigin_cons_compute_xopt(std::span<double> xopt, const long rse
   }
 
   /* In case (0, ..., 0) is sampled, set xopt to a different value */
-  if (coco_vector_is_zero(xopt))
+  if (VectorIsZero(xopt))
     for (size_t i = 0; i < xopt.size(); ++i) {
       xopt[i] = static_cast<int>(i % 9) - 4;
     }
@@ -243,24 +242,23 @@ static void f_rastrigin_cons_compute_xopt(std::span<double> xopt, const long rse
 /**
  * @brief Creates the Rastrigin problem for the constrained BBOB suite.
  */
-static coco_problem_ptr_t f_rastrigin_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                 const size_t instance, const long rseed,
-                                                                 const char *problem_id_template,
-                                                                 const char *problem_name_template) {
+static ProblemPtr RastriginConsBbobProblemAllocate(const size_t function, const size_t dimension, const size_t instance,
+                                                   const long rseed, const char *problem_id_template,
+                                                   const char *problem_name_template) {
 
-  coco_problem_ptr_t problem;
+  ProblemPtr problem;
 
   std::vector<double> xopt(dimension);
-  f_rastrigin_cons_compute_xopt(xopt, rseed);
-  double fopt = bbob2009_compute_fopt(function, instance);
+  RastriginConsComputeXopt(xopt, rseed);
+  double fopt = Bbob2009ComputeFopt(function, instance);
 
-  problem = std::make_unique<f_rastrigin_t>(dimension);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = std::make_unique<Rastrigin>(dimension);
+  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
+  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("1-separable");
+  problem->SetId(problem_id_template, function, instance, dimension);
+  problem->SetName(problem_name_template, function, instance, dimension);
+  problem->SetType("1-separable");
 
   return problem;
 }
@@ -268,31 +266,34 @@ static coco_problem_ptr_t f_rastrigin_cons_bbob_problem_allocate(const size_t fu
 /**
  * @brief Creates the rotated Rastrigin problem for the constrained BBOB suite.
  */
-static coco_problem_ptr_t f_rastrigin_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                         const size_t instance, const long rseed,
-                                                                         const char *problem_id_template,
-                                                                         const char *problem_name_template) {
+static ProblemPtr RastriginRotatedConsBbobProblemAllocate(const size_t function, const size_t dimension,
+                                                          const size_t instance, const long rseed,
+                                                          const char *problem_id_template,
+                                                          const char *problem_name_template) {
 
-  coco_problem_ptr_t problem;
+  ProblemPtr problem;
 
-  coco_matrix_t M(dimension, dimension);
+  Matrix M(dimension, dimension);
   std::vector<double> b(dimension);
 
-  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  const Matrix rot1 = Bbob2009ComputeRotation(rseed + 1000000, dimension);
   M = rot1;
 
   std::vector<double> xopt(dimension);
-  f_rastrigin_cons_compute_xopt(xopt, rseed);
-  double fopt = bbob2009_compute_fopt(function, instance);
+  RastriginConsComputeXopt(xopt, rseed);
+  double fopt = Bbob2009ComputeFopt(function, instance);
 
-  problem = std::make_unique<f_rastrigin_t>(dimension);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
-  problem = transform_vars_affine(std::move(problem), M, b); /* Rotate after shifting so R dot xopt is also rotated */
-  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = std::make_unique<Rastrigin>(dimension);
+  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
+  problem = std::make_unique<TransformVarsAffine>(std::move(problem), M,
+                                                  b); /* Rotate after shifting so R dot xopt is also rotated */
+  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("1-separable");
+  problem->SetId(problem_id_template, function, instance, dimension);
+  problem->SetName(problem_name_template, function, instance, dimension);
+  problem->SetType("1-separable");
 
   return problem;
 }
+
+} // namespace coco

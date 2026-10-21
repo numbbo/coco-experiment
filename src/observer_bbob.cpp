@@ -6,7 +6,9 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-class logger_bbob_t;
+namespace coco {
+
+class LoggerBbob;
 
 /**
  * @brief The bbob observer.
@@ -19,33 +21,34 @@ class logger_bbob_t;
  *
  * - "prefix: STRING" defines the prefix of the name of the info files. The default value is "bbobexp".
  */
-class observer_bbob_t final : public coco_observer_s {
+class ObserverBbob final : public Observer {
 public:
-  observer_bbob_t(const coco_observer_settings_s &observer_settings, std::string_view options,
-                  coco_option_keys_t &option_keys)
-      : coco_observer_s(observer_settings), observed_problem(nullptr), prefix("bbobexp"), last_function(0),
-        last_dimension(0), last_dat_file("init") {
+  ObserverBbob(const ObserverSettings &observer_settings, std::string_view options, OptionKeys &option_keys)
+      : Observer(observer_settings), observed_problem_(nullptr), prefix_("bbobexp"), last_function_(0),
+        last_dimension_(0), last_dat_file_("init") {
 
     /* Sets the valid keys for bbob observer options
      * IMPORTANT: This list should be up-to-date with the code and the documentation */
     option_keys = {"prefix"};
-    coco_options_read_string(options, "prefix", prefix);
+    OptionsReadString(options, "prefix", prefix_);
   }
 
-  ~observer_bbob_t() override;
+  ~ObserverBbob() override;
 
-  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override;
+  ProblemPtr AddLogger(ProblemPtr problem) override;
 
-  void signal_restart(coco_problem_t *problem) override;
+  void SignalRestart(Problem *problem) override;
 
 private:
-  friend class logger_bbob_t; /* Keeps the state of the last logged problem in the observer */
+  friend class LoggerBbob; /* Keeps the state of the last logged problem in the observer */
 
-  logger_bbob_t *observed_problem; /**< @brief The logger of the observed problem (nullptr if none is observed) */
-  std::string prefix;              /**< @brief Prefix in the name of the info and data files */
+  LoggerBbob *observed_problem_;    /**< @brief The logger of the observed problem (nullptr if none is observed) */
+  std::string prefix_;              /**< @brief Prefix in the name of the info and data files */
   /* Store the information on the last function, dimension and dat file used, to be able to tell when the
    * logger needs to write in a new dat file.  */
-  size_t last_function;      /**< @brief The function that was logged last */
-  size_t last_dimension;     /**< @brief The dimension that was logged last */
-  std::string last_dat_file; /**< @brief The name of the .dat file that was last used for logging */
+  size_t last_function_;      /**< @brief The function that was logged last */
+  size_t last_dimension_;     /**< @brief The dimension that was logged last */
+  std::string last_dat_file_; /**< @brief The name of the .dat file that was last used for logging */
 };
+
+} // namespace coco

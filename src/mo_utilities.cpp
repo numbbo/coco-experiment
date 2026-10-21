@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include "coco.h"
 
+namespace coco {
+
 /**
  * @brief Precision used when comparing multi-objective solutions.
  *
@@ -15,19 +17,19 @@
  *
  * @note mo_precision needs to be smaller than mo_discretization
  */
-static const double mo_precision = 1e-13;
+static const double MO_PRECISION = 1e-13;
 
 /**
  * @brief Discretization interval used for rounding normalized multi-objective solutions.
  *
  * @note mo_discretization needs to be larger than mo_precision
  */
-static const double mo_discretization = 5 * 1e-13;
+static const double MO_DISCRETIZATION = 5 * 1e-13;
 
 /**
  * @brief Computes and returns the Euclidean distance of the points first and second.
  */
-static double mo_get_norm(std::span<const double> first, std::span<const double> second) {
+static double MoGetNorm(std::span<const double> first, std::span<const double> second) {
 
   double norm = 0;
 
@@ -44,26 +46,26 @@ static double mo_get_norm(std::span<const double> first, std::span<const double>
  *
  * If the solution seems to be better than the extremes it is corrected (2 objectives are assumed).
  */
-static std::vector<double> mo_normalize(std::span<const double> y, std::span<const double> ideal,
-                                        std::span<const double> nadir) {
+static std::vector<double> MoNormalize(std::span<const double> y, std::span<const double> ideal,
+                                       std::span<const double> nadir) {
   const size_t num_obj = y.size();
   assert(ideal.size() == num_obj && nadir.size() == num_obj);
   std::vector<double> normalized_y(num_obj);
 
   for (size_t i = 0; i < num_obj; i++) {
-    assert((nadir[i] - ideal[i]) > mo_discretization);
+    assert((nadir[i] - ideal[i]) > MO_DISCRETIZATION);
     normalized_y[i] = (y[i] - ideal[i]) / (nadir[i] - ideal[i]);
-    normalized_y[i] = coco_double_round(normalized_y[i] / mo_discretization) * mo_discretization;
+    normalized_y[i] = DoubleRound(normalized_y[i] / MO_DISCRETIZATION) * MO_DISCRETIZATION;
     if (normalized_y[i] < 0) {
-      coco_warning("mo_normalize(): Adjusting %.15e to %.15e", y[i], ideal[i]);
+      coco_warning("MoNormalize(): Adjusting %.15e to %.15e", y[i], ideal[i]);
       normalized_y[i] = 0;
     }
   }
 
   for (size_t i = 0; i < num_obj; i++) {
     assert(num_obj == 2);
-    if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) && (normalized_y[1 - i] < 1)) {
-      coco_warning("mo_normalize(): Adjusting %.15e to %.15e", y[1 - i], nadir[1 - i]);
+    if (DoubleAlmostEqual(normalized_y[i], 0, MO_PRECISION) && (normalized_y[1 - i] < 1)) {
+      coco_warning("MoNormalize(): Adjusting %.15e to %.15e", y[1 - i], nadir[1 - i]);
       normalized_y[1 - i] = 1;
     }
   }
@@ -83,14 +85,14 @@ static std::vector<double> mo_normalize(std::span<const double> y, std::span<con
  * -1 if normalized_y2 dominates normalized_y1 <br>
  * -2 if normalized_y1 is identical to normalized_y2
  */
-static int mo_get_dominance(std::span<const double> normalized_y1, std::span<const double> normalized_y2) {
+static int MoGetDominance(std::span<const double> normalized_y1, std::span<const double> normalized_y2) {
 
   int flag1 = 0;
   int flag2 = 0;
 
   assert(normalized_y1.size() == normalized_y2.size());
   for (size_t i = 0; i < normalized_y1.size(); i++) {
-    if (coco_double_almost_equal(normalized_y1[i], normalized_y2[i], mo_precision)) {
+    if (DoubleAlmostEqual(normalized_y1[i], normalized_y2[i], MO_PRECISION)) {
       continue;
     } else if (normalized_y1[i] < normalized_y2[i]) {
       flag1 = 1;
@@ -113,13 +115,13 @@ static int mo_get_dominance(std::span<const double> normalized_y1, std::span<con
 /**
  * @brief Checks whether the normalized solution is within [0, 1]^num_obj.
  */
-static int mo_is_within_ROI(std::span<const double> normalized_y) {
+static int MoIsWithinRoi(std::span<const double> normalized_y) {
 
   int within = 1;
 
   for (size_t i = 0; i < normalized_y.size(); i++) {
-    if (coco_double_almost_equal(normalized_y[i], 0, mo_precision) ||
-        coco_double_almost_equal(normalized_y[i], 1, mo_precision) || (normalized_y[i] > 0 && normalized_y[i] < 1))
+    if (DoubleAlmostEqual(normalized_y[i], 0, MO_PRECISION) || DoubleAlmostEqual(normalized_y[i], 1, MO_PRECISION) ||
+        (normalized_y[i] > 0 && normalized_y[i] < 1))
       continue;
     else
       within = 0;
@@ -133,11 +135,11 @@ static int mo_is_within_ROI(std::span<const double> normalized_y) {
  *
  *  @note Assumes num_obj = 2 and normalized_y >= 0
  */
-static double mo_get_distance_to_ROI(std::span<const double> normalized_y) {
+static double MoGetDistanceToRoi(std::span<const double> normalized_y) {
 
   double diff_0, diff_1;
 
-  if (mo_is_within_ROI(normalized_y))
+  if (MoIsWithinRoi(normalized_y))
     return 0;
 
   assert(normalized_y.size() == 2);
@@ -153,3 +155,5 @@ static double mo_get_distance_to_ROI(std::span<const double> normalized_y) {
   else
     return diff_1;
 }
+
+} // namespace coco

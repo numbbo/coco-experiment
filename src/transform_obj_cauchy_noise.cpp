@@ -6,51 +6,47 @@
 #include "coco.h"
 #include "suite_bbob_noisy_utilities.cpp"
 
+namespace coco {
+
 /**
  * @brief Adds Cauchy noise to the objective value of the inner problem.
  */
-class transform_obj_cauchy_noise_t final : public coco_problem_transformed_t {
+class TransformObjCauchyNoise final : public TransformedProblem {
 public:
-  transform_obj_cauchy_noise_t(coco_problem_ptr_t inner, const double alpha, const double p)
-      : coco_problem_transformed_t(std::move(inner), "cauchy_noise_model"), alpha(alpha), p(p) {
-    noisy = true;
+  TransformObjCauchyNoise(ProblemPtr inner, const double alpha, const double p)
+      : TransformedProblem(std::move(inner), "cauchy_noise_model"), alpha_(alpha), p_(p) {
+    noisy_ = true;
   }
 
   /**
    * @brief Evaluates the transformed objective function by applying cauchy additive noise.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
     double uniform_indicator, numerator_normal_variate, denominator_normal_variate;
-    uniform_indicator = coco_sample_uniform_noise();
-    numerator_normal_variate = coco_sample_gaussian_noise();
-    denominator_normal_variate = coco_sample_gaussian_noise();
+    uniform_indicator = SampleUniformNoise();
+    numerator_normal_variate = SampleGaussianNoise();
+    denominator_normal_variate = SampleGaussianNoise();
     denominator_normal_variate = fabs(denominator_normal_variate + 1e-199);
     double cauchy_noise = numerator_normal_variate / (denominator_normal_variate);
-    cauchy_noise = uniform_indicator < p ? 1e3 + cauchy_noise : 1e3;
-    cauchy_noise = alpha * cauchy_noise;
+    cauchy_noise = uniform_indicator < p_ ? 1e3 + cauchy_noise : 1e3;
+    cauchy_noise = alpha_ * cauchy_noise;
     cauchy_noise = cauchy_noise > 0 ? cauchy_noise : 0.;
     double tol = 1e-8;
-    inner_problem->evaluate_function(x, y);
-    for (size_t i = 0; i < number_of_objectives; i++) {
-      last_noise_free_values[i] = y[i];
+    inner_problem_->EvaluateFunction(x, y);
+    for (size_t i = 0; i < number_of_objectives_; i++) {
+      last_noise_free_values_[i] = y[i];
     }
-    y[0] = y[0] + cauchy_noise + 1.01 * tol + boundary_penalty(x);
+    y[0] = y[0] + cauchy_noise + 1.01 * tol + NoisyBoundaryPenalty(x);
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
-    return identity_inverse(inner_x, x);
+  bool Inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return IdentityInverse(inner_x, x);
   }
 
 private:
-  const double alpha;
-  const double p;
+  const double alpha_;
+  const double p_;
 };
 
-/**
- * @brief Allocates a noisy problem with cauchy noise.
- */
-static coco_problem_ptr_t transform_obj_cauchy_noise(coco_problem_ptr_t inner_problem, const double alpha,
-                                                     const double p) {
-  return std::make_unique<transform_obj_cauchy_noise_t>(std::move(inner_problem), alpha, p);
-}
+} // namespace coco

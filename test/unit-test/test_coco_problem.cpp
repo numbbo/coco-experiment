@@ -2,6 +2,8 @@
 
 #include "coco.cpp"
 
+namespace coco {
+
 /**
  * Tests whether the coco_evaluate_function returns a vector of NANs when given a vector with one or more
  * NAN values.
@@ -20,7 +22,7 @@ MU_TEST(test_coco_evaluate_function) {
     x[0] = 0;
     x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan({y, 1}));
+    mu_check(VectorContainsNan({y, 1}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -33,7 +35,7 @@ MU_TEST(test_coco_evaluate_function) {
     x[0] = 0;
     x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan({y, 1}));
+    mu_check(VectorContainsNan({y, 1}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -46,7 +48,7 @@ MU_TEST(test_coco_evaluate_function) {
   	x[0] = 0;
   	x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan({y, 2}));
+    mu_check(VectorContainsNan({y, 2}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -59,7 +61,7 @@ MU_TEST(test_coco_evaluate_function) {
   	x[0] = 0;
   	x[1] = NAN;
     coco_evaluate_function(problem, x, y);
-    mu_check(coco_vector_contains_nan({y, 1}));
+    mu_check(VectorContainsNan({y, 1}));
   }
   coco_suite_free(suite);
   coco_free_memory(x);
@@ -86,7 +88,7 @@ MU_TEST(test_coco_evaluate_constraint) {
   	number_of_constraints = coco_problem_get_number_of_constraints(problem);
   	y = coco_allocate_vector(number_of_constraints);
     coco_evaluate_constraint(problem, x, y);
-    mu_check(coco_vector_contains_nan({y, number_of_constraints}));
+    mu_check(VectorContainsNan({y, number_of_constraints}));
     coco_free_memory(y);
   }
   coco_suite_free(suite);
@@ -94,7 +96,7 @@ MU_TEST(test_coco_evaluate_constraint) {
 }
 
 /**
- * Tests whether coco_problem_s::is_feasible() returns 0 when given a vector 
+ * Tests whether coco_problem_s::IsFeasible() returns 0 when given a vector
  * with one or more NAN values and 1 for the initial solution given
  * by COCO.
  */
@@ -115,9 +117,9 @@ MU_TEST(test_coco_is_feasible) {
     x[1] = NAN;
   	number_of_constraints = coco_problem_get_number_of_constraints(problem);
   	y = coco_allocate_vector(number_of_constraints);
-        mu_check(problem->is_feasible({x, 2}, {y, number_of_constraints}) == 0);
+        mu_check(FromC(problem)->IsFeasible({x, 2}, {y, number_of_constraints}) == 0);
         coco_problem_get_initial_solution(problem, initial_solution);
-        mu_check(problem->is_feasible({initial_solution, 2}, {y, number_of_constraints}) == 1);
+        mu_check(FromC(problem)->IsFeasible({initial_solution, 2}, {y, number_of_constraints}) == 1);
         coco_free_memory(y);
   }
   coco_suite_free(suite);
@@ -143,13 +145,15 @@ MU_TEST(test_coco_problem_get_largest_fvalues_of_interest_bbob_biobj_ext) {
   coco_suite_free(suite);
 }
 
+} // namespace coco
+
 int main(void) {
-  MU_RUN_TEST(test_coco_evaluate_function);
-  MU_RUN_TEST(test_coco_evaluate_constraint);
-  MU_RUN_TEST(test_coco_is_feasible);
-  MU_RUN_TEST(test_coco_problem_get_largest_fvalues_of_interest_bbob_biobj_ext);
-	
-	MU_REPORT();
+  MU_RUN_TEST(coco::test_coco_evaluate_function);
+  MU_RUN_TEST(coco::test_coco_evaluate_constraint);
+  MU_RUN_TEST(coco::test_coco_is_feasible);
+  MU_RUN_TEST(coco::test_coco_problem_get_largest_fvalues_of_interest_bbob_biobj_ext);
+
+  MU_REPORT();
 
   coco_remove_directory("exdata");
 

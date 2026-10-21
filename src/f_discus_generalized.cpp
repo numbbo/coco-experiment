@@ -10,47 +10,49 @@
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
 
+namespace coco {
+
 /**
  * @brief The generalized discus function.
  */
-class f_discus_generalized_t final : public coco_problem_s {
+class DiscusGeneralized final : public Problem {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(std::span<const double> x) const;
+  double Raw(std::span<const double> x) const;
 
-  f_discus_generalized_t(const size_t number_of_variables, size_t proportion_short_axes_denom)
-      : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("generalized discus function", -5.0, 5.0, 0.0);
-    set_id("%s_d%04zu", "discus_generalized", number_of_variables);
-    this->proportion_short_axes_denom = proportion_short_axes_denom;
+  DiscusGeneralized(const size_t number_of_variables, size_t proportion_short_axes_denom)
+      : Problem(number_of_variables, 1, 0) {
+    InitFromScalars("generalized discus function", -5.0, 5.0, 0.0);
+    SetId("%s_d%04zu", "discus_generalized", number_of_variables);
+    this->proportion_short_axes_denom_ = proportion_short_axes_denom;
 
     /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+    EvaluateFunction(best_parameter_, best_value_);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = Raw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 
 private:
-  size_t proportion_short_axes_denom{};
+  size_t proportion_short_axes_denom_{};
 };
 
 /**
  * @brief Implements the generalized discus function without connections to any
  * COCO structures.
  */
-double f_discus_generalized_t::raw(std::span<const double> x) const {
+double DiscusGeneralized::Raw(std::span<const double> x) const {
 
   static const double condition = 1.0e6;
   double result = 0;
-  size_t nb_short_axes = number_of_variables / proportion_short_axes_denom;
-  if (number_of_variables % proportion_short_axes_denom != 0) {
+  size_t nb_short_axes = number_of_variables_ / proportion_short_axes_denom_;
+  if (number_of_variables_ % proportion_short_axes_denom_ != 0) {
     nb_short_axes += 1;
   }
 
@@ -59,7 +61,7 @@ double f_discus_generalized_t::raw(std::span<const double> x) const {
   }
   result *= condition;
 
-  for (size_t i = nb_short_axes; i < number_of_variables; ++i) {
+  for (size_t i = nb_short_axes; i < number_of_variables_; ++i) {
     result += x[i] * x[i];
   }
 
@@ -72,34 +74,36 @@ double f_discus_generalized_t::raw(std::span<const double> x) const {
  *
  * f(x) = f_discus_generalized(T_osz(R (x - xopt))) / n + fopt with the permuted block rotation R.
  */
-class bbob_discus_generalized_permblockdiag_t final : public bbob_problem_t<bbob_discus_generalized_permblockdiag_t> {
+class BbobDiscusGeneralizedPermblockdiag final : public BbobProblem<BbobDiscusGeneralizedPermblockdiag> {
 public:
-  bbob_discus_generalized_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
-                                          const long rseed, const coco_bbob_variant_t variant,
-                                          const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)),
-        rotation(dimension, rseed + 2000000, rseed + 1000000, rseed + 3000000), discus(dimension, 40),
-        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+  BbobDiscusGeneralizedPermblockdiag(const size_t function, const size_t dimension, const size_t instance,
+                                     const long rseed, const BbobVariant variant, const char *problem_id_template,
+                                     const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)),
+        rotation_(dimension, rseed + 2000000, rseed + 1000000, rseed + 3000000), discus_(dimension, 40),
+        fopt_(Bbob2009ComputeFopt(function, instance)), z1_(dimension), z2_(dimension) {
     /* The optimum of the discus function is the origin, map it back through the transformations */
-    oscillate.inverse(best_parameter, z1);
-    rotation.inverse(z1, z2);
-    shift.inverse(z2, best_parameter);
-    set_best_value_at_best_parameter();
+    oscillate_.Inverse(best_parameter_, z1_);
+    rotation_.Inverse(z1_, z2_);
+    shift_.Inverse(z2_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z1);
-    rotation.apply(z1, z2);
-    oscillate.apply(z2, z2);
-    return discus.raw(z2) * coco_norm_by_dim_factor(number_of_variables) + fopt;
+    shift_.Apply(x, z1_);
+    rotation_.Apply(z1_, z2_);
+    oscillate_.Apply(z2_, z2_);
+    return discus_.Raw(z2_) * NormByDimFactor(number_of_variables_) + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const vars_permblockdiag_t rotation;
-  const vars_oscillate_t oscillate{};
-  const f_discus_generalized_t discus;
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsPermblockdiag rotation_;
+  const VarsOscillate oscillate_{};
+  const DiscusGeneralized discus_;
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
+
+} // namespace coco

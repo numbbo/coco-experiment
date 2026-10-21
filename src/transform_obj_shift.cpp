@@ -8,47 +8,44 @@
 #include "coco.h"
 #include "coco_problem.cpp"
 
+namespace coco {
+
 /**
  * @brief Shifts the objective value(s) of the inner problem by an offset.
  */
-class transform_obj_shift_t final : public coco_problem_transformed_t {
+class TransformObjShift final : public TransformedProblem {
 public:
-  transform_obj_shift_t(coco_problem_ptr_t inner, const double offset)
-      : coco_problem_transformed_t(std::move(inner), "transform_obj_shift"), offset(offset) {
-    for (size_t i = 0; i < number_of_objectives; i++)
-      best_value[i] += offset;
+  TransformObjShift(ProblemPtr inner, const double offset)
+      : TransformedProblem(std::move(inner), "transform_obj_shift"), offset_(offset) {
+    for (size_t i = 0; i < number_of_objectives_; i++)
+      best_value_[i] += offset;
   }
 
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    if (number_of_objectives == 0) {
-      inner_problem->evaluate_function(x, y);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    if (number_of_objectives_ == 0) {
+      inner_problem_->EvaluateFunction(x, y);
       return;
     }
 
-    inner_problem->evaluate_function(x, y);
+    inner_problem_->EvaluateFunction(x, y);
 
-    for (size_t i = 0; i < number_of_objectives; i++)
-      y[i] += offset;
+    for (size_t i = 0; i < number_of_objectives_; i++)
+      y[i] += offset_;
 
-    assert_not_below_best_value(x, y);
+    AssertNotBelowBestValue(x, y);
   }
 
-  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
-    inner_problem->evaluate_gradient(x, y);
+  void EvaluateGradient(std::span<const double> x, std::span<double> y) override {
+    inner_problem_->EvaluateGradient(x, y);
   }
 
   /** @brief The decision values are not transformed. */
-  bool inverse(std::span<const double> inner_x, std::span<double> x) const override {
-    return identity_inverse(inner_x, x);
+  bool Inverse(std::span<const double> inner_x, std::span<double> x) const override {
+    return IdentityInverse(inner_x, x);
   }
 
 private:
-  const double offset;
+  const double offset_;
 };
 
-/**
- * @brief Creates the transformation.
- */
-static coco_problem_ptr_t transform_obj_shift(coco_problem_ptr_t inner_problem, const double offset) {
-  return std::make_unique<transform_obj_shift_t>(std::move(inner_problem), offset);
-}
+} // namespace coco

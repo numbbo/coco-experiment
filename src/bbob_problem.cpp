@@ -10,17 +10,19 @@
 #include "suite_bbob_legacy_code.cpp"
 #include "transform_functions.cpp"
 
+namespace coco {
+
 /**
  * @brief The base class of the single-objective bbob problems, which apply their transformations explicitly.
  *
  * Derived implements double operator()(std::span<const double> x), the objective value at x, and sets the best
  * parameter and the best value in its constructor. The region of interest is [-5, 5]^n.
  */
-template <typename Derived> class bbob_problem_t : public coco_problem_s {
+template <typename Derived> class BbobProblem : public Problem {
 public:
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
     y[0] = static_cast<Derived &>(*this)(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 
 protected:
@@ -28,15 +30,17 @@ protected:
    * @brief Sets the region of interest and the problem id, name and type; the templates are formatted with the
    * function, instance and dimension.
    */
-  bbob_problem_t(const size_t function, const size_t dimension, const size_t instance, const char *type,
-                 const char *problem_id_template, const char *problem_name_template)
-      : coco_problem_s(dimension, 1, 0) {
-    init_from_scalars("", -5.0, 5.0, 0.0);
-    set_id(problem_id_template, function, instance, dimension);
-    set_name(problem_name_template, function, instance, dimension);
-    set_type("%s", type);
+  BbobProblem(const size_t function, const size_t dimension, const size_t instance, const char *type,
+              const char *problem_id_template, const char *problem_name_template)
+      : Problem(dimension, 1, 0) {
+    InitFromScalars("", -5.0, 5.0, 0.0);
+    SetId(problem_id_template, function, instance, dimension);
+    SetName(problem_name_template, function, instance, dimension);
+    SetType("%s", type);
   }
 
   /** @brief Sets the best value to the objective value at the best parameter. */
-  void set_best_value_at_best_parameter() { best_value[0] = static_cast<Derived &>(*this)(best_parameter); }
+  void SetBestValueAtBestParameter() { best_value_[0] = static_cast<Derived &>(*this)(best_parameter_); }
 };
+
+} // namespace coco

@@ -11,53 +11,55 @@
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
 
+namespace coco {
+
 /**
  * @brief The generalized bent cigar function.
  */
-class f_bent_cigar_generalized_t final : public coco_problem_s {
+class BentCigarGeneralized final : public Problem {
 public:
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(std::span<const double> x) const;
+  double Raw(std::span<const double> x) const;
 
-  f_bent_cigar_generalized_t(const size_t number_of_variables, size_t proportion_long_axes_denom)
-      : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("generalized bent cigar function", -5.0, 5.0, 0.0);
-    set_id("%s_d%04zu", "bent_cigar", number_of_variables);
-    this->proportion_long_axes_denom = proportion_long_axes_denom;
+  BentCigarGeneralized(const size_t number_of_variables, size_t proportion_long_axes_denom)
+      : Problem(number_of_variables, 1, 0) {
+    InitFromScalars("generalized bent cigar function", -5.0, 5.0, 0.0);
+    SetId("%s_d%04zu", "bent_cigar", number_of_variables);
+    this->proportion_long_axes_denom_ = proportion_long_axes_denom;
 
     /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+    EvaluateFunction(best_parameter_, best_value_);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = Raw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 
 private:
-  size_t proportion_long_axes_denom{};
+  size_t proportion_long_axes_denom_{};
 };
 
 /**
  * @brief Implements the generalized bent cigar function without connections to
  * any COCO structures.
  */
-double f_bent_cigar_generalized_t::raw(std::span<const double> x) const {
+double BentCigarGeneralized::Raw(std::span<const double> x) const {
 
   static const double condition = 1.0e6;
   double result = 0;
-  size_t nb_long_axes = number_of_variables / proportion_long_axes_denom;
-  if (number_of_variables % proportion_long_axes_denom != 0) {
+  size_t nb_long_axes = number_of_variables_ / proportion_long_axes_denom_;
+  if (number_of_variables_ % proportion_long_axes_denom_ != 0) {
     nb_long_axes += 1;
   }
   for (size_t i = 0; i < nb_long_axes; ++i) {
     result += x[i] * x[i];
   }
-  for (size_t i = nb_long_axes; i < number_of_variables; ++i) {
+  for (size_t i = nb_long_axes; i < number_of_variables_; ++i) {
     result += condition * x[i] * x[i];
   }
   return result;
@@ -69,37 +71,38 @@ double f_bent_cigar_generalized_t::raw(std::span<const double> x) const {
  *
  * f(x) = f_bent_cigar_generalized(R T_asy^0.5(R (x - xopt))) / n + fopt with the permuted block rotation R.
  */
-class bbob_bent_cigar_generalized_permblockdiag_t final
-    : public bbob_problem_t<bbob_bent_cigar_generalized_permblockdiag_t> {
+class BbobBentCigarGeneralizedPermblockdiag final : public BbobProblem<BbobBentCigarGeneralizedPermblockdiag> {
 public:
-  bbob_bent_cigar_generalized_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
-                                              const long rseed, const coco_bbob_variant_t variant,
-                                              const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed + 1000000, dimension, variant)),
-        rotation(dimension, rseed + 2000000, rseed + 1000000, rseed + 3000000), asymmetric(0.5, dimension),
-        bent_cigar(dimension, 40), fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+  BbobBentCigarGeneralizedPermblockdiag(const size_t function, const size_t dimension, const size_t instance,
+                                        const long rseed, const BbobVariant variant, const char *problem_id_template,
+                                        const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed + 1000000, dimension, variant)),
+        rotation_(dimension, rseed + 2000000, rseed + 1000000, rseed + 3000000), asymmetric_(0.5, dimension),
+        bent_cigar_(dimension, 40), fopt_(Bbob2009ComputeFopt(function, instance)), z1_(dimension), z2_(dimension) {
     /* The optimum of the bent cigar function is the origin, map it back through the transformations */
-    rotation.inverse(best_parameter, z1);
-    asymmetric.inverse(z1, z1);
-    rotation.inverse(z1, z2);
-    shift.inverse(z2, best_parameter);
-    set_best_value_at_best_parameter();
+    rotation_.Inverse(best_parameter_, z1_);
+    asymmetric_.Inverse(z1_, z1_);
+    rotation_.Inverse(z1_, z2_);
+    shift_.Inverse(z2_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z1);
-    rotation.apply(z1, z2);
-    asymmetric.apply(z2, z2);
-    rotation.apply(z2, z1);
-    return bent_cigar.raw(z1) * coco_norm_by_dim_factor(number_of_variables) + fopt;
+    shift_.Apply(x, z1_);
+    rotation_.Apply(z1_, z2_);
+    asymmetric_.Apply(z2_, z2_);
+    rotation_.Apply(z2_, z1_);
+    return bent_cigar_.Raw(z1_) * NormByDimFactor(number_of_variables_) + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const vars_permblockdiag_t rotation;
-  const vars_asymmetric_t asymmetric;
-  const f_bent_cigar_generalized_t bent_cigar;
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsPermblockdiag rotation_;
+  const VarsAsymmetric asymmetric_;
+  const BentCigarGeneralized bent_cigar_;
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
+
+} // namespace coco

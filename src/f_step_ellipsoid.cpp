@@ -22,54 +22,56 @@
 #include "bbob_problem.cpp"
 #include "transform_functions.cpp"
 
+namespace coco {
+
 /**
  * @brief The BBOB step ellipsoid function f7, also in the bbob-boxed and bbob-noisy suites.
  *
  * f(x) = 0.1 max(|ẑ_1| 1e-4, f_ellipsoid^100(Q round(ẑ))) + penalty_scale f_pen(x) + fopt with
  * ẑ = Λ^10 R (x - xopt) and the rounding to steps of 1 or 0.1 (for |ẑ_i| <= 0.5).
  */
-class bbob_step_ellipsoid_t final : public bbob_problem_t<bbob_step_ellipsoid_t> {
+class BbobStepEllipsoid final : public BbobProblem<BbobStepEllipsoid> {
 public:
-  bbob_step_ellipsoid_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                        const coco_bbob_variant_t variant, const double penalty_scale, const char *problem_id_template,
-                        const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)),
-        conditioned_rotation(conditioned_rotation_matrix(rseed, dimension), std::vector<double>(dimension)),
-        round_step(10.0),
-        rotation(bbob2009_compute_rotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
-        scales(dimension), fopt(bbob2009_compute_fopt(function, instance)), penalty_scale(penalty_scale), z1(dimension),
-        z2(dimension) {
+  BbobStepEllipsoid(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                    const BbobVariant variant, const double penalty_scale, const char *problem_id_template,
+                    const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)),
+        conditioned_rotation_(ConditionedRotationMatrix(rseed, dimension), std::vector<double>(dimension)),
+        round_step_(10.0),
+        rotation_(Bbob2009ComputeRotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
+        scales_(dimension), fopt_(Bbob2009ComputeFopt(function, instance)), penalty_scale_(penalty_scale),
+        z1_(dimension), z2_(dimension) {
     static const double condition = 100;
     assert(dimension > 1);
     for (size_t i = 0; i < dimension; ++i)
-      scales[i] = pow(condition, static_cast<double>(i) / (static_cast<double>(dimension) - 1.0));
+      scales_[i] = pow(condition, static_cast<double>(i) / (static_cast<double>(dimension) - 1.0));
 
     /* The optimum is at xopt, where ẑ = 0 */
-    shift.inverse(best_parameter, best_parameter);
-    set_best_value_at_best_parameter();
+    shift_.Inverse(best_parameter_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
     const double penalty =
-        penalty_scale * coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
-    shift.apply(x, z1);
-    conditioned_rotation.apply(z1, z2);
-    const double zhat_1 = z2[0];
-    round_step.apply(z2, z2);
-    rotation.apply(z2, z1);
+        penalty_scale_ * BoundaryPenalty(x, smallest_values_of_interest_, largest_values_of_interest_);
+    shift_.Apply(x, z1_);
+    conditioned_rotation_.Apply(z1_, z2_);
+    const double zhat_1 = z2_[0];
+    round_step_.Apply(z2_, z2_);
+    rotation_.Apply(z2_, z1_);
 
     double y = 0.0;
-    for (size_t i = 0; i < number_of_variables; ++i)
-      y += scales[i] * z1[i] * z1[i];
-    return 0.1 * coco_double_max(fabs(zhat_1) * 1.0e-4, y) + penalty + fopt;
+    for (size_t i = 0; i < number_of_variables_; ++i)
+      y += scales_[i] * z1_[i] * z1_[i];
+    return 0.1 * DoubleMax(fabs(zhat_1) * 1.0e-4, y) + penalty + fopt_;
   }
 
 private:
   /** @brief Returns Λ^10 R with the rotation R. */
-  static coco_matrix_t conditioned_rotation_matrix(const long rseed, const size_t dimension) {
+  static Matrix ConditionedRotationMatrix(const long rseed, const size_t dimension) {
     static const double condition = 100;
-    coco_matrix_t M = bbob2009_compute_rotation(rseed, dimension);
+    Matrix M = Bbob2009ComputeRotation(rseed, dimension);
     for (size_t i = 0; i < dimension; ++i) {
       const double c1 = sqrt(pow(condition / 10., static_cast<double>(i) / static_cast<double>(dimension - 1)));
       for (size_t j = 0; j < dimension; ++j)
@@ -78,14 +80,14 @@ private:
     return M;
   }
 
-  const vars_shift_t shift;
-  const vars_affine_t conditioned_rotation;
-  const vars_round_step_t round_step;
-  const vars_affine_t rotation;
-  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
-  const double fopt;
-  const double penalty_scale;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsAffine conditioned_rotation_;
+  const VarsRoundStep round_step_;
+  const VarsAffine rotation_;
+  std::vector<double> scales_; /**< @brief condition^(i / (n - 1)) */
+  const double fopt_;
+  const double penalty_scale_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
 
 /**
@@ -94,55 +96,57 @@ private:
  * f(x) = 0.1 max(|ẑ_1| n 1e-4, f_ellipsoid^100(Q round(ẑ))) / n + f_pen(x) + fopt with ẑ = Λ^10 R (x - xopt), the
  * rounding to steps of 1 or 0.1 (for |ẑ_i| <= 0.5), and the permuted block rotations R and Q.
  */
-class bbob_step_ellipsoid_permblockdiag_t final : public bbob_problem_t<bbob_step_ellipsoid_permblockdiag_t> {
+class BbobStepEllipsoidPermblockdiag final : public BbobProblem<BbobStepEllipsoidPermblockdiag> {
 public:
-  bbob_step_ellipsoid_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance,
-                                      const long rseed, const coco_bbob_variant_t variant,
-                                      const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)), rotation1(dimension, rseed + 2000000, rseed, rseed + 3000000),
-        conditioning(10.0, dimension), round_step(10.0),
-        rotation2(dimension, rseed + 4000000, rseed + 1000000, rseed + 5000000), scales(dimension),
-        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+  BbobStepEllipsoidPermblockdiag(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                                 const BbobVariant variant, const char *problem_id_template,
+                                 const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "2-moderate", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)), rotation1_(dimension, rseed + 2000000, rseed, rseed + 3000000),
+        conditioning_(10.0, dimension), round_step_(10.0),
+        rotation2_(dimension, rseed + 4000000, rseed + 1000000, rseed + 5000000), scales_(dimension),
+        fopt_(Bbob2009ComputeFopt(function, instance)), z1_(dimension), z2_(dimension) {
     static const double condition = 100;
     for (size_t i = 0; i < dimension; ++i)
-      scales[i] = pow(condition, static_cast<double>(i) / (static_cast<double>(dimension) - 1.0));
+      scales_[i] = pow(condition, static_cast<double>(i) / (static_cast<double>(dimension) - 1.0));
 
     /* The optimum of the ellipsoid is the origin, map it back through the transformations; the rounding keeps it */
-    rotation2.inverse(best_parameter, z1);
-    round_step.apply(z1, z1);
-    conditioning.inverse(z1, z1);
-    rotation1.inverse(z1, z2);
-    shift.inverse(z2, best_parameter);
-    set_best_value_at_best_parameter();
+    rotation2_.Inverse(best_parameter_, z1_);
+    round_step_.Apply(z1_, z1_);
+    conditioning_.Inverse(z1_, z1_);
+    rotation1_.Inverse(z1_, z2_);
+    shift_.Inverse(z2_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
-    shift.apply(x, z1);
-    rotation1.apply(z1, z2);
-    conditioning.apply(z2, z2);
+    const double penalty = BoundaryPenalty(x, smallest_values_of_interest_, largest_values_of_interest_);
+    shift_.Apply(x, z1_);
+    rotation1_.Apply(z1_, z2_);
+    conditioning_.Apply(z2_, z2_);
     /* multiplied by the dimension to counter-balance the normalization */
-    const double zhat_1 = fabs(z2[0]) * static_cast<double>(number_of_variables);
-    round_step.apply(z2, z2);
-    rotation2.apply(z2, z1);
+    const double zhat_1 = fabs(z2_[0]) * static_cast<double>(number_of_variables_);
+    round_step_.Apply(z2_, z2_);
+    rotation2_.Apply(z2_, z1_);
 
     double y = 0.0;
-    for (size_t i = 0; i < number_of_variables; ++i)
-      y += scales[i] * z1[i] * z1[i];
-    y = 0.1 * coco_double_max(zhat_1 * 1.0e-4, y);
-    return y * coco_norm_by_dim_factor(number_of_variables) + penalty_factor * penalty + fopt;
+    for (size_t i = 0; i < number_of_variables_; ++i)
+      y += scales_[i] * z1_[i] * z1_[i];
+    y = 0.1 * DoubleMax(zhat_1 * 1.0e-4, y);
+    return y * NormByDimFactor(number_of_variables_) + PENALTY_FACTOR * penalty + fopt_;
   }
 
 private:
-  static constexpr double penalty_factor = 1.0;
+  static constexpr double PENALTY_FACTOR = 1.0;
 
-  const vars_shift_t shift;
-  const vars_permblockdiag_t rotation1;
-  const vars_conditioning_t conditioning;
-  const vars_round_step_t round_step;
-  const vars_permblockdiag_t rotation2;
-  std::vector<double> scales; /**< @brief condition^(i / (n - 1)) */
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsPermblockdiag rotation1_;
+  const VarsConditioning conditioning_;
+  const VarsRoundStep round_step_;
+  const VarsPermblockdiag rotation2_;
+  std::vector<double> scales_; /**< @brief condition^(i / (n - 1)) */
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
+
+} // namespace coco

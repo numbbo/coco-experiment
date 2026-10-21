@@ -13,12 +13,14 @@
 #include "suite_bbob_legacy_code.cpp"
 #include "transform_obj_shift.cpp"
 
+namespace coco {
+
 /**
  * @brief Implements the linear slope function without connections to any COCO
  * structures.
  */
-static double f_linear_slope_raw(std::span<const double> x, std::span<const double> best_parameter,
-                                 std::span<const double> slopes) {
+static double LinearSlopeRaw(std::span<const double> x, std::span<const double> best_parameter,
+                             std::span<const double> slopes) {
   double result = 0.0;
 
   assert(best_parameter.size() == x.size() && slopes.size() == x.size());
@@ -38,52 +40,52 @@ static double f_linear_slope_raw(std::span<const double> x, std::span<const doub
 /**
  * @brief The linear slope function.
  */
-class f_linear_slope_t final : public coco_problem_s {
+class LinearSlope final : public Problem {
 public:
-  f_linear_slope_t(const size_t number_of_variables, std::span<const double> best_parameter)
-      : coco_problem_s(number_of_variables, 1, 0), slopes(number_of_variables) {
+  LinearSlope(const size_t number_of_variables, std::span<const double> best_parameter)
+      : Problem(number_of_variables, 1, 0), slopes_(number_of_variables) {
     assert(best_parameter.size() == number_of_variables);
     static const double alpha = 100.0;
     for (size_t i = 0; i < number_of_variables; ++i)
-      slopes[i] = pow(sqrt(alpha), static_cast<double>(i) / (static_cast<double>(number_of_variables) - 1));
+      slopes_[i] = pow(sqrt(alpha), static_cast<double>(i) / (static_cast<double>(number_of_variables) - 1));
 
     /* best_parameter will be overwritten below */
-    init_from_scalars("linear slope function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02zu", "linear_slope", number_of_variables);
+    InitFromScalars("linear slope function", -5.0, 5.0, 0.0);
+    SetId("%s_d%02zu", "linear_slope", number_of_variables);
 
     /* Compute best solution */
     for (size_t i = 0; i < number_of_variables; ++i) {
       if (best_parameter[i] < 0.0) {
-        this->best_parameter[i] = smallest_values_of_interest[i];
+        this->best_parameter_[i] = smallest_values_of_interest_[i];
       } else {
-        this->best_parameter[i] = largest_values_of_interest[i];
+        this->best_parameter_[i] = largest_values_of_interest_[i];
       }
     }
-    evaluate_function(this->best_parameter, best_value);
+    EvaluateFunction(this->best_parameter_, best_value_);
   }
 
   /** @brief Evaluates the function at x without any COCO bookkeeping. */
-  double raw(std::span<const double> x) const { return f_linear_slope_raw(x, best_parameter, slopes); }
+  double Raw(std::span<const double> x) const { return LinearSlopeRaw(x, best_parameter_, slopes_); }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = Raw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the linear slope function.
    */
-  void evaluate_gradient(std::span<const double>, std::span<double> y) override {
-    for (size_t i = 0; i < number_of_variables; ++i)
-      y[i] = best_parameter[i] > 0.0 ? -slopes[i] : slopes[i];
+  void EvaluateGradient(std::span<const double>, std::span<double> y) override {
+    for (size_t i = 0; i < number_of_variables_; ++i)
+      y[i] = best_parameter_[i] > 0.0 ? -slopes_[i] : slopes_[i];
   }
 
 private:
-  std::vector<double> slopes; /**< @brief |s_i| = sqrt(alpha)^(i / (n - 1)) */
+  std::vector<double> slopes_; /**< @brief |s_i| = sqrt(alpha)^(i / (n - 1)) */
 };
 
 /**
@@ -92,50 +94,51 @@ private:
  * f(x) = f_linear_slope(x) + fopt with the optimum at the corner of the region of interest given by the signs of
  * xopt, normalized by the dimension before fopt is added in the large-scale suite.
  */
-class bbob_linear_slope_t final : public bbob_problem_t<bbob_linear_slope_t> {
+class BbobLinearSlope final : public BbobProblem<BbobLinearSlope> {
 public:
-  bbob_linear_slope_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                      const coco_bbob_variant_t variant, const char *problem_id_template,
-                      const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
-        linear_slope(dimension, bbob_xopt(rseed, dimension, variant)), fopt(bbob2009_compute_fopt(function, instance)),
-        normalize(variant == coco_bbob_variant_t::largescale) {
-    best_parameter = linear_slope.get_best_parameter();
-    set_best_value_at_best_parameter();
+  BbobLinearSlope(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                  const BbobVariant variant, const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "1-separable", problem_id_template, problem_name_template),
+        linear_slope_(dimension, BbobXopt(rseed, dimension, variant)), fopt_(Bbob2009ComputeFopt(function, instance)),
+        normalize_(variant == BbobVariant::LARGESCALE) {
+    best_parameter_ = linear_slope_.best_parameter();
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    double y = linear_slope.raw(x);
-    if (normalize)
-      y *= coco_norm_by_dim_factor(number_of_variables);
-    return y + fopt;
+    double y = linear_slope_.Raw(x);
+    if (normalize_)
+      y *= NormByDimFactor(number_of_variables_);
+    return y + fopt_;
   }
 
 private:
-  const f_linear_slope_t linear_slope;
-  const double fopt;
-  const bool normalize;
+  const LinearSlope linear_slope_;
+  const double fopt_;
+  const bool normalize_;
 };
 
 /**
  * @brief Creates the linear slope problem for the constrained BBOB suite.
  */
-static coco_problem_ptr_t f_linear_slope_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                    const size_t instance, const long rseed,
-                                                                    const char *problem_id_template,
-                                                                    const char *problem_name_template) {
-  coco_problem_ptr_t problem;
+static ProblemPtr LinearSlopeConsBbobProblemAllocate(const size_t function, const size_t dimension,
+                                                     const size_t instance, const long rseed,
+                                                     const char *problem_id_template,
+                                                     const char *problem_name_template) {
+  ProblemPtr problem;
 
   std::vector<double> xopt(dimension);
-  bbob_compute_xopt(xopt, rseed, coco_bbob_variant_t::bbob);
-  double fopt = bbob2009_compute_fopt(function, instance);
+  BbobComputeXopt(xopt, rseed, BbobVariant::BBOB);
+  double fopt = Bbob2009ComputeFopt(function, instance);
 
-  problem = std::make_unique<f_linear_slope_t>(dimension, xopt);
-  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = std::make_unique<LinearSlope>(dimension, xopt);
+  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("1-separable");
+  problem->SetId(problem_id_template, function, instance, dimension);
+  problem->SetName(problem_name_template, function, instance, dimension);
+  problem->SetType("1-separable");
 
   return problem;
 }
+
+} // namespace coco

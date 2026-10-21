@@ -13,11 +13,13 @@
 #include "bbob_problem.cpp"
 #include "suite_bbob_legacy_code.cpp"
 
+namespace coco {
+
 /**
  * @brief Implements the Schaffer's F7 function without connections to any COCO
  * structures.
  */
-static double f_schaffers_raw(std::span<const double> x) {
+static double SchaffersRaw(std::span<const double> x) {
   const size_t number_of_variables = x.size();
 
   size_t i = 0;
@@ -28,7 +30,7 @@ static double f_schaffers_raw(std::span<const double> x) {
   double result = 0.0;
   for (i = 0; i < number_of_variables - 1; ++i) {
     const double tmp = x[i] * x[i] + x[i + 1] * x[i + 1];
-    if (coco_is_inf(tmp) && coco_is_nan(sin(50.0 * pow(tmp, 0.1)))) /* sin(inf) -> nan */
+    if (IsInf(tmp) && IsNan(sin(50.0 * pow(tmp, 0.1)))) /* sin(inf) -> nan */
       /* the second condition is necessary to pass the integration tests under Windows and Linux */
       return tmp;
     result += pow(tmp, 0.25) * (1.0 + pow(sin(50.0 * pow(tmp, 0.1)), 2.0));
@@ -43,40 +45,39 @@ static double f_schaffers_raw(std::span<const double> x) {
  *
  * f(x) = f_schaffers(Λ^conditioning Q T_asy^0.5(R (x - xopt))) + fopt + penalty_scale f_pen(x).
  */
-class bbob_schaffers_t final : public bbob_problem_t<bbob_schaffers_t> {
+class BbobSchaffers final : public BbobProblem<BbobSchaffers> {
 public:
-  bbob_schaffers_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                   const coco_bbob_variant_t variant, const double conditioning, const double penalty_scale,
-                   const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)),
-        rotation(bbob2009_compute_rotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
-        asymmetric(0.5, dimension), conditioned_rotation(conditioned_rotation_matrix(rseed, dimension, conditioning),
-                                                         std::vector<double>(dimension)),
-        fopt(bbob2009_compute_fopt(function, instance)), penalty_scale(penalty_scale), z1(dimension), z2(dimension) {
+  BbobSchaffers(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                const BbobVariant variant, const double conditioning, const double penalty_scale,
+                const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)),
+        rotation_(Bbob2009ComputeRotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
+        asymmetric_(0.5, dimension), conditioned_rotation_(ConditionedRotationMatrix(rseed, dimension, conditioning),
+                                                           std::vector<double>(dimension)),
+        fopt_(Bbob2009ComputeFopt(function, instance)), penalty_scale_(penalty_scale), z1_(dimension), z2_(dimension) {
     /* The optimum of Schaffer's function is the origin, map it back through the transformations */
-    conditioned_rotation.inverse(best_parameter, z1);
-    asymmetric.inverse(z1, z1);
-    rotation.inverse(z1, z2);
-    shift.inverse(z2, best_parameter);
-    set_best_value_at_best_parameter();
+    conditioned_rotation_.Inverse(best_parameter_, z1_);
+    asymmetric_.Inverse(z1_, z1_);
+    rotation_.Inverse(z1_, z2_);
+    shift_.Inverse(z2_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
-    shift.apply(x, z1);
-    rotation.apply(z1, z2);
-    asymmetric.apply(z2, z2);
-    conditioned_rotation.apply(z2, z1);
-    const double y = f_schaffers_raw(z1) + fopt;
-    return y + penalty_scale * penalty;
+    const double penalty = BoundaryPenalty(x, smallest_values_of_interest_, largest_values_of_interest_);
+    shift_.Apply(x, z1_);
+    rotation_.Apply(z1_, z2_);
+    asymmetric_.Apply(z2_, z2_);
+    conditioned_rotation_.Apply(z2_, z1_);
+    const double y = SchaffersRaw(z1_) + fopt_;
+    return y + penalty_scale_ * penalty;
   }
 
 private:
   /** @brief Returns Λ^conditioning Q with the rotation Q. */
-  static coco_matrix_t conditioned_rotation_matrix(const long rseed, const size_t dimension,
-                                                   const double conditioning) {
-    coco_matrix_t M = bbob2009_compute_rotation(rseed, dimension);
+  static Matrix ConditionedRotationMatrix(const long rseed, const size_t dimension, const double conditioning) {
+    Matrix M = Bbob2009ComputeRotation(rseed, dimension);
     for (size_t i = 0; i < dimension; ++i) {
       for (size_t j = 0; j < dimension; ++j) {
         double exponent = 1.0 * static_cast<int>(i) / (static_cast<double>(dimension) - 1.0);
@@ -86,13 +87,13 @@ private:
     return M;
   }
 
-  const vars_shift_t shift;
-  const vars_affine_t rotation;
-  const vars_asymmetric_t asymmetric;
-  const vars_affine_t conditioned_rotation;
-  const double fopt;
-  const double penalty_scale;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsAffine rotation_;
+  const VarsAsymmetric asymmetric_;
+  const VarsAffine conditioned_rotation_;
+  const double fopt_;
+  const double penalty_scale_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
 
 /**
@@ -101,44 +102,46 @@ private:
  * f(x) = f_schaffers(Λ^conditioning Q T_asy^0.5(R (x - xopt))) + 10 f_pen(x) + fopt with the permuted block rotations
  * R and Q.
  */
-class bbob_schaffers_permblockdiag_t final : public bbob_problem_t<bbob_schaffers_permblockdiag_t> {
+class BbobSchaffersPermblockdiag final : public BbobProblem<BbobSchaffersPermblockdiag> {
 public:
-  bbob_schaffers_permblockdiag_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                                 const coco_bbob_variant_t variant, const double condition,
-                                 const char *problem_id_template, const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed, dimension, variant)),
-        rotation1(dimension, rseed + 5000000, rseed + 1000000, rseed + 6000000), asymmetric(0.5, dimension),
-        rotation2(dimension, rseed + 3000000, rseed, rseed + 4000000), conditioning(condition, dimension),
-        fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+  BbobSchaffersPermblockdiag(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                             const BbobVariant variant, const double condition, const char *problem_id_template,
+                             const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "4-multi-modal", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed, dimension, variant)),
+        rotation1_(dimension, rseed + 5000000, rseed + 1000000, rseed + 6000000), asymmetric_(0.5, dimension),
+        rotation2_(dimension, rseed + 3000000, rseed, rseed + 4000000), conditioning_(condition, dimension),
+        fopt_(Bbob2009ComputeFopt(function, instance)), z1_(dimension), z2_(dimension) {
     /* The optimum of Schaffer's function is the origin, map it back through the transformations */
-    conditioning.inverse(best_parameter, z1);
-    rotation2.inverse(z1, z2);
-    asymmetric.inverse(z2, z2);
-    rotation1.inverse(z2, z1);
-    shift.inverse(z1, best_parameter);
-    set_best_value_at_best_parameter();
+    conditioning_.Inverse(best_parameter_, z1_);
+    rotation2_.Inverse(z1_, z2_);
+    asymmetric_.Inverse(z2_, z2_);
+    rotation1_.Inverse(z2_, z1_);
+    shift_.Inverse(z1_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    const double penalty = coco_boundary_penalty(x, smallest_values_of_interest, largest_values_of_interest);
-    shift.apply(x, z1);
-    rotation1.apply(z1, z2);
-    asymmetric.apply(z2, z2);
-    rotation2.apply(z2, z1);
-    conditioning.apply(z1, z1);
-    const double y = f_schaffers_raw(z1) + penalty_factor * penalty;
-    return y + fopt;
+    const double penalty = BoundaryPenalty(x, smallest_values_of_interest_, largest_values_of_interest_);
+    shift_.Apply(x, z1_);
+    rotation1_.Apply(z1_, z2_);
+    asymmetric_.Apply(z2_, z2_);
+    rotation2_.Apply(z2_, z1_);
+    conditioning_.Apply(z1_, z1_);
+    const double y = SchaffersRaw(z1_) + PENALTY_FACTOR * penalty;
+    return y + fopt_;
   }
 
 private:
-  static constexpr double penalty_factor = 10.0;
+  static constexpr double PENALTY_FACTOR = 10.0;
 
-  const vars_shift_t shift;
-  const vars_permblockdiag_t rotation1;
-  const vars_asymmetric_t asymmetric;
-  const vars_permblockdiag_t rotation2;
-  const vars_conditioning_t conditioning;
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsPermblockdiag rotation1_;
+  const VarsAsymmetric asymmetric_;
+  const VarsPermblockdiag rotation2_;
+  const VarsConditioning conditioning_;
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
+
+} // namespace coco

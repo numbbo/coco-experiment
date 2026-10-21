@@ -13,6 +13,11 @@
 #include "coco.h"
 #include <stdio.h>
 
+/** @brief The type declared in coco.h, an empty base class of RandomState (see coco_internal.h). */
+struct coco_random_state_s {};
+
+namespace coco {
+
 #define COCO_NORMAL_POLAR /* Use polar transformation method */
 
 static constexpr size_t COCO_SHORT_LAG = 273;
@@ -21,21 +26,21 @@ static constexpr size_t COCO_LONG_LAG = 607;
 /**
  * @brief A structure containing the state of the COCO random generator.
  */
-struct coco_random_state_s {
+struct RandomState : public coco_random_state_s {
 public:
-  explicit coco_random_state_s(uint32_t seed);
+  explicit RandomState(uint32_t seed);
 
   /** @brief Returns the next uniformly distributed random number in [0, 1). */
-  double uniform();
+  double Uniform();
 
   /** @brief Returns an approximately N(0, 1) distributed random number. */
-  double normal();
+  double Normal();
 
 private:
-  void generate();
+  void Generate();
 
-  double x[COCO_LONG_LAG];
-  size_t index;
+  double x_[COCO_LONG_LAG];
+  size_t index_;
 };
 
 /**
@@ -44,57 +49,51 @@ private:
  * This generator is nice because it is reasonably small and directly generates double values. The chosen
  * lags (607 and 273) lead to a generator with a period in excess of 2^607-1.
  */
-void coco_random_state_s::generate() {
+void RandomState::Generate() {
   for (size_t i = 0; i < COCO_SHORT_LAG; ++i) {
-    double t = x[i] + x[i + (COCO_LONG_LAG - COCO_SHORT_LAG)];
+    double t = x_[i] + x_[i + (COCO_LONG_LAG - COCO_SHORT_LAG)];
     if (t >= 1.0)
       t -= 1.0;
-    x[i] = t;
+    x_[i] = t;
   }
   for (size_t i = COCO_SHORT_LAG; i < COCO_LONG_LAG; ++i) {
-    double t = x[i] + x[i - COCO_SHORT_LAG];
+    double t = x_[i] + x_[i - COCO_SHORT_LAG];
     if (t >= 1.0)
       t -= 1.0;
-    x[i] = t;
+    x_[i] = t;
   }
-  index = 0;
+  index_ = 0;
 }
 
-coco_random_state_s::coco_random_state_s(uint32_t seed) {
+RandomState::RandomState(uint32_t seed) {
   /* Expand seed to fill initial state array. */
   for (size_t i = 0; i < COCO_LONG_LAG; ++i) {
     /* Uses uint64_t to silence the compiler ("shift count negative or too big, undefined behavior" warning) */
-    x[i] = (static_cast<double>(seed)) / static_cast<double>((static_cast<uint64_t>(1UL) << 32) - 1);
+    x_[i] = (static_cast<double>(seed)) / static_cast<double>((static_cast<uint64_t>(1UL) << 32) - 1);
     /* Advance seed based on simple RNG from TAOCP */
     seed = static_cast<uint32_t>(1812433253UL) * (seed ^ (seed >> 30)) + (static_cast<uint32_t>(i) + 1);
   }
-  index = 12;
+  index_ = 12;
 }
 
-coco_random_state_t *coco_random_new(uint32_t seed) { return new coco_random_state_t(seed); }
-
-void coco_random_free(coco_random_state_t *state) { delete state; }
-
-double coco_random_state_s::uniform() {
+double RandomState::Uniform() {
   /* If we have consumed all random numbers in our archive, it is time to run the actual generator for one
    * iteration to refill the state with 'LONG_LAG' new values. */
-  if (index >= COCO_LONG_LAG)
-    generate();
-  return x[index++];
+  if (index_ >= COCO_LONG_LAG)
+    Generate();
+  return x_[index_++];
 }
-
-double coco_random_uniform(coco_random_state_t *state) { return state->uniform(); }
 
 /**
  * Instead of using the (expensive) polar method, we may cheat and abuse the central limit theorem. The sum
  * of 12 uniform random values has mean 6, variance 1 and is approximately normal. Subtract 6 and you get
  * an approximately N(0, 1) random number.
  */
-double coco_random_state_s::normal() {
+double RandomState::Normal() {
   double result;
 #ifdef COCO_NORMAL_POLAR
-  const double u1 = uniform();
-  const double u2 = uniform();
+  const double u1 = Uniform();
+  const double u2 = Uniform();
   result = sqrt(-2 * log(u1)) * cos(2 * coco_pi * u2);
 #else
   result = 0.0;
@@ -106,5 +105,17 @@ double coco_random_state_s::normal() {
   return result;
 }
 
-double coco_random_normal(coco_random_state_t *state) { return state->normal(); }
+} // namespace coco
 
+/* C interface (declared in coco.h) */
+
+/** @brief Converts a pointer of the C interface to the internal class. */
+inline coco::RandomState *FromC(coco_random_state_t *state) { return static_cast<coco::RandomState *>(state); }
+
+coco_random_state_t *coco_random_new(uint32_t seed) { return new coco::RandomState(seed); }
+
+void coco_random_free(coco_random_state_t *state) { delete FromC(state); }
+
+double coco_random_uniform(coco_random_state_t *state) { return FromC(state)->Uniform(); }
+
+double coco_random_normal(coco_random_state_t *state) { return FromC(state)->Normal(); }

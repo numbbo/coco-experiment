@@ -14,11 +14,13 @@
 #include "transform_vars_affine.cpp"
 #include "transform_vars_shift.cpp"
 
+namespace coco {
+
 /**
  * @brief Implements the bent cigar function without connections to any COCO
  * structures.
  */
-static double f_bent_cigar_raw(std::span<const double> x) {
+static double BentCigarRaw(std::span<const double> x) {
   const size_t number_of_variables = x.size();
 
   static const double condition = 1.0e6;
@@ -33,34 +35,34 @@ static double f_bent_cigar_raw(std::span<const double> x) {
 /**
  * @brief The bent cigar function.
  */
-class f_bent_cigar_t final : public coco_problem_s {
+class BentCigar final : public Problem {
 public:
-  explicit f_bent_cigar_t(const size_t number_of_variables) : coco_problem_s(number_of_variables, 1, 0) {
-    init_from_scalars("bent cigar function", -5.0, 5.0, 0.0);
-    set_id("%s_d%02zu", "bent_cigar", number_of_variables);
+  explicit BentCigar(const size_t number_of_variables) : Problem(number_of_variables, 1, 0) {
+    InitFromScalars("bent cigar function", -5.0, 5.0, 0.0);
+    SetId("%s_d%02zu", "bent_cigar", number_of_variables);
 
     /* Compute best solution */
-    evaluate_function(best_parameter, best_value);
+    EvaluateFunction(best_parameter_, best_value_);
   }
 
   /**
    * @brief Uses the raw function to evaluate the COCO problem.
    */
-  void evaluate_function(std::span<const double> x, std::span<double> y) override {
-    assert(number_of_objectives == 1);
-    y[0] = f_bent_cigar_raw(x);
-    assert(y[0] + 1e-13 >= best_value[0]);
+  void EvaluateFunction(std::span<const double> x, std::span<double> y) override {
+    assert(number_of_objectives_ == 1);
+    y[0] = BentCigarRaw(x);
+    assert(y[0] + 1e-13 >= best_value_[0]);
   }
 
   /**
    * @brief Evaluates the gradient of the bent cigar function.
    */
-  void evaluate_gradient(std::span<const double> x, std::span<double> y) override {
+  void EvaluateGradient(std::span<const double> x, std::span<double> y) override {
 
     static const double condition = 1.0e6;
 
     y[0] = 2.0 * x[0];
-    for (size_t i = 1; i < number_of_variables; ++i)
+    for (size_t i = 1; i < number_of_variables_; ++i)
       y[i] = 2.0 * condition * x[i];
   }
 };
@@ -70,68 +72,67 @@ public:
  *
  * f(x) = f_bent_cigar(R T_asy^0.5(R (x - xopt))) + fopt.
  */
-class bbob_bent_cigar_t final : public bbob_problem_t<bbob_bent_cigar_t> {
+class BbobBentCigar final : public BbobProblem<BbobBentCigar> {
 public:
-  bbob_bent_cigar_t(const size_t function, const size_t dimension, const size_t instance, const long rseed,
-                    const coco_bbob_variant_t variant, const char *problem_id_template,
-                    const char *problem_name_template)
-      : bbob_problem_t(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
-        shift(bbob_xopt(rseed + 1000000, dimension, variant)),
-        rotation(bbob2009_compute_rotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
-        asymmetric(0.5, dimension), fopt(bbob2009_compute_fopt(function, instance)), z1(dimension), z2(dimension) {
+  BbobBentCigar(const size_t function, const size_t dimension, const size_t instance, const long rseed,
+                const BbobVariant variant, const char *problem_id_template, const char *problem_name_template)
+      : BbobProblem(function, dimension, instance, "3-ill-conditioned", problem_id_template, problem_name_template),
+        shift_(BbobXopt(rseed + 1000000, dimension, variant)),
+        rotation_(Bbob2009ComputeRotation(rseed + 1000000, dimension), std::vector<double>(dimension)),
+        asymmetric_(0.5, dimension), fopt_(Bbob2009ComputeFopt(function, instance)), z1_(dimension), z2_(dimension) {
     /* The optimum of the bent cigar function is the origin, map it back through the transformations */
-    rotation.inverse(best_parameter, z1);
-    asymmetric.inverse(z1, z1);
-    rotation.inverse(z1, z2);
-    shift.inverse(z2, best_parameter);
-    set_best_value_at_best_parameter();
+    rotation_.Inverse(best_parameter_, z1_);
+    asymmetric_.Inverse(z1_, z1_);
+    rotation_.Inverse(z1_, z2_);
+    shift_.Inverse(z2_, best_parameter_);
+    SetBestValueAtBestParameter();
   }
 
   double operator()(std::span<const double> x) {
-    shift.apply(x, z1);
-    rotation.apply(z1, z2);
-    asymmetric.apply(z2, z2);
-    rotation.apply(z2, z1);
-    return f_bent_cigar_raw(z1) + fopt;
+    shift_.Apply(x, z1_);
+    rotation_.Apply(z1_, z2_);
+    asymmetric_.Apply(z2_, z2_);
+    rotation_.Apply(z2_, z1_);
+    return BentCigarRaw(z1_) + fopt_;
   }
 
 private:
-  const vars_shift_t shift;
-  const vars_affine_t rotation;
-  const vars_asymmetric_t asymmetric;
-  const double fopt;
-  std::vector<double> z1, z2; /**< @brief The transformed decision values */
+  const VarsShift shift_;
+  const VarsAffine rotation_;
+  const VarsAsymmetric asymmetric_;
+  const double fopt_;
+  std::vector<double> z1_, z2_; /**< @brief The transformed decision values */
 };
 
 /**
  * @brief Creates the bent cigar problem for the constrained BBOB suite.
  */
-static coco_problem_ptr_t f_bent_cigar_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                  const size_t instance, const long rseed,
-                                                                  const coco_bbob_variant_t variant,
-                                                                  const char *problem_id_template,
-                                                                  const char *problem_name_template) {
+static ProblemPtr BentCigarConsBbobProblemAllocate(const size_t function, const size_t dimension, const size_t instance,
+                                                   const long rseed, const BbobVariant variant,
+                                                   const char *problem_id_template, const char *problem_name_template) {
 
-  coco_problem_ptr_t problem;
+  ProblemPtr problem;
 
-  coco_matrix_t M(dimension, dimension);
+  Matrix M(dimension, dimension);
   std::vector<double> b(dimension);
 
   std::vector<double> xopt(dimension);
-  double fopt = bbob2009_compute_fopt(function, instance);
-  bbob_compute_xopt(xopt, rseed + 1000000, variant);
+  double fopt = Bbob2009ComputeFopt(function, instance);
+  BbobComputeXopt(xopt, rseed + 1000000, variant);
 
-  const coco_matrix_t rot1 = bbob2009_compute_rotation(rseed + 1000000, dimension);
+  const Matrix rot1 = Bbob2009ComputeRotation(rseed + 1000000, dimension);
   M = rot1;
 
-  problem = std::make_unique<f_bent_cigar_t>(dimension);
-  problem = transform_obj_shift(std::move(problem), fopt);
-  problem = transform_vars_affine(std::move(problem), M, b);
-  problem = transform_vars_shift(std::move(problem), xopt, 0);
+  problem = std::make_unique<BentCigar>(dimension);
+  problem = std::make_unique<TransformObjShift>(std::move(problem), fopt);
+  problem = std::make_unique<TransformVarsAffine>(std::move(problem), M, b);
+  problem = std::make_unique<TransformVarsShift>(std::move(problem), xopt, 0);
 
-  problem->set_id(problem_id_template, function, instance, dimension);
-  problem->set_name(problem_name_template, function, instance, dimension);
-  problem->set_type("3-ill-conditioned");
+  problem->SetId(problem_id_template, function, instance, dimension);
+  problem->SetName(problem_name_template, function, instance, dimension);
+  problem->SetType("3-ill-conditioned");
 
   return problem;
 }
+
+} // namespace coco
