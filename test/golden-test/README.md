@@ -3,7 +3,7 @@
 These tests record the observable behaviour of COCO and check that it does not change.
 They are meant as a safety net for refactorings that should not change any results, such as the port to C++.
 
-The driver `golden.c` only uses the public C interface from `coco.h`.
+The driver `golden.c` is written in C and only uses the public C interface from `coco.h`, while the library itself is compiled as C++.
 
 - **values** scenarios evaluate every problem of a suite (default instances) at its initial solution, three random points in the region of interest, one point that is likely outside of it, the initial solution with one coordinate set to NaN, +Inf and -Inf, and the optimal solution.
   They record the problem metadata, objective and constraint values and the evaluation counters.

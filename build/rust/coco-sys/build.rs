@@ -25,9 +25,16 @@ fn main() {
         .write_to_file(out_path.join("coco_sys.rs"))
         .expect("Couldn't write bindings to 'OUT_DIR/coco_sys.rs'!");
 
+    // The wrapper uses the COCO library, so it must come first on the link line.
     cc::Build::new()
-        .file(src_path.join("coco.c"))
         .file("wrapper.c")
+        .warnings(false)
+        .compile("coco_wrapper");
+
+    cc::Build::new()
+        .cpp(true)
+        .std("c++17")
+        .file(src_path.join("coco.cpp"))
         .warnings(false)
         // Disable floating-point contraction (FMA), see src/coco_fp_contract.h
         .flag_if_supported("-ffp-contract=off")

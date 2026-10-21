@@ -22,7 +22,7 @@ jobs:
         run: unzip cocoex-octave-*.zip
       - name: Build
         working-directory: ${{github.workspace}}/cocoex-octave/
-        run: mkoctfile --verbose --mex cocoCall.c
+        run: mkoctfile --verbose --mex cocoCall.c coco.cpp
       - name: Experiment
         working-directory: ${{github.workspace}}/cocoex-octave/
         run: octave --no-gui exampleexperiment.m

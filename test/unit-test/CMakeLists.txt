@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
 project(COCOUnitTest
-        DESCRIPTION "COCO C unit tests"
-        LANGUAGES C)
+        DESCRIPTION "COCO unit tests"
+        LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Disable floating-point contraction (FMA), see src/coco_fp_contract.h
-include(CheckCCompilerFlag)
-check_c_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
 if(COCO_HAVE_FP_CONTRACT_OFF)
   add_compile_options(-ffp-contract=off)
 endif()
@@ -22,7 +25,7 @@ if(MATH_LIBRARY)
 endif()
 
 macro(minunit_test name)  
-  add_executable(${name} ${name}.c)
+  add_executable(${name} ${name}.cpp)
   target_link_libraries(${name} PUBLIC about_equal)
   if (LIBM)
     target_link_libraries(${name} PUBLIC ${LIBM})
@@ -35,7 +38,7 @@ macro(minunit_test name)
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endmacro()
 
-add_executable(test_tainted_problem test_tainted_problem.c coco.c)
+add_executable(test_tainted_problem test_tainted_problem.c coco.cpp)
 if (LIBM)
   target_link_libraries(test_tainted_problem PUBLIC ${LIBM})
 endif()

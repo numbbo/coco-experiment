@@ -40,8 +40,8 @@ and it will install all the required development dependencies into your existing
 
 ## Working with the Experimental Code
 
-Before any of the bindings can be built and after every change to the core files (in `code-experiments/src/`), you need to run `scripts/fabricate`.
-The job of `fabricate` is to bundle the C files and place them in all the right places so that the language specific build tools can find them when building the respective bindings.
+Before any of the bindings can be built and after every change to the core files (in `src/`), you need to run `scripts/fabricate`.
+The job of `fabricate` is to bundle the C++ files and place them in all the right places so that the language specific build tools can find them when building the respective bindings.
 `fabricate` also updates the binding metadata to include version information and any other changes that need to be made from one build to the next.
 It is harmless to run `fabricate` too often, but forgetting to run it means you might be using stale sources.
 

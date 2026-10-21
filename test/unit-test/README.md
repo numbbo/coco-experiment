@@ -2,11 +2,11 @@
 
 ## Conventions
 
-We use the following naming convention for unit test files: you add a prefix `test_` to the name of the file that you are testing (e.g. `coco_utilities.c` ->
-`test_coco_utilities.c`). 
+We use the following naming convention for unit test files: you add a prefix `test_` to the name of the file that you are testing (e.g. `coco_utilities.cpp` ->
+`test_coco_utilities.cpp`). 
 
-All test files should be included in this folder. Each test file should contain a central function, in which the tests from the file are called (e.g. `test_all_coco_utilities` in `test_coco_utilities.c`).
-A specific test should be testing a small part of the code. See `test_coco_utilities.c` for some test examples.
+All test files should be included in this folder. Each test file should contain a central function, in which the tests from the file are called (e.g. `test_all_coco_utilities` in `test_coco_utilities.cpp`).
+A specific test should be testing a small part of the code. See `test_coco_utilities.cpp` for some test examples.
 
 ## Running the Tests
 

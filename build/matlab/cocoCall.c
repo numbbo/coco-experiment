@@ -1,10 +1,13 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
 
 #include "coco.h"
-#include "coco.c"
+
+/* Not part of coco.h but exported by the COCO library */
+double coco_problem_get_best_value(const coco_problem_t *problem);
 
 #include "mex.h"
 

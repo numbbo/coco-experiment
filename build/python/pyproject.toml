@@ -64,7 +64,7 @@ include = [
     "/src/cocoex/*.py",
     "/src/cocoex/*.pyx",
     "/src/cocoex/coco.h",
-    "/src/cocoex/coco.c",
+    "/src/cocoex/coco.cpp",
     "/tests",
     "/scripts",
     "/meson.build",

@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
 project(COCOGoldenTest
         DESCRIPTION "COCO golden master tests"
-        LANGUAGES C)
+        LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Disable floating-point contraction (FMA), see src/coco_fp_contract.h
-include(CheckCCompilerFlag)
-check_c_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
 if(COCO_HAVE_FP_CONTRACT_OFF)
   add_compile_options(-ffp-contract=off)
 endif()
@@ -14,9 +17,9 @@ include(CTest)
 
 find_library(LIBM m)
 
-## The library is built separately from the driver so that the driver only
-## sees the public C interface.
-add_library(coco STATIC coco.c coco.h)
+## The library is built separately from the driver, which is written in C, so
+## that the driver only sees the public C interface.
+add_library(coco STATIC coco.cpp coco.h)
 target_include_directories(coco PUBLIC .)
 if(LIBM)
   target_link_libraries(coco PUBLIC ${LIBM})
@@ -25,7 +28,7 @@ endif()
 ## pow(2, x) by exp2(x), which can change results in the last bit. Always
 ## optimize like the Python package does (meson debugoptimized) so that the
 ## results do not depend on the build type.
-if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(coco PRIVATE -O2)
 endif()
 

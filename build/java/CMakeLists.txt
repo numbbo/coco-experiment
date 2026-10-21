@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
  
-project(COCO LANGUAGES C)
+project(COCO LANGUAGES C CXX)
+
+## The COCO library is C++, the JNI glue code is C.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Disable floating-point contraction (FMA), see src/coco_fp_contract.h
-include(CheckCCompilerFlag)
-check_c_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
 if(COCO_HAVE_FP_CONTRACT_OFF)
   add_compile_options(-ffp-contract=off)
 endif()
@@ -22,6 +26,6 @@ add_jar(coco
   Suite.java
   GENERATE_NATIVE_HEADERS coco-native)
 
-add_library(CocoJNI SHARED CocoJNI.c)
+add_library(CocoJNI SHARED CocoJNI.c coco.cpp)
 target_link_libraries(CocoJNI PRIVATE coco-native)
 target_include_directories(CocoJNI PRIVATE ${JNI_INCLUDE_DIRS})

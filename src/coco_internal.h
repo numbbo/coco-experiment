@@ -259,6 +259,18 @@ struct coco_suite_s {
 static void bbob_evaluate_gradient(coco_problem_t *problem, const double *x, double *y);
 
 /***********************************************************************************************************/
+/**
+ * @name Functions used by language bindings that are not part of coco.h
+ *
+ * They are declared here so that they keep C linkage when COCO is compiled as C++.
+ */
+/**@{*/
+coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance);
+double coco_problem_get_best_value(const coco_problem_t *problem);
+double coco_problem_get_final_target_fvalue1(const coco_problem_t *problem);
+/**@}*/
+
+/***********************************************************************************************************/
 
 #ifdef __cplusplus
 }

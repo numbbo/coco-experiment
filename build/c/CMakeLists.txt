@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.19)
 project(coco
   DESCRIPTION "Example COCO experiment"
-  LANGUAGES C)
+  LANGUAGES C CXX)
+
+## The COCO library is C++, the example experiment is C.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Disable floating-point contraction (FMA), see src/coco_fp_contract.h
-include(CheckCCompilerFlag)
-check_c_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
 if(COCO_HAVE_FP_CONTRACT_OFF)
   add_compile_options(-ffp-contract=off)
 endif()
@@ -14,7 +18,7 @@ include(CTest)
 find_library(MATH_LIBRARY m)
 
 ## Add core coco experiment library to build
-add_library(coco STATIC coco.c coco.h)
+add_library(coco STATIC coco.cpp coco.h)
 target_include_directories(coco PUBLIC .)
 if(MATH_LIBRARY)
     target_link_libraries(coco PUBLIC ${MATH_LIBRARY})

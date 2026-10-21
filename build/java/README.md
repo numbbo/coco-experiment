@@ -38,7 +38,7 @@ for calling coco C funtions and an example of testing a java optimizer on
 the coco benchmark
 
 Files:
-- `CocoJNI.java`: class declaring native methods (methods that have to be written in C and that will call C functions of `coco.c`)
+- `CocoJNI.java`: class declaring native methods (methods that have to be written in C and that will call C functions of `coco.cpp`)
 - `CocoJNI.h` & `CocoJNI.c`: files defining native methods in CocoJNI.java.
   These two files will be used to generate the shared library
 - `Benchmark.java`, `Problem.java`, `Suite.java`, `Observer.java`: Java classes Benchmark, Problem, Suite, Observer

@@ -16,7 +16,7 @@
 #include <stddef.h>
 
 /* Definitions of COCO_PATH_MAX, coco_path_separator, HAVE_GFA and HAVE_STAT heavily used by functions in
- * coco_utilities.c */
+ * coco_utilities.cpp */
 #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW64__) || defined(__CYGWIN__)
 #include <windows.h>
 static const char *coco_path_separator = "\\";

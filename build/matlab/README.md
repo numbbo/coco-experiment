@@ -14,7 +14,7 @@ the following is lacking:
 - Python is installed in the right version (>=2.6). We recommend using the Anaconda package
   (https://www.continuum.io) for installing python.
   
-- A C compiler, like `gcc`, which is invoked by `mex`. For details handling non-supported versions,
+- A C and C++ compiler, like `gcc` and `g++`, which are invoked by `mex`. For details handling non-supported versions,
   in particular when using `gcc` with MATLAB versions before 2015b, please follow
   http://gnumex.sourceforge.net/oldDocumentation/index.html
 
@@ -56,7 +56,8 @@ Details and Known Issues
   ```
   #define char16_t UINT16_T
   ```
-  right before the `#include "mex.h"` lines of the corresponding C files. This holds
+  right before the `#include "mex.h"` lines of the corresponding C files (such as `cocoCall.c`,
+  but not `coco.cpp`, where `char16_t` is a C++ keyword). This holds
   especially for the more complicated example in `../../examples/bbob-biobj-matlab-smsemoa/`.
 
 

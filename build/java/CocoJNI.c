@@ -12,7 +12,6 @@
 #include <jni.h>
 
 #include "coco.h"
-#include "coco.c"
 #include "CocoJNI.h"
 
 /*

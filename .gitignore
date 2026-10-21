@@ -6,6 +6,7 @@
 .ipynb_checkpoints/
 REVISION
 VERSION
+VERSION.txt
 __pycache__
 *.egg-info/
 .vscode/*
@@ -15,6 +16,7 @@ __pycache__
 build/**/bbob2009_testcases.txt
 build/**/bbob2009_testcases2.txt
 build/**/coco.[ch]
+build/**/coco.cpp
 build/**/exdata/
 build/**/ppdata/
 build/c/build/
@@ -44,8 +46,10 @@ build/rust/target/
 data/
 dist/
 examples/*/coco.[ch]
-src/coco_version.c
+examples/*/coco.cpp
+src/coco_version.cpp
 test/**/coco.[ch]
+test/**/coco.cpp
 test/unit-test/build/
 test/golden-test/build/
 test/unit-test/exdata/

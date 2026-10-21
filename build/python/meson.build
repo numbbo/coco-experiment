@@ -36,9 +36,8 @@ if m_dep.found()
 endif
 
 ################################################################################
-## Configure C++ Compiler
-##
-## NOTE: Currently unused, but will be once we merge the cpp branch
+## Configure C++ Compiler (used for the COCO library itself, the Cython
+## extensions are C)
 cpp = meson.get_compiler('cpp')
 cpp_args = cpp.get_supported_arguments('-Wno-unused-but-set-variable', '-Wno-unused-function', '-ffp-contract=off')
 add_project_arguments(cpp_args, language: 'cpp')
@@ -75,7 +74,7 @@ py3.install_sources(python_sources, subdir: 'cocoex')
 
 # Static library used by both extensions
 inc_cocoex = include_directories('src/cocoex')
-lib_cocoex = static_library('cocoex', 'src/cocoex/coco.c')
+lib_cocoex = static_library('cocoex', 'src/cocoex/coco.cpp')
 dep_cocoex = declare_dependency(link_with: lib_cocoex, include_directories: inc_cocoex)
 
 py3.extension_module(
