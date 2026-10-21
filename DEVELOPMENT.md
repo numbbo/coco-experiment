@@ -140,26 +140,47 @@ git push --tags
 
 Note: You can use suffixes for pre-releases such as version 2.6.99rc4 (release candidate 4) or 2.6.99b1 (beta 1).
 
-Once you push a new tag to Github, it will trigger a CI build with the new version number. 
-Once that finishes successfully, you can find the properly built artifacts on the [Actions](https://github.com/numbbo/coco-experiment/actions) tab on Github.
+Pushing a tag starting with `v` triggers the `tag-release` workflow (`.github/workflows/tag_release.yml`), which builds everything with the new version number and publishes it.
+You can follow its progress on the [Actions](https://github.com/numbbo/coco-experiment/actions/workflows/tag_release.yml) tab on Github.
 
 
 ### Python
 
-The Python artifacts are contained in the build arifacts `dist-python-sdist` and `dist-pythobn-wheels`.
-Download and unpack them to an empty directory (assumed to be `dist/` here).
-Now we are ready to upload the built source package and wheels to PyPI using [twine][twine]:
+The workflow builds the Python source package and wheels for all platforms and Python versions in the matrix of `.github/workflows/test_python.yml` and tests the wheels.
+It then publishes the source package and wheels to [PyPI](https://pypi.org/project/coco-experiment/) using [trusted publishing][trusted-publishing], so no PyPI token or manual upload is needed.
+Publishing runs in the `release` environment; if that environment requires approval, approve the deployment on the workflow run page once the wheels have been built and tested.
 
-```sh
-twine upload dist/*
-```
+Once the workflow has finished, check [PyPI](https://pypi.org/project/coco-experiment/), it should list the new release.
 
-Thats it!
-Check [PyPI](https://pypi.org/project/coco-experiment/), it should list the new release.
+[trusted-publishing]: https://docs.pypi.org/trusted-publishers/
 
-[twine]: https://twine.readthedocs.io/en/stable/
 
+### Building additional wheels for an existing release
+
+PyPI does not allow replacing files of a release, but it does allow adding new ones.
+This lets you add wheels for new Python versions or platforms to a release after the fact.
+
+1. If the new Python versions or platforms are not built for new releases yet, add them to the `python` (and, if needed, `buildplat`) matrix of the `python-wheels-build` job in `.github/workflows/test_python.yml`.
+   Also add the new Python versions to the `python-wheels-test` and `python-wheels-example` jobs so the new wheels get tested.
+   Merge the change into `main`.
+
+1. Start the `tag-release` workflow manually for the release tag, either from the [Actions](https://github.com/numbbo/coco-experiment/actions/workflows/tag_release.yml) tab (*Run workflow*, branch `main`, tag e.g. `v2.8.2`) or with the [GitHub CLI](https://cli.github.com/):
+
+   ```sh
+   gh workflow run tag_release.yml -f tag=vX.Y.Z
+   ```
+
+   The workflow file is taken from `main`, the release itself is identified by the `tag` input.
+
+1. If the `release` environment requires approval, approve the deployment once the wheels have been built and tested.
+
+Instead of rebuilding the source package, the workflow downloads the sdist of that release from PyPI (checking its SHA256 digest) and builds all wheels in the matrix from it.
+Before publishing, it drops every wheel PyPI already has for that version, so only the new wheels are uploaded to PyPI and attached to the existing GitHub release.
+If nothing is new, nothing is uploaded.
+
+Wheels count as the same if they share the Python and ABI tag and their platform tags only differ in the `manylinux`, `musllinux` or `macosx` version.
+The release may have been built with an older `cibuildwheel` that used, e.g., `musllinux_1_1` instead of `musllinux_1_2`, and such a rebuilt wheel is not uploaded a second time.
 
 ### Other languages
 
-TBD - probably as downloads on the new website.
+The workflow attaches the source packages for C, Java, Matlab, Octave and Rust (`cocoex-<language>-X.Y.Z.zip`), together with the Python source package and wheels, to a [GitHub release](https://github.com/numbbo/coco-experiment/releases) for the tag.
