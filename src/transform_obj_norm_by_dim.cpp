@@ -26,6 +26,9 @@ struct transform_obj_norm_by_dim_t final : public coco_problem_transformed_t {
 
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**

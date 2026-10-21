@@ -48,6 +48,13 @@ struct transform_vars_x_hat_generic_t final : public coco_problem_transformed_t 
     coco_evaluate_function(inner_problem.get(), x_hat.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief Divides by twice the sign. */
+  bool inverse(const double *inner_x, double *x) const override {
+    for (size_t i = 0; i < number_of_variables; ++i)
+      x[i] = inner_x[i] / (2.0 * sign_vector[i]);
+    return true;
+  }
 };
 
 /**

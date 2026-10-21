@@ -137,6 +137,18 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
     }
     inner_problem->evaluate_constraint(asymmetric_x.data(), y, update_counter);
   }
+
+  /** @brief Inverts tasy numerically (with Brent's method). */
+  bool inverse(const double *inner_x, double *x) const override {
+    tasy_data d;
+    d.beta = beta;
+    d.n = number_of_variables;
+    for (size_t i = 0; i < number_of_variables; ++i) {
+      d.i = i;
+      x[i] = tasy_uv_inv(inner_x[i], &d);
+    }
+    return true;
+  }
 };
 
 /**
@@ -144,65 +156,4 @@ struct transform_vars_asymmetric_t final : public coco_problem_transformed_t {
  */
 static coco_problem_ptr_t transform_vars_asymmetric(coco_problem_ptr_t inner_problem, const double beta) {
   return std::make_unique<transform_vars_asymmetric_t>(std::move(inner_problem), beta);
-}
-
-/**
- * @brief Returns the asymmetric transformation behind the given problem pointer.
- */
-static transform_vars_asymmetric_t *transform_vars_asymmetric_get(coco_problem_t *problem) {
-  assert(dynamic_cast<transform_vars_asymmetric_t *>(problem) != nullptr);
-  return static_cast<transform_vars_asymmetric_t *>(problem);
-}
-
-/**
- * @brief Applies the inverse of the asymmetric transformation tasy to the initial solution.
- *
- *        Takes xopt as input to check the solution remains in the bounds
- *        If not, a curve search is performed
- *        xopt is needed because transform_vars_shift is not yet called
- *        in f_{function}_rotated_c_linear_cons_bbob_problem_allocate
- */
-static void transform_inv_initial_asymmetric(coco_problem_t *problem, const double *xopt) {
-  size_t j;
-  bool is_in_bounds;
-  double di;
-  double xi;
-  double halving_factor = .5;
-
-  tasy_data d;
-
-  std::vector<double> sol(problem->number_of_variables);
-
-  d.beta = transform_vars_asymmetric_get(problem)->beta;
-  d.n = problem->number_of_variables;
-
-  j = 0;
-  while (1) {
-
-    for (size_t i = 0; i < problem->number_of_variables; ++i) {
-      d.i = i;
-      di = tasy_uv_inv(problem->initial_solution[i] * pow(halving_factor, (double)(long)j), &d);
-      xi = di + xopt[i];
-      is_in_bounds = (-5.0 < xi && xi < 5.0);
-      /* Line search for the inverse-transformed feasible initial solution
-         to remain within the bounds
-        */
-      if (!is_in_bounds) {
-        j = j + 1;
-        break;
-      }
-      sol[i] = di;
-    }
-    if (!is_in_bounds && !coco_is_nan(di)) {
-      continue;
-    } else {
-      break;
-    }
-  }
-  if (!coco_vector_contains_nan(sol.data(), problem->number_of_variables)) {
-    for (size_t i = 0; i < problem->number_of_variables; ++i) {
-      problem->initial_solution[i] = sol[i];
-    }
-  }
-
 }

@@ -29,6 +29,9 @@ struct logger_toy_t final : public coco_problem_transformed_t {
   logger_toy_t(observer_toy_t &observer, coco_problem_ptr_t inner);
 
   void evaluate_function(const double *x, double *y) override;
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**

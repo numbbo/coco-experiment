@@ -124,6 +124,13 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
 
   /** @brief Gradients are not supported yet (TODO?). */
   void evaluate_gradient(const double *x, double *y) override { coco_problem_s::evaluate_gradient(x, y); }
+
+  /** @brief Rounding to the integers is not invertible. */
+  bool inverse(const double *inner_x, double *x) const override {
+    (void)inner_x;
+    (void)x;
+    return false;
+  }
 };
 
 /**

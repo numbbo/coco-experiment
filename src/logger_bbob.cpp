@@ -112,6 +112,9 @@ private:
   /** @brief Outputs a formatted line to a data file. */
   void output(FILE *data_file, const double *x, double logged_value, double logged_best_value,
               const double *constraints) const;
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**

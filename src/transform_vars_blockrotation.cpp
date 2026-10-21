@@ -63,6 +63,12 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
       }
     }
   }
+
+  /** @brief Multiplies by the transpose of the (orthogonal) rotation. */
+  bool inverse(const double *inner_x, double *x) const override {
+    B.multiply_transposed(inner_x, x);
+    return true;
+  }
 };
 
 static coco_problem_ptr_t transform_vars_blockrotation(coco_problem_ptr_t inner_problem,

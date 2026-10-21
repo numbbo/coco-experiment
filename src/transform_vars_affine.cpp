@@ -127,6 +127,17 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     for (size_t i = 0; i < inner_problem->number_of_variables; ++i)
       y[i] = gradient[i];
   }
+
+  /** @brief Computes M^T (inner_x - b), which is the inverse only if M is orthogonal. */
+  bool inverse(const double *inner_x, double *x) const override {
+    if (!M.is_orthogonal())
+      return false;
+    std::vector<double> shifted_x(inner_problem->number_of_variables);
+    for (size_t i = 0; i < inner_problem->number_of_variables; ++i)
+      shifted_x[i] = inner_x[i] - b[i];
+    M.multiply_transposed(shifted_x.data(), x);
+    return true;
+  }
 };
 
 /**

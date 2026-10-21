@@ -60,6 +60,9 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
       y[i] *= factor;
     }
   }
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**

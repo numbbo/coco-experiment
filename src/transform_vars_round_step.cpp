@@ -62,6 +62,13 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
     coco_evaluate_function(inner_problem.get(), rounded_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief Rounding is not invertible. */
+  bool inverse(const double *inner_x, double *x) const override {
+    (void)inner_x;
+    (void)x;
+    return false;
+  }
 };
 
 /**

@@ -92,7 +92,45 @@
 #include "f_rastrigin.cpp"
 #include "f_sphere.cpp"
 
-#include "transform_vars_composed.cpp"
+#include "transform_vars_asymmetric.cpp"
+#include "transform_vars_oscillate.cpp"
+
+/**
+ * @brief Maps the initial solution of the base problem through the inverse of the transformations on top of it.
+ *
+ * If the result plus xopt is not within (-5, 5) in every coordinate, the initial solution of the base problem
+ * is halved until it is (xopt is needed because transform_vars_shift is applied afterwards). The initial
+ * solution is left unchanged if the result contains NaN.
+ */
+static void cons_bbob_inverse_initial_solution(coco_problem_t *problem, const double *xopt) {
+  const size_t n = problem->number_of_variables;
+  const double halving_factor = .5;
+  std::vector<double> halved(n), inverted(n), sol(n);
+  bool is_in_bounds = true;
+  double di = 0.0;
+
+  for (size_t j = 0;; ++j) {
+    for (size_t i = 0; i < n; ++i)
+      halved[i] = problem->initial_solution[i] * pow(halving_factor, (double)(long)j);
+    if (!problem->from_base_coordinates(halved.data(), inverted.data()))
+      coco_error("cons_bbob_inverse_initial_solution(): the transformations of %s are not invertible",
+                 problem->problem_id.c_str());
+    for (size_t i = 0; i < n; ++i) {
+      di = inverted[i];
+      const double xi = di + xopt[i];
+      is_in_bounds = (-5.0 < xi && xi < 5.0);
+      if (!is_in_bounds)
+        break;
+      sol[i] = di;
+    }
+    if (is_in_bounds || coco_is_nan(di))
+      break;
+  }
+  if (!coco_vector_contains_nan(sol.data(), n)) {
+    for (size_t i = 0; i < n; ++i)
+      problem->initial_solution[i] = sol[i];
+  }
+}
 
 /**
  * @brief Calculates the objective function type based on the value
@@ -266,7 +304,7 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem->evaluations_constraints = 0;
 
   problem = transform_vars_oscillate(std::move(problem));
-  transform_inv_initial_oscillate(problem.get(), xopt);
+  cons_bbob_inverse_initial_solution(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
@@ -328,7 +366,7 @@ static coco_problem_ptr_t f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocat
   problem->evaluations_constraints = 0;
 
   problem = transform_vars_oscillate(std::move(problem));
-  transform_inv_initial_oscillate(problem.get(), xopt);
+  cons_bbob_inverse_initial_solution(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin .
@@ -452,7 +490,7 @@ f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t
   problem->evaluations_constraints = 0;
 
   problem = transform_vars_oscillate(std::move(problem));
-  transform_inv_initial_oscillate(problem.get(), xopt);
+  cons_bbob_inverse_initial_solution(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
@@ -515,7 +553,7 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   problem->evaluations_constraints = 0;
 
   problem = transform_vars_asymmetric(std::move(problem), 0.2);
-  transform_inv_initial_asymmetric(problem.get(), xopt);
+  cons_bbob_inverse_initial_solution(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
@@ -638,7 +676,7 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
 
   problem = transform_vars_asymmetric(std::move(problem), 0.2);
   problem = transform_vars_oscillate(std::move(problem));
-  transform_inv_initial_composed(problem.get(), xopt);
+  cons_bbob_inverse_initial_solution(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
@@ -701,7 +739,7 @@ static coco_problem_ptr_t f_rastrigin_rotated_c_linear_cons_bbob_problem_allocat
 
   problem = transform_vars_asymmetric(std::move(problem), 0.2);
   problem = transform_vars_oscillate(std::move(problem));
-  transform_inv_initial_composed(problem.get(), xopt);
+  cons_bbob_inverse_initial_solution(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.

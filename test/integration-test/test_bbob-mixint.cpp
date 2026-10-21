@@ -121,8 +121,8 @@ void check_discretization_single(const char *suite_name, const char *suite_optio
     }
 
     /* Compute and compare the optima */
-    problem_tmp = coco_problem_transformed_get_inner_problem(problem_disc);
-    problem_cont = coco_problem_transformed_get_inner_problem(problem_tmp);
+    problem_tmp = coco_problem_as_transformed(problem_disc)->inner_problem.get();
+    problem_cont = coco_problem_as_transformed(problem_tmp)->inner_problem.get();
     xopt_cont = problem_cont->best_parameter.data();
     fopt_cont = problem_cont->best_value.data();
     fopt_disc = DBL_MAX;
@@ -238,10 +238,10 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     /* Check whether the two extreme points are equal */
     problem1_disc = coco_problem_as_stacked(problem_disc)->problem1.get();
     problem2_disc = coco_problem_as_stacked(problem_disc)->problem2.get();
-    problem1_tmp = coco_problem_transformed_get_inner_problem(problem1_disc);
-    problem2_tmp = coco_problem_transformed_get_inner_problem(problem2_disc);
-    problem1_cont = coco_problem_transformed_get_inner_problem(problem1_tmp);
-    problem2_cont = coco_problem_transformed_get_inner_problem(problem2_tmp);
+    problem1_tmp = coco_problem_as_transformed(problem1_disc)->inner_problem.get();
+    problem2_tmp = coco_problem_as_transformed(problem2_disc)->inner_problem.get();
+    problem1_cont = coco_problem_as_transformed(problem1_tmp)->inner_problem.get();
+    problem2_cont = coco_problem_as_transformed(problem2_tmp)->inner_problem.get();
     f_ext1_cont = problem1_cont->best_value[0];
     f_ext2_cont = problem2_cont->best_value[0];
 

@@ -42,6 +42,15 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
     coco_evaluate_function(inner_problem.get(), scaled_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief Divides by the factor. */
+  bool inverse(const double *inner_x, double *x) const override {
+    if (factor == 0.)
+      return false;
+    for (size_t i = 0; i < number_of_variables; ++i)
+      x[i] = inner_x[i] / factor;
+    return true;
+  }
 };
 
 /**

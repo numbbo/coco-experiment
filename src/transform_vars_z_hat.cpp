@@ -56,6 +56,16 @@ struct transform_vars_z_hat_t final : public coco_problem_transformed_t {
     coco_evaluate_function(inner_problem.get(), z.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief Solves for x by forward substitution. */
+  bool inverse(const double *inner_x, double *x) const override {
+    if (number_of_variables == 0)
+      return true;
+    x[0] = inner_x[0];
+    for (size_t i = 1; i < number_of_variables; ++i)
+      x[i] = inner_x[i] - 0.25 * (x[i - 1] - 2.0 * fabs(xopt[i - 1]));
+    return true;
+  }
 };
 
 /**

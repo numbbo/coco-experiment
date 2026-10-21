@@ -293,6 +293,17 @@ public:
     }
   }
 
+  /** @brief Computes y = M^T x; x and y must not overlap. */
+  void multiply_transposed(const double *x, double *y) const {
+    for (size_t j = 0; j < number_of_columns_; ++j)
+      y[j] = 0;
+    for (size_t i = 0; i < number_of_rows_; ++i) {
+      const double *current_row = row(i);
+      for (size_t j = 0; j < number_of_columns_; ++j)
+        y[j] += current_row[j] * x[i];
+    }
+  }
+
 private:
   size_t number_of_rows_ = 0;
   size_t number_of_columns_ = 0;
@@ -363,6 +374,16 @@ public:
       y[i] = 0;
       for (size_t j = first_column_[i]; j < first_column_[i] + block_size_[i]; ++j)
         y[i] += in_block(i, j - first_column_[i]) * x[j];
+    }
+  }
+
+  /** @brief Computes y = B^T x; x and y must not overlap. */
+  void multiply_transposed(const double *x, double *y) const {
+    for (size_t j = 0; j < dimension(); ++j)
+      y[j] = 0;
+    for (size_t i = 0; i < dimension(); ++i) {
+      for (size_t j = first_column_[i]; j < first_column_[i] + block_size_[i]; ++j)
+        y[j] += in_block(i, j - first_column_[i]) * x[i];
     }
   }
 

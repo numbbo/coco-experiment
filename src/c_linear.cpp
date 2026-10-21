@@ -90,6 +90,17 @@ struct c_linear_t final : public coco_problem_transformed_t {
 
     inner_problem->evaluate_constraint(transformed_x.data(), y, update_counter);
   }
+
+  /** @brief Inverts the transformation of the constraint; not possible if a gradient component is 0. */
+  bool inverse(const double *inner_x, double *x) const override {
+    const double factor = x_shift_factor / gradient_norm;
+    for (size_t i = 0; i < number_of_variables; ++i) {
+      if (gradient[i] == 0.0)
+        return false;
+      x[i] = inner_x[i] / gradient[i] + factor * gradient[i];
+    }
+    return true;
+  }
 };
 
 /**

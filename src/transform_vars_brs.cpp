@@ -53,6 +53,18 @@ struct transform_vars_brs_t final : public coco_problem_transformed_t {
     coco_evaluate_function(inner_problem.get(), scaled_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
+
+  /** @brief Divides by the factor; the factor is positive, so inner_x has the sign of x. */
+  bool inverse(const double *inner_x, double *x) const override {
+    for (size_t i = 0; i < number_of_variables; ++i) {
+      double factor = pow(sqrt(10.0), (double)(long)i / ((double)(long)number_of_variables - 1.0));
+      if (inner_x[i] > 0.0 && i % 2 == 0) {
+        factor *= 10.0;
+      }
+      x[i] = inner_x[i] / factor;
+    }
+    return true;
+  }
 };
 
 /**

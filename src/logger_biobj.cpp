@@ -257,6 +257,9 @@ private:
 
   /** @brief Outputs the final nondominated solutions to the archive file. */
   void write_final_archive();
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**

@@ -78,6 +78,15 @@ struct coco_problem_s {
   virtual void recommend_solution(const double *x);
 
   /**
+   * @brief Maps base_x from the coordinates of the base problem to the coordinates of this problem and stores
+   * the result in x. Returns false if this is not possible.
+   *
+   * The base problem is the first problem in the chain of inner problems that is not a transformation, for a
+   * problem that is not a transformation it is the problem itself (and x is a copy of base_x).
+   */
+  virtual bool from_base_coordinates(const double *base_x, double *x) const;
+
+  /**
    * @brief Sets the name and, for every variable, the same region of interest and best parameter. Assumes a
    * single-objective unconstrained problem with only continuous variables.
    */
@@ -164,8 +173,20 @@ struct coco_problem_transformed_s : public coco_problem_s {
   void evaluate_constraint(const double *x, double *y, int update_counter) override;
   void evaluate_gradient(const double *x, double *y) override;
   void recommend_solution(const double *x) override;
+  bool from_base_coordinates(const double *base_x, double *x) const override;
+
+  /**
+   * @brief Maps inner_x from the coordinates of the inner problem to the coordinates of this problem, i.e. inverts
+   * the transformation of the decision values, and stores the result in x. Returns false if the transformation
+   * is not invertible.
+   */
+  virtual bool inverse(const double *inner_x, double *x) const = 0;
 
   coco_problem_ptr_t inner_problem; /**< @brief The inner problem, owned by this problem */
+
+protected:
+  /** @brief The inverse of a transformation that does not change the decision values. */
+  bool identity_inverse(const double *inner_x, double *x) const;
 };
 using coco_problem_transformed_t = coco_problem_transformed_s;
 

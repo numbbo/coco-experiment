@@ -40,6 +40,9 @@ struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
     *(y) = *(y)*uniform_noise + 1.01 * tol;
     *(y) = *(y) + fopt + boundary_penalty(x);
   }
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**

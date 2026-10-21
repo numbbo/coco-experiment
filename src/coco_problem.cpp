@@ -148,6 +148,11 @@ void coco_problem_s::recommend_solution(const double *x) {
   coco_warning("coco_recommend_solution(): No recommend solution function implemented for problem %s",
                problem_id.c_str());
 }
+
+bool coco_problem_s::from_base_coordinates(const double *base_x, double *x) const {
+  std::copy(base_x, base_x + number_of_variables, x);
+  return true;
+}
 /**@}*/
 /***********************************************************************************************************/
 
@@ -602,15 +607,6 @@ static coco_problem_transformed_t *coco_problem_as_transformed(const coco_proble
 }
 
 /**
- * @brief Returns the inner problem of the transformed problem.
- */
-static coco_problem_t *coco_problem_transformed_get_inner_problem(const coco_problem_t *problem) {
-  coco_problem_transformed_t *transformed = coco_problem_as_transformed(problem);
-  assert(transformed->inner_problem != nullptr);
-  return transformed->inner_problem.get();
-}
-
-/**
  * @brief Constructs a transformed problem that wraps the inner_problem.
  *
  * By default all methods will dispatch to the inner_problem. A prefix is prepended to the problem name
@@ -648,6 +644,19 @@ void coco_problem_transformed_s::evaluate_gradient(const double *x, double *y) {
  * @brief Calls the coco_recommend_solution function on the inner problem.
  */
 void coco_problem_transformed_s::recommend_solution(const double *x) { coco_recommend_solution(inner_problem.get(), x); }
+
+/**
+ * @brief Maps base_x to the coordinates of the inner problem and from there to the coordinates of this problem.
+ */
+bool coco_problem_transformed_s::from_base_coordinates(const double *base_x, double *x) const {
+  std::vector<double> inner_x(inner_problem->number_of_variables);
+  return inner_problem->from_base_coordinates(base_x, inner_x.data()) && inverse(inner_x.data(), x);
+}
+
+bool coco_problem_transformed_s::identity_inverse(const double *inner_x, double *x) const {
+  std::copy(inner_x, inner_x + number_of_variables, x);
+  return true;
+}
 
 /**
  * @brief Frees the transformed problem but not its inner problem, which is returned instead.

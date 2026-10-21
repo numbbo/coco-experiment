@@ -55,6 +55,9 @@ struct transform_obj_shift_t final : public coco_problem_transformed_t {
 
     inner_problem->evaluate_gradient(x, y);
   }
+
+  /** @brief The decision values are not transformed. */
+  bool inverse(const double *inner_x, double *x) const override { return identity_inverse(inner_x, x); }
 };
 
 /**

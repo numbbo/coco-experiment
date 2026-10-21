@@ -102,6 +102,13 @@ struct transform_vars_shift_t final : public coco_problem_transformed_t {
     }
     inner_problem->evaluate_gradient(shifted_x.data(), y);
   }
+
+  /** @brief Adds the offset. */
+  bool inverse(const double *inner_x, double *x) const override {
+    for (size_t i = 0; i < number_of_variables; ++i)
+      x[i] = inner_x[i] + offset[i];
+    return true;
+  }
 };
 
 /**

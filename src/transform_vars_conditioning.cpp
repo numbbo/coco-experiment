@@ -70,6 +70,13 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
       y[i] = gradient[i];
 
   }
+
+  /** @brief Divides by the scaling coefficients. */
+  bool inverse(const double *inner_x, double *x) const override {
+    for (size_t i = 0; i < number_of_variables; ++i)
+      x[i] = inner_x[i] / pow(alpha, 0.5 * (double)(long)i / ((double)(long)number_of_variables - 1.0));
+    return true;
+  }
 };
 
 /**
