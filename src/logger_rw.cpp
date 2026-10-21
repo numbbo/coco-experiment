@@ -49,72 +49,78 @@ struct logger_rw_data_t {
   int log_discrete_as_int; /**< @brief Whether to output discrete variables in int or double format. */
 };
 
-static logger_rw_data_t *logger_rw_get_data(const coco_problem_t *problem);
+/**
+ * @brief The rw logger, which wraps the observed problem.
+ */
+struct logger_rw_t final : public coco_problem_transformed_t {
+  logger_rw_data_t data;
+
+  logger_rw_t(coco_problem_ptr_t inner, std::string_view observer_name)
+      : coco_problem_transformed_t(std::move(inner), observer_name), data() {}
+
+  ~logger_rw_t() override;
+
+  void evaluate_function(const double *x, double *y) override;
+};
 
 /**
  * @brief Evaluates the function and constraints and outputs the information according to the
  * observer options.
  */
-static void logger_rw_evaluate(coco_problem_t *problem, const double *x, double *y) {
-
-  logger_rw_data_t *logger;
-  coco_problem_t *inner_problem;
-  std::vector<double> constraints(problem->number_of_constraints);
+void logger_rw_t::evaluate_function(const double *x, double *y) {
+  std::vector<double> constraints(number_of_constraints);
   size_t i;
   int log_this_time = 1;
   time_t start, end;
 
-  logger = logger_rw_get_data(problem);
-  inner_problem = coco_problem_transformed_get_inner_problem(problem);
-
   /* Time the evaluations */
-  if (logger->log_time)
+  if (data.log_time)
     time(&start);
 
   /* Evaluate the objective(s) */
-  coco_evaluate_function(inner_problem, x, y);
-  logger->num_func_evaluations++;
+  coco_evaluate_function(inner_problem.get(), x, y);
+  data.num_func_evaluations++;
 
-  if (problem->number_of_objectives == 1)
-    logger->current_value = y[0];
+  if (number_of_objectives == 1)
+    data.current_value = y[0];
 
   /* Evaluate the constraints */
-  if (problem->number_of_constraints > 0)
+  if (number_of_constraints > 0)
     inner_problem->evaluate_constraint(x, constraints.data(), 0);
-  logger->num_cons_evaluations = problem->evaluations_constraints;
+  data.num_cons_evaluations = evaluations_constraints;
 
   /* Time the evaluations */
-  if (logger->log_time)
+  if (data.log_time)
     time(&end);
 
   /* Log to the output file */
-  if ((problem->number_of_objectives == 1) && (logger->current_value < logger->best_value))
-    logger->best_value = logger->current_value;
-  else if (problem->number_of_objectives == 1)
-    log_this_time = !logger->log_only_better;
-  if ((logger->num_func_evaluations == 1) || log_this_time) {
-    fprintf(logger->out_file, "%lu\t", (unsigned long)logger->num_func_evaluations);
-    fprintf(logger->out_file, "%lu\t", (unsigned long)logger->num_cons_evaluations);
-    for (i = 0; i < problem->number_of_objectives; i++)
-      fprintf(logger->out_file, "%+.*e\t", logger->precision_f, y[i]);
-    if (logger->log_vars) {
-      for (i = 0; i < problem->number_of_variables; i++) {
-        if ((i < problem->number_of_integer_variables) && (logger->log_discrete_as_int))
-          fprintf(logger->out_file, "%d\t", coco_double_to_int(x[i]));
+  if ((number_of_objectives == 1) && (data.current_value < data.best_value))
+    data.best_value = data.current_value;
+  else if (number_of_objectives == 1)
+    log_this_time = !data.log_only_better;
+  if ((data.num_func_evaluations == 1) || log_this_time) {
+    fprintf(data.out_file, "%lu\t", (unsigned long)data.num_func_evaluations);
+    fprintf(data.out_file, "%lu\t", (unsigned long)data.num_cons_evaluations);
+    for (i = 0; i < number_of_objectives; i++)
+      fprintf(data.out_file, "%+.*e\t", data.precision_f, y[i]);
+    if (data.log_vars) {
+      for (i = 0; i < number_of_variables; i++) {
+        if ((i < number_of_integer_variables) && (data.log_discrete_as_int))
+          fprintf(data.out_file, "%d\t", coco_double_to_int(x[i]));
         else
-          fprintf(logger->out_file, "%+.*e\t", logger->precision_x, x[i]);
+          fprintf(data.out_file, "%+.*e\t", data.precision_x, x[i]);
       }
     }
-    if (logger->log_cons) {
-      for (i = 0; i < problem->number_of_constraints; i++)
-        fprintf(logger->out_file, "%+.*e\t", logger->precision_g, constraints[i]);
+    if (data.log_cons) {
+      for (i = 0; i < number_of_constraints; i++)
+        fprintf(data.out_file, "%+.*e\t", data.precision_g, constraints[i]);
     }
     /* Log time in seconds */
-    if (logger->log_time)
-      fprintf(logger->out_file, "%.0f\t", difftime(end, start));
-    fprintf(logger->out_file, "\n");
+    if (data.log_time)
+      fprintf(data.out_file, "%.0f\t", difftime(end, start));
+    fprintf(data.out_file, "\n");
   }
-  fflush(logger->out_file);
+  fflush(data.out_file);
 }
 
 /**
@@ -129,27 +135,7 @@ static void logger_rw_free(logger_rw_data_t *logger) {
   }
 }
 
-/**
- * @brief The rw logger, which wraps the observed problem.
- */
-struct logger_rw_t final : public coco_problem_transformed_t {
-  logger_rw_data_t data;
-
-  logger_rw_t(coco_problem_t *inner_problem, const char *observer_name)
-      : coco_problem_transformed_t(inner_problem, observer_name), data() {}
-
-  ~logger_rw_t() override { logger_rw_free(&data); }
-
-  void evaluate_function(const double *x, double *y) override { logger_rw_evaluate(this, x, y); }
-};
-
-/**
- * @brief Returns the data of the logger.
- */
-static logger_rw_data_t *logger_rw_get_data(const coco_problem_t *problem) {
-  assert(dynamic_cast<const logger_rw_t *>(problem) != nullptr);
-  return &static_cast<logger_rw_t *>(const_cast<coco_problem_t *>(problem))->data;
-}
+logger_rw_t::~logger_rw_t() { logger_rw_free(&data); }
 
 /**
  * @brief Initializes the rw logger.
@@ -160,13 +146,14 @@ static logger_rw_data_t *logger_rw_get_data(const coco_problem_t *problem) {
  * is finalized.
  * - This reduces function calls.
  */
-static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inner_problem) {
+static coco_problem_ptr_t logger_rw(coco_observer_t *observer, coco_problem_ptr_t inner) {
+  coco_problem_t *inner_problem = inner.get(); /* Stays valid, the logger takes ownership of it */
 
-  logger_rw_t *problem;
+  std::unique_ptr<logger_rw_t> problem;
   logger_rw_data_t *logger_data;
   observer_rw_t *observer_data;
 
-  problem = new logger_rw_t(inner_problem, observer->observer_name.c_str());
+  problem = std::make_unique<logger_rw_t>(std::move(inner), observer->observer_name);
   logger_data = &problem->data;
   logger_data->num_func_evaluations = 0;
   logger_data->num_cons_evaluations = 0;
@@ -229,7 +216,6 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *inne
   if (logger_data->log_time)
     fprintf(logger_data->out_file, " | evaluation time (s)");
   fprintf(logger_data->out_file, "\n");
-
 
   return problem;
 }

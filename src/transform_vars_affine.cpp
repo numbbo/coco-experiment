@@ -24,9 +24,8 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
   const std::vector<double> b;
   std::vector<double> transformed_x; /**< @brief The transformed decision values */
 
-  transform_vars_affine_t(coco_problem_t *inner_problem, const double *M, const double *b,
-                          const size_t number_of_variables)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_affine"),
+  transform_vars_affine_t(coco_problem_ptr_t inner, const double *M, const double *b, const size_t number_of_variables)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_affine"),
         M(M, M + inner_problem->number_of_variables * number_of_variables),
         b(b, b + inner_problem->number_of_variables), transformed_x(inner_problem->number_of_variables) {
     size_t i, j;
@@ -36,7 +35,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
        The update takes place only if the best parameter or b are different than zero
        and the transformation matrix M is orthogonal.
     */
-    if (coco_problem_best_parameter_not_zero(inner_problem) ||
+    if (coco_problem_best_parameter_not_zero(inner_problem.get()) ||
         !coco_vector_is_zero(this->b.data(), inner_problem->number_of_variables)) {
       if (!coco_is_orthogonal(this->M.data(), this->number_of_variables, inner_problem->number_of_variables))
         coco_warning("transform_vars_affine(): rotation matrix is not orthogonal. Best parameter not updated");
@@ -75,7 +74,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     int is_feasible;
 
     if (inner_problem->number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem, x, y);
+      coco_evaluate_function(inner_problem.get(), x, y);
       return;
     }
 
@@ -85,7 +84,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     }
 
     transform(x);
-    coco_evaluate_function(inner_problem, transformed_x.data(), y);
+    coco_evaluate_function(inner_problem.get(), transformed_x.data(), y);
 
     if (number_of_constraints > 0) {
       std::vector<double> cons_values(number_of_constraints);
@@ -101,7 +100,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
    */
   void evaluate_constraint(const double *x, double *y, int update_counter) override {
     if (inner_problem->number_of_constraints == 0) {
-      coco_evaluate_constraint_optional_update(inner_problem, x, y, update_counter);
+      coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
       return;
     }
 
@@ -129,7 +128,7 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
     std::vector<double> gradient(inner_problem->number_of_variables, 0.0);
 
     transform(x);
-    bbob_evaluate_gradient(inner_problem, transformed_x.data(), y);
+    bbob_evaluate_gradient(inner_problem.get(), transformed_x.data(), y);
 
     /* grad_(f o g )(x), where g(x) = M * x + b, equals to
      * M^T * grad_f(M *x + b)
@@ -148,12 +147,12 @@ struct transform_vars_affine_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_affine(coco_problem_t *inner_problem, const double *M, const double *b,
-                                             const size_t number_of_variables) {
+static coco_problem_ptr_t transform_vars_affine(coco_problem_ptr_t inner_problem, const double *M, const double *b,
+                                                const size_t number_of_variables) {
   /*
    * TODOs:
    * - Calculate new smallest/largest values of interest?
    * - Resize bounds vectors if input and output dimensions do not match
    */
-  return new transform_vars_affine_t(inner_problem, M, b, number_of_variables);
+  return std::make_unique<transform_vars_affine_t>(std::move(inner_problem), M, b, number_of_variables);
 }

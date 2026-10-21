@@ -16,8 +16,8 @@ struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
   const long seed;
   std::vector<double> x_hat; /**< @brief The transformed decision values */
 
-  transform_vars_x_hat_t(coco_problem_t *inner_problem, const long seed)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_x_hat"), seed(seed),
+  transform_vars_x_hat_t(coco_problem_ptr_t inner, const long seed)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_x_hat"), seed(seed),
         x_hat(inner_problem->number_of_variables) {
     size_t i;
     if (coco_problem_best_parameter_not_zero(this)) {
@@ -48,7 +48,7 @@ struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
         x_hat[i] = x[i];
       }
     }
-    coco_evaluate_function(inner_problem, x_hat.data(), y);
+    coco_evaluate_function(inner_problem.get(), x_hat.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
@@ -56,6 +56,6 @@ struct transform_vars_x_hat_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_x_hat(coco_problem_t *inner_problem, const long seed) {
-  return new transform_vars_x_hat_t(inner_problem, seed);
+static coco_problem_ptr_t transform_vars_x_hat(coco_problem_ptr_t inner_problem, const long seed) {
+  return std::make_unique<transform_vars_x_hat_t>(std::move(inner_problem), seed);
 }

@@ -37,21 +37,21 @@ typedef std::vector<std::array<size_t, 3>> suite_biobj_new_instances_t;
  */
 static int suite_biobj_check_inst_consistency(const size_t dimension, size_t function1, size_t instance1,
                                               size_t function2, size_t instance2) {
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem1, *problem2;
   int break_search = 0;
   double norm;
   const double apart_enough = 1e-4;
 
-  problem1 = coco_get_bbob_problem(function1, dimension, instance1);
-  problem2 = coco_get_bbob_problem(function2, dimension, instance2);
+  coco_problem_ptr_t problem1 = coco_make_bbob_problem(function1, dimension, instance1);
+  coco_problem_ptr_t problem2 = coco_make_bbob_problem(function2, dimension, instance2);
 
   /* Set smallest and largest values of interest to some value (not important which, it just needs to be a
    * vector of doubles of the right dimension) */
   const std::vector<double> smallest_values_of_interest(dimension, -100);
   const std::vector<double> largest_values_of_interest(dimension, 100);
-  problem = coco_problem_stacked_allocate(problem1, problem2, smallest_values_of_interest.data(),
-                                          largest_values_of_interest.data());
+  const coco_problem_t *problem1_view = problem1.get();
+  const coco_problem_t *problem2_view = problem2.get();
+  const coco_problem_ptr_t problem = coco_problem_stacked_allocate(
+      std::move(problem1), std::move(problem2), smallest_values_of_interest.data(), largest_values_of_interest.data());
 
   /* Check whether the ideal and nadir points are too close in the objective space */
   norm = mo_get_norm(problem->best_value.data(), problem->nadir_value.data(), 2);
@@ -65,18 +65,13 @@ static int suite_biobj_check_inst_consistency(const size_t dimension, size_t fun
   }
 
   /* Check whether the extreme optimal points are too close in the decision space */
-  norm = mo_get_norm(problem1->best_parameter.data(), problem2->best_parameter.data(), problem->number_of_variables);
+  norm = mo_get_norm(problem1_view->best_parameter.data(), problem2_view->best_parameter.data(),
+                     problem->number_of_variables);
   if (norm < apart_enough) {
     coco_debug("suite_biobj_check_inst_consistency(): The extreme points of %s are too close in the decision space",
                problem->problem_id.c_str());
     coco_debug("norm = %e", norm);
     break_search = 1;
-  }
-
-  /* Clean up */
-  if (problem) {
-    coco_problem_free(problem);
-    problem = nullptr;
   }
 
   return break_search;
@@ -199,10 +194,10 @@ static size_t suite_biobj_get_new_instance(suite_biobj_new_instances_t &new_inst
  * @param num_dimensions The number of dimensions to take into account when creating new instances.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_t dimension, const size_t instance,
-                                              const coco_get_problem_function_t coco_get_problem_function,
-                                              suite_biobj_new_instances_t &new_instances, const size_t *dimensions,
-                                              const size_t num_dimensions) {
+static coco_problem_ptr_t coco_get_biobj_problem(const size_t function, const size_t dimension, const size_t instance,
+                                                 const coco_get_problem_function_t coco_get_problem_function,
+                                                 suite_biobj_new_instances_t &new_instances, const size_t *dimensions,
+                                                 const size_t num_dimensions) {
 
   /* Selected functions from the bbob suite that are used to construct the original bbob-biobj suite. */
   const size_t sel_bbob_functions[] = {1, 2, 6, 8, 13, 14, 15, 17, 20, 21};
@@ -212,7 +207,9 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
                                        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
   const size_t num_all_bbob_functions = 24;
 
-  coco_problem_t *problem1 = nullptr, *problem2 = nullptr, *problem = nullptr;
+  coco_problem_ptr_t problem1;
+  coco_problem_ptr_t problem2;
+  coco_problem_ptr_t problem;
   size_t instance1 = 0, instance2 = 0;
   size_t function1_idx, function2_idx;
   const size_t function_idx = function - 1;
@@ -342,7 +339,7 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
     function1_idx = 22;
     function2_idx = 23;
   } else {
-    coco_error("coco_get_biobj_problem(): Invalid function index %i.", function_idx);
+    coco_error("coco_get_biobj_problem(): Invalid function index %lu.", (unsigned long)function_idx);
   }
 
   /* Determine the instances */
@@ -395,17 +392,19 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
     problem2->suite_dep_function = all_bbob_functions[function2_idx];
   }
 
-  problem = coco_problem_stacked_allocate(problem1, problem2, smallest_values_of_interest.data(),
+  const std::string problem_type1 = problem1->problem_type;
+  const std::string problem_type2 = problem2->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem1), std::move(problem2), smallest_values_of_interest.data(),
                                           largest_values_of_interest.data());
 
   /* Use the standard stacked problem_id as problem_name and construct a new problem_id */
-  coco_problem_set_name(problem, problem->problem_id.c_str());
+  coco_problem_set_name(problem.get(), "%s", problem->problem_id.c_str());
   /* Attention! Any change to the problem id affects also archive processing! */
-  coco_problem_set_id(problem, "bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function, (unsigned long)instance,
-                      (unsigned long)dimension);
+  coco_problem_set_id(problem.get(), "bbob-biobj_f%02lu_i%02lu_d%02lu", (unsigned long)function,
+                      (unsigned long)instance, (unsigned long)dimension);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem1->problem_type.c_str(), problem2->problem_type.c_str());
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type1.c_str(), problem_type2.c_str());
 
   return problem;
 }
@@ -416,25 +415,27 @@ static coco_problem_t *coco_get_biobj_problem(const size_t function, const size_
  * If a suite does not have known optima or it has known optima but the key is not found,
  * the default value is used.
  */
-static void suite_biobj_get_best_hyp_value(const int known_optima, const char *key, double *value) {
+static void suite_biobj_get_best_hyp_value(const int known_optima, const std::string &key, double *value) {
 
   static const double default_value = 1.0;
   size_t i, count;
   *value = default_value;
 
   if (known_optima) {
-    std::vector<char> curr_key(COCO_PATH_MAX + 1);
+    std::vector<char> curr_key;
     count = sizeof(suite_biobj_best_values_hyp) / sizeof(char *);
     for (i = 0; i < count; i++) {
+      curr_key.resize(strlen(suite_biobj_best_values_hyp[i]) + 1); /* The key cannot be longer than the entry */
       sscanf(suite_biobj_best_values_hyp[i], "%s %lf", curr_key.data(), value);
-      if (strcmp(curr_key.data(), key) == 0) {
+      if (key == curr_key.data()) {
         return;
       }
     }
     /* If it comes to this point, the key was not found */
-    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s could not be found; set to %f", key,
+    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s could not be found; set to %f", key.c_str(),
                  default_value);
   } else {
-    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s is not known; set to %f", key, default_value);
+    coco_warning("suite_biobj_get_best_hyp_value(): best value of %s is not known; set to %f", key.c_str(),
+                 default_value);
   }
 }

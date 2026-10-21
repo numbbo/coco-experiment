@@ -84,20 +84,20 @@ struct f_rastrigin_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic Rastrigin problem.
  */
-static coco_problem_t *f_rastrigin_allocate(const size_t number_of_variables) {
-  return new f_rastrigin_t(number_of_variables);
+static coco_problem_ptr_t f_rastrigin_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_rastrigin_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB Rastrigin problem.
  */
-static coco_problem_t *f_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                         const size_t instance, const long rseed,
-                                                         const char *problem_id_template,
-                                                         const char *problem_name_template) {
+static coco_problem_ptr_t f_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                            const size_t instance, const long rseed,
+                                                            const char *problem_id_template,
+                                                            const char *problem_name_template) {
 
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -108,22 +108,20 @@ static coco_problem_t *f_rastrigin_bbob_problem_allocate(const size_t function, 
   }
 
   problem = f_rastrigin_allocate(dimension);
-  problem = transform_vars_conditioning(problem, 10.0);
-  problem = transform_vars_asymmetric(problem, 0.2);
-  problem = transform_vars_oscillate(problem);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_conditioning(std::move(problem), 10.0);
+  problem = transform_vars_asymmetric(std::move(problem), 0.2);
+  problem = transform_vars_oscillate(std::move(problem));
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
   if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
-    problem = transform_obj_norm_by_dim(problem);
+    problem = transform_obj_norm_by_dim(std::move(problem));
   }
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }
@@ -131,12 +129,12 @@ static coco_problem_t *f_rastrigin_bbob_problem_allocate(const size_t function, 
 /**
  * @brief Creates the BBOB rotated Rastrigin problem.
  */
-static coco_problem_t *f_rastrigin_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                 const size_t instance, const long rseed,
-                                                                 const char *problem_id_template,
-                                                                 const char *problem_name_template) {
+static coco_problem_ptr_t f_rastrigin_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                    const size_t instance, const long rseed,
+                                                                    const char *problem_id_template,
+                                                                    const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   size_t i, j, k;
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -167,18 +165,17 @@ static coco_problem_t *f_rastrigin_rotated_bbob_problem_allocate(const size_t fu
   }
 
   problem = f_rastrigin_allocate(dimension);
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_asymmetric(problem, 0.2);
-  problem = transform_vars_oscillate(problem);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_asymmetric(std::move(problem), 0.2);
+  problem = transform_vars_oscillate(std::move(problem));
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "4-multi-modal");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "4-multi-modal");
 
   return problem;
 }
@@ -186,12 +183,12 @@ static coco_problem_t *f_rastrigin_rotated_bbob_problem_allocate(const size_t fu
 /**
  * @brief Creates the BBOB rotated Rastrigin problem for large scale.
  */
-static coco_problem_t *f_rastrigin_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                       const size_t instance, const long rseed,
-                                                                       const char *problem_id_template,
-                                                                       const char *problem_name_template) {
+static coco_problem_ptr_t f_rastrigin_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                          const size_t instance, const long rseed,
+                                                                          const char *problem_id_template,
+                                                                          const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P12(dimension);
   std::vector<size_t> P21(dimension);
@@ -228,31 +225,26 @@ static coco_problem_t *f_rastrigin_permblockdiag_bbob_problem_allocate(const siz
   coco_compute_truncated_uniform_swap_permutation(P22.data(), rseed + 6000000, dimension, nb_swaps2, swap_range2);
 
   problem = f_rastrigin_allocate(dimension);
-  problem = transform_vars_permutation(problem, P12.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B1.rows(), dimension,
-                                         block_sizes1.data(), nb_blocks1);
-  problem = transform_vars_permutation(problem, P11.data(), dimension);
-  problem = transform_vars_conditioning(problem, 10.0);
-  problem = transform_vars_permutation(problem, P22.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B2.rows(), dimension,
-                                         block_sizes2.data(), nb_blocks2);
-  problem = transform_vars_permutation(problem, P21.data(), dimension);
-  problem = transform_vars_asymmetric(problem, 0.2);
-  problem = transform_vars_oscillate(problem);
-  problem = transform_vars_permutation(problem, P12.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B1.rows(), dimension,
-                                         block_sizes1.data(), nb_blocks1);
-  problem = transform_vars_permutation(problem, P11.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_conditioning(std::move(problem), 10.0);
+  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_asymmetric(std::move(problem), 0.2);
+  problem = transform_vars_oscillate(std::move(problem));
+  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  problem = transform_obj_norm_by_dim(problem);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_norm_by_dim(std::move(problem));
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "4-multi-modal");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "4-multi-modal");
 
   return problem;
 }
@@ -283,27 +275,25 @@ static void f_rastrigin_cons_compute_xopt(double *xopt, const long rseed,
 /**
  * @brief Creates the Rastrigin problem for the constrained BBOB suite.
  */
-static coco_problem_t *f_rastrigin_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                              const size_t instance, const long rseed,
-                                                              const char *problem_id_template,
-                                                              const char *problem_name_template) {
+static coco_problem_ptr_t f_rastrigin_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                 const size_t instance, const long rseed,
+                                                                 const char *problem_id_template,
+                                                                 const char *problem_name_template) {
 
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   f_rastrigin_cons_compute_xopt(xopt.data(), rseed, dimension);
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_rastrigin_allocate(dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }
@@ -311,13 +301,13 @@ static coco_problem_t *f_rastrigin_cons_bbob_problem_allocate(const size_t funct
 /**
  * @brief Creates the rotated Rastrigin problem for the constrained BBOB suite.
  */
-static coco_problem_t *f_rastrigin_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                      const size_t instance, const long rseed,
-                                                                      const char *problem_id_template,
-                                                                      const char *problem_name_template) {
+static coco_problem_ptr_t f_rastrigin_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                         const size_t instance, const long rseed,
+                                                                         const char *problem_id_template,
+                                                                         const char *problem_name_template) {
 
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -331,15 +321,14 @@ static coco_problem_t *f_rastrigin_rotated_cons_bbob_problem_allocate(const size
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_rastrigin_allocate(dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension); /* Rotate after shifting so R dot xopt is also rotated */
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(),
+                                  dimension); /* Rotate after shifting so R dot xopt is also rotated */
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }

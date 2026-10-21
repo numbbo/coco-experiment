@@ -103,19 +103,19 @@ struct f_linear_slope_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic linear slope problem.
  */
-static coco_problem_t *f_linear_slope_allocate(const size_t number_of_variables, const double *best_parameter) {
-  return new f_linear_slope_t(number_of_variables, best_parameter);
+static coco_problem_ptr_t f_linear_slope_allocate(const size_t number_of_variables, const double *best_parameter) {
+  return std::make_unique<f_linear_slope_t>(number_of_variables, best_parameter);
 }
 
 /**
  * @brief Creates the BBOB linear slope problem.
  */
-static coco_problem_t *f_linear_slope_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                            const size_t instance, const long rseed,
-                                                            const char *problem_id_template,
-                                                            const char *problem_name_template) {
+static coco_problem_ptr_t f_linear_slope_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                               const size_t instance, const long rseed,
+                                                               const char *problem_id_template,
+                                                               const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
@@ -129,15 +129,13 @@ static coco_problem_t *f_linear_slope_bbob_problem_allocate(const size_t functio
 
   /*if large scale test-bed, normalize by dim*/
   if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
-    problem = transform_obj_norm_by_dim(problem);
+    problem = transform_obj_norm_by_dim(std::move(problem));
   }
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }

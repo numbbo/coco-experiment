@@ -21,10 +21,10 @@
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t function_idx, const size_t dimension_idx,
-                                             const size_t instance_idx) {
+static coco_problem_ptr_t suite_toy_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -61,8 +61,8 @@ static coco_problem_t *suite_toy_get_problem(coco_suite_t *suite, const size_t f
 struct suite_toy_t final : public coco_suite_s {
   using coco_suite_s::coco_suite_s;
 
-  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
-                              const size_t instance_idx) override {
+  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
+                                 const size_t instance_idx) override {
     return suite_toy_get_problem(this, function_idx, dimension_idx, instance_idx);
   }
 };

@@ -15,8 +15,8 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
   const double factor;
   std::vector<double> scaled_x; /**< @brief The scaled decision values */
 
-  transform_vars_scale_t(coco_problem_t *inner_problem, const double factor)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_scale"), factor(factor),
+  transform_vars_scale_t(coco_problem_ptr_t inner, const double factor)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_scale"), factor(factor),
         scaled_x(inner_problem->number_of_variables) {
     size_t i;
     /* Compute best parameter */
@@ -41,7 +41,7 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
     for (i = 0; i < number_of_variables; ++i) {
       scaled_x[i] = factor * x[i];
     }
-    coco_evaluate_function(inner_problem, scaled_x.data(), y);
+    coco_evaluate_function(inner_problem.get(), scaled_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
@@ -49,6 +49,6 @@ struct transform_vars_scale_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_scale(coco_problem_t *inner_problem, const double factor) {
-  return new transform_vars_scale_t(inner_problem, factor);
+static coco_problem_ptr_t transform_vars_scale(coco_problem_ptr_t inner_problem, const double factor) {
+  return std::make_unique<transform_vars_scale_t>(std::move(inner_problem), factor);
 }

@@ -128,12 +128,12 @@ static coco_matrix_t coco_copy_block_matrix(const double *const *B, const size_t
  *
  * Returns an empty list for unknown suites.
  */
-static std::vector<size_t> coco_get_block_sizes(size_t *nb_blocks, size_t dimension, const char *suite_name) {
+static std::vector<size_t> coco_get_block_sizes(size_t *nb_blocks, size_t dimension, std::string_view suite_name) {
   std::vector<size_t> block_sizes;
   size_t block_size;
   size_t i;
 
-  if (strcmp(suite_name, "bbob-largescale") == 0) {
+  if (suite_name == "bbob-largescale") {
     /*block_size = coco_double_to_size_t(bbob2009_fmin((double)dimension / 4, 100));*/ /*old value*/
     /*block_size = coco_double_to_size_t(bbob2009_fmin((double)dimension, 40));*/
     block_size = coco_rotation_matrix_block_size(dimension);

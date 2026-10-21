@@ -56,8 +56,8 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
   const double alpha;
   std::vector<double> oscillated_x;
 
-  explicit transform_vars_oscillate_t(coco_problem_t *inner_problem)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_oscillate"), alpha(0.1),
+  explicit transform_vars_oscillate_t(coco_problem_ptr_t inner)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_oscillate"), alpha(0.1),
         oscillated_x(inner_problem->number_of_variables) {}
 
   /**
@@ -81,7 +81,7 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
     int is_feasible;
 
     if (inner_problem->number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem, x, y);
+      coco_evaluate_function(inner_problem.get(), x, y);
       return;
     }
 
@@ -92,7 +92,7 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
 
     tosz(x);
 
-    coco_evaluate_function(inner_problem, oscillated_x.data(), y);
+    coco_evaluate_function(inner_problem.get(), oscillated_x.data(), y);
 
     if (number_of_constraints > 0) {
       std::vector<double> cons_values(number_of_constraints);
@@ -111,7 +111,7 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
     size_t i;
 
     if (inner_problem->number_of_constraints == 0) {
-      coco_evaluate_constraint_optional_update(inner_problem, x, y, update_counter);
+      coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
       return;
     }
 
@@ -140,8 +140,8 @@ struct transform_vars_oscillate_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_oscillate(coco_problem_t *inner_problem) {
-  return new transform_vars_oscillate_t(inner_problem);
+static coco_problem_ptr_t transform_vars_oscillate(coco_problem_ptr_t inner_problem) {
+  return std::make_unique<transform_vars_oscillate_t>(std::move(inner_problem));
 }
 
 /**

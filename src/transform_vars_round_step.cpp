@@ -27,9 +27,8 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
   std::vector<double> rounded_x;
   f_step_ellipsoid_shared_data_t *const shared; /**< @brief Owned by the step ellipsoid function */
 
-  transform_vars_round_step_t(coco_problem_t *inner_problem, const double alpha,
-                              f_step_ellipsoid_shared_data_t *shared)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_round_step"), alpha(alpha),
+  transform_vars_round_step_t(coco_problem_ptr_t inner, const double alpha, f_step_ellipsoid_shared_data_t *shared)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_round_step"), alpha(alpha),
         rounded_x(inner_problem->number_of_variables + 1), shared(shared) {
     size_t i;
     /* Compute best parameter */
@@ -62,7 +61,7 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
         rounded_x[i] = coco_double_round(alpha * x[i]) / alpha;
       }
     }
-    coco_evaluate_function(inner_problem, rounded_x.data(), y);
+    coco_evaluate_function(inner_problem.get(), rounded_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 };
@@ -70,7 +69,7 @@ struct transform_vars_round_step_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_round_step(coco_problem_t *inner_problem, const double alpha,
-                                                 f_step_ellipsoid_shared_data_t *shared) {
-  return new transform_vars_round_step_t(inner_problem, alpha, shared);
+static coco_problem_ptr_t transform_vars_round_step(coco_problem_ptr_t inner_problem, const double alpha,
+                                                    f_step_ellipsoid_shared_data_t *shared) {
+  return std::make_unique<transform_vars_round_step_t>(std::move(inner_problem), alpha, shared);
 }

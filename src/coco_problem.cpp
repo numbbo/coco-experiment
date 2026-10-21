@@ -207,9 +207,9 @@ coco_problem_s::coco_problem_s(const size_t number_of_variables, const size_t nu
  * @brief Allocates a new coco_problem_t for the given number of variables, number of objectives and
  * number of constraints.
  */
-static coco_problem_t *coco_problem_allocate(const size_t number_of_variables, const size_t number_of_objectives,
-                                             const size_t number_of_constraints) {
-  return new coco_problem_t(number_of_variables, number_of_objectives, number_of_constraints);
+static coco_problem_ptr_t coco_problem_allocate(const size_t number_of_variables, const size_t number_of_objectives,
+                                                const size_t number_of_constraints) {
+  return std::make_unique<coco_problem_t>(number_of_variables, number_of_objectives, number_of_constraints);
 }
 
 /**
@@ -254,7 +254,7 @@ static void coco_problem_copy_properties(coco_problem_t *problem, const coco_pro
  * @brief Initializes a single-objective problem using scalar values for smallest_value_of_interest,
  * largest_value_of_interest and best_parameter. Assumes all variables are continuous.
  */
-static void coco_problem_init_from_scalars(coco_problem_t *problem, const char *problem_name,
+static void coco_problem_init_from_scalars(coco_problem_t *problem, std::string_view problem_name,
                                            const double smallest_value_of_interest,
                                            const double largest_value_of_interest, const double best_parameter) {
   size_t i;
@@ -303,7 +303,7 @@ static int coco_problem_id_is_fine(const std::string &id) {
  *
  * Verifies that the problem_id is in the correct format.
  */
-static void coco_problem_set_id(coco_problem_t *problem, const char *id, ...) {
+COCO_FORMAT(2, 3) static void coco_problem_set_id(coco_problem_t *problem, const char *id, ...) {
   va_list args;
 
   va_start(args, id);
@@ -317,7 +317,7 @@ static void coco_problem_set_id(coco_problem_t *problem, const char *id, ...) {
 /**
  * @brief Sets the problem_name using formatted printing (as in printf).
  */
-static void coco_problem_set_name(coco_problem_t *problem, const char *name, ...) {
+COCO_FORMAT(2, 3) static void coco_problem_set_name(coco_problem_t *problem, const char *name, ...) {
   va_list args;
 
   va_start(args, name);
@@ -328,7 +328,7 @@ static void coco_problem_set_name(coco_problem_t *problem, const char *name, ...
 /**
  * @brief Sets the problem_type using formatted printing (as in printf).
  */
-static void coco_problem_set_type(coco_problem_t *problem, const char *type, ...) {
+COCO_FORMAT(2, 3) static void coco_problem_set_type(coco_problem_t *problem, const char *type, ...) {
   va_list args;
 
   va_start(args, type);
@@ -404,7 +404,7 @@ double coco_problem_get_final_target_fvalue1(const coco_problem_t *problem) {
 
 /**
  * @note Do not modify the returned string! If you free the problem, the returned pointer becomes invalid.
- * When in doubt, use coco_strdup() on the returned value.
+ * When in doubt, copy the returned value.
  */
 const char *coco_problem_get_name(const coco_problem_t *problem) {
   assert(problem != nullptr);
@@ -419,7 +419,7 @@ const char *coco_problem_get_name(const coco_problem_t *problem) {
  * Each problem ID should be unique within each benchmark suite.
  *
  * @note Do not modify the returned string! If you free the problem, the returned pointer becomes invalid.
- * When in doubt, use coco_strdup() on the returned value.
+ * When in doubt, copy the returned value.
  */
 const char *coco_problem_get_id(const coco_problem_t *problem) {
   assert(problem != nullptr);
@@ -605,11 +605,11 @@ void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem) {
   }
 
   assert(problem != nullptr);
-  problem1 = coco_problem_as_stacked(problem)->problem1;
+  problem1 = coco_problem_as_stacked(problem)->problem1.get();
   assert(problem1 != nullptr);
   assert(!problem1->best_parameter.empty());
 
-  problem2 = coco_problem_as_stacked(problem)->problem2;
+  problem2 = coco_problem_as_stacked(problem)->problem2.get();
   assert(problem2 != nullptr);
   assert(!problem2->best_parameter.empty());
 
@@ -646,7 +646,7 @@ static coco_problem_transformed_t *coco_problem_as_transformed(const coco_proble
 static coco_problem_t *coco_problem_transformed_get_inner_problem(const coco_problem_t *problem) {
   coco_problem_transformed_t *transformed = coco_problem_as_transformed(problem);
   assert(transformed->inner_problem != nullptr);
-  return transformed->inner_problem;
+  return transformed->inner_problem.get();
 }
 
 /**
@@ -655,57 +655,44 @@ static coco_problem_t *coco_problem_transformed_get_inner_problem(const coco_pro
  * By default all methods will dispatch to the inner_problem. A prefix is prepended to the problem name
  * in order to reflect the transformation somewhere.
  */
-coco_problem_transformed_s::coco_problem_transformed_s(coco_problem_t *inner_problem, const char *name_prefix)
-    : coco_problem_s(inner_problem->number_of_variables, inner_problem->number_of_objectives,
-                     inner_problem->number_of_constraints),
-      inner_problem(inner_problem) {
-  coco_problem_copy_properties(this, inner_problem);
-  coco_problem_set_name(this, "%s(%s)", name_prefix, inner_problem->problem_name.c_str());
-}
-
-/**
- * @brief Frees the inner problem (unless it was released).
- */
-coco_problem_transformed_s::~coco_problem_transformed_s() {
-  if (inner_problem != nullptr)
-    coco_problem_free(inner_problem);
+coco_problem_transformed_s::coco_problem_transformed_s(coco_problem_ptr_t inner, std::string_view name_prefix)
+    : coco_problem_s(inner->number_of_variables, inner->number_of_objectives, inner->number_of_constraints),
+      inner_problem(std::move(inner)) {
+  coco_problem_copy_properties(this, inner_problem.get());
+  problem_name = std::string(name_prefix) + "(" + inner_problem->problem_name + ")";
 }
 
 /**
  * @brief Calls the coco_evaluate_function function on the inner problem.
  */
 void coco_problem_transformed_s::evaluate_function(const double *x, double *y) {
-  coco_evaluate_function(inner_problem, x, y);
+  coco_evaluate_function(inner_problem.get(), x, y);
 }
 
 /**
  * @brief Calls the coco_evaluate_constraint_optional_update function on the inner problem.
  */
 void coco_problem_transformed_s::evaluate_constraint(const double *x, double *y, int update_counter) {
-  coco_evaluate_constraint_optional_update(inner_problem, x, y, update_counter);
+  coco_evaluate_constraint_optional_update(inner_problem.get(), x, y, update_counter);
 }
 
 /**
  * @brief Calls the bbob_evaluate_gradient function on the inner problem.
  */
 void coco_problem_transformed_s::evaluate_gradient(const double *x, double *y) {
-  bbob_evaluate_gradient(inner_problem, x, y);
+  bbob_evaluate_gradient(inner_problem.get(), x, y);
 }
 
 /**
  * @brief Calls the coco_recommend_solution function on the inner problem.
  */
-void coco_problem_transformed_s::recommend_solution(const double *x) { coco_recommend_solution(inner_problem, x); }
+void coco_problem_transformed_s::recommend_solution(const double *x) { coco_recommend_solution(inner_problem.get(), x); }
 
 /**
  * @brief Frees the transformed problem but not its inner problem, which is returned instead.
  */
-static coco_problem_t *coco_problem_transformed_free_keep_inner(coco_problem_t *problem) {
-  coco_problem_transformed_t *transformed = coco_problem_as_transformed(problem);
-  coco_problem_t *inner_problem = transformed->inner_problem;
-  transformed->inner_problem = nullptr;
-  coco_problem_free(transformed);
-  return inner_problem;
+static coco_problem_ptr_t coco_problem_transformed_free_keep_inner(coco_problem_ptr_t problem) {
+  return std::move(coco_problem_as_transformed(problem.get())->inner_problem);
 }
 
 /**@}*/
@@ -726,27 +713,27 @@ static coco_problem_stacked_t *coco_problem_as_stacked(const coco_problem_t *pro
   return static_cast<coco_problem_stacked_t *>(const_cast<coco_problem_t *>(problem));
 }
 
-coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_t *problem1, coco_problem_t *problem2)
-    : coco_problem_s(coco_problem_get_dimension(problem1),
-                     coco_problem_get_number_of_objectives(problem1) + coco_problem_get_number_of_objectives(problem2),
-                     coco_problem_get_number_of_constraints(problem1) +
-                         coco_problem_get_number_of_constraints(problem2)),
-      problem1(problem1), problem2(problem2) {}
+coco_problem_stacked_s::coco_problem_stacked_s(coco_problem_ptr_t first, coco_problem_ptr_t second)
+    : coco_problem_s(
+          coco_problem_get_dimension(first.get()),
+          coco_problem_get_number_of_objectives(first.get()) + coco_problem_get_number_of_objectives(second.get()),
+          coco_problem_get_number_of_constraints(first.get()) + coco_problem_get_number_of_constraints(second.get())),
+      problem1(std::move(first)), problem2(std::move(second)) {}
 
 /**
  * @brief Calls the coco_evaluate_function function on the underlying problems.
  */
 void coco_problem_stacked_s::evaluate_function(const double *x, double *y) {
-  const size_t number_of_objectives_problem1 = coco_problem_get_number_of_objectives(problem1);
-  const size_t number_of_objectives_problem2 = coco_problem_get_number_of_objectives(problem2);
+  const size_t number_of_objectives_problem1 = coco_problem_get_number_of_objectives(problem1.get());
+  const size_t number_of_objectives_problem2 = coco_problem_get_number_of_objectives(problem2.get());
   int is_feasible;
 
   assert(coco_problem_get_number_of_objectives(this) == number_of_objectives_problem1 + number_of_objectives_problem2);
 
   if (number_of_objectives_problem1 > 0)
-    coco_evaluate_function(problem1, x, &y[0]);
+    coco_evaluate_function(problem1.get(), x, &y[0]);
   if (number_of_objectives_problem2 > 0)
-    coco_evaluate_function(problem2, x, &y[number_of_objectives_problem1]);
+    coco_evaluate_function(problem2.get(), x, &y[number_of_objectives_problem1]);
 
   /* Make sure that no feasible point has a function value lower
    * than the minimum's.
@@ -763,8 +750,8 @@ void coco_problem_stacked_s::evaluate_function(const double *x, double *y) {
  * @brief Calls the coco_evaluate_constraint_optional_update function on the underlying problems.
  */
 void coco_problem_stacked_s::evaluate_constraint(const double *x, double *y, int update_counter) {
-  const size_t number_of_constraints_problem1 = coco_problem_get_number_of_constraints(problem1);
-  const size_t number_of_constraints_problem2 = coco_problem_get_number_of_constraints(problem2);
+  const size_t number_of_constraints_problem1 = coco_problem_get_number_of_constraints(problem1.get());
+  const size_t number_of_constraints_problem2 = coco_problem_get_number_of_constraints(problem2.get());
 
   if (number_of_constraints == 0) {
     coco_problem_s::evaluate_constraint(x, y, update_counter);
@@ -775,22 +762,12 @@ void coco_problem_stacked_s::evaluate_constraint(const double *x, double *y, int
          number_of_constraints_problem1 + number_of_constraints_problem2);
 
   if (number_of_constraints_problem1 > 0)
-    coco_evaluate_constraint_optional_update(problem1, x, y, update_counter);
+    coco_evaluate_constraint_optional_update(problem1.get(), x, y, update_counter);
   if (number_of_constraints_problem2 > 0)
-    coco_evaluate_constraint_optional_update(problem2, x, &y[number_of_constraints_problem1], update_counter);
+    coco_evaluate_constraint_optional_update(problem2.get(), x, &y[number_of_constraints_problem1], update_counter);
 }
 
 /* TODO: Missing coco_problem_stacked_recommend_solution function! */
-
-/**
- * @brief Frees both problems unless they were released.
- */
-coco_problem_stacked_s::~coco_problem_stacked_s() {
-  if (problem1 != nullptr)
-    coco_problem_free(problem1);
-  if (problem2 != nullptr)
-    coco_problem_free(problem2);
-}
 
 /**
  * @brief Allocates a problem constructed by stacking two COCO problems.
@@ -802,19 +779,21 @@ coco_problem_stacked_s::~coco_problem_stacked_s() {
  * @note Regions of interest in the decision space must either agree or at least one of them must be NULL.
  * @note Best parameter becomes somewhat meaningless, but the nadir value make sense now.
  */
-static coco_problem_t *coco_problem_stacked_allocate(coco_problem_t *problem1, coco_problem_t *problem2,
-                                                     const double *smallest_values_of_interest,
-                                                     const double *largest_values_of_interest) {
+static coco_problem_ptr_t coco_problem_stacked_allocate(coco_problem_ptr_t first, coco_problem_ptr_t second,
+                                                        const double *smallest_values_of_interest,
+                                                        const double *largest_values_of_interest) {
 
   size_t number_of_variables, number_of_constraints;
   size_t i;
-  coco_problem_t *problem; /* the new coco problem */
 
-  assert(problem1);
-  assert(problem2);
-  assert(coco_problem_get_dimension(problem1) == coco_problem_get_dimension(problem2));
+  assert(first);
+  assert(second);
+  assert(coco_problem_get_dimension(first.get()) == coco_problem_get_dimension(second.get()));
 
-  problem = new coco_problem_stacked_t(problem1, problem2);
+  auto stacked = std::make_unique<coco_problem_stacked_t>(std::move(first), std::move(second));
+  coco_problem_t *problem = stacked.get(); /* the new coco problem */
+  const coco_problem_t *problem1 = stacked->problem1.get();
+  const coco_problem_t *problem2 = stacked->problem2.get();
   number_of_variables = problem->number_of_variables;
   number_of_constraints = problem->number_of_constraints;
 
@@ -849,11 +828,22 @@ static coco_problem_t *coco_problem_stacked_allocate(coco_problem_t *problem1, c
 
     problem->best_value[0] = problem1->best_value[0];
     problem->best_value[1] = problem2->best_value[0];
-    coco_evaluate_function(problem1, problem2->best_parameter.data(), &problem->nadir_value[0]);
-    coco_evaluate_function(problem2, problem1->best_parameter.data(), &problem->nadir_value[1]);
+    coco_evaluate_function(stacked->problem1.get(), problem2->best_parameter.data(), &problem->nadir_value[0]);
+    coco_evaluate_function(stacked->problem2.get(), problem1->best_parameter.data(), &problem->nadir_value[1]);
   }
 
-  return problem;
+  return stacked;
+}
+
+/**
+ * @brief Allocates a problem constructed by stacking two COCO problems, using the region of interest of the
+ * second problem.
+ */
+static coco_problem_ptr_t coco_problem_stacked_allocate(coco_problem_ptr_t first, coco_problem_ptr_t second) {
+  const double *smallest_values_of_interest = second->smallest_values_of_interest.data();
+  const double *largest_values_of_interest = second->largest_values_of_interest.data();
+  return coco_problem_stacked_allocate(std::move(first), std::move(second), smallest_values_of_interest,
+                                       largest_values_of_interest);
 }
 /**@}*/
 

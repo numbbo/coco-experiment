@@ -13,8 +13,8 @@ struct transform_obj_cauchy_noise_t final : public coco_problem_transformed_t {
   const double alpha;
   const double p;
 
-  transform_obj_cauchy_noise_t(coco_problem_t *inner_problem, const double alpha, const double p)
-      : coco_problem_transformed_t(inner_problem, "cauchy_noise_model"), alpha(alpha), p(p) {
+  transform_obj_cauchy_noise_t(coco_problem_ptr_t inner, const double alpha, const double p)
+      : coco_problem_transformed_t(std::move(inner), "cauchy_noise_model"), alpha(alpha), p(p) {
     is_noisy = 1;
   }
 
@@ -43,6 +43,7 @@ struct transform_obj_cauchy_noise_t final : public coco_problem_transformed_t {
 /**
  * @brief Allocates a noisy problem with cauchy noise.
  */
-static coco_problem_t *transform_obj_cauchy_noise(coco_problem_t *inner_problem, const double alpha, const double p) {
-  return new transform_obj_cauchy_noise_t(inner_problem, alpha, p);
+static coco_problem_ptr_t transform_obj_cauchy_noise(coco_problem_ptr_t inner_problem, const double alpha,
+                                                     const double p) {
+  return std::make_unique<transform_obj_cauchy_noise_t>(std::move(inner_problem), alpha, p);
 }

@@ -12,8 +12,8 @@
  * @brief Returns Inf for solutions outside of the region of interest.
  */
 struct transform_vars_enforce_box_t final : public coco_problem_transformed_t {
-  explicit transform_vars_enforce_box_t(coco_problem_t *inner_problem)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_enforce_box") {}
+  explicit transform_vars_enforce_box_t(coco_problem_ptr_t inner)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_enforce_box") {}
 
   /**
    * @brief Evaluates the transformed objective function.
@@ -35,7 +35,7 @@ struct transform_vars_enforce_box_t final : public coco_problem_transformed_t {
       }
     }
 
-    coco_evaluate_function(inner_problem, x, y);
+    coco_evaluate_function(inner_problem.get(), x, y);
 
     if (number_of_constraints > 0) {
       std::vector<double> cons_values(number_of_constraints);
@@ -52,6 +52,6 @@ struct transform_vars_enforce_box_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_enforce_box(coco_problem_t *inner_problem) {
-  return new transform_vars_enforce_box_t(inner_problem);
+static coco_problem_ptr_t transform_vars_enforce_box(coco_problem_ptr_t inner_problem) {
+  return std::make_unique<transform_vars_enforce_box_t>(std::move(inner_problem));
 }

@@ -75,19 +75,19 @@ struct f_katsuura_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic Katsuura problem.
  */
-static coco_problem_t *f_katsuura_allocate(const size_t number_of_variables) {
-  return new f_katsuura_t(number_of_variables);
+static coco_problem_ptr_t f_katsuura_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_katsuura_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB Katsuura problem.
  */
-static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                        const size_t instance, const long rseed,
-                                                        const char *problem_id_template,
-                                                        const char *problem_name_template) {
+static coco_problem_ptr_t f_katsuura_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                           const size_t instance, const long rseed,
+                                                           const char *problem_id_template,
+                                                           const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   size_t i, j, k;
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -121,18 +121,14 @@ static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, c
   }
 
   problem = f_katsuura_allocate(dimension);
-  problem = transform_obj_shift(
-      problem, fopt); /*There is no shift 'fopt' in the definition*/
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_obj_penalize(problem, penalty_factor);
+  problem = transform_obj_shift(std::move(problem), fopt); /*There is no shift 'fopt' in the definition*/
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_obj_penalize(std::move(problem), penalty_factor);
 
-
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "5-weakly-structured");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "5-weakly-structured");
 
   return problem;
 }
@@ -140,12 +136,12 @@ static coco_problem_t *f_katsuura_bbob_problem_allocate(const size_t function, c
 /**
  * @brief Creates the BBOB permuted block-rotated Katsuura problem.
  */
-static coco_problem_t *f_katsuura_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                      const size_t instance, const long rseed,
-                                                                      const char *problem_id_template,
-                                                                      const char *problem_name_template) {
+static coco_problem_ptr_t f_katsuura_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                         const size_t instance, const long rseed,
+                                                                         const char *problem_id_template,
+                                                                         const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   const double penalty_factor = 1.0;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P12(dimension);
@@ -190,28 +186,24 @@ static coco_problem_t *f_katsuura_permblockdiag_bbob_problem_allocate(const size
       P22.data(), rseed + 6000000, dimension, nb_swaps2, swap_range2);
 
   problem = f_katsuura_allocate(dimension);
-  problem = transform_vars_permutation(problem, P22.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B1.rows(), dimension,
-                                         block_sizes2.data(), nb_blocks2);
-  problem = transform_vars_permutation(problem, P21.data(), dimension);
-  problem = transform_vars_conditioning(problem, 100.0);
-  problem = transform_vars_permutation(problem, P12.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B2.rows(), dimension,
-                                         block_sizes1.data(), nb_blocks1);
-  problem = transform_vars_permutation(problem, P11.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_conditioning(std::move(problem), 100.0);
+  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  /*problem = transform_obj_norm_by_dim(problem);*/ /* Wassim: does not seem to
+  /*problem = transform_obj_norm_by_dim(std::move(problem));*/ /* Wassim: does not seem to
                                                        be needed*/
-  problem = transform_obj_penalize(problem, penalty_factor);
-  problem =
-      transform_obj_shift(problem, fopt); /*TODO: documentation, there is no fopt in the definition of this function*/
+  problem = transform_obj_penalize(std::move(problem), penalty_factor);
+  problem = transform_obj_shift(std::move(problem),
+                                fopt); /*TODO: documentation, there is no fopt in the definition of this function*/
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "5-weakly-structured");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "5-weakly-structured");
 
   return problem;
 }

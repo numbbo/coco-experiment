@@ -16,10 +16,10 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
   std::vector<double> conditioned_x; /**< @brief The conditioned decision values */
   const double alpha;
 
-  transform_vars_conditioning_t(coco_problem_t *inner_problem, const double alpha)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_conditioning"),
+  transform_vars_conditioning_t(coco_problem_ptr_t inner, const double alpha)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_conditioning"),
         conditioned_x(inner_problem->number_of_variables), alpha(alpha) {
-    if (coco_problem_best_parameter_not_zero(inner_problem)) {
+    if (coco_problem_best_parameter_not_zero(inner_problem.get())) {
       coco_warning("transform_vars_conditioning(): 'best_parameter' not updated, set to NAN");
       coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
     }
@@ -42,7 +42,7 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
        */
       conditioned_x[i] = pow(alpha, 0.5 * (double)(long)i / ((double)(long)number_of_variables - 1.0)) * x[i];
     }
-    coco_evaluate_function(inner_problem, conditioned_x.data(), y);
+    coco_evaluate_function(inner_problem.get(), conditioned_x.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
@@ -63,7 +63,7 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
       gradient[i] = pow(alpha, 0.5 * (double)(long)i / ((double)(long)number_of_variables - 1.0));
       conditioned_x[i] = gradient[i] * x[i];
     }
-    bbob_evaluate_gradient(inner_problem, conditioned_x.data(), y);
+    bbob_evaluate_gradient(inner_problem.get(), conditioned_x.data(), y);
 
     for (i = 0; i < inner_problem->number_of_variables; ++i)
       gradient[i] *= y[i];
@@ -77,6 +77,6 @@ struct transform_vars_conditioning_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_conditioning(coco_problem_t *inner_problem, const double alpha) {
-  return new transform_vars_conditioning_t(inner_problem, alpha);
+static coco_problem_ptr_t transform_vars_conditioning(coco_problem_ptr_t inner_problem, const double alpha) {
+  return std::make_unique<transform_vars_conditioning_t>(std::move(inner_problem), alpha);
 }

@@ -129,8 +129,8 @@ static void coco_compute_truncated_uniform_swap_permutation(size_t *P, long seed
 /**
  * @brief return the swap_range corresponding to the problem in the given suite
  */
-static size_t coco_get_swap_range(size_t dimension, const char *suite_name) {
-  if (strcmp(suite_name, "bbob-largescale") == 0) {
+static size_t coco_get_swap_range(size_t dimension, std::string_view suite_name) {
+  if (suite_name == "bbob-largescale") {
     return dimension / 3;
   } else {
     coco_error("coco_get_swap_range(): unknown problem suite");
@@ -141,8 +141,8 @@ static size_t coco_get_swap_range(size_t dimension, const char *suite_name) {
 /**
  * @brief return the number of swaps corresponding to the problem in the given suite
  */
-size_t coco_get_nb_swaps(size_t dimension, const char *suite_name) {
-  if (strcmp(suite_name, "bbob-largescale") == 0) {
+size_t coco_get_nb_swaps(size_t dimension, std::string_view suite_name) {
+  if (suite_name == "bbob-largescale") {
     return dimension;
   } else {
     coco_error("coco_get_nb_swaps(): unknown problem suite");

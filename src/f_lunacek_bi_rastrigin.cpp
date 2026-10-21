@@ -121,14 +121,14 @@ struct f_lunacek_bi_rastrigin_t final : public coco_problem_s {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                    const size_t instance, const long rseed,
-                                                                    const char *problem_id_template,
-                                                                    const char *problem_name_template) {
+static coco_problem_ptr_t f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                       const size_t instance, const long rseed,
+                                                                       const char *problem_id_template,
+                                                                       const char *problem_name_template) {
 
-  f_lunacek_bi_rastrigin_t *lunacek = new f_lunacek_bi_rastrigin_t(dimension);
+  std::unique_ptr<f_lunacek_bi_rastrigin_t> lunacek = std::make_unique<f_lunacek_bi_rastrigin_t>(dimension);
   f_lunacek_bi_rastrigin_data_t *data = &lunacek->params;
-  coco_problem_t *problem = lunacek;
+  coco_problem_ptr_t problem = std::move(lunacek);
 
   const double mu0 = 2.5;
 
@@ -159,13 +159,11 @@ static coco_problem_t *f_lunacek_bi_rastrigin_bbob_problem_allocate(const size_t
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   fopt = bbob2009_compute_fopt(function, instance);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "5-weakly-structured");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "5-weakly-structured");
 
   return problem;
 }
@@ -196,8 +194,8 @@ struct f_lunacek_bi_rastrigin_sub_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic lunacek_bi_rastrigin sub problem.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_sub_problem_allocate(const size_t number_of_variables) {
-  return new f_lunacek_bi_rastrigin_sub_t(number_of_variables);
+static coco_problem_ptr_t f_lunacek_bi_rastrigin_sub_problem_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_lunacek_bi_rastrigin_sub_t>(number_of_variables);
 }
 
 /**
@@ -216,10 +214,10 @@ f_lunacek_bi_rastrigin_core(const double *x, const size_t number_of_variables,
 
   x_hat = shared->x_hat.data();
 
-  problem_sub_mu0 = shared->sub_problem_mu0;
+  problem_sub_mu0 = shared->sub_problem_mu0.get();
   problem_sub_mu0->evaluate_function(x_hat, &y0);
 
-  problem_sub_mu1 = shared->sub_problem_mu1;
+  problem_sub_mu1 = shared->sub_problem_mu1.get();
   problem_sub_mu1->evaluate_function(x_hat, &y1);
 
   result += (double)number_of_variables;
@@ -251,13 +249,6 @@ struct f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
     best_value[0] = 0; /* Manh: set default value to avoid assert() in transformation later*/
   }
 
-  ~f_lunacek_bi_rastrigin_ls_t() override {
-    if (shared.sub_problem_mu0 != nullptr)
-      coco_problem_free(shared.sub_problem_mu0);
-    if (shared.sub_problem_mu1 != nullptr)
-      coco_problem_free(shared.sub_problem_mu1);
-  }
-
   /**
    * @brief Uses the core function to evaluate the COCO problem.
    */
@@ -271,20 +262,22 @@ struct f_lunacek_bi_rastrigin_ls_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic lunacek_bi_rastrigin problem.
  */
-static f_lunacek_bi_rastrigin_ls_t *f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
-  return new f_lunacek_bi_rastrigin_ls_t(number_of_variables);
+static std::unique_ptr<f_lunacek_bi_rastrigin_ls_t>
+f_lunacek_bi_rastrigin_problem_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_lunacek_bi_rastrigin_ls_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB large scale suite Lunacek bi-Rastrigin problem.
  */
-static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(
+static coco_problem_ptr_t f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const char *problem_id_template, const char *problem_name_template) {
   size_t i;
   double fopt;
   double penalty_factor = 1e4;
-  coco_problem_t *problem = nullptr, **sub_problem_tmp;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t *sub_problem_tmp;
 
   size_t nb_blocks1, nb_blocks2;
   size_t swap_range1, swap_range2;
@@ -324,8 +317,9 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
   coco_compute_truncated_uniform_swap_permutation(
       P22.data(), rseed + 6000000, dimension, nb_swaps2, swap_range2);
 
-  f_lunacek_bi_rastrigin_ls_t *raw_problem = f_lunacek_bi_rastrigin_problem_allocate(dimension);
-  problem = raw_problem;
+  std::unique_ptr<f_lunacek_bi_rastrigin_ls_t> lunacek = f_lunacek_bi_rastrigin_problem_allocate(dimension);
+  f_lunacek_bi_rastrigin_ls_t *raw_problem = lunacek.get();
+  problem = std::move(lunacek);
 
   std::vector<double> mu0_vector(dimension);
   std::vector<double> mu1_vector(dimension);
@@ -354,45 +348,40 @@ static coco_problem_t *f_lunacek_bi_rastrigin_permblockdiag_bbob_problem_allocat
 
   /* apply transformations to sub-problems */
   sub_problem_tmp = &raw_problem->shared.sub_problem_mu0;
-  *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu0_vector.data(), 0);
+  *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu0_vector.data(), 0);
 
   sub_problem_tmp = &raw_problem->shared.sub_problem_mu1;
-  *sub_problem_tmp = transform_vars_shift(*sub_problem_tmp, mu1_vector.data(), 0);
-  *sub_problem_tmp = transform_obj_scale(*sub_problem_tmp, s); /* Manh: need to use s */
-  *sub_problem_tmp = transform_obj_shift(*sub_problem_tmp, d * (double)dimension);
+  *sub_problem_tmp = transform_vars_shift(std::move(*sub_problem_tmp), mu1_vector.data(), 0);
+  *sub_problem_tmp = transform_obj_scale(std::move(*sub_problem_tmp), s); /* Manh: need to use s */
+  *sub_problem_tmp = transform_obj_shift(std::move(*sub_problem_tmp), d * (double)dimension);
 
   /* transformations on main problem */
-  problem = transform_vars_permutation(problem, P22.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B1.rows(), dimension,
-                                         block_sizes1.data(), nb_blocks1);
-  problem = transform_vars_permutation(problem, P21.data(), dimension);
-  problem = transform_vars_conditioning(problem, condition);
+  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_conditioning(std::move(problem), condition);
 
-  problem = transform_vars_permutation(problem, P12.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B2.rows(), dimension,
-                                         block_sizes2.data(), nb_blocks2);
-  problem = transform_vars_permutation(problem, P11.data(), dimension);
-  problem = transform_vars_shift(problem, mu0_vector.data(), 0);
-  problem = transform_vars_x_hat_generic(problem, sign_vector.data(), &raw_problem->shared);
+  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), mu0_vector.data(), 0);
+  problem = transform_vars_x_hat_generic(std::move(problem), sign_vector.data(), &raw_problem->shared);
 
-  problem = transform_obj_norm_by_dim(problem);
-  problem = transform_obj_penalize(problem, penalty_factor);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_norm_by_dim(std::move(problem));
+  problem = transform_obj_penalize(std::move(problem), penalty_factor);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
   /* set best_parameter and best value*/
   for (i = 0; i < dimension; i++) {                          /* Wassim: to silence warning about best_parameter*/
     problem->best_parameter[i] = 0.5 * mu0 * sign_vector[i]; /* TODO: Documentation no 0.5 in documentation! */
   }
 
-  /* f_lunacek_bi_rastrigin_evaluate_core(problem, problem->best_parameter, problem->best_value);
+  /* f_lunacek_bi_rastrigin_evaluate_core(problem.get(), problem->best_parameter, problem->best_value);
   printf("\n %f , x_opt[0]= %f\n", problem->best_value[0], problem->best_parameter[0]);*/ /* Wassim: for testing purposes, might end up being the one kept though*/
 
-
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "5-weakly-structured");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "5-weakly-structured");
 
   return problem;
 }

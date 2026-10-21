@@ -14,8 +14,8 @@
 struct transform_obj_shift_t final : public coco_problem_transformed_t {
   const double offset;
 
-  transform_obj_shift_t(coco_problem_t *inner_problem, const double offset)
-      : coco_problem_transformed_t(inner_problem, "transform_obj_shift"), offset(offset) {
+  transform_obj_shift_t(coco_problem_ptr_t inner, const double offset)
+      : coco_problem_transformed_t(std::move(inner), "transform_obj_shift"), offset(offset) {
     size_t i;
     for (i = 0; i < number_of_objectives; i++)
       best_value[i] += offset;
@@ -26,7 +26,7 @@ struct transform_obj_shift_t final : public coco_problem_transformed_t {
     size_t i;
 
     if (number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem, x, y);
+      coco_evaluate_function(inner_problem.get(), x, y);
       return;
     }
 
@@ -35,7 +35,7 @@ struct transform_obj_shift_t final : public coco_problem_transformed_t {
       return;
     }
 
-    coco_evaluate_function(inner_problem, x, y);
+    coco_evaluate_function(inner_problem.get(), x, y);
 
     for (i = 0; i < number_of_objectives; i++)
       y[i] += offset;
@@ -55,13 +55,13 @@ struct transform_obj_shift_t final : public coco_problem_transformed_t {
       return;
     }
 
-    bbob_evaluate_gradient(inner_problem, x, y);
+    bbob_evaluate_gradient(inner_problem.get(), x, y);
   }
 };
 
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_shift(coco_problem_t *inner_problem, const double offset) {
-  return new transform_obj_shift_t(inner_problem, offset);
+static coco_problem_ptr_t transform_obj_shift(coco_problem_ptr_t inner_problem, const double offset) {
+  return std::make_unique<transform_obj_shift_t>(std::move(inner_problem), offset);
 }

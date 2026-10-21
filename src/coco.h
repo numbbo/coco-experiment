@@ -20,6 +20,10 @@
  * COCO_UNUSED:
  *   Function is not used. Useful to suppress false warnings.
  *
+ * COCO_FORMAT(f, a):
+ *   Function takes a printf-style format as argument f and the values as arguments a, ...
+ *   Lets the compiler check the values against the format.
+ *
  * The next two macros are useful to give hints to the optimizer. This can
  * lead to much better code generation and ultimately faster runtimes.
  *
@@ -34,21 +38,25 @@
 #ifdef __GNUC__
 #define COCO_NORETURN __attribute__((noreturn))
 #define COCO_UNUSED __attribute__((unused))
+#define COCO_FORMAT(f, a) __attribute__((format(__printf__, f, a)))
 #define COCO_LIKELY(x) __builtin_expect((x), 1)
 #define COCO_UNLIKELY(x) __builtin_expect((x), 0)
 #elif __clang__
 #define COCO_NORETURN __attribute__((noreturn))
 #define COCO_UNUSED __attribute__((unused))
+#define COCO_FORMAT(f, a) __attribute__((format(__printf__, f, a)))
 #define COCO_LIKELY(x) __builtin_expect((x), 1)
 #define COCO_UNLIKELY(x) __builtin_expect((x), 0)
 #elif _MSC_VER
 #define COCO_NORETURN __declspec(noreturn)
 #define COCO_UNUSED
+#define COCO_FORMAT(f, a)
 #define COCO_LIKELY(x) (x)
 #define COCO_UNLIKELY(x) (x)
 #else
 #define COCO_NORETURN
 #define COCO_UNUSED
+#define COCO_FORMAT(f, a)
 #define COCO_LIKELY(x) (x)
 #define COCO_UNLIKELY(x) (x)
 #endif
@@ -595,17 +603,17 @@ void coco_free_memory(void *data);
 /**
  * @brief Signals a fatal error.
  */
-void COCO_NORETURN coco_error(const char *message, ...);
+void COCO_NORETURN coco_error(const char *message, ...) COCO_FORMAT(1, 2);
 
 /**
  * @brief Warns about error conditions.
  */
-void coco_warning(const char *message, ...);
+void coco_warning(const char *message, ...) COCO_FORMAT(1, 2);
 
 /**
  * @brief Outputs some information.
  */
-void coco_info(const char *message, ...);
+void coco_info(const char *message, ...) COCO_FORMAT(1, 2);
 
 /**
  * @brief Prints only the given message without any prefix and new line.
@@ -615,12 +623,12 @@ void coco_info(const char *message, ...);
  *
  * The output is only produced if coco_log_level >= COCO_INFO.
  */
-void coco_info_partial(const char *message, ...);
+void coco_info_partial(const char *message, ...) COCO_FORMAT(1, 2);
 
 /**
  * @brief Outputs detailed information usually used for debugging.
  */
-void coco_debug(const char *message, ...);
+void coco_debug(const char *message, ...) COCO_FORMAT(1, 2);
 
 /**
  * @brief Sets the COCO log level to the given value and returns the previous value of the log level.
@@ -688,7 +696,7 @@ int coco_remove_directory(const char *path);
 /**
  * @brief Formatted string duplication.
  */
-char *coco_strdupf(const char *str, ...);
+char *coco_strdupf(const char *str, ...) COCO_FORMAT(1, 2);
 /**@}*/
 
 /***********************************************************************************************************/

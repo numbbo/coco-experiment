@@ -11,7 +11,7 @@
 /** @brief Enum for denoting when the decision variables and constraints are logged. */
 enum observer_rw_log_e { LOG_NEVER, LOG_LOW_DIM, LOG_ALWAYS };
 
-static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *problem);
+static coco_problem_ptr_t logger_rw(coco_observer_t *observer, coco_problem_ptr_t problem);
 
 /**
  * @brief The observer for real-world problems.
@@ -42,7 +42,7 @@ static coco_problem_t *logger_rw(coco_observer_t *observer, coco_problem_t *prob
  */
 struct observer_rw_t final : public coco_observer_s {
 
-  observer_rw_t(const coco_observer_settings_s &observer_settings, const char *options,
+  observer_rw_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                 coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings), log_vars_mode(LOG_ALWAYS), log_cons_mode(LOG_ALWAYS) {
 
@@ -83,7 +83,7 @@ struct observer_rw_t final : public coco_observer_s {
       log_time = 0;
   }
 
-  coco_problem_t *add_logger(coco_problem_t *problem) override { return logger_rw(this, problem); }
+  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override { return logger_rw(this, std::move(problem)); }
 
   observer_rw_log_e log_vars_mode; /**< @brief When the decision variables are logged. */
   observer_rw_log_e log_cons_mode; /**< @brief When the constraints are logged. */

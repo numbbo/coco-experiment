@@ -57,6 +57,10 @@ The core in `src/` is C++17 that is amalgamated into a single `coco.cpp` and exp
 - Problems, transformations and loggers are subclasses of `coco_problem_s`. Suites are subclasses of
   `coco_suite_s` that implement `get_problem()` (and `get_instances_by_year()` if needed). Observers are
   subclasses of `coco_observer_s` that implement `add_logger()` (and `signal_restart()` if supported).
+- Problems are owned through `coco_problem_ptr_t` (a `std::unique_ptr<coco_problem_t>`). Functions that wrap
+  a problem take it by value and the caller hands it over with `std::move()`, e.g.
+  `problem = transform_obj_shift(std::move(problem), fopt);`. Ownership is only released to a raw pointer
+  at the C interface.
 
 ### Running unit tests
 

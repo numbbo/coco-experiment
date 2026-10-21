@@ -75,19 +75,19 @@ struct f_schwefel_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic Schwefel problem.
  */
-static coco_problem_t *f_schwefel_allocate(const size_t number_of_variables) {
-  return new f_schwefel_t(number_of_variables);
+static coco_problem_ptr_t f_schwefel_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_schwefel_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB Schwefel problem.
  */
-static coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                        const size_t instance, const long rseed,
-                                                        const char *problem_id_template,
-                                                        const char *problem_name_template) {
+static coco_problem_ptr_t f_schwefel_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                           const size_t instance, const long rseed,
+                                                           const char *problem_id_template,
+                                                           const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   size_t i;
 
   const double condition = 10.;
@@ -108,21 +108,20 @@ static coco_problem_t *f_schwefel_bbob_problem_allocate(const size_t function, c
   }
 
   problem = f_schwefel_allocate(dimension);
-  problem = transform_vars_scale(problem, 100);
-  problem = transform_vars_shift(problem, tmp1.data(), 0);
-  /* problem = transform_vars_affine(problem, M, b, dimension); */
-  problem = transform_vars_conditioning(problem, condition);
-  problem = transform_vars_shift(problem, tmp2.data(), 0);
-  problem = transform_vars_z_hat(
-      problem,
-      xopt.data()); /* only for the correct xopt the best_parameter is not changed */
-  problem = transform_vars_scale(problem, 2);
-  problem = transform_vars_x_hat(problem, rseed);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_vars_scale(std::move(problem), 100);
+  problem = transform_vars_shift(std::move(problem), tmp1.data(), 0);
+  /* problem = transform_vars_affine(std::move(problem), M, b, dimension); */
+  problem = transform_vars_conditioning(std::move(problem), condition);
+  problem = transform_vars_shift(std::move(problem), tmp2.data(), 0);
+  problem = transform_vars_z_hat(std::move(problem),
+                                 xopt.data()); /* only for the correct xopt the best_parameter is not changed */
+  problem = transform_vars_scale(std::move(problem), 2);
+  problem = transform_vars_x_hat(std::move(problem), rseed);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "5-weakly-structured");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "5-weakly-structured");
 
   return problem;
 }

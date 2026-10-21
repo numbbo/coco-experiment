@@ -26,6 +26,9 @@
 #include "suite_sbox_cost.cpp"
 #include "suite_toy.cpp"
 
+/* Defined in coco_observer.cpp */
+static coco_problem_ptr_t coco_observer_add_logger(coco_observer_t *observer, coco_problem_ptr_t problem);
+
 /** @brief The maximum number of different instances in a suite. */
 #define COCO_MAX_INSTANCES 1000
 
@@ -34,27 +37,27 @@
  *
  * @note This function needs to be updated when a new suite is added to COCO.
  */
-static coco_suite_t *coco_suite_intialize(const char *suite_name) {
+static coco_suite_t *coco_suite_intialize(std::string_view suite_name) {
 
   coco_suite_t *suite = nullptr;
 
-  if (strcmp(suite_name, "toy") == 0) {
+  if (suite_name == "toy") {
     suite = suite_toy_initialize();
-  } else if (strcmp(suite_name, "bbob") == 0) {
+  } else if (suite_name == "bbob") {
     suite = suite_bbob_initialize();
-  } else if (strcmp(suite_name, "bbob-boxed") == 0) {
+  } else if (suite_name == "bbob-boxed") {
     suite = suite_sbox_cost_initialize();
-  } else if ((strcmp(suite_name, "bbob-biobj") == 0) || (strcmp(suite_name, "bbob-biobj-ext") == 0)) {
+  } else if ((suite_name == "bbob-biobj") || (suite_name == "bbob-biobj-ext")) {
     suite = suite_biobj_initialize(suite_name);
-  } else if (strcmp(suite_name, "bbob-largescale") == 0) {
+  } else if (suite_name == "bbob-largescale") {
     suite = suite_largescale_initialize();
-  } else if (strncmp(suite_name, "bbob-constrained", 16) == 0) {
+  } else if (suite_name.substr(0, 16) == "bbob-constrained") {
     suite = suite_cons_bbob_initialize(suite_name);
-  } else if (strcmp(suite_name, "bbob-mixint") == 0) {
+  } else if (suite_name == "bbob-mixint") {
     suite = suite_bbob_mixint_initialize(suite_name);
-  } else if (strcmp(suite_name, "bbob-biobj-mixint") == 0) {
+  } else if (suite_name == "bbob-biobj-mixint") {
     suite = suite_biobj_mixint_initialize();
-  } else if (strcmp(suite_name, "bbob-noisy") == 0) {
+  } else if (suite_name == "bbob-noisy") {
     suite = suite_bbob_noisy_initialize();
   } else {
     coco_error("coco_suite_intialize(): unknown problem suite");
@@ -67,7 +70,7 @@ static coco_suite_t *coco_suite_intialize(const char *suite_name) {
 /**
  * @brief Returns the instances of the given suite for the given year.
  */
-static const char *coco_suite_get_instances_by_year(const coco_suite_t *suite, const int year) {
+static std::string_view coco_suite_get_instances_by_year(const coco_suite_t *suite, const int year) {
   return suite->get_instances_by_year(year);
 }
 
@@ -77,10 +80,10 @@ static const char *coco_suite_get_instances_by_year(const coco_suite_t *suite, c
  * don't correspond to a problem because of suite filtering, it returns NULL.
  *
  */
-static coco_problem_t *coco_suite_get_problem_from_indices(coco_suite_t *suite, const size_t function_idx,
-                                                           const size_t dimension_idx, const size_t instance_idx) {
+static coco_problem_ptr_t coco_suite_get_problem_from_indices(coco_suite_t *suite, const size_t function_idx,
+                                                              const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem;
+  coco_problem_ptr_t problem;
 
   if ((suite->functions[function_idx] == 0) ||
       (suite->dimensions[dimension_idx] == 0) ||
@@ -89,7 +92,7 @@ static coco_problem_t *coco_suite_get_problem_from_indices(coco_suite_t *suite, 
   }
 
   problem = suite->get_problem(function_idx, dimension_idx, instance_idx);
-  coco_problem_set_suite(problem, suite);
+  coco_problem_set_suite(problem.get(), suite);
 
   return problem;
 }
@@ -98,12 +101,13 @@ static coco_problem_t *coco_suite_get_problem_from_indices(coco_suite_t *suite, 
  * @brief Saves the best indicator value for the given problem in value.
  */
 static void coco_suite_get_best_indicator_value(const int known_optima, const coco_problem_t *problem,
-                                                const char *indicator_name, double *value) {
+                                                std::string_view indicator_name, double *value) {
 
-  if (strcmp(indicator_name, "hyp") == 0) {
-    suite_biobj_get_best_hyp_value(known_optima, problem->problem_id.c_str(), value);
+  if (indicator_name == "hyp") {
+    suite_biobj_get_best_hyp_value(known_optima, problem->problem_id, value);
   } else {
-    coco_error("coco_suite_get_best_indicator_value(): indicator %s not supported", indicator_name);
+    coco_error("coco_suite_get_best_indicator_value(): indicator %.*s not supported", (int)indicator_name.size(),
+               indicator_name.data());
   }
 }
 
@@ -153,22 +157,17 @@ coco_problem_t *coco_suite_get_problem_by_function_dimension_instance(coco_suite
   if (!found)
     return nullptr;
 
-  return coco_suite_get_problem_from_indices(suite, (size_t)function_idx, (size_t)dimension_idx, (size_t)instance_idx);
+  return coco_suite_get_problem_from_indices(suite, (size_t)function_idx, (size_t)dimension_idx, (size_t)instance_idx)
+      .release();
 }
 
-coco_suite_s::coco_suite_s(const char *suite_name, const size_t number_of_functions,
+coco_suite_s::coco_suite_s(std::string_view suite_name, const size_t number_of_functions,
                            const size_t number_of_dimensions, const size_t *dimensions,
-                           const char *default_instances, const int known_optima)
-    : suite_name(suite_name),
-      dimensions(dimensions, dimensions + number_of_dimensions),
-      functions(number_of_functions),
-      default_instances(default_instances),
-      known_optima(known_optima),
-      current_problem(nullptr),
+                           std::string_view default_instances, const int known_optima)
+    : suite_name(suite_name), dimensions(dimensions, dimensions + number_of_dimensions), functions(number_of_functions),
+      default_instances(default_instances), known_optima(known_optima),
       /* Will be set to the first valid dimension, function and instance index by coco_suite_get_next_problem() */
-      current_dimension_idx(-1),
-      current_function_idx(-1),
-      current_instance_idx(-1) {
+      current_dimension_idx(-1), current_function_idx(-1), current_instance_idx(-1) {
 
   size_t i;
 
@@ -180,19 +179,19 @@ coco_suite_s::coco_suite_s(const char *suite_name, const size_t number_of_functi
       this->functions[i] = this->functions[i] + 100;
   }
 
-  assert(strlen(default_instances) > 0);
+  assert(!this->default_instances.empty());
   /* instances is set in coco_suite_set_instance() */
 }
 
 coco_suite_s::~coco_suite_s() {
-  if (current_problem)
-    coco_problem_free(current_problem);
+  /* Free the current problem first, its logger might still need the suite */
+  current_problem.reset();
 }
 
-const char *coco_suite_s::get_instances_by_year(const int year) const {
+std::string_view coco_suite_s::get_instances_by_year(const int year) const {
   (void)year;
   coco_error("coco_suite_get_instances_by_year(): suite '%s' has no years defined", suite_name.c_str());
-  return nullptr;
+  return {};
 }
 
 /**
@@ -308,7 +307,7 @@ size_t coco_suite_get_instance_from_instance_index(const coco_suite_t *suite,
  */
 void coco_suite_forget_current_problem(coco_suite_t *suite) {
   assert(suite != nullptr);
-  suite->current_problem = nullptr;
+  (void)suite->current_problem.release(); /* Now owned by the caller */
 }
 
 void coco_suite_free(coco_suite_t *suite) {
@@ -332,8 +331,7 @@ coco_problem_t *coco_suite_get_problem(coco_suite_t *suite,
   coco_suite_decode_problem_index(suite, problem_index, &function_idx,
                                   &dimension_idx, &instance_idx);
 
-  return coco_suite_get_problem_from_indices(suite, function_idx, dimension_idx,
-                                             instance_idx);
+  return coco_suite_get_problem_from_indices(suite, function_idx, dimension_idx, instance_idx).release();
 }
 
 /**
@@ -359,17 +357,14 @@ size_t coco_suite_get_number_of_problems(const coco_suite_t *suite) {
  * warning is raised). See the coco_suite function for more information about
  * the required format.
  */
-static std::vector<size_t> coco_suite_get_instance_indices(const coco_suite_t *suite, const char *suite_instance) {
+static std::vector<size_t> coco_suite_get_instance_indices(const coco_suite_t *suite, std::string_view suite_instance) {
 
   int year = -1;
   std::string instances;
-  const char *year_string = nullptr;
+  std::string_view year_string;
   long year_found, instances_found;
   int parse_year = 1, parse_instances = 1;
   std::vector<size_t> result;
-
-  if (suite_instance == nullptr)
-    return result;
 
   year_found = coco_strfind(suite_instance, "year");
   instances_found = coco_strfind(suite_instance, "instances");
@@ -401,8 +396,7 @@ static std::vector<size_t> coco_suite_get_instance_indices(const coco_suite_t *s
 
   if ((instances_found >= 0) && (parse_instances == 1)) {
     if (coco_options_read_values(suite_instance, "instances", instances) > 0) {
-      result = coco_string_parse_ranges(instances.c_str(), 1, 0, "instances",
-                                        COCO_MAX_INSTANCES);
+      result = coco_string_parse_ranges(instances, 1, 0, "instances", COCO_MAX_INSTANCES);
     } else {
       coco_warning("coco_suite_get_instance_indices(): problems parsing the "
                    "'instance' suite_instance option, ignored");
@@ -546,8 +540,8 @@ static int coco_suite_is_next_dimension_found(coco_suite_t *suite) {
  *
  * @return The constructed suite object.
  */
-coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
-                         const char *suite_options) {
+static coco_suite_t *coco_suite_create(std::string_view suite_name, std::string_view suite_instance,
+                                       std::string_view suite_options) {
 
   coco_suite_t *suite;
   std::vector<size_t> instances;
@@ -563,14 +557,14 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
   suite = coco_suite_intialize(suite_name);
 
   /* Set the instance */
-  if ((!suite_instance) || (strlen(suite_instance) == 0))
-    instances = coco_suite_get_instance_indices(suite, suite->default_instances.c_str());
+  if (suite_instance.empty())
+    instances = coco_suite_get_instance_indices(suite, suite->default_instances);
   else {
     instances = coco_suite_get_instance_indices(suite, suite_instance);
 
     if (instances.empty()) {
       /* Something wrong in the suite_instance string, use default instead */
-      instances = coco_suite_get_instance_indices(suite, suite->default_instances.c_str());
+      instances = coco_suite_get_instance_indices(suite, suite->default_instances);
     }
 
     /* Check for redundant option keys for suite instance */
@@ -581,17 +575,17 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
   coco_suite_set_instance(suite, instances);
 
   /* Apply filter if any given by the suite_options */
-  if ((suite_options) && (strlen(suite_options) > 0)) {
+  if (!suite_options.empty()) {
     if (coco_options_read_values(suite_options, "function_indices", option_string) > 0) {
-      const std::vector<size_t> indices = coco_string_parse_ranges(
-          option_string.c_str(), 1, suite->functions.size(), "function_indices", COCO_MAX_INSTANCES);
+      const std::vector<size_t> indices =
+          coco_string_parse_ranges(option_string, 1, suite->functions.size(), "function_indices", COCO_MAX_INSTANCES);
       if (!indices.empty())
         coco_suite_filter_indices(suite->functions, indices);
     }
 
     if (coco_options_read_values(suite_options, "instance_indices", option_string) > 0) {
-      const std::vector<size_t> indices = coco_string_parse_ranges(
-          option_string.c_str(), 1, suite->instances.size(), "instance_indices", COCO_MAX_INSTANCES);
+      const std::vector<size_t> indices =
+          coco_string_parse_ranges(option_string, 1, suite->instances.size(), "instance_indices", COCO_MAX_INSTANCES);
       if (!indices.empty())
         coco_suite_filter_indices(suite->instances, indices);
     }
@@ -612,8 +606,8 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
 
     if ((dim_idx_found >= 0) && (parce_dim_idx == 1) &&
         (coco_options_read_values(suite_options, "dimension_indices", option_string) > 0)) {
-      const std::vector<size_t> indices = coco_string_parse_ranges(
-          option_string.c_str(), 1, suite->dimensions.size(), "dimension_indices", COCO_MAX_INSTANCES);
+      const std::vector<size_t> indices =
+          coco_string_parse_ranges(option_string, 1, suite->dimensions.size(), "dimension_indices", COCO_MAX_INSTANCES);
       if (!indices.empty())
         coco_suite_filter_indices(suite->dimensions, indices);
     }
@@ -629,8 +623,8 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
         }
       }
       const std::vector<size_t> dimensions =
-          coco_string_parse_ranges(option_string.c_str(), suite->dimensions[0],
-                                   suite->dimensions[suite->dimensions.size() - 1], "dimensions", COCO_MAX_INSTANCES);
+          coco_string_parse_ranges(option_string, suite->dimensions[0], suite->dimensions[suite->dimensions.size() - 1],
+                                   "dimensions", COCO_MAX_INSTANCES);
       if (!dimensions.empty())
         coco_suite_filter_dimensions(suite, dimensions);
     }
@@ -649,6 +643,7 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
   if ((number_of_active_dimensions < 1) || (suite->dimensions.size() < 1) || (suite->functions.size() < 1) ||
       (suite->instances.size() < 1)) {
     coco_warning("coco_suite(): the suite does not contain at least one dimension, function and instance");
+    coco_suite_free(suite);
     return nullptr;
   }
 
@@ -658,6 +653,11 @@ coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance,
   coco_suite_is_next_dimension_found(suite);
 
   return suite;
+}
+
+coco_suite_t *coco_suite(const char *suite_name, const char *suite_instance, const char *suite_options) {
+  return coco_suite_create(coco_c_string_view(suite_name), coco_c_string_view(suite_instance),
+                           coco_c_string_view(suite_options));
 }
 
 /**
@@ -680,7 +680,7 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
   size_t function_idx;
   size_t dimension_idx;
   size_t instance_idx;
-  coco_problem_t *problem;
+  coco_problem_ptr_t problem;
 
   long previous_function_idx;
   long previous_dimension_idx;
@@ -701,9 +701,7 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
     return nullptr;
   }
 
-  if (suite->current_problem) {
-    coco_problem_free(suite->current_problem);
-  }
+  suite->current_problem.reset();
 
   assert(suite->current_function_idx >= 0);
   assert(suite->current_dimension_idx >= 0);
@@ -716,8 +714,8 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
   problem = coco_suite_get_problem_from_indices(suite, function_idx,
                                                 dimension_idx, instance_idx);
   if (observer != nullptr)
-    problem = coco_problem_add_observer(problem, observer);
-  suite->current_problem = problem;
+    problem = coco_observer_add_logger(observer, std::move(problem));
+  suite->current_problem = std::move(problem);
 
   /* Output information regarding the current place in the iteration */
   if (coco_log_level >= COCO_INFO) {
@@ -738,7 +736,7 @@ coco_problem_t *coco_suite_get_next_problem(coco_suite_t *suite, coco_observer_t
     coco_info_partial(".");
   }
 
-  return problem;
+  return suite->current_problem.get();
 }
 
 /* See coco.h for more information on encoding and decoding problem index */
@@ -776,9 +774,9 @@ void coco_suite_decode_problem_index(const coco_suite_t *suite, const size_t pro
                        suite->dimensions.size()) -
                           1) {
     coco_warning("coco_suite_decode_problem_index(): problem_index too large");
-    function_idx = 0;
-    instance_idx = 0;
-    dimension_idx = 0;
+    *function_idx = 0;
+    *instance_idx = 0;
+    *dimension_idx = 0;
     return;
   }
 

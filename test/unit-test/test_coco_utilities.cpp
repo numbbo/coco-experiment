@@ -17,74 +17,44 @@ static std::string convert_to_string_with_newlines(const std::vector<std::string
  */
 MU_TEST(test_coco_set_log_level) {
 
-  char *previous_log_level, *tmp_log_level;
-
   /* Remember the log level before all these tests */
-  previous_log_level = coco_strdup(coco_set_log_level("info"));
+  const std::string previous_log_level = coco_set_log_level("info");
 
   /* Check whether the level is set to COCO_INFO */
-  mu_check(strcmp(coco_set_log_level(""), "info") == 0);
+  mu_check(std::string(coco_set_log_level("")) == "info");
 
   /* Check whether the method works */
-  tmp_log_level = coco_strdup(coco_set_log_level("error"));
-  mu_check(strcmp(tmp_log_level, "info") == 0);
-  mu_check(strcmp(coco_set_log_level(""), "error") == 0);
-  coco_free_memory(tmp_log_level);
+  mu_check(std::string(coco_set_log_level("error")) == "info");
+  mu_check(std::string(coco_set_log_level("")) == "error");
 
-  tmp_log_level = coco_strdup(coco_set_log_level("warning"));
-  mu_check(strcmp(tmp_log_level, "error") == 0);
-  mu_check(strcmp(coco_set_log_level(""), "warning") == 0);
-  coco_free_memory(tmp_log_level);
+  mu_check(std::string(coco_set_log_level("warning")) == "error");
+  mu_check(std::string(coco_set_log_level("")) == "warning");
 
-  tmp_log_level = coco_strdup(coco_set_log_level("debug"));
-  mu_check(strcmp(tmp_log_level, "warning") == 0);
-  mu_check(strcmp(coco_set_log_level(""), "debug") == 0);
-  coco_free_memory(tmp_log_level);
+  mu_check(std::string(coco_set_log_level("debug")) == "warning");
+  mu_check(std::string(coco_set_log_level("")) == "debug");
 
-  tmp_log_level = coco_strdup(coco_set_log_level("info"));
-  mu_check(strcmp(tmp_log_level, "debug") == 0);
-  mu_check(strcmp(coco_set_log_level(""), "info") == 0);
-  coco_free_memory(tmp_log_level);
+  mu_check(std::string(coco_set_log_level("info")) == "debug");
+  mu_check(std::string(coco_set_log_level("")) == "info");
 
   /* An invalid argument shouldn't change the current value */
   coco_set_log_level("error");
-  tmp_log_level = coco_strdup(coco_set_log_level("bla"));
-  mu_check(strcmp(tmp_log_level, "error") == 0);
-  mu_check(strcmp(coco_set_log_level(""), "error") == 0);
-  coco_free_memory(tmp_log_level);
+  mu_check(std::string(coco_set_log_level("bla")) == "error");
+  mu_check(std::string(coco_set_log_level("")) == "error");
 
   /* Restore the log level */
-  coco_set_log_level(previous_log_level);
-  coco_free_memory(previous_log_level);
+  coco_set_log_level(previous_log_level.c_str());
 }
 
-static void create_time_string(char **string) {
+/**
+ * Returns the prefix followed by the current local time, so that test directories do not collide.
+ */
+static std::string time_stamped(const std::string &prefix) {
+  const time_t date_time = time(nullptr);
+  char date_time_string[32];
 
-  time_t date_time;
-  size_t len;
-  const size_t date_time_len = 24;
-  char date_time_format[] = "_%Y_%m_%d_%H_%M_%S";
-  char *date_time_string;
-  struct tm* date_time_info;
-  char *new_string;
-
-  /* Retrieve the current time as string of the defined format */
-  time(&date_time);
-  date_time_info = localtime(&date_time);
-  date_time_string = (char *)coco_allocate_memory(sizeof(char) * date_time_len);
-  date_time_string[0] = '\1';
-
-  len = strftime(date_time_string, date_time_len, date_time_format, date_time_info);
-  if (len == 0 && date_time_string[0] != '\0') {
-    coco_error("create_time_string(): cannot decode local time string");
-    return; /* Never reached */
-  }
-
-  /* Produce the new string */
-  new_string = coco_strdupf("%s%s", *string, date_time_string);
-  coco_free_memory(date_time_string);
-  coco_free_memory(*string);
-  *string = new_string;
+  if (strftime(date_time_string, sizeof(date_time_string), "_%Y_%m_%d_%H_%M_%S", localtime(&date_time)) == 0)
+    coco_error("time_stamped(): cannot decode local time string");
+  return prefix + date_time_string;
 }
 
 /*
@@ -92,33 +62,69 @@ static void create_time_string(char **string) {
  */
 MU_TEST(test_coco_create_remove_directory) {
 
-  int exists;
-  char *path_string = NULL;
-
-  path_string = coco_strdup("temp");
-  create_time_string(&path_string);
-
-  mu_check(path_string != NULL);
+  const std::string path = time_stamped("temp");
 
   /* At the beginning the path should not exist. */
-  exists = coco_directory_exists(path_string);
-  mu_check(!exists);
+  mu_check(!coco_directory_exists(path));
 
-  coco_create_directory(path_string);
-  exists = coco_directory_exists(path_string);
-  mu_check(exists);
+  coco_create_directory(path);
+  mu_check(coco_directory_exists(path));
 
   /* Calling it again to check the handling if the path does exist. */
-  coco_create_directory(path_string);
+  coco_create_directory(path);
 
-  coco_remove_directory(path_string);
-  exists = coco_directory_exists(path_string);
-  mu_check(!exists);
+  coco_remove_directory(path.c_str());
+  mu_check(!coco_directory_exists(path));
 
   /* Calling it again to check the handling if the path does not exist. */
-  coco_remove_directory(path_string);
+  coco_remove_directory(path.c_str());
+}
 
-  coco_free_memory(path_string);
+/*
+ * Tests nested directories, unique names, file detection and removing a directory with contents.
+ */
+MU_TEST(test_coco_directories_and_files) {
+
+  const std::string base = time_stamped("temp_files");
+  const std::string nested = coco_join_path(base, "a", "b");
+
+  mu_check(!coco_directory_exists(base));
+  mu_check(coco_create_directory(nested) == 0); /* Creates base, a and b */
+  mu_check(coco_directory_exists(coco_join_path(base, "a")));
+  mu_check(coco_create_directory(nested) == 1); /* Already exists */
+  mu_check(coco_create_directory(nested + "/") == 1);
+
+  /* A unique directory gets a numbered suffix when the name is taken */
+  const std::string unique = coco_create_unique_directory(nested);
+  mu_check(unique == nested + "-0001");
+  mu_check(coco_directory_exists(unique));
+
+  /* Files are found, directories are not files */
+  const std::string file_name = coco_join_path(nested, "data.txt");
+  mu_check(!coco_file_exists(file_name));
+  FILE *file = fopen(file_name.c_str(), "w");
+  mu_check(file != NULL);
+  fprintf(file, "1\n");
+  fclose(file);
+  mu_check(coco_file_exists(file_name));
+  mu_check(!coco_file_exists(nested));
+  mu_check(!coco_directory_exists(file_name));
+  mu_check(coco_create_unique_filename(nested, "data", ".txt") == "data-0001");
+
+  /* Removing a file path is not removing a directory */
+  mu_check(coco_remove_directory(file_name.c_str()) == 0);
+  mu_check(coco_file_exists(file_name));
+
+  /* Removes all contents */
+  mu_check(coco_remove_directory(base.c_str()) == 0);
+  mu_check(!coco_directory_exists(base));
+  mu_check(coco_remove_directory(base.c_str()) == 0);
+
+  /* Joining paths */
+  mu_check(coco_join_path("", "x") == "x");
+  mu_check(coco_join_path("a", "b", "c") == std::string("a") + (char)std::filesystem::path::preferred_separator + "b" +
+                                               (char)std::filesystem::path::preferred_separator + "c");
+
 }
 
 /**
@@ -270,7 +276,7 @@ MU_TEST(test_coco_string_parse_ranges) {
   std::vector<size_t> result;
 
   mu_check(coco_string_parse_ranges("", 1, 2, "", 100).empty());
-  mu_check(coco_string_parse_ranges(NULL, 1, 2, NULL, 100).empty());
+  mu_check(coco_string_parse_ranges("", 1, 2, "", 100).empty());
   mu_check(coco_string_parse_ranges("", 1, 2, "bla", 100).empty());
   mu_check(coco_string_parse_ranges("bla", 1, 2, "", 100).empty());
   mu_check(coco_string_parse_ranges("bla", 1, 2, "bla", 100).empty());
@@ -329,7 +335,7 @@ MU_TEST(test_coco_option_keys) {
   coco_option_keys_t option_keys;
 
   mu_check(coco_option_keys("").empty());
-  mu_check(coco_option_keys(NULL).empty());
+  mu_check(coco_option_keys("").empty());
 
   option_keys = coco_option_keys("key");
   mu_check(option_keys.size() == 1);
@@ -381,7 +387,7 @@ MU_TEST(test_coco_options_read) {
   value = "default";
   mu_check(coco_options_read_string("other: 2", "name", value) == 0);
   mu_check(coco_options_read_string("name:", "name", value) == 0);
-  mu_check(coco_options_read_string(NULL, "name", value) == 0);
+  mu_check(coco_options_read_string("", "name", value) == 0);
   mu_check(value == "default");
 
   mu_check(coco_options_read_values("indices: 1, 2-4 other: 3", "indices", value) == 5);
@@ -502,6 +508,7 @@ int main(void) {
   MU_RUN_TEST(test_coco_string_parse_ranges);
   MU_RUN_TEST(test_coco_options_read);
   MU_RUN_TEST(test_coco_create_remove_directory);
+  MU_RUN_TEST(test_coco_directories_and_files);
   MU_RUN_TEST(test_coco_is_orthogonal);
 
   MU_REPORT();

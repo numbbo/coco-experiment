@@ -35,7 +35,7 @@
 /**
  * @brief Sets the instances associated with years for the SBOX-COST suite.
  */
-static const char *suite_sbox_cost_get_instances_by_year(const int year) {
+static std::string_view suite_sbox_cost_get_instances_by_year(const int year) {
   if (year == 2023) {
     return "1-5,101-110";
   } if (year == 0000) {
@@ -46,7 +46,7 @@ static const char *suite_sbox_cost_get_instances_by_year(const int year) {
         "suite_bbob_boxed_get_instances_by_year(): year %d not defined for "
         "suite_bbob_boxed",
         year);
-    return nullptr;
+    return {};
   }
 }
 
@@ -54,10 +54,9 @@ static const char *suite_sbox_cost_get_instances_by_year(const int year) {
  * @brief Creates and returns a bbob-boxed problem without needing the actual
  * bbob-boxed suite.
  */
-static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
-                                                  const size_t dimension,
-                                                  const size_t instance) {
-  coco_problem_t *problem = nullptr;
+static coco_problem_ptr_t coco_get_bbob_boxed_problem(const size_t function, const size_t dimension,
+                                                      const size_t instance) {
+  coco_problem_ptr_t problem;
 
   const char *problem_id_template = "bbob-boxed_f%03lu_i%02lu_d%02lu";
   const char *problem_name_template =
@@ -183,7 +182,7 @@ static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
     return nullptr; /* Never reached */
   }
 
-  problem = transform_vars_enforce_box(problem);
+  problem = transform_vars_enforce_box(std::move(problem));
   return problem;
 }
 
@@ -197,12 +196,10 @@ static coco_problem_t *coco_get_bbob_boxed_problem(const size_t function,
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_sbox_cost_get_problem(coco_suite_t *suite,
-                                                   const size_t function_idx,
-                                                   const size_t dimension_idx,
-                                                   const size_t instance_idx) {
+static coco_problem_ptr_t suite_sbox_cost_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                      const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -224,12 +221,12 @@ static coco_problem_t *suite_sbox_cost_get_problem(coco_suite_t *suite,
 struct suite_sbox_cost_t final : public coco_suite_s {
   using coco_suite_s::coco_suite_s;
 
-  const char *get_instances_by_year(const int year) const override {
+  std::string_view get_instances_by_year(const int year) const override {
     return suite_sbox_cost_get_instances_by_year(year);
   }
 
-  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
-                              const size_t instance_idx) override {
+  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
+                                 const size_t instance_idx) override {
     return suite_sbox_cost_get_problem(this, function_idx, dimension_idx, instance_idx);
   }
 };

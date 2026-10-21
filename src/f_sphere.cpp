@@ -70,20 +70,20 @@ struct f_sphere_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic sphere problem.
  */
-static coco_problem_t *f_sphere_allocate(const size_t number_of_variables) {
-  return new f_sphere_t(number_of_variables);
+static coco_problem_ptr_t f_sphere_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_sphere_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB sphere problem.
  */
-static coco_problem_t *f_sphere_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                      const size_t instance, const long rseed,
-                                                      const char *problem_id_template,
-                                                      const char *problem_name_template) {
+static coco_problem_ptr_t f_sphere_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                         const size_t instance, const long rseed,
+                                                         const char *problem_id_template,
+                                                         const char *problem_name_template) {
 
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   if (coco_strfind(problem_name_template, "bbob-boxed suite problem") >= 0) {
@@ -98,19 +98,17 @@ static coco_problem_t *f_sphere_bbob_problem_allocate(const size_t function, con
   fopt = bbob2009_compute_fopt(function, instance);
 
   problem = f_sphere_allocate(dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
   if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
-    problem = transform_obj_norm_by_dim(problem);
+    problem = transform_obj_norm_by_dim(std::move(problem));
   }
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }

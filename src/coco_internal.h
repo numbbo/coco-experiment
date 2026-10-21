@@ -8,7 +8,9 @@
 #ifndef COCOEX_COCO_INTERNAL_H
 #define COCOEX_COCO_INTERNAL_H
 
+#include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #ifdef __cplusplus
@@ -17,12 +19,20 @@ extern "C" {
 
 /***********************************************************************************************************/
 /**
+ * @brief An owning pointer to a problem.
+ *
+ * Problems are created and passed around as coco_problem_ptr_t inside COCO. Ownership is only handed out as a
+ * raw pointer at the C interface.
+ */
+typedef std::unique_ptr<coco_problem_t> coco_problem_ptr_t;
+
+/**
  * @brief The get problem function type.
  *
  * This is a template for functions that return a problem based on function, dimension and instance.
  */
-typedef coco_problem_t *(*coco_get_problem_function_t)(const size_t function, const size_t dimension,
-                                                       const size_t instance);
+typedef coco_problem_ptr_t (*coco_get_problem_function_t)(const size_t function, const size_t dimension,
+                                                          const size_t instance);
 
 /**
  * @brief The option keys data type (a set of option keys used by suites and observers).
@@ -118,15 +128,14 @@ struct coco_problem_s {
  * properties of its inner problem and by default forwards all evaluations to it. It owns the inner problem.
  */
 struct coco_problem_transformed_s : public coco_problem_s {
-  coco_problem_transformed_s(coco_problem_t *inner_problem, const char *name_prefix);
-  ~coco_problem_transformed_s() override;
+  coco_problem_transformed_s(coco_problem_ptr_t inner, std::string_view name_prefix);
 
   void evaluate_function(const double *x, double *y) override;
   void evaluate_constraint(const double *x, double *y, int update_counter) override;
   void evaluate_gradient(const double *x, double *y) override;
   void recommend_solution(const double *x) override;
 
-  coco_problem_t *inner_problem; /**< @brief The inner problem, owned by this problem */
+  coco_problem_ptr_t inner_problem; /**< @brief The inner problem, owned by this problem */
 };
 typedef struct coco_problem_transformed_s coco_problem_transformed_t;
 
@@ -137,14 +146,13 @@ typedef struct coco_problem_transformed_s coco_problem_transformed_t;
  * both problems.
  */
 struct coco_problem_stacked_s : public coco_problem_s {
-  coco_problem_stacked_s(coco_problem_t *problem1, coco_problem_t *problem2);
-  ~coco_problem_stacked_s() override;
+  coco_problem_stacked_s(coco_problem_ptr_t first, coco_problem_ptr_t second);
 
   void evaluate_function(const double *x, double *y) override;
   void evaluate_constraint(const double *x, double *y, int update_counter) override;
 
-  coco_problem_t *problem1; /**< @brief The first problem (objective) */
-  coco_problem_t *problem2; /**< @brief The second problem (objective or constraints) */
+  coco_problem_ptr_t problem1; /**< @brief The first problem (objective) */
+  coco_problem_ptr_t problem2; /**< @brief The second problem (objective or constraints) */
 };
 typedef struct coco_problem_stacked_s coco_problem_stacked_t;
 
@@ -189,7 +197,7 @@ struct coco_observer_s : public coco_observer_settings_s {
   coco_observer_s &operator=(const coco_observer_s &) = delete;
 
   /** @brief Wraps the given problem with the logger of this observer and returns the wrapped problem. */
-  virtual coco_problem_t *add_logger(coco_problem_t *problem) = 0;
+  virtual coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) = 0;
 
   /**
    * @brief Signals an algorithm restart on the given (observed) problem. The default implementation reports
@@ -214,8 +222,8 @@ struct coco_suite_s {
    * @brief Sets the functions and dimensions contained in the suite, while the instances are set by
    * coco_suite_set_instance().
    */
-  coco_suite_s(const char *suite_name, const size_t number_of_functions, const size_t number_of_dimensions,
-               const size_t *dimensions, const char *default_instances, const int known_optima);
+  coco_suite_s(std::string_view suite_name, const size_t number_of_functions, const size_t number_of_dimensions,
+               const size_t *dimensions, std::string_view default_instances, const int known_optima);
   /** @brief Frees the current problem (if any). */
   virtual ~coco_suite_s();
 
@@ -226,14 +234,14 @@ struct coco_suite_s {
    * @brief Returns the instances of the suite for the given year. The default implementation reports an
    * error (the suite has no years defined).
    */
-  virtual const char *get_instances_by_year(const int year) const;
+  virtual std::string_view get_instances_by_year(const int year) const;
 
   /**
    * @brief Returns the problem with the given function, dimension and instance index. The indices are
    * guaranteed to correspond to a problem that has not been filtered out.
    */
-  virtual coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
-                                      const size_t instance_idx) = 0;
+  virtual coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
+                                         const size_t instance_idx) = 0;
 
   std::string suite_name; /**< @brief Name of the suite. */
 
@@ -246,7 +254,7 @@ struct coco_suite_s {
 
   int known_optima; /**< @brief Whether the problems of the suite have known optimal values */
 
-  coco_problem_t *current_problem; /**< @brief Pointer to the currently tackled problem. */
+  coco_problem_ptr_t current_problem; /**< @brief The currently tackled problem. */
   long current_dimension_idx;      /**< @brief The dimension index of the currently tackled problem. */
   long current_function_idx;       /**< @brief The function index of the currently tackled problem. */
   long current_instance_idx;       /**< @brief The instance index of the currently tackled problem. */

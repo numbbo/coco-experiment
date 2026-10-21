@@ -63,19 +63,19 @@ struct f_bueche_rastrigin_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic Bueche-Rastrigin problem.
  */
-static coco_problem_t *f_bueche_rastrigin_allocate(const size_t number_of_variables) {
-  return new f_bueche_rastrigin_t(number_of_variables);
+static coco_problem_ptr_t f_bueche_rastrigin_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_bueche_rastrigin_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB Bueche-Rastrigin problem.
  */
-static coco_problem_t *f_bueche_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                const size_t instance, const long rseed,
-                                                                const char *problem_id_template,
-                                                                const char *problem_name_template) {
+static coco_problem_ptr_t f_bueche_rastrigin_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                   const size_t instance, const long rseed,
+                                                                   const char *problem_id_template,
+                                                                   const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   const double penalty_factor = 100.0;
   size_t i;
@@ -95,22 +95,20 @@ static coco_problem_t *f_bueche_rastrigin_bbob_problem_allocate(const size_t fun
   }
 
   problem = f_bueche_rastrigin_allocate(dimension);
-  problem = transform_vars_brs(problem);
-  problem = transform_vars_oscillate(problem);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_brs(std::move(problem));
+  problem = transform_vars_oscillate(std::move(problem));
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
   if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
-    problem = transform_obj_norm_by_dim(problem);
+    problem = transform_obj_norm_by_dim(std::move(problem));
   }
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_obj_penalize(problem, penalty_factor);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_obj_penalize(std::move(problem), penalty_factor);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }

@@ -26,10 +26,9 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
   std::vector<size_t> first_non_zero_map; /**< @brief maps a row to the index of its first
                                            non zero element */
 
-  transform_vars_blockrotation_t(coco_problem_t *inner_problem, const double *const *B,
-                                 const size_t number_of_variables, const size_t *block_sizes,
-                                 const size_t nb_blocks)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_blockrotation"),
+  transform_vars_blockrotation_t(coco_problem_ptr_t inner, const double *const *B, const size_t number_of_variables,
+                                 const size_t *block_sizes, const size_t nb_blocks)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_blockrotation"),
         B(coco_copy_block_matrix(B, number_of_variables, block_sizes, nb_blocks)),
         Bx(inner_problem->number_of_variables), dimension(number_of_variables), block_size_map(number_of_variables),
         first_non_zero_map(number_of_variables) {
@@ -49,7 +48,7 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
                                                                      cumsum for blocksizes*/
     }
 
-    if (coco_problem_best_parameter_not_zero(inner_problem)) {
+    if (coco_problem_best_parameter_not_zero(inner_problem.get())) {
       coco_debug("transform_vars_blockrotation(): 'best_parameter' not updated, "
                  "set to NAN");
       coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
@@ -62,7 +61,6 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
       test(1e-5);
     }
   }
-
 
   /*
    * @brief return i-th row of B in y.
@@ -102,7 +100,7 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
 
   void evaluate_function(const double *x, double *y) override {
     apply(x, Bx.data());
-    coco_evaluate_function(inner_problem, Bx.data(), y);
+    coco_evaluate_function(inner_problem.get(), Bx.data(), y);
     assert(y[0] + 1e-13 >= best_value[0]);
   }
 
@@ -119,8 +117,8 @@ struct transform_vars_blockrotation_t final : public coco_problem_transformed_t 
       for (j = 0; j < number_of_variables; ++j) { /* check result */
         if (!coco_double_almost_equal(y[j], (i == j) ? 1.0 : 0.0, precision)) {
           coco_error("transform_vars_blockrotation_test() with precision %e "
-                     "failed on row %i",
-                     precision, i);
+                     "failed on row %lu",
+                     precision, (unsigned long)i);
         }
         /* printf("%f ", y[j]); */
       }
@@ -137,9 +135,10 @@ static void transform_vars_blockrotation_apply(coco_problem_t *problem, const do
   static_cast<transform_vars_blockrotation_t *>(problem)->apply(x, y);
 }
 
-static coco_problem_t *transform_vars_blockrotation(coco_problem_t *inner_problem, const double *const *B,
-                                                    const size_t number_of_variables, const size_t *block_sizes,
-                                                    const size_t nb_blocks) {
+static coco_problem_ptr_t transform_vars_blockrotation(coco_problem_ptr_t inner_problem, const double *const *B,
+                                                       const size_t number_of_variables, const size_t *block_sizes,
+                                                       const size_t nb_blocks) {
   assert(number_of_variables > 0); /*tmp*/
-  return new transform_vars_blockrotation_t(inner_problem, B, number_of_variables, block_sizes, nb_blocks);
+  return std::make_unique<transform_vars_blockrotation_t>(std::move(inner_problem), B, number_of_variables, block_sizes,
+                                                          nb_blocks);
 }

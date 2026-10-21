@@ -13,7 +13,7 @@
  * @brief Sets the instances associated with years for the constrained
  *        bbob suite.
  */
-static const char *suite_cons_bbob_get_instances_by_year(const int year) {
+static std::string_view suite_cons_bbob_get_instances_by_year(const int year) {
 
   if ((year >= 2022) || (year == 0)) {
     return "1-15";
@@ -21,18 +21,18 @@ static const char *suite_cons_bbob_get_instances_by_year(const int year) {
     return "1-15";
   } else {
     coco_error("suite_cons_bbob_get_instances_by_year(): year %d not defined for suite_cons_bbob", year);
-    return nullptr;
+    return {};
   }
 }
 
 /**
  * @brief Creates and returns a constrained BBOB problem.
  */
-static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const size_t function, const size_t dimension,
-                                                  const size_t instance) {
+static coco_problem_ptr_t coco_get_cons_bbob_problem(std::string_view suite_name, const size_t function,
+                                                     const size_t dimension, const size_t instance) {
 
   size_t number_of_linear_constraints;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> feasible_direction(dimension);
   std::vector<double> xopt(dimension);
@@ -40,13 +40,13 @@ static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const 
 
   const char *problem_id_template = "bbob-constrained_f%03lu_i%02lu_d%02lu";
   const char *problem_name_template = "bbob-constrained suite problem f%lu instance %lu in %luD";
-  if (strcmp(suite_name, "bbob-constrained-active-only") == 0) {
+  if (suite_name == "bbob-constrained-active-only") {
     /* CAVEAT: the first 28 chars of this ID are used in c_linear_cons_bbob_problem_allocate()
      * in c_linear.cpp to make the decision whether inactive constraints are added */
     problem_id_template = "bbob-constrained-active-only_f%03lu_i%02lu_d%02lu";
     problem_name_template = "bbob-constrained-active-only suite problem f%lu instance %lu in %luD";
   }
-  if (strcmp(suite_name, "bbob-constrained-no-disguise") == 0) {
+  if (suite_name == "bbob-constrained-no-disguise") {
     /* First trick as above, by chance same number of characters
      * Both options at the same time not supported */
     problem_id_template = "bbob-constrained-no-disguise_f%03lu_i%02lu_d%02lu";
@@ -66,63 +66,72 @@ static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const 
     problem = f_sphere_c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                            rseed, feasible_direction.data(), xopt.data(), problem_id_template,
                                                            problem_name_template);
-    problem = transform_obj_scale(problem, 10.); /* move initial feasible point to a delta-f between 100 and 10000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  10.); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 2) {
 
     problem = f_ellipsoid_c_linear_cons_bbob_problem_allocate(function, dimension, instance,
                                                               number_of_linear_constraints, rseed, feasible_direction.data(),
                                                               xopt.data(), problem_id_template, problem_name_template);
-    problem = transform_obj_scale(problem, 1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 3) {
 
     problem = f_linear_slope_c_linear_cons_bbob_problem_allocate(
         function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
         problem_id_template, problem_name_template);
-    problem = transform_obj_scale(problem, 10.); /* move initial feasible point to a delta-f between 100 and 10000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  10.); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 4) {
 
     problem = f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
         function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
         problem_id_template, problem_name_template);
-    problem = transform_obj_scale(problem, 1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 5) {
 
     problem = f_discus_c_linear_cons_bbob_problem_allocate(function, dimension, instance, number_of_linear_constraints,
                                                            rseed, feasible_direction.data(), xopt.data(), problem_id_template,
                                                            problem_name_template);
-    problem = transform_obj_scale(problem, 1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  1e-4); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 6) {
 
     problem = f_bent_cigar_c_linear_cons_bbob_problem_allocate(function, dimension, instance,
                                                                number_of_linear_constraints, rseed, feasible_direction.data(),
                                                                xopt.data(), problem_id_template, problem_name_template);
-    problem = transform_obj_scale(problem, 1e-4); /* move initial feasible point to a delta-f between 100 and 100,000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  1e-4); /* move initial feasible point to a delta-f between 100 and 100,000 */
 
   } else if (obj_function_type(function) == 7) {
 
     problem = f_different_powers_c_linear_cons_bbob_problem_allocate(
         function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
         problem_id_template, problem_name_template);
-    problem = transform_obj_scale(problem, 1e2); /* move initial feasible point to a delta-f between 100 and 1000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  1e2); /* move initial feasible point to a delta-f between 100 and 1000 */
 
   } else if (obj_function_type(function) == 8) {
 
     problem = f_rastrigin_c_linear_cons_bbob_problem_allocate(function, dimension, instance,
                                                               number_of_linear_constraints, rseed, feasible_direction.data(),
                                                               xopt.data(), problem_id_template, problem_name_template);
-    problem = transform_obj_scale(problem, 10.); /* move initial feasible point to a delta-f between 100 and 10000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  10.); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else if (obj_function_type(function) == 9) {
 
     problem = f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
         function, dimension, instance, number_of_linear_constraints, rseed, feasible_direction.data(), xopt.data(),
         problem_id_template, problem_name_template);
-    problem = transform_obj_scale(problem, 10.); /* move initial feasible point to a delta-f between 100 and 10000 */
+    problem = transform_obj_scale(std::move(problem),
+                                  10.); /* move initial feasible point to a delta-f between 100 and 10000 */
 
   } else {
     coco_error("get_cons_bbob_problem(): cannot retrieve problem f%lu instance %lu in %luD", function, instance,
@@ -143,16 +152,16 @@ static coco_problem_t *coco_get_cons_bbob_problem(const char *suite_name, const 
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                                   const size_t dimension_idx, const size_t instance_idx) {
+static coco_problem_ptr_t suite_cons_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                      const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
   const size_t instance = suite->instances[instance_idx];
 
-  problem = coco_get_cons_bbob_problem(suite->suite_name.c_str(), function, dimension, instance);
+  problem = coco_get_cons_bbob_problem(suite->suite_name, function, dimension, instance);
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;
@@ -161,9 +170,9 @@ static coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const si
   /* Use the standard stacked problem_id as problem_name and
    * construct a new suite-specific problem_id
    */
-  coco_problem_set_id(problem, "%s_f%03lu_i%02lu_d%02lu", suite->suite_name.c_str(), (unsigned long)function,
+  coco_problem_set_id(problem.get(), "%s_f%03lu_i%02lu_d%02lu", suite->suite_name.c_str(), (unsigned long)function,
                       (unsigned long)instance, (unsigned long)dimension);
-  coco_problem_set_name(problem, "%s suite problem f%lu instance %lu in %luD", suite->suite_name.c_str(),
+  coco_problem_set_name(problem.get(), "%s suite problem f%lu instance %lu in %luD", suite->suite_name.c_str(),
                         (unsigned long)function, (unsigned long)instance, (unsigned long)dimension);
 
   return problem;
@@ -175,12 +184,12 @@ static coco_problem_t *suite_cons_bbob_get_problem(coco_suite_t *suite, const si
 struct suite_cons_bbob_t final : public coco_suite_s {
   using coco_suite_s::coco_suite_s;
 
-  const char *get_instances_by_year(const int year) const override {
+  std::string_view get_instances_by_year(const int year) const override {
     return suite_cons_bbob_get_instances_by_year(year);
   }
 
-  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
-                              const size_t instance_idx) override {
+  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
+                                 const size_t instance_idx) override {
     return suite_cons_bbob_get_problem(this, function_idx, dimension_idx, instance_idx);
   }
 };
@@ -188,7 +197,7 @@ struct suite_cons_bbob_t final : public coco_suite_s {
 /**
  * @brief Sets the dimensions and default instances for the bbob suite.
  */
-static coco_suite_t *suite_cons_bbob_initialize(const char *suite_name) {
+static coco_suite_t *suite_cons_bbob_initialize(std::string_view suite_name) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {2, 3, 5, 10, 20, 40};

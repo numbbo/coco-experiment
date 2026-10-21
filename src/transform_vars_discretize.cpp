@@ -29,9 +29,9 @@
 struct transform_vars_discretize_t final : public coco_problem_transformed_t {
   std::vector<double> offset;
 
-  transform_vars_discretize_t(coco_problem_t *inner_problem, const double *smallest_values_of_interest,
+  transform_vars_discretize_t(coco_problem_ptr_t inner, const double *smallest_values_of_interest,
                               const double *largest_values_of_interest, const size_t number_of_integer_variables)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_discretize"),
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_discretize"),
         offset(inner_problem->number_of_variables) {
     double l, u, inner_l, inner_u, outer_l, outer_u;
     double outer_xopt, inner_xopt, inner_approx_xopt;
@@ -87,7 +87,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
     int n;
 
     if (inner_problem->number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem, x, y);
+      coco_evaluate_function(inner_problem.get(), x, y);
       return;
     }
 
@@ -116,7 +116,7 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
       discretized_x[i] = inner_l + (inner_u - inner_l) * (discretized_x[i] - outer_l) / (outer_u - outer_l) - offset[i];
     }
 
-    coco_evaluate_function(inner_problem, discretized_x.data(), y);
+    coco_evaluate_function(inner_problem.get(), discretized_x.data(), y);
   }
 
   /** @brief Constraints are not supported yet (TODO?). */
@@ -131,10 +131,10 @@ struct transform_vars_discretize_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_vars_discretize(coco_problem_t *inner_problem,
-                                                 const double *smallest_values_of_interest,
-                                                 const double *largest_values_of_interest,
-                                                 const size_t number_of_integer_variables) {
-  return new transform_vars_discretize_t(inner_problem, smallest_values_of_interest, largest_values_of_interest,
-                                         number_of_integer_variables);
+static coco_problem_ptr_t transform_vars_discretize(coco_problem_ptr_t inner_problem,
+                                                    const double *smallest_values_of_interest,
+                                                    const double *largest_values_of_interest,
+                                                    const size_t number_of_integer_variables) {
+  return std::make_unique<transform_vars_discretize_t>(std::move(inner_problem), smallest_values_of_interest,
+                                                       largest_values_of_interest, number_of_integer_variables);
 }

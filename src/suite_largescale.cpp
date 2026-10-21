@@ -24,23 +24,23 @@
 /**
  * @brief Sets the instances associated with years for the bbob large-scale suite.
  */
-static const char *suite_largescale_get_instances_by_year(const int year) {
+static std::string_view suite_largescale_get_instances_by_year(const int year) {
   if (year >= 2016 || year == 0) {
     return "1-15";
   } else if (year >= 2009) {
     return "1-15";
   } else {
     coco_error("suite_largescale_get_instances_by_year(): year %d not defined for suite_largescale", year);
-    return nullptr;
+    return {};
   }
 }
 
 /**
  * @brief Creates and returns a large-scale problem without needing the actual large-scale suite.
  */
-static coco_problem_t *coco_get_largescale_problem(const size_t function, const size_t dimension,
-                                                   const size_t instance) {
-  coco_problem_t *problem = nullptr;
+static coco_problem_ptr_t coco_get_largescale_problem(const size_t function, const size_t dimension,
+                                                      const size_t instance) {
+  coco_problem_ptr_t problem;
 
   const char *problem_id_template = "bbob_f%03lu_i%02lu_d%04lu";
   const char *problem_name_template = "BBOB large-scale suite problem f%lu instance %lu in %luD";
@@ -144,10 +144,10 @@ static coco_problem_t *coco_get_largescale_problem(const size_t function, const 
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                                    const size_t dimension_idx, const size_t instance_idx) {
+static coco_problem_ptr_t suite_largescale_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                       const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
@@ -168,12 +168,12 @@ static coco_problem_t *suite_largescale_get_problem(coco_suite_t *suite, const s
 struct suite_largescale_t final : public coco_suite_s {
   using coco_suite_s::coco_suite_s;
 
-  const char *get_instances_by_year(const int year) const override {
+  std::string_view get_instances_by_year(const int year) const override {
     return suite_largescale_get_instances_by_year(year);
   }
 
-  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
-                              const size_t instance_idx) override {
+  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
+                                 const size_t instance_idx) override {
     return suite_largescale_get_problem(this, function_idx, dimension_idx, instance_idx);
   }
 };

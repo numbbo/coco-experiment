@@ -91,21 +91,20 @@ struct f_sharp_ridge_generalized_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic sharp ridge problem.
  */
-static coco_problem_t *f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
-                                                          size_t proportion_of_linear_dims) {
-  return new f_sharp_ridge_generalized_t(number_of_variables, proportion_of_linear_dims);
+static coco_problem_ptr_t f_sharp_ridge_generalized_allocate(const size_t number_of_variables,
+                                                             size_t proportion_of_linear_dims) {
+  return std::make_unique<f_sharp_ridge_generalized_t>(number_of_variables, proportion_of_linear_dims);
 }
-
 
 /**
  * @brief Creates the BBOB permuted block-rotated generalized sharp ridge
  * problem
  */
-static coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
+static coco_problem_ptr_t f_sharp_ridge_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const char *problem_id_template, const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P21(dimension);
   std::vector<size_t> P12(dimension);
@@ -142,23 +141,22 @@ static coco_problem_t *f_sharp_ridge_generalized_permblockdiag_bbob_problem_allo
   coco_compute_truncated_uniform_swap_permutation(P22.data(), rseed + 6000000, dimension, nb_swaps, swap_range);
 
   problem = f_sharp_ridge_generalized_allocate(dimension, proportion_of_linear_dims);
-  problem = transform_vars_permutation(problem, P21.data(), dimension); /* LIFO */
-  problem = transform_vars_blockrotation(problem, B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
-  problem = transform_vars_permutation(problem, P11.data(), dimension);
-  problem = transform_vars_conditioning(problem, 10.0);
-  problem =
-      transform_vars_permutation(problem, P22.data(), dimension); /*Consider replacing P11 and 22 by a single permutation P3*/
-  problem = transform_vars_blockrotation(problem, B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
-  problem = transform_vars_permutation(problem, P12.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension); /* LIFO */
+  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_conditioning(std::move(problem), 10.0);
+  problem = transform_vars_permutation(std::move(problem), P22.data(),
+                                       dimension); /*Consider replacing P11 and 22 by a single permutation P3*/
+  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  problem = transform_obj_norm_by_dim(problem);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_norm_by_dim(std::move(problem));
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
-
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }

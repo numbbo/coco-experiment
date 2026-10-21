@@ -82,20 +82,20 @@ struct f_bent_cigar_generalized_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic generalized bent cigar problem.
  */
-static coco_problem_t *f_bent_cigar_generalized_allocate(const size_t number_of_variables,
-                                                         size_t proportion_long_axes_denom) {
-  return new f_bent_cigar_generalized_t(number_of_variables, proportion_long_axes_denom);
+static coco_problem_ptr_t f_bent_cigar_generalized_allocate(const size_t number_of_variables,
+                                                            size_t proportion_long_axes_denom) {
+  return std::make_unique<f_bent_cigar_generalized_t>(number_of_variables, proportion_long_axes_denom);
 }
 
 /**
  * @brief Creates the BBOB generalized permuted block-rotated bent cigar
  * problem.
  */
-static coco_problem_t *f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(
+static coco_problem_ptr_t f_bent_cigar_generalized_permblockdiag_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed,
     const char *problem_id_template, const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
   size_t nb_blocks;
@@ -126,24 +126,20 @@ static coco_problem_t *f_bent_cigar_generalized_permblockdiag_bbob_problem_alloc
 
   problem =
       f_bent_cigar_generalized_allocate(dimension, proportion_long_axes_denom);
-  problem = transform_vars_permutation(problem, P2.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B.rows(), dimension,
-                                         block_sizes.data(), nb_blocks);
-  problem = transform_vars_permutation(problem, P1.data(), dimension);
-  problem = transform_vars_asymmetric(problem, 0.5);
-  problem = transform_vars_permutation(problem, P2.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B.rows(), dimension,
-                                         block_sizes.data(), nb_blocks);
-  problem = transform_vars_permutation(problem, P1.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
+  problem = transform_vars_asymmetric(std::move(problem), 0.5);
+  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  problem = transform_obj_norm_by_dim(problem);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_norm_by_dim(std::move(problem));
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
   return problem;
 }

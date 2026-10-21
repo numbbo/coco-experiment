@@ -6,7 +6,7 @@
 #include "coco.h"
 #include "coco_utilities.cpp"
 
-static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *problem);
+static coco_problem_ptr_t logger_bbob(coco_observer_t *observer, coco_problem_ptr_t problem);
 static void logger_bbob_signal_restart(coco_problem_t *problem);
 static void logger_bbob_detach_observer(coco_problem_t *problem);
 
@@ -23,7 +23,7 @@ static void logger_bbob_detach_observer(coco_problem_t *problem);
  */
 struct observer_bbob_t final : public coco_observer_s {
 
-  observer_bbob_t(const coco_observer_settings_s &observer_settings, const char *options,
+  observer_bbob_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                   coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings), observed_problem(nullptr), prefix("bbobexp"), last_function(0),
         last_dimension(0), last_dat_file("init") {
@@ -44,7 +44,7 @@ struct observer_bbob_t final : public coco_observer_s {
     coco_debug("Ended   observer_bbob_t::~observer_bbob_t()");
   }
 
-  coco_problem_t *add_logger(coco_problem_t *problem) override { return logger_bbob(this, problem); }
+  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override { return logger_bbob(this, std::move(problem)); }
 
   void signal_restart(coco_problem_t *problem) override { logger_bbob_signal_restart(problem); }
 

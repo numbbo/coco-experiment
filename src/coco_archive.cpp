@@ -55,7 +55,7 @@ struct coco_archive_avl_item_t {
  * @brief Creates and returns the information on the solution in the form of a node's item in the AVL tree.
  */
 static coco_archive_avl_item_t *coco_archive_node_item_create(const double *y, const double *ideal, const double *nadir,
-                                                              const size_t num_obj, const char *text) {
+                                                              const size_t num_obj, std::string_view text) {
 
   coco_archive_avl_item_t *item = new coco_archive_avl_item_t();
 
@@ -163,7 +163,7 @@ int coco_archive_add_solution(coco_archive_t *archive, const double y1, const do
 
   const double y[2] = {y1, y2};
   insert_item = coco_archive_node_item_create(y, archive->ideal.data(), archive->nadir.data(),
-                                              archive->number_of_objectives, text);
+                                              archive->number_of_objectives, coco_c_string_view(text));
 
   /* Find the first point that is not worse than the new point (NULL if such point does not exist) */
   node = avl_item_search_right(archive->tree, insert_item, nullptr);

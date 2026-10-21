@@ -26,7 +26,7 @@ static double suite_bbob_mixint_scaling_factors[] = {
 /**
  * @brief Sets the instances associated with years for the bbob-mixint suites.
  */
-static const char *suite_bbob_mixint_get_instances_by_year(const int year) {
+static std::string_view suite_bbob_mixint_get_instances_by_year(const int year) {
 
   (void)year; /* To get rid of compiler warnings */
   return "1-15";
@@ -42,10 +42,10 @@ static const char *suite_bbob_mixint_get_instances_by_year(const int year) {
  * @param coco_get_problem_function The function that is used to access the continuous problem.
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *coco_get_bbob_mixint_problem(const size_t function, const size_t dimension,
-                                                    const size_t instance,
-                                                    const coco_get_problem_function_t coco_get_problem_function) {
-  coco_problem_t *problem = nullptr;
+static coco_problem_ptr_t coco_get_bbob_mixint_problem(const size_t function, const size_t dimension,
+                                                       const size_t instance,
+                                                       const coco_get_problem_function_t coco_get_problem_function) {
+  coco_problem_ptr_t problem;
 
   /* The cardinality of variables (0 = continuous variables should always come last) */
   const size_t variable_cardinality[] = {2, 4, 8, 16, 0};
@@ -87,12 +87,13 @@ static coco_problem_t *coco_get_bbob_mixint_problem(const size_t function, const
 
   inner_problem_id = problem->problem_id;
 
-  problem = transform_vars_discretize(problem, smallest_values_of_interest.data(), largest_values_of_interest.data(), num_integer);
+  problem = transform_vars_discretize(std::move(problem), smallest_values_of_interest.data(),
+                                      largest_values_of_interest.data(), num_integer);
 
-  problem = transform_obj_scale(problem, suite_bbob_mixint_scaling_factors[function - 1]);
+  problem = transform_obj_scale(std::move(problem), suite_bbob_mixint_scaling_factors[function - 1]);
 
-  coco_problem_set_id(problem, "bbob-mixint_f%03lu_i%02lu_d%02lu", function, instance, dimension);
-  coco_problem_set_name(problem, "mixint(%s)", inner_problem_id.c_str());
+  coco_problem_set_id(problem.get(), "bbob-mixint_f%03lu_i%02lu_d%02lu", function, instance, dimension);
+  coco_problem_set_name(problem.get(), "mixint(%s)", inner_problem_id.c_str());
 
   return problem;
 }
@@ -109,10 +110,10 @@ static coco_problem_t *coco_get_bbob_mixint_problem(const size_t function, const
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_bbob_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                                     const size_t dimension_idx, const size_t instance_idx) {
+static coco_problem_ptr_t suite_bbob_mixint_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                        const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   const size_t dim_large_scale = 50; /* Switch to large-scale functions for dimensions over 50 */
 
   const size_t function = suite->functions[function_idx];
@@ -120,7 +121,7 @@ static coco_problem_t *suite_bbob_mixint_get_problem(coco_suite_t *suite, const 
   const size_t instance = suite->instances[instance_idx];
 
   if (dimension < dim_large_scale)
-    problem = coco_get_bbob_mixint_problem(function, dimension, instance, coco_get_bbob_problem);
+    problem = coco_get_bbob_mixint_problem(function, dimension, instance, coco_make_bbob_problem);
   else
     problem = coco_get_bbob_mixint_problem(function, dimension, instance, coco_get_largescale_problem);
 
@@ -137,12 +138,12 @@ static coco_problem_t *suite_bbob_mixint_get_problem(coco_suite_t *suite, const 
 struct suite_bbob_mixint_t final : public coco_suite_s {
   using coco_suite_s::coco_suite_s;
 
-  const char *get_instances_by_year(const int year) const override {
+  std::string_view get_instances_by_year(const int year) const override {
     return suite_bbob_mixint_get_instances_by_year(year);
   }
 
-  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
-                              const size_t instance_idx) override {
+  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
+                                 const size_t instance_idx) override {
     return suite_bbob_mixint_get_problem(this, function_idx, dimension_idx, instance_idx);
   }
 };
@@ -150,7 +151,7 @@ struct suite_bbob_mixint_t final : public coco_suite_s {
 /**
  * @brief Sets the dimensions and default instances for the bbob-mixint suite.
  */
-static coco_suite_t *suite_bbob_mixint_initialize(const char *suite_name) {
+static coco_suite_t *suite_bbob_mixint_initialize(std::string_view suite_name) {
 
   coco_suite_t *suite;
   const size_t dimensions[] = {5, 10, 20, 40, 80, 160};

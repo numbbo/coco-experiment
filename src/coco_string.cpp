@@ -12,24 +12,16 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "coco.h"
 
 /**
- * @brief Creates a duplicate copy of string and returns a pointer to it.
- *
- * The caller is responsible for freeing the allocated memory using coco_free_memory().
+ * @brief Wraps a string that comes in through the C interface; NULL becomes an empty string.
  */
-static char *coco_strdup(const char *string) {
-  size_t len;
-  char *duplicate;
-  if (string == nullptr)
-    return nullptr;
-  len = strlen(string);
-  duplicate = (char *)coco_allocate_memory(len + 1);
-  memcpy(duplicate, string, len + 1);
-  return duplicate;
+static std::string_view coco_c_string_view(const char *string) {
+  return (string == nullptr) ? std::string_view() : std::string_view(string);
 }
 
 /**
@@ -54,7 +46,7 @@ static std::string coco_string_vformat(const char *format, va_list args) {
 /**
  * @brief Formats a string (as in sprintf) and returns it as std::string.
  */
-static std::string coco_string_format(const char *format, ...) {
+COCO_FORMAT(1, 2) static std::string coco_string_format(const char *format, ...) {
   va_list args;
   std::string result;
 
@@ -65,51 +57,26 @@ static std::string coco_string_format(const char *format, ...) {
 }
 
 /**
- * @brief Formatted string duplication, with va_list arguments.
- */
-static char *coco_vstrdupf(const char *str, va_list args) { return coco_strdup(coco_string_vformat(str, args).c_str()); }
-
-/**
- * Optional arguments are used like in sprintf.
+ * Optional arguments are used like in sprintf. The caller frees the result with coco_free_memory().
  */
 char *coco_strdupf(const char *str, ...) {
   va_list args;
-  char *s;
 
   va_start(args, str);
-  s = coco_vstrdupf(str, args);
+  const std::string string = coco_string_vformat(str, args);
   va_end(args);
-  return s;
+
+  char *duplicate = (char *)coco_allocate_memory(string.size() + 1);
+  memcpy(duplicate, string.c_str(), string.size() + 1);
+  return duplicate;
 }
 
 /**
  * @brief Returns the first index where seq occurs in base and -1 if it doesn't.
- *
- * @note If there is an equivalent standard C function, this can/should be removed.
  */
-static long coco_strfind(const char *base, const char *seq) {
-  const size_t strlen_seq = strlen(seq);
-  const size_t last_first_idx = strlen(base) - strlen(seq);
-  size_t i, j;
-
-  if (strlen(base) < strlen(seq))
-    return -1;
-
-  for (i = 0; i <= last_first_idx; ++i) {
-    if (base[i] == seq[0]) {
-      for (j = 0; j < strlen_seq; ++j) {
-        if (base[i + j] != seq[j])
-          break;
-      }
-      if (j == strlen_seq) {
-        if (i > 1000000000UL)
-          coco_error("coco_strfind(): strange values observed i=%lu, j=%lu, strlen(base)=%lu", (unsigned long)i,
-                     (unsigned long)j, (unsigned long)strlen(base));
-        return (long)i;
-      }
-    }
-  }
-  return -1;
+static long coco_strfind(std::string_view base, std::string_view seq) {
+  const size_t index = base.find(seq);
+  return (index == std::string_view::npos) ? -1 : (long)index;
 }
 
 /**
@@ -117,16 +84,16 @@ static long coco_strfind(const char *base, const char *seq) {
  *
  * Empty substrings (caused by consecutive delimiters or delimiters at the start or end) are skipped.
  */
-static std::vector<std::string> coco_string_split(const std::string &string, const char delimiter) {
+static std::vector<std::string> coco_string_split(std::string_view string, const char delimiter) {
   std::vector<std::string> result;
   size_t start = 0;
 
   while (start < string.size()) {
     size_t stop = string.find(delimiter, start);
-    if (stop == std::string::npos)
+    if (stop == std::string_view::npos)
       stop = string.size();
     if (stop > start)
-      result.push_back(string.substr(start, stop - start));
+      result.emplace_back(string.substr(start, stop - start));
     start = stop + 1;
   }
   return result;
@@ -138,14 +105,14 @@ static std::vector<std::string> coco_string_split(const std::string &string, con
  * If you wish to remove characters from the beginning of the string, set from to "".
  * If you wish to remove characters until the end of the string, set to to "".
  */
-static std::string coco_remove_from_string(const std::string &string, const char *from, const char *to) {
+static std::string coco_remove_from_string(const std::string &string, std::string_view from, std::string_view to) {
 
-  const size_t start = (strcmp(from, "") == 0) ? 0 : string.find(from);
-  const size_t stop = (strcmp(to, "") == 0) ? string.size() : string.find(to);
+  const size_t start = from.empty() ? 0 : string.find(from);
+  const size_t stop = to.empty() ? string.size() : string.find(to);
 
   if ((start == std::string::npos) || (stop == std::string::npos) || (stop < start)) {
-    coco_error("coco_remove_from_string(): failed to remove characters between %s and %s from string %s", from, to,
-               string.c_str());
+    coco_error("coco_remove_from_string(): failed to remove characters between %.*s and %.*s from string %s",
+               (int)from.size(), from.data(), (int)to.size(), to.data(), string.c_str());
     return std::string(); /* Never reached */
   }
   return string.substr(0, start) + string.substr(stop);
@@ -160,23 +127,23 @@ static std::string coco_remove_from_string(const std::string &string, const char
  * problem with one of the ranges, the parsing stops and the current result is returned. An empty result
  * means that no numbers could be parsed.
  */
-static std::vector<size_t> coco_string_parse_ranges(const char *string, const size_t min, const size_t max,
+static std::vector<size_t> coco_string_parse_ranges(std::string_view string, const size_t min, const size_t max,
                                                     const char *name, const size_t max_count) {
 
   std::vector<size_t> result;
-  const char *ptr;
   size_t j, num[2];
 
   /* Check for empty string */
-  if ((string == nullptr) || (strlen(string) == 0)) {
+  if (string.empty()) {
     coco_warning("coco_string_parse_ranges(): cannot parse empty ranges");
     return result;
   }
 
   /* Check for disallowed characters */
-  for (ptr = string; *ptr != '\0'; ptr++) {
-    if ((*ptr != '-') && (*ptr != ',') && !isdigit((unsigned char)*ptr)) {
-      coco_warning("coco_string_parse_ranges(): problem parsing '%s' - cannot parse ranges with '%c'", string, *ptr);
+  for (const char c : string) {
+    if ((c != '-') && (c != ',') && !isdigit((unsigned char)c)) {
+      coco_warning("coco_string_parse_ranges(): problem parsing '%.*s' - cannot parse ranges with '%c'",
+                   (int)string.size(), string.data(), c);
       return result;
     }
   }
@@ -194,7 +161,8 @@ static std::vector<size_t> coco_string_parse_ranges(const char *string, const si
 
     if (count > 1) {
       /* Incorrect number of '-' */
-      coco_warning("coco_string_parse_ranges(): problem parsing '%s' - too many '-'s", string);
+      coco_warning("coco_string_parse_ranges(): problem parsing '%.*s' - too many '-'s", (int)string.size(),
+                   string.data());
       return result;
     } else if (count == 0) {
       /* Range is in the format: n (no range) */
@@ -264,12 +232,12 @@ static std::vector<size_t> coco_string_parse_ranges(const char *string, const si
 /**
  * @brief Returns the given string without leading and trailing white space.
  */
-static std::string coco_string_trim(const std::string &string) {
+static std::string coco_string_trim(std::string_view string) {
   size_t start = 0, stop = string.size();
 
   while ((start < stop) && isspace((unsigned char)string[start]))
     start++;
   while ((stop > start) && isspace((unsigned char)string[stop - 1]))
     stop--;
-  return string.substr(start, stop - start);
+  return std::string(string.substr(start, stop - start));
 }

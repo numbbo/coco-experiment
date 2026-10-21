@@ -99,20 +99,20 @@ struct f_different_powers_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic different powers problem.
  */
-static coco_problem_t *f_different_powers_allocate(const size_t number_of_variables) {
-  return new f_different_powers_t(number_of_variables);
+static coco_problem_ptr_t f_different_powers_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_different_powers_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB different powers problem.
  */
-static coco_problem_t *f_different_powers_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                const size_t instance, const long rseed,
-                                                                const char *problem_id_template,
-                                                                const char *problem_name_template) {
+static coco_problem_ptr_t f_different_powers_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                   const size_t instance, const long rseed,
+                                                                   const char *problem_id_template,
+                                                                   const char *problem_name_template) {
 
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -130,15 +130,13 @@ static coco_problem_t *f_different_powers_bbob_problem_allocate(const size_t fun
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
 
   problem = f_different_powers_allocate(dimension);
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }
@@ -146,11 +144,11 @@ static coco_problem_t *f_different_powers_bbob_problem_allocate(const size_t fun
 /**
  * @brief Creates the bbob-constrained different powers problem.
  */
-static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(const size_t function,
-                                                                            const size_t dimension,
-                                                                            const size_t instance, const long rseed,
-                                                                            const char *problem_id_template,
-                                                                            const char *problem_name_template) {
+static coco_problem_ptr_t f_different_powers_bbob_constrained_problem_allocate(const size_t function,
+                                                                               const size_t dimension,
+                                                                               const size_t instance, const long rseed,
+                                                                               const char *problem_id_template,
+                                                                               const char *problem_name_template) {
   /* Different powers function used in bbob-constrained test suite.
    * In this version, the (unconstrained) optimum, xopt, is set to
    * a distance of 1e-2 to the origin. By doing so, the optimum of
@@ -160,7 +158,7 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
 
   size_t i;
   double fopt, result;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -191,15 +189,13 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
 
   problem = f_different_powers_allocate(dimension);
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }
@@ -208,14 +204,11 @@ static coco_problem_t *f_different_powers_bbob_constrained_problem_allocate(cons
  * @brief Creates the BBOB generalized permuted block-rotated sum of different
  * powers problem.
  */
-static coco_problem_t *f_different_powers_permblockdiag_bbob_problem_allocate(const size_t function,
-                                                                              const size_t dimension,
-                                                                              const size_t instance, const long rseed,
-                                                                              const char *problem_id_template,
-                                                                              const char *problem_name_template) {
+static coco_problem_ptr_t f_different_powers_permblockdiag_bbob_problem_allocate(
+    const size_t function, const size_t dimension, const size_t instance, const long rseed,
+    const char *problem_id_template, const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
-
+  coco_problem_ptr_t problem;
 
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
@@ -246,20 +239,17 @@ static coco_problem_t *f_different_powers_permblockdiag_bbob_problem_allocate(co
       P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
 
   problem = f_different_powers_allocate(dimension);
-  problem = transform_vars_permutation(problem, P2.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B.rows(), dimension,
-                                         block_sizes.data(), nb_blocks);
-  problem = transform_vars_permutation(problem, P1.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  problem = transform_obj_norm_by_dim(problem);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_norm_by_dim(std::move(problem));
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }

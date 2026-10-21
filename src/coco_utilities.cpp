@@ -3,8 +3,6 @@
  * @brief Definitions of miscellaneous functions used throughout the COCO framework.
  */
 
-#include "coco_platform.h"
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +12,18 @@
 #include <errno.h>
 #include <limits.h>
 
+#if __cplusplus < 201703L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
+#error "COCO needs C++17 (for example -std=c++17 or /std:c++17)"
+#endif
+
 #include <algorithm>
+#include <filesystem>
+#include <system_error>
+
+/* Silence the Visual Studio warnings (C4996) about fopen(), sscanf() and similar functions */
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
 
 #include "coco.h"
 #include "coco_internal.h"
@@ -46,22 +55,23 @@ static coco_log_level_type_e coco_log_level = COCO_INFO;
  *
  * @return The previous coco_log_level value as an immutable string.
  */
-const char *coco_set_log_level(const char *log_level) {
+const char *coco_set_log_level(const char *log_level_string) {
 
+  const std::string_view log_level = coco_c_string_view(log_level_string);
   coco_log_level_type_e previous_log_level = coco_log_level;
 
-  if (strcmp(log_level, "error") == 0)
+  if (log_level == "error")
     coco_log_level = COCO_ERROR;
-  else if (strcmp(log_level, "warning") == 0)
+  else if (log_level == "warning")
     coco_log_level = COCO_WARNING;
-  else if (strcmp(log_level, "info") == 0)
+  else if (log_level == "info")
     coco_log_level = COCO_INFO;
-  else if (strcmp(log_level, "debug") == 0)
+  else if (log_level == "debug")
     coco_log_level = COCO_DEBUG;
-  else if (strcmp(log_level, "") == 0) {
+  else if (log_level.empty()) {
     /* Do nothing */
   } else {
-    coco_warning("coco_set_log_level(): unknown level %s", log_level);
+    coco_warning("coco_set_log_level(): unknown level %s", log_level_string);
   }
 
   if (previous_log_level == COCO_ERROR)
@@ -90,7 +100,7 @@ const char *coco_set_log_level(const char *log_level) {
 static std::string coco_join_path(const std::string &path) { return path; }
 
 /**
- * @brief Creates a platform-dependent path from the given strings.
+ * @brief Creates a path from the given strings, using the platform's preferred separator.
  *
  * Usage examples:
  * - coco_join_path(base_path, folder1, folder2, folder3) returns base_path/folder1/folder2/folder3
@@ -101,114 +111,46 @@ static std::string coco_join_path(const std::string &path) { return path; }
 template <typename... Components>
 static std::string coco_join_path(const std::string &path, const std::string &component,
                                   const Components &...components) {
-  return coco_join_path(path.empty() ? component : path + coco_path_separator + component, components...);
+  return coco_join_path(path.empty() ? component : (std::filesystem::path(path) / component).string(), components...);
 }
 
 /**
- * @brief Checks if the given directory exists.
- *
- * @note Should work cross-platform.
- *
- * @param path The given path.
- *
- * @return 1 if the path exists and corresponds to a directory and 0 otherwise.
+ * @brief Returns 1 if the path exists and is a directory and 0 otherwise.
  */
-static int coco_directory_exists(const char *path) {
-  int res;
-#if defined(HAVE_GFA)
-  DWORD dwAttrib = GetFileAttributesA(path);
-  res = (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
-#elif defined(HAVE_STAT)
-  struct stat buf;
-  res = (!stat(path, &buf) && S_ISDIR(buf.st_mode));
-#else
-#error Ooops
-#endif
-  return res;
+static int coco_directory_exists(const std::string &path) {
+  std::error_code error;
+  return std::filesystem::is_directory(path, error);
 }
 
 /**
- * @brief Checks if the given file exists.
- *
- * @note Should work cross-platform.
- *
- * @param path The given path.
- *
- * @return 1 if the path exists and corresponds to a file and 0 otherwise.
+ * @brief Returns 1 if the path exists and is not a directory and 0 otherwise.
  */
-static int coco_file_exists(const char *path) {
-  int res;
-#if defined(HAVE_GFA)
-  DWORD dwAttrib = GetFileAttributesA(path);
-  res = (dwAttrib != INVALID_FILE_ATTRIBUTES) && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
-#elif defined(HAVE_STAT)
-  struct stat buf;
-  res = (!stat(path, &buf) && !S_ISDIR(buf.st_mode));
-#else
-#error Ooops
-#endif
-  return res;
+static int coco_file_exists(const std::string &path) {
+  std::error_code error;
+  const std::filesystem::file_status status = std::filesystem::status(path, error);
+  return std::filesystem::exists(status) && !std::filesystem::is_directory(status);
 }
 
 /**
- * @brief Calls the right mkdir() method (depending on the platform) with full privileges for the user.
- * If the created directory has not existed before, returns 0, otherwise returns 1. If the directory has
- * not been created, a coco_error is raised.
+ * @brief Creates a directory, including any missing parent directories.
  *
- * @param path The directory path.
+ * Raises a coco_error if the directory cannot be created, for example because a file of the same name exists.
  *
- * @return 0 if the created directory has not existed before and 1 otherwise.
- */
-static int coco_mkdir(const char *path) {
-  int result = 0;
-
-  /* Do not create the path if is of the form "C:" (two letters, of which the second is a colon)*/
-  if ((strlen(path) == 2) && (path[1] == ':'))
-    return 1;
-
-#if _MSC_VER
-  result = _mkdir(path);
-#elif defined(__MINGW32__) || defined(__MINGW64__)
-  result = mkdir(path);
-#else
-  result = mkdir(path, S_IRWXU);
-#endif
-
-  if (result == 0)
-    return 0;
-  else if (errno == EEXIST)
-    return 1;
-  else {
-    coco_error("coco_mkdir(): unable to create %s, mkdir error: %s", path, strerror(errno));
-    return 1; /* Never reached */
-  }
-}
-
-/**
- * @brief Creates a directory (possibly having to create nested directories). If the last created directory
- * has not existed before, returns 0, otherwise returns 1.
- *
- * @param path The directory path.
- *
- * @return 0 if the created directory has not existed before and 1 otherwise.
+ * @return 0 if the directory was created and 1 if it existed before.
  */
 static int coco_create_directory(const std::string &path) {
-  const char path_sep = coco_path_separator[0];
-  std::string tmp = path;
-  size_t i;
+  std::string directory = path;
+  std::error_code error;
 
-  /* Remove possible trailing (back)slash */
-  if (!tmp.empty() && (tmp.back() == path_sep))
-    tmp.pop_back();
+  /* Remove trailing separators, some implementations report a path like "a/b/" as not created */
+  while (directory.size() > 1 &&
+         (directory.back() == '/' || directory.back() == (char)std::filesystem::path::preferred_separator))
+    directory.pop_back();
 
-  /* Iterate through nested directories (does nothing if directories are not nested) */
-  for (i = 1; i < tmp.size(); i++) {
-    if (tmp[i] == path_sep)
-      coco_mkdir(tmp.substr(0, i).c_str());
-  }
-
-  /* Create the last nested or only directory */
-  return coco_mkdir(tmp.c_str());
+  const bool created = std::filesystem::create_directories(directory, error);
+  if (error)
+    coco_error("coco_create_directory(): unable to create %s: %s", path.c_str(), error.message().c_str());
+  return created ? 0 : 1;
 }
 
 /**
@@ -276,121 +218,19 @@ static std::string coco_create_unique_directory(const std::string &path) {
 }
 
 /**
- * The method should work across different platforms/compilers.
+ * @brief Removes the directory with all its contents. Does nothing if the directory does not exist.
  *
- * @path The path to the directory
+ * @param path The path to the directory.
  *
  * @return 0 on successful completion, and -1 on error.
  */
 int coco_remove_directory(const char *path) {
-#if _MSC_VER
-  WIN32_FIND_DATA find_data_file;
-  HANDLE find_handle = nullptr;
-  int r = -1;
-  int r2 = -1;
+  std::error_code error;
 
-  /* Nothing to do if the folder does not exist */
-  if ((find_handle = FindFirstFile(coco_string_format("%s\\*.*", path).c_str(), &find_data_file)) ==
-      INVALID_HANDLE_VALUE) {
-    return 0;
-  }
-
-  do {
-    r = 0;
-
-    /* Skip the names "." and ".." as we don't want to recurse on them */
-    if (strcmp(find_data_file.cFileName, ".") != 0 && strcmp(find_data_file.cFileName, "..") != 0) {
-      /* Build the new path using the argument path the file/folder name we just found */
-      const std::string buf = coco_string_format("%s\\%s", path, find_data_file.cFileName);
-
-      if (find_data_file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-        /* Buf is a directory, recurse on it */
-        r2 = coco_remove_directory(buf.c_str());
-      } else {
-        /* Buf is a file, delete it */
-        /* Careful, DeleteFile returns 0 if it fails and nonzero otherwise! */
-        r2 = -(DeleteFile(buf.c_str()) == 0);
-      }
-    }
-
-    r = r2;
-
-  } while (FindNextFile(find_handle, &find_data_file)); /* Find the next file */
-
-  FindClose(find_handle);
-
-  if (!r) {
-    /* Path is an empty directory, delete it */
-    /* Careful, RemoveDirectory returns 0 if it fails and nonzero otherwise! */
-    r = -(RemoveDirectory(path) == 0);
-  }
-
-  return r;
-#else
-  DIR *d = opendir(path);
-  int r = -1;
-  int r2 = -1;
-
-  /* Nothing to do if the folder does not exist */
   if (!coco_directory_exists(path))
     return 0;
-
-  if (d) {
-    struct dirent *p;
-
-    r = 0;
-
-    while (!r && (p = readdir(d))) {
-
-      /* Skip the names "." and ".." as we don't want to recurse on them */
-      if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, "..")) {
-        continue;
-      }
-
-      const std::string buf = coco_string_format("%s/%s", path, p->d_name);
-      if (coco_directory_exists(buf.c_str())) {
-        /* Buf is a directory, recurse on it */
-        r2 = coco_remove_directory(buf.c_str());
-      } else {
-        /* Buf is a file, delete it */
-        r2 = unlink(buf.c_str());
-      }
-
-      r = r2;
-    }
-
-    closedir(d);
-  }
-
-  if (!r) {
-    /* Path is an empty directory, delete it */
-    r = rmdir(path);
-  }
-
-  return r;
-#endif
-}
-
-/**
- * The method should work across different platforms/compilers.
- *
- * @file_name The path to the file
- *
- * @return 0 on successful completion, and -1 on error.
- */
-int coco_remove_file(const char *file_name) {
-#if _MSC_VER
-  int r = -1;
-  /* Try to delete the file */
-  /* Careful, DeleteFile returns 0 if it fails and nonzero otherwise! */
-  r = -(DeleteFile(file_name) == 0);
-  return r;
-#else
-  int r = -1;
-  /* Try to delete the file */
-  r = unlink(file_name);
-  return r;
-#endif
+  std::filesystem::remove_all(path, error);
+  return error ? -1 : 0;
 }
 /**@}*/
 
@@ -480,14 +320,14 @@ static coco_option_keys_t coco_option_keys_get_redundant(const coco_option_keys_
  * number of keys. Values that are strings surrounded by quotation marks should work as long as they come
  * in pairs.
  */
-static coco_option_keys_t coco_option_keys(const char *option_string) {
+static coco_option_keys_t coco_option_keys(std::string_view option_string) {
 
   size_t i;
   coco_option_keys_t option_keys;
   std::string cleaned_option_string;
 
   /* Check for empty string */
-  if ((option_string == nullptr) || (strlen(option_string) == 0)) {
+  if (option_string.empty()) {
     return option_keys;
   }
 
@@ -544,7 +384,7 @@ static std::string coco_option_keys_get_output_string(const coco_option_keys_t &
 /**
  * @brief Warns about the keys in options that are not among the known_keys.
  */
-static void coco_option_keys_warn_redundant(const char *options, const coco_option_keys_t &known_option_keys,
+static void coco_option_keys_warn_redundant(std::string_view options, const coco_option_keys_t &known_option_keys,
                                             const char *redundant_info, const char *valid_info) {
   const coco_option_keys_t redundant_option_keys =
       coco_option_keys_get_redundant(known_option_keys, coco_option_keys(options));
@@ -557,6 +397,21 @@ static void coco_option_keys_warn_redundant(const char *options, const coco_opti
 }
 
 /**
+ * @brief Returns the position of the value of the option with the given name in options (or npos if the
+ * option is not found).
+ */
+static size_t coco_options_find_value(std::string_view options, std::string_view name) {
+
+  const size_t name_position = options.find(name);
+  if (name_position == std::string_view::npos)
+    return std::string_view::npos;
+  const size_t colon_position = options.find(':', name_position);
+  if (colon_position == std::string_view::npos)
+    return std::string_view::npos;
+  return colon_position + 1;
+}
+
+/**
  * @brief Parses options in the form "name1: value1 name2: value2".
  *
  * Formatting requirements:
@@ -565,27 +420,21 @@ static void coco_option_keys_warn_redundant(const char *options, const coco_opti
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read(const char *options, const char *name, const char *format, void *pointer) {
+static int coco_options_read(std::string_view options, std::string_view name, const char *format, void *pointer) {
 
-  long i1, i2;
-
-  if ((!options) || (strlen(options) == 0))
+  size_t start = coco_options_find_value(options, name);
+  if (start == std::string_view::npos)
     return 0;
 
-  i1 = coco_strfind(options, name);
-  if (i1 < 0)
-    return 0;
-  i2 = i1 + coco_strfind(&options[i1], ":") + 1;
+  /* Skip leading white space and take the value up to the next white space */
+  while ((start < options.size()) && isspace((unsigned char)options[start]))
+    start++;
+  size_t stop = start;
+  while ((stop < options.size()) && !isspace((unsigned char)options[stop]))
+    stop++;
 
-  /* Remove trailing whitespaces */
-  while (isspace((unsigned char)options[i2]))
-    i2++;
-
-  if (i2 <= i1) {
-    return 0;
-  }
-
-  return sscanf(&options[i2], format, pointer);
+  const std::string value(options.substr(start, stop - start));
+  return sscanf(value.c_str(), format, pointer);
 }
 
 /**
@@ -597,7 +446,7 @@ static int coco_options_read(const char *options, const char *name, const char *
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_int(const char *options, const char *name, int *pointer) {
+static int coco_options_read_int(std::string_view options, std::string_view name, int *pointer) {
   return coco_options_read(options, name, " %i", pointer);
 }
 
@@ -610,7 +459,7 @@ static int coco_options_read_int(const char *options, const char *name, int *poi
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_size_t(const char *options, const char *name, size_t *pointer) {
+static int coco_options_read_size_t(std::string_view options, std::string_view name, size_t *pointer) {
   return coco_options_read(options, name, "%lu", pointer);
 }
 
@@ -623,29 +472,8 @@ static int coco_options_read_size_t(const char *options, const char *name, size_
  *
  * @return The number of successful assignments.
  */
-static int coco_options_read_double(const char *options, const char *name, double *pointer) {
+static int coco_options_read_double(std::string_view options, std::string_view name, double *pointer) {
   return coco_options_read(options, name, "%lf", pointer);
-}
-
-/**
- * @brief Returns the position of the value of the option with the given name in options (or -1 if the
- * option is not found).
- */
-static long coco_options_find_value(const char *options, const char *name) {
-
-  long i1, i2;
-
-  if ((!options) || (strlen(options) == 0))
-    return -1;
-
-  i1 = coco_strfind(options, name);
-  if (i1 < 0)
-    return -1;
-  i2 = i1 + coco_strfind(&options[i1], ":") + 1;
-
-  if (i2 <= i1)
-    return -1;
-  return i2;
 }
 
 /**
@@ -658,34 +486,33 @@ static long coco_options_find_value(const char *options, const char *name) {
  *
  * @return The number of successful assignments (0 or 1). The value is left unchanged if nothing was read.
  */
-static int coco_options_read_string(const char *options, const char *name, std::string &value) {
+static int coco_options_read_string(std::string_view options, std::string_view name, std::string &value) {
 
-  const long i = coco_options_find_value(options, name);
-  const char *start, *stop;
+  size_t start = coco_options_find_value(options, name);
+  size_t stop;
 
-  if (i < 0)
+  if (start == std::string_view::npos)
     return 0;
 
   /* Remove leading white spaces */
-  start = &options[i];
-  while (isspace((unsigned char)*start))
+  while ((start < options.size()) && isspace((unsigned char)options[start]))
     start++;
 
-  if (*start == '\"') {
+  if ((start < options.size()) && (options[start] == '\"')) {
     /* The value starts with a quote: read everything between two quotes */
     start++;
-    stop = strchr(start, '\"');
-    if (stop == nullptr)
-      stop = start + strlen(start);
+    stop = options.find('\"', start);
+    if (stop == std::string_view::npos)
+      stop = options.size();
   } else {
     stop = start;
-    while ((*stop != '\0') && !isspace((unsigned char)*stop))
+    while ((stop < options.size()) && !isspace((unsigned char)options[stop]))
       stop++;
   }
 
   if (stop == start)
     return 0;
-  value.assign(start, stop);
+  value.assign(options.substr(start, stop - start));
   return 1;
 }
 
@@ -701,18 +528,16 @@ static int coco_options_read_string(const char *options, const char *name, std::
  *
  * @return The number of characters read.
  */
-static size_t coco_options_read_values(const char *options, const char *name, std::string &value) {
-
-  const long i = coco_options_find_value(options, name);
-  const char *ptr;
+static size_t coco_options_read_values(std::string_view options, std::string_view name, std::string &value) {
 
   value.clear();
-  if (i < 0)
+  const size_t start = coco_options_find_value(options, name);
+  if (start == std::string_view::npos)
     return 0;
 
-  for (ptr = &options[i]; (*ptr != '\0') && !isalpha((unsigned char)*ptr); ptr++) {
-    if (!isspace((unsigned char)*ptr))
-      value += *ptr;
+  for (size_t i = start; (i < options.size()) && !isalpha((unsigned char)options[i]); i++) {
+    if (!isspace((unsigned char)options[i]))
+      value += options[i];
   }
   return value.size();
 }

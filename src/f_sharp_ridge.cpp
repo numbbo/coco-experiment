@@ -68,19 +68,19 @@ struct f_sharp_ridge_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic sharp ridge problem.
  */
-static coco_problem_t *f_sharp_ridge_allocate(const size_t number_of_variables) {
-  return new f_sharp_ridge_t(number_of_variables);
+static coco_problem_ptr_t f_sharp_ridge_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_sharp_ridge_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB sharp ridge problem.
  */
-static coco_problem_t *f_sharp_ridge_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                           const size_t instance, const long rseed,
-                                                           const char *problem_id_template,
-                                                           const char *problem_name_template) {
+static coco_problem_ptr_t f_sharp_ridge_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                              const size_t instance, const long rseed,
+                                                              const char *problem_id_template,
+                                                              const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   size_t i, j, k;
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -110,15 +110,13 @@ static coco_problem_t *f_sharp_ridge_bbob_problem_allocate(const size_t function
     }
   }
   problem = f_sharp_ridge_allocate(dimension);
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }

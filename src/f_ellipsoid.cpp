@@ -89,19 +89,19 @@ struct f_ellipsoid_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_allocate(const size_t number_of_variables, const double conditioning) {
-  return new f_ellipsoid_t(number_of_variables, conditioning);
+static coco_problem_ptr_t f_ellipsoid_allocate(const size_t number_of_variables, const double conditioning) {
+  return std::make_unique<f_ellipsoid_t>(number_of_variables, conditioning);
 }
 
 /**
  * @brief Creates the BBOB ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                         const size_t instance, const long rseed,
-                                                         const char *problem_id_template,
-                                                         const char *problem_name_template) {
+static coco_problem_ptr_t f_ellipsoid_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                            const size_t instance, const long rseed,
+                                                            const char *problem_id_template,
+                                                            const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -112,20 +112,18 @@ static coco_problem_t *f_ellipsoid_bbob_problem_allocate(const size_t function, 
   }
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
-  problem = transform_vars_oscillate(problem);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_oscillate(std::move(problem));
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
   /*if large scale test-bed, normalize by dim*/
   if (coco_strfind(problem_name_template, "BBOB large-scale suite") >= 0) {
-    problem = transform_obj_norm_by_dim(problem);
+    problem = transform_obj_norm_by_dim(std::move(problem));
   }
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }
@@ -133,12 +131,12 @@ static coco_problem_t *f_ellipsoid_bbob_problem_allocate(const size_t function, 
 /**
  * @brief Creates the BBOB rotated ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                 const size_t instance, const long rseed,
-                                                                 const void *args, const char *problem_id_template,
-                                                                 const char *problem_name_template) {
+static coco_problem_ptr_t f_ellipsoid_rotated_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                    const size_t instance, const long rseed,
+                                                                    const void *args, const char *problem_id_template,
+                                                                    const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   f_ellipsoid_args_t *f_ellipsoid_args;
   f_ellipsoid_args = ((f_ellipsoid_args_t *)args);
@@ -158,13 +156,13 @@ static coco_problem_t *f_ellipsoid_rotated_bbob_problem_allocate(const size_t fu
   bbob2009_compute_rotation(rot1.rows(), rseed + 1000000, dimension);
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
   problem = f_ellipsoid_allocate(dimension, conditioning);
-  problem = transform_vars_oscillate(problem);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_obj_shift(problem, fopt);
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  problem = transform_vars_oscillate(std::move(problem));
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }
@@ -172,12 +170,12 @@ static coco_problem_t *f_ellipsoid_rotated_bbob_problem_allocate(const size_t fu
 /**
  * @brief Creates the BBOB permuted block-rotated ellipsoid problem.
  */
-static coco_problem_t *f_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                       const size_t instance, const long rseed,
-                                                                       const char *problem_id_template,
-                                                                       const char *problem_name_template) {
+static coco_problem_ptr_t f_ellipsoid_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                          const size_t instance, const long rseed,
+                                                                          const char *problem_id_template,
+                                                                          const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   std::vector<size_t> P1(dimension);
   std::vector<size_t> P2(dimension);
   size_t nb_blocks;
@@ -203,19 +201,18 @@ static coco_problem_t *f_ellipsoid_permblockdiag_bbob_problem_allocate(const siz
   coco_compute_truncated_uniform_swap_permutation(P2.data(), rseed + 3000000, dimension, nb_swaps, swap_range);
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
-  problem = transform_vars_oscillate(problem);
-  problem = transform_vars_permutation(problem, P2.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B.rows(), dimension,
-                                         block_sizes.data(), nb_blocks);
-  problem = transform_vars_permutation(problem, P1.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_oscillate(std::move(problem));
+  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  problem = transform_obj_norm_by_dim(problem);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_norm_by_dim(std::move(problem));
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }
@@ -223,12 +220,12 @@ static coco_problem_t *f_ellipsoid_permblockdiag_bbob_problem_allocate(const siz
 /**
  * @brief Creates the ellipsoid problem for the constrained BBOB suite
  */
-static coco_problem_t *f_ellipsoid_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                              const size_t instance, const long rseed,
-                                                              const char *problem_id_template,
-                                                              const char *problem_name_template) {
+static coco_problem_ptr_t f_ellipsoid_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                 const size_t instance, const long rseed,
+                                                                 const char *problem_id_template,
+                                                                 const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> xopt(dimension);
   fopt = bbob2009_compute_fopt(function, instance);
@@ -241,12 +238,12 @@ static coco_problem_t *f_ellipsoid_cons_bbob_problem_allocate(const size_t funct
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
 
   /* TODO (NH): fopt -= problem->evaluate(all_zeros(dimension)) */
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "1-separable");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "1-separable");
 
   return problem;
 }
@@ -255,12 +252,12 @@ static coco_problem_t *f_ellipsoid_cons_bbob_problem_allocate(const size_t funct
  * @brief Creates the rotated ellipsoid problem for the constrained
  *        BBOB suite
  */
-static coco_problem_t *f_ellipsoid_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                      const size_t instance, const long rseed,
-                                                                      const char *problem_id_template,
-                                                                      const char *problem_name_template) {
+static coco_problem_ptr_t f_ellipsoid_rotated_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                         const size_t instance, const long rseed,
+                                                                         const char *problem_id_template,
+                                                                         const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -278,15 +275,13 @@ static coco_problem_t *f_ellipsoid_rotated_cons_bbob_problem_allocate(const size
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
 
   problem = f_ellipsoid_allocate(dimension, 1.0e6);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "3-ill-conditioned");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "3-ill-conditioned");
 
   return problem;
 }

@@ -30,7 +30,7 @@
 /**
  * @brief Sets the instances associated with years for the bbob suite.
  */
-static const char *suite_bbob_get_instances_by_year(const int year) {
+static std::string_view suite_bbob_get_instances_by_year(const int year) {
 
   if (year >= 2023) {
     return "1-5,101-110";
@@ -54,7 +54,7 @@ static const char *suite_bbob_get_instances_by_year(const int year) {
     return "1-5,1-5,1-5";
   } else {
     coco_error("suite_bbob_get_instances_by_year(): year %d not defined for suite_bbob", year);
-    return nullptr;
+    return {};
   }
 }
 
@@ -63,8 +63,8 @@ static const char *suite_bbob_get_instances_by_year(const int year) {
  *
  * Useful for other suites as well (see for example suite_biobj.cpp).
  */
-coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
-  coco_problem_t *problem = nullptr;
+static coco_problem_ptr_t coco_make_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
+  coco_problem_ptr_t problem;
 
   const char *problem_id_template = "bbob_f%03lu_i%02lu_d%02lu";
   const char *problem_name_template = "BBOB suite problem f%lu instance %lu in %luD";
@@ -173,6 +173,15 @@ coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimens
 }
 
 /**
+ * @brief Creates and returns a BBOB problem, which the caller must free with coco_problem_free().
+ *
+ * Used by the language bindings.
+ */
+coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimension, const size_t instance) {
+  return coco_make_bbob_problem(function, dimension, instance).release();
+}
+
+/**
  * @brief Returns the problem from the bbob suite that corresponds to the given parameters.
  *
  * @param suite The COCO suite.
@@ -181,16 +190,16 @@ coco_problem_t *coco_get_bbob_problem(const size_t function, const size_t dimens
  * @param instance_idx Index of the instance (starting from 0).
  * @return The problem that corresponds to the given parameters.
  */
-static coco_problem_t *suite_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
-                                              const size_t dimension_idx, const size_t instance_idx) {
+static coco_problem_ptr_t suite_bbob_get_problem(coco_suite_t *suite, const size_t function_idx,
+                                                 const size_t dimension_idx, const size_t instance_idx) {
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
 
   const size_t function = suite->functions[function_idx];
   const size_t dimension = suite->dimensions[dimension_idx];
   const size_t instance = suite->instances[instance_idx];
 
-  problem = coco_get_bbob_problem(function, dimension, instance);
+  problem = coco_make_bbob_problem(function, dimension, instance);
 
   problem->suite_dep_function = function;
   problem->suite_dep_instance = instance;
@@ -205,12 +214,12 @@ static coco_problem_t *suite_bbob_get_problem(coco_suite_t *suite, const size_t 
 struct suite_bbob_t final : public coco_suite_s {
   using coco_suite_s::coco_suite_s;
 
-  const char *get_instances_by_year(const int year) const override {
+  std::string_view get_instances_by_year(const int year) const override {
     return suite_bbob_get_instances_by_year(year);
   }
 
-  coco_problem_t *get_problem(const size_t function_idx, const size_t dimension_idx,
-                              const size_t instance_idx) override {
+  coco_problem_ptr_t get_problem(const size_t function_idx, const size_t dimension_idx,
+                                 const size_t instance_idx) override {
     return suite_bbob_get_problem(this, function_idx, dimension_idx, instance_idx);
   }
 };

@@ -236,8 +236,8 @@ void check_discretization_bi(const char *suite_name, const char *suite_options) 
     }
 
     /* Check whether the two extreme points are equal */
-    problem1_disc = coco_problem_as_stacked(problem_disc)->problem1;
-    problem2_disc = coco_problem_as_stacked(problem_disc)->problem2;
+    problem1_disc = coco_problem_as_stacked(problem_disc)->problem1.get();
+    problem2_disc = coco_problem_as_stacked(problem_disc)->problem2.get();
     problem1_tmp = coco_problem_transformed_get_inner_problem(problem1_disc);
     problem2_tmp = coco_problem_transformed_get_inner_problem(problem2_disc);
     problem1_cont = coco_problem_transformed_get_inner_problem(problem1_tmp);

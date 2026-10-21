@@ -52,12 +52,43 @@ MU_TEST(test_coco_suite_get_from_index) {
 }
 
 /**
+ * Tests that coco_suite_decode_problem_index sets all indices to 0 for an index that is too large.
+ */
+MU_TEST(test_coco_suite_decode_problem_index) {
+
+  coco_suite_t *suite = coco_suite("bbob", "year: 0000", NULL);
+  size_t function_idx = 7, dimension_idx = 7, instance_idx = 7;
+
+  coco_suite_decode_problem_index(suite, 205, &function_idx, &dimension_idx, &instance_idx);
+  mu_check((function_idx == 13) && (dimension_idx == 0) && (instance_idx == 10));
+
+  coco_set_log_level("error");
+  coco_suite_decode_problem_index(suite, 1000000, &function_idx, &dimension_idx, &instance_idx);
+  coco_set_log_level("info");
+  mu_check((function_idx == 0) && (dimension_idx == 0) && (instance_idx == 0));
+
+  coco_suite_free(suite);
+}
+
+/**
+ * Tests that a suite left without dimensions by the filters is not returned.
+ */
+MU_TEST(test_coco_suite_empty_after_filtering) {
+
+  coco_set_log_level("error");
+  mu_check(coco_suite("bbob", "", "dimensions: 7") == NULL);
+  coco_set_log_level("info");
+}
+
+/**
  * Run all tests in this file.
  */
 int main(void) {
   MU_RUN_TEST(test_coco_suite_encode_problem_index);
   MU_RUN_TEST(test_coco_suite_get_problem);
   MU_RUN_TEST(test_coco_suite_get_from_index);
+  MU_RUN_TEST(test_coco_suite_decode_problem_index);
+  MU_RUN_TEST(test_coco_suite_empty_after_filtering);
 
   MU_REPORT();
 

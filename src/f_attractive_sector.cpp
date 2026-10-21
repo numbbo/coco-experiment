@@ -79,19 +79,19 @@ struct f_attractive_sector_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic attractive sector problem.
  */
-static coco_problem_t *f_attractive_sector_allocate(const size_t number_of_variables, const double *xopt) {
-  return new f_attractive_sector_t(number_of_variables, xopt);
+static coco_problem_ptr_t f_attractive_sector_allocate(const size_t number_of_variables, const double *xopt) {
+  return std::make_unique<f_attractive_sector_t>(number_of_variables, xopt);
 }
 
 /**
  * @brief Creates the BBOB attractive sector problem.
  */
-static coco_problem_t *f_attractive_sector_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                 const size_t instance, const long rseed,
-                                                                 const char *problem_id_template,
-                                                                 const char *problem_name_template) {
+static coco_problem_ptr_t f_attractive_sector_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                    const size_t instance, const long rseed,
+                                                                    const char *problem_id_template,
+                                                                    const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   size_t i, j, k;
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -123,29 +123,25 @@ static coco_problem_t *f_attractive_sector_bbob_problem_allocate(const size_t fu
   }
 
   problem = f_attractive_sector_allocate(dimension, xopt.data());
-  problem = transform_obj_oscillate(problem);
-  problem = transform_obj_power(problem, 0.9);
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_obj_oscillate(std::move(problem));
+  problem = transform_obj_power(std::move(problem), 0.9);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "2-moderate");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "2-moderate");
 
   return problem;
 }
 
-static coco_problem_t *f_attractive_sector_permblockdiag_bbob_problem_allocate(const size_t function,
-                                                                               const size_t dimension,
-                                                                               const size_t instance, const long rseed,
-                                                                               const char *problem_id_template,
-                                                                               const char *problem_name_template) {
+static coco_problem_ptr_t f_attractive_sector_permblockdiag_bbob_problem_allocate(
+    const size_t function, const size_t dimension, const size_t instance, const long rseed,
+    const char *problem_id_template, const char *problem_name_template) {
 
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   const double condition = 10.0;
   /* each of R and Q might have its own parameter values */
   size_t nb_blocks1, nb_blocks2;
@@ -187,25 +183,23 @@ static coco_problem_t *f_attractive_sector_permblockdiag_bbob_problem_allocate(c
       P22.data(), rseed + 5000000, dimension, nb_swaps2, swap_range2);
 
   problem = f_attractive_sector_allocate(dimension, xopt.data());
-  problem = transform_obj_norm_by_dim(problem);
-  problem = transform_obj_oscillate(problem);
-  problem = transform_obj_power(problem, 0.9);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_norm_by_dim(std::move(problem));
+  problem = transform_obj_oscillate(std::move(problem));
+  problem = transform_obj_power(std::move(problem), 0.9);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  problem = transform_vars_permutation(problem, P22.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B1.rows(), dimension,
-                                         block_sizes1.data(), nb_blocks1);
-  problem = transform_vars_permutation(problem, P21.data(), dimension);
-  problem = transform_vars_conditioning(problem, condition);
-  problem = transform_vars_permutation(problem, P12.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B2.rows(), dimension,
-                                         block_sizes2.data(), nb_blocks2);
-  problem = transform_vars_permutation(problem, P11.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
+  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_conditioning(std::move(problem), condition);
+  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "2-moderate");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "2-moderate");
 
   return problem;
 }

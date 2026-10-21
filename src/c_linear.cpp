@@ -13,22 +13,20 @@
 #include "coco.h"
 #include "coco_internal.h"
 #include "coco_problem.cpp"
-static coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const double *feasible_point);
+static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem, const double *feasible_point);
 
+static coco_problem_ptr_t c_sum_variables_allocate(const size_t number_of_variables);
 
-static coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables);
+static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, const double *gradient,
+                                             const double x_shift_factor);
 
-static coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const double *gradient,
-                                          const double x_shift_factor);
+static coco_problem_ptr_t
+c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
+                                           const size_t constraint_number, const double factor1,
+                                           const char *problem_id_template, const char *problem_name_template,
+                                           double *gradient, double x_shift_factor, const double *feasible_direction);
 
-static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                  const size_t instance, const size_t constraint_number,
-                                                                  const double factor1, const char *problem_id_template,
-                                                                  const char *problem_name_template, double *gradient,
-                                                                  double x_shift_factor,
-                                                                  const double *feasible_direction);
-
-static coco_problem_t *
+static coco_problem_ptr_t
 c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                     const size_t number_of_active_constraints, const char *problem_id_template,
                                     const char *problem_name_template, const double *feasible_direction);
@@ -73,12 +71,11 @@ struct c_linear_t final : public coco_problem_transformed_t {
   const double x_shift_factor; /* shift solution by - factor * gradient */
   const double gradient_norm;
 
-  c_linear_t(coco_problem_t *inner_problem, const double *gradient, const double x_shift_factor,
-             const double gradient_norm)
-      : coco_problem_transformed_t(inner_problem, "gradient_linear_constraint"),
+  c_linear_t(coco_problem_ptr_t inner, const double *gradient, const double x_shift_factor, const double gradient_norm)
+      : coco_problem_transformed_t(std::move(inner), "gradient_linear_constraint"),
         gradient(gradient, gradient + inner_problem->number_of_variables),
-        transformed_x(inner_problem->number_of_variables),
-        x_shift_factor(x_shift_factor), gradient_norm(gradient_norm) {}
+        transformed_x(inner_problem->number_of_variables), x_shift_factor(x_shift_factor),
+        gradient_norm(gradient_norm) {}
 
   /**
    * @brief Evaluates the linear constraint at the point 'x' and stores
@@ -109,13 +106,13 @@ static c_linear_t *c_linear_get(const coco_problem_t *problem) {
  *        the constraint in "problem" and records it as the
  *        initial feasible solution to this coco_problem.
  */
-static coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const double *feasible_direction) {
+static coco_problem_ptr_t c_guarantee_feasible_point(coco_problem_ptr_t problem, const double *feasible_direction) {
 
   size_t i;
   c_linear_t *data;
   double constraint_value = 0.0;
 
-  data = c_linear_get(problem);
+  data = c_linear_get(problem.get());
 
   assert(problem->number_of_constraints == 1);
 
@@ -140,8 +137,8 @@ static coco_problem_t *c_guarantee_feasible_point(coco_problem_t *problem, const
 /**
  * @brief Allocates a linear constraint coco_problem_t with all-ones gradient.
  */
-static coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables) {
-  return new c_sum_variables_t(number_of_variables);
+static coco_problem_ptr_t c_sum_variables_allocate(const size_t number_of_variables) {
+  return std::make_unique<c_sum_variables_t>(number_of_variables);
 }
 
 /**
@@ -150,15 +147,15 @@ static coco_problem_t *c_sum_variables_allocate(const size_t number_of_variables
  *        as argument and with the feasible domain extended by
  *        shift_factor.
  */
-static coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const double *gradient,
-                                          const double shift_factor) {
+static coco_problem_ptr_t c_linear_transform(coco_problem_ptr_t inner_problem, const double *gradient,
+                                             const double shift_factor) {
 
   double gradient_norm = coco_vector_norm(gradient, inner_problem->number_of_variables);
 
   if (gradient_norm <= 0)
     coco_error("c_linear_transform(): gradient norm %f<=0 zero", gradient_norm);
 
-  return new c_linear_t(inner_problem, gradient, shift_factor, gradient_norm);
+  return std::make_unique<c_linear_t>(std::move(inner_problem), gradient, shift_factor, gradient_norm);
 }
 
 /**
@@ -169,16 +166,14 @@ static coco_problem_t *c_linear_transform(coco_problem_t *inner_problem, const d
  * c_linear_single_cons_bbob_problem_allocate() into one single
  * coco_problem_t object.
  */
-static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                  const size_t instance, const size_t constraint_number,
-                                                                  const double factor1, const char *problem_id_template,
-                                                                  const char *problem_name_template, double *gradient,
-                                                                  const double x_shift_factor,
-                                                                  const double *feasible_direction) {
+static coco_problem_ptr_t c_linear_single_cons_bbob_problem_allocate(
+    const size_t function, const size_t dimension, const size_t instance, const size_t constraint_number,
+    const double factor1, const char *problem_id_template, const char *problem_name_template, double *gradient,
+    const double x_shift_factor, const double *feasible_direction) {
 
   size_t i;
 
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   long seed_cons_i;
   double factor2;
 
@@ -206,7 +201,7 @@ static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t f
   if (gradient) {
 
     coco_vector_scale(gradient, dimension, factor1 * factor2, coco_vector_norm(gradient, dimension));
-    problem = c_linear_transform(problem, gradient, x_shift_factor);
+    problem = c_linear_transform(std::move(problem), gradient, x_shift_factor);
 
   } else { /* Randomly generate the gradient of the linear constraint */
 
@@ -219,7 +214,7 @@ static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t f
       gradient_linear_constraint[i] =
           factor1 * coco_random_normal(&random_generator) * factor2 / sqrt((double)dimension);
 
-    problem = c_linear_transform(problem, gradient_linear_constraint.data(), x_shift_factor);
+    problem = c_linear_transform(std::move(problem), gradient_linear_constraint.data(), x_shift_factor);
   }
 
   /* Guarantee that the vector feasible_point is feasible w.r.t. to
@@ -229,11 +224,11 @@ static coco_problem_t *c_linear_single_cons_bbob_problem_allocate(const size_t f
    * are stacked together in coco_problem_stacked_allocate().
    */
   if (feasible_direction)
-    problem = c_guarantee_feasible_point(problem, feasible_direction);
+    problem = c_guarantee_feasible_point(std::move(problem), feasible_direction);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "linear");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "linear");
   return problem;
 }
 
@@ -281,7 +276,7 @@ static void con_update_linear_combination(double *linear_combination, const coco
  * coco_problem_t objects are then stacked together into one single
  * coco_problem_t object that is returned by the function.
  */
-static coco_problem_t *
+static coco_problem_ptr_t
 c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                     const size_t number_of_active_constraints, const char *problem_id_template,
                                     const char *problem_name_template, const double *feasible_direction) {
@@ -289,8 +284,8 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
   const double global_scaling_factor = 100.;
   size_t i, j;
 
-  coco_problem_t *problem_c = nullptr;
-  coco_problem_t *problem_c2 = nullptr;
+  coco_problem_ptr_t problem_c;
+  coco_problem_ptr_t problem_c2;
   double *gradient;
   c_linear_t *first_constraint_data = nullptr;
   double shift_factor;
@@ -301,10 +296,10 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
       number_of_active_constraints / 2; /* TODO: decide whether this should go into the interface */
   int disguise_gradient = 1;
 
-  if (strncmp(problem_id_template, "bbob-constrained-active-only", 28) == 0)
+  if (std::string_view(problem_id_template).substr(0, 28) == "bbob-constrained-active-only")
     inactive_constraints_left = 0;
 
-  if (strncmp(problem_id_template, "bbob-constrained-no-disguise", 28) == 0)
+  if (std::string_view(problem_id_template).substr(0, 28) == "bbob-constrained-no-disguise")
     disguise_gradient = 0;
 
   number_of_linear_constraints = number_of_active_constraints + inactive_constraints_left;
@@ -336,9 +331,9 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
   problem_c = c_linear_single_cons_bbob_problem_allocate(function, dimension, instance, 1, factor1, problem_id_template,
                                                          problem_name_template, gradient, 0.0, feasible_direction);
   if (gradient != nullptr) /* preserve the constraint based on function gradient */
-    first_constraint_data = c_linear_get(problem_c);
+    first_constraint_data = c_linear_get(problem_c.get());
   else
-    con_update_linear_combination(linear_combination.data(), problem_c, coco_random_uniform(&random_generator2));
+    con_update_linear_combination(linear_combination.data(), problem_c.get(), coco_random_uniform(&random_generator2));
 
   /* Instantiate the other linear constraints (if any) and stack them
    * all into problem_c
@@ -356,8 +351,9 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
       shift_factor = 0.0;
     } else { /* create an inactive (shifted) constraint */
       if (inactive_constraints_left-- <= 0)
-        coco_error("c_linear_cons_bbob_problem_allocate(): no inactive left i=%d j=%d nb_act=%ul nb_con=%ul", i, j,
-                   number_of_active_constraints, number_of_linear_constraints);
+        coco_error("c_linear_cons_bbob_problem_allocate(): no inactive left i=%lu j=%lu nb_act=%lu nb_con=%lu",
+                   (unsigned long)i, (unsigned long)j, (unsigned long)number_of_active_constraints,
+                   (unsigned long)number_of_linear_constraints);
       gradient = nullptr;
       shift_factor = 0.01 + 2.0 * coco_random_uniform(&random_generator);
     }
@@ -371,23 +367,24 @@ c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimensio
         if (first_constraint_data)
           coco_warning(
               "c_linear_cons_bbob_problem_allocate(): first_constraint_data already assigned, this is probably a bug");
-        first_constraint_data = c_linear_get(problem_c2);
+        first_constraint_data = c_linear_get(problem_c2.get());
       } else
-        con_update_linear_combination(linear_combination.data(), problem_c2, coco_random_uniform(&random_generator2));
+        con_update_linear_combination(linear_combination.data(), problem_c2.get(),
+                                      coco_random_uniform(&random_generator2));
     }
 
-    problem_c = coco_problem_stacked_allocate(problem_c, problem_c2, problem_c2->smallest_values_of_interest.data(),
-                                              problem_c2->largest_values_of_interest.data());
+    const std::string problem_type_c2 = problem_c2->problem_type;
+    problem_c = coco_problem_stacked_allocate(std::move(problem_c), std::move(problem_c2));
 
     /* Use the standard stacked problem_id as problem_name and
      * construct a new suite-specific problem_id
      */
-    coco_problem_set_name(problem_c, problem_c->problem_id.c_str());
-    coco_problem_set_id(problem_c, "bbob-constrained_f%02lu_i%02lu_d%02lu", (unsigned long)function,
+    coco_problem_set_name(problem_c.get(), "%s", problem_c->problem_id.c_str());
+    coco_problem_set_id(problem_c.get(), "bbob-constrained_f%02lu_i%02lu_d%02lu", (unsigned long)function,
                         (unsigned long)instance, (unsigned long)dimension);
 
     /* Construct problem type */
-    coco_problem_set_type(problem_c, "%s_%s", problem_c2->problem_type.c_str(), problem_c2->problem_type.c_str());
+    coco_problem_set_type(problem_c.get(), "%s_%s", problem_type_c2.c_str(), problem_type_c2.c_str());
   }
 
   /* Modify first constraint without changing the feasible solution,

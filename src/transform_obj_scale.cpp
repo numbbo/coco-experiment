@@ -14,8 +14,8 @@
 struct transform_obj_scale_t final : public coco_problem_transformed_t {
   const double factor;
 
-  transform_obj_scale_t(coco_problem_t *inner_problem, const double factor)
-      : coco_problem_transformed_t(inner_problem, "transform_obj_scale"), factor(factor) {
+  transform_obj_scale_t(coco_problem_ptr_t inner, const double factor)
+      : coco_problem_transformed_t(std::move(inner), "transform_obj_scale"), factor(factor) {
     size_t i;
     for (i = 0; i < number_of_objectives; ++i)
       best_value[i] *= factor;
@@ -26,7 +26,7 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
     size_t i;
 
     if (number_of_objectives == 0) {
-      coco_evaluate_function(inner_problem, x, y);
+      coco_evaluate_function(inner_problem.get(), x, y);
       return;
     }
 
@@ -35,7 +35,7 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
       return;
     }
 
-    coco_evaluate_function(inner_problem, x, y);
+    coco_evaluate_function(inner_problem.get(), x, y);
 
     for (i = 0; i < number_of_objectives; i++)
       y[i] *= factor;
@@ -57,7 +57,7 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
       return;
     }
 
-    bbob_evaluate_gradient(inner_problem, x, y);
+    bbob_evaluate_gradient(inner_problem.get(), x, y);
 
     for (i = 0; i < number_of_variables; ++i) {
       y[i] *= factor;
@@ -68,6 +68,6 @@ struct transform_obj_scale_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_scale(coco_problem_t *inner_problem, const double factor) {
-  return new transform_obj_scale_t(inner_problem, factor);
+static coco_problem_ptr_t transform_obj_scale(coco_problem_ptr_t inner_problem, const double factor) {
+  return std::make_unique<transform_obj_scale_t>(std::move(inner_problem), factor);
 }

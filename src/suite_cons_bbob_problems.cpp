@@ -164,16 +164,15 @@ static void feasible_direction_set_length(double *feasible_direction, const doub
  * @brief Objective function: sphere
  *        Constraint(s): linear
  */
-static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                    const size_t instance,
-                                                                    const size_t number_of_linear_constraints,
-                                                                    const long rseed, double *feasible_direction,
-                                                                    const double *xopt, const char *problem_id_template,
-                                                                    const char *problem_name_template) {
+static coco_problem_ptr_t
+f_sphere_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
+                                             const size_t number_of_linear_constraints, const long rseed,
+                                             double *feasible_direction, const double *xopt,
+                                             const char *problem_id_template, const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -181,7 +180,7 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
   problem =
       f_sphere_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template, problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the gradient of the objective
@@ -191,8 +190,8 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
                                                   problem_id_template, problem_name_template, feasible_direction);
 
   const std::string problem_type_temp = problem->problem_type;
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -210,11 +209,10 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -223,15 +221,15 @@ static coco_problem_t *f_sphere_c_linear_cons_bbob_problem_allocate(const size_t
  * @brief Objective function: ellipsoid
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_ptr_t
 f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                 const size_t number_of_linear_constraints, const long rseed,
                                                 double *feasible_direction, const double *xopt,
                                                 const char *problem_id_template, const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -239,7 +237,7 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem = f_ellipsoid_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                    problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the gradient of the objective
@@ -253,8 +251,8 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -270,17 +268,16 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
 
   problem->evaluations_constraints = 0;
 
-  problem = transform_vars_oscillate(problem);
-  transform_inv_initial_oscillate(problem, xopt);
+  problem = transform_vars_oscillate(std::move(problem));
+  transform_inv_initial_oscillate(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -289,14 +286,14 @@ f_ellipsoid_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
  * @brief Objective function: rotated ellipsoid
  *        Constraint(s): linear
  */
-static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
+static coco_problem_ptr_t f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -304,7 +301,7 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
   problem = f_ellipsoid_rotated_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                            problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the gradient of the objective
@@ -318,8 +315,8 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -334,17 +331,16 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
   problem->evaluations = 0;
   problem->evaluations_constraints = 0;
 
-  problem = transform_vars_oscillate(problem);
-  transform_inv_initial_oscillate(problem, xopt);
+  problem = transform_vars_oscillate(std::move(problem));
+  transform_inv_initial_oscillate(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin .
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -353,15 +349,15 @@ static coco_problem_t *f_ellipsoid_rotated_c_linear_cons_bbob_problem_allocate(
  * @brief Objective function: linear slope
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_ptr_t
 f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                    const size_t number_of_linear_constraints, const long rseed,
                                                    double *feasible_direction, const double *xopt,
                                                    const char *problem_id_template, const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -369,7 +365,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   problem = f_linear_slope_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                  problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the gradient of the objective
@@ -383,8 +379,8 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -395,7 +391,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 1);
+  problem = transform_vars_shift(std::move(problem), xopt, 1);
 
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
@@ -406,8 +402,7 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
   problem->evaluations_constraints = 0;
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -416,16 +411,15 @@ f_linear_slope_c_linear_cons_bbob_problem_allocate(const size_t function, const 
  * @brief Objective function: discus
  *        Constraint(s): linear
  */
-static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                    const size_t instance,
-                                                                    const size_t number_of_linear_constraints,
-                                                                    const long rseed, double *feasible_direction,
-                                                                    const double *xopt, const char *problem_id_template,
-                                                                    const char *problem_name_template) {
+static coco_problem_ptr_t
+f_discus_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
+                                             const size_t number_of_linear_constraints, const long rseed,
+                                             double *feasible_direction, const double *xopt,
+                                             const char *problem_id_template, const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -433,7 +427,7 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
   problem = f_discus_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                 problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the gradient of the objective
@@ -447,8 +441,8 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value
@@ -463,17 +457,16 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
   problem->evaluations = 0;
   problem->evaluations_constraints = 0;
 
-  problem = transform_vars_oscillate(problem);
-  transform_inv_initial_oscillate(problem, xopt);
+  problem = transform_vars_oscillate(std::move(problem));
+  transform_inv_initial_oscillate(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -482,15 +475,15 @@ static coco_problem_t *f_discus_c_linear_cons_bbob_problem_allocate(const size_t
  * @brief Objective function: bent cigar
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_ptr_t
 f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                  const size_t number_of_linear_constraints, const long rseed,
                                                  double *feasible_direction, const double *xopt,
                                                  const char *problem_id_template, const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -498,7 +491,7 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   problem = f_bent_cigar_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                     problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the gradient of the objective
@@ -512,8 +505,8 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -528,17 +521,16 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
   problem->evaluations = 0;
   problem->evaluations_constraints = 0;
 
-  problem = transform_vars_asymmetric(problem, 0.2);
-  transform_inv_initial_asymmetric(problem, xopt);
+  problem = transform_vars_asymmetric(std::move(problem), 0.2);
+  transform_inv_initial_asymmetric(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -547,14 +539,14 @@ f_bent_cigar_c_linear_cons_bbob_problem_allocate(const size_t function, const si
  * @brief Objective function: different powers
  *        Constraint(s): linear
  */
-static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
+static coco_problem_ptr_t f_different_powers_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -562,7 +554,7 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
   problem = f_different_powers_bbob_constrained_problem_allocate(function, dimension, instance, rseed,
                                                                  problem_id_template, problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the gradient of the objective
@@ -576,8 +568,8 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -595,11 +587,10 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -608,15 +599,15 @@ static coco_problem_t *f_different_powers_c_linear_cons_bbob_problem_allocate(
  * @brief Objective function: rastrigin
  *        Constraint(s): linear
  */
-static coco_problem_t *
+static coco_problem_ptr_t
 f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const size_t dimension, const size_t instance,
                                                 const size_t number_of_linear_constraints, const long rseed,
                                                 double *feasible_direction, const double *xopt,
                                                 const char *problem_id_template, const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -624,7 +615,7 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem = f_rastrigin_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                    problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the feasible direction above
@@ -638,8 +629,8 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -654,18 +645,17 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
   problem->evaluations = 0;
   problem->evaluations_constraints = 0;
 
-  problem = transform_vars_asymmetric(problem, 0.2);
-  problem = transform_vars_oscillate(problem);
-  transform_inv_initial_composed(problem, xopt);
+  problem = transform_vars_asymmetric(std::move(problem), 0.2);
+  problem = transform_vars_oscillate(std::move(problem));
+  transform_inv_initial_composed(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }
@@ -674,14 +664,14 @@ f_rastrigin_c_linear_cons_bbob_problem_allocate(const size_t function, const siz
  * @brief Objective function: rastrigin
  *        Constraint(s): linear
  */
-static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
+static coco_problem_ptr_t f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const size_t number_of_linear_constraints,
     const long rseed, double *feasible_direction, const double *xopt, const char *problem_id_template,
     const char *problem_name_template) {
 
   size_t i;
-  coco_problem_t *problem = nullptr;
-  coco_problem_t *problem_c = nullptr;
+  coco_problem_ptr_t problem;
+  coco_problem_ptr_t problem_c;
 
   const std::vector<double> all_zeros(dimension, 0.0);
 
@@ -689,7 +679,7 @@ static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
   problem = f_rastrigin_rotated_cons_bbob_problem_allocate(function, dimension, instance, rseed, problem_id_template,
                                                            problem_name_template);
 
-  bbob_evaluate_gradient(problem, all_zeros.data(), feasible_direction);
+  bbob_evaluate_gradient(problem.get(), all_zeros.data(), feasible_direction);
   feasible_direction_set_length(feasible_direction, xopt, dimension, rseed);
 
   /* Create the constraints. Use the feasible direction above
@@ -703,8 +693,8 @@ static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
   /* Build the final constrained function by stacking the objective
    * function and the constraints into one coco_problem_t type.
    */
-  problem = coco_problem_stacked_allocate(problem, problem_c, problem_c->smallest_values_of_interest.data(),
-                                          problem_c->largest_values_of_interest.data());
+  const std::string problem_type_constraints = problem_c->problem_type;
+  problem = coco_problem_stacked_allocate(std::move(problem), std::move(problem_c));
 
   /* Define problem->best_parameter as the origin and store its
    * objective function value into problem->best_value.
@@ -719,18 +709,17 @@ static coco_problem_t *f_rastrigin_rotated_c_linear_cons_bbob_problem_allocate(
   problem->evaluations = 0;
   problem->evaluations_constraints = 0;
 
-  problem = transform_vars_asymmetric(problem, 0.2);
-  problem = transform_vars_oscillate(problem);
-  transform_inv_initial_composed(problem, xopt);
+  problem = transform_vars_asymmetric(std::move(problem), 0.2);
+  problem = transform_vars_oscillate(std::move(problem));
+  transform_inv_initial_composed(problem.get(), xopt);
 
   /* Apply a translation to the whole problem so that the constrained
    * minimum is no longer at the origin.
    */
-  problem = transform_vars_shift(problem, xopt, 0);
+  problem = transform_vars_shift(std::move(problem), xopt, 0);
 
   /* Construct problem type */
-  coco_problem_set_type(problem, "%s_%s", problem_type_temp.c_str(), problem_c->problem_type.c_str());
-
+  coco_problem_set_type(problem.get(), "%s_%s", problem_type_temp.c_str(), problem_type_constraints.c_str());
 
   return problem;
 }

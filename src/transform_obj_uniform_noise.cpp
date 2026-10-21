@@ -13,8 +13,8 @@ struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
   const double alpha;
   const double beta;
 
-  transform_obj_uniform_noise_t(coco_problem_t *inner_problem, const double alpha, const double beta)
-      : coco_problem_transformed_t(inner_problem, "uniform_noise_model"), alpha(alpha), beta(beta) {
+  transform_obj_uniform_noise_t(coco_problem_ptr_t inner, const double alpha, const double beta)
+      : coco_problem_transformed_t(std::move(inner), "uniform_noise_model"), alpha(alpha), beta(beta) {
     is_noisy = 1;
   }
 
@@ -45,7 +45,7 @@ struct transform_obj_uniform_noise_t final : public coco_problem_transformed_t {
 /**
  * @brief Allocates a noisy problem with uniform noise.
  */
-static coco_problem_t *transform_obj_uniform_noise(coco_problem_t *inner_problem, const double alpha,
-                                                   const double beta) {
-  return new transform_obj_uniform_noise_t(inner_problem, alpha, beta);
+static coco_problem_ptr_t transform_obj_uniform_noise(coco_problem_ptr_t inner_problem, const double alpha,
+                                                      const double beta) {
+  return std::make_unique<transform_obj_uniform_noise_t>(std::move(inner_problem), alpha, beta);
 }

@@ -15,8 +15,8 @@
 struct transform_obj_penalize_t final : public coco_problem_transformed_t {
   const double factor;
 
-  transform_obj_penalize_t(coco_problem_t *inner_problem, const double factor)
-      : coco_problem_transformed_t(inner_problem, "transform_obj_penalize"), factor(factor) {
+  transform_obj_penalize_t(coco_problem_ptr_t inner, const double factor)
+      : coco_problem_transformed_t(std::move(inner), "transform_obj_penalize"), factor(factor) {
     /* No need to update the best value as the best parameter is feasible */
   }
 
@@ -45,7 +45,7 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
       }
     }
     assert(inner_problem != nullptr);
-    coco_evaluate_function(inner_problem, x, y);
+    coco_evaluate_function(inner_problem.get(), x, y);
 
     for (i = 0; i < number_of_objectives; ++i) {
       y[i] += factor * penalty;
@@ -57,7 +57,7 @@ struct transform_obj_penalize_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_penalize(coco_problem_t *inner_problem, const double factor) {
+static coco_problem_ptr_t transform_obj_penalize(coco_problem_ptr_t inner_problem, const double factor) {
   assert(inner_problem != nullptr);
-  return new transform_obj_penalize_t(inner_problem, factor);
+  return std::make_unique<transform_obj_penalize_t>(std::move(inner_problem), factor);
 }

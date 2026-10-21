@@ -82,19 +82,19 @@ struct f_griewank_rosenbrock_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic Griewank-Rosenbrock problem.
  */
-static coco_problem_t *f_griewank_rosenbrock_allocate(const size_t number_of_variables, double facftrue) {
-  return new f_griewank_rosenbrock_t(number_of_variables, facftrue);
+static coco_problem_ptr_t f_griewank_rosenbrock_allocate(const size_t number_of_variables, double facftrue) {
+  return std::make_unique<f_griewank_rosenbrock_t>(number_of_variables, facftrue);
 }
 
 /**
  * @brief Creates the BBOB Griewank-Rosenbrock problem.
  */
-static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                   const size_t instance, const long rseed,
-                                                                   const void *args, const char *problem_id_template,
-                                                                   const char *problem_name_template) {
+static coco_problem_ptr_t f_griewank_rosenbrock_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                      const size_t instance, const long rseed,
+                                                                      const void *args, const char *problem_id_template,
+                                                                      const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   size_t i, j;
 
   std::vector<double> M(dimension * dimension);
@@ -120,8 +120,8 @@ static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t 
   f_griewank_rosenbrock_args_t *f_griewank_rosenbrock_args;
   f_griewank_rosenbrock_args = ((f_griewank_rosenbrock_args_t *)args);
   problem = f_griewank_rosenbrock_allocate(dimension, f_griewank_rosenbrock_args->facftrue);
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_shift(problem, shift.data(), 0);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_vars_shift(std::move(problem), shift.data(), 0);
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
 
   for (i = 0; i < dimension; i++) {
@@ -129,7 +129,7 @@ static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t 
         0; /* Wassim: TODO: not a proper way of avoiding to trigger coco_warning("transform_vars_affine():
               'best_parameter' not updated, set to NAN")*/
   }
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
   for (j = 0; j < dimension; ++j) { /* Wassim: manually set xopt = rot1^T
                                        ones(dimension)/(2*factor) */
     tmp = 0;
@@ -139,11 +139,9 @@ static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t 
     problem->best_parameter[j] = tmp / (2. * scales);
   }
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "4-multi-modal");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "4-multi-modal");
 
   return problem;
 }
@@ -151,11 +149,11 @@ static coco_problem_t *f_griewank_rosenbrock_bbob_problem_allocate(const size_t 
 /**
  * @brief Creates the BBOB permuted block-rotated Griewank-Rosenbrock problem.
  */
-static coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
+static coco_problem_ptr_t f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_allocate(
     const size_t function, const size_t dimension, const size_t instance, const long rseed, const void *args,
     const char *problem_id_template, const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   double scales;
   size_t i, j, k, next_bs_change;
 
@@ -190,15 +188,15 @@ static coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_all
   f_griewank_rosenbrock_args = ((f_griewank_rosenbrock_args_t *)args);
 
   problem = f_griewank_rosenbrock_allocate(dimension, f_griewank_rosenbrock_args->facftrue);
-  problem = transform_vars_shift(problem, shift.data(), 0);
-  problem = transform_vars_scale(problem, scales);
-  problem = transform_vars_permutation(problem, P2.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B.rows(), dimension,
-                                         block_sizes.data(), nb_blocks);
-  problem = transform_vars_permutation(problem, P1.data(), dimension);
-  
-  /*problem = transform_obj_norm_by_dim(problem);*/ /* Wassim: there is already a normalization by dimension*/
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_vars_shift(std::move(problem), shift.data(), 0);
+  problem = transform_vars_scale(std::move(problem), scales);
+  problem = transform_vars_permutation(std::move(problem), P2.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
+  problem = transform_vars_permutation(std::move(problem), P1.data(), dimension);
+
+  /*problem = transform_obj_norm_by_dim(std::move(problem));*/ /* Wassim: there is already a normalization by
+                                                                  dimension*/
+  problem = transform_obj_shift(std::move(problem), fopt);
 
   /* Manh: manually set xopt = rot1^T ones(dimension)/(2*scales) */
   next_bs_change = 0;
@@ -218,11 +216,9 @@ static coco_problem_t *f_griewank_rosenbrock_permblockdiag_bbob_bbob_problem_all
     problem->best_parameter[P1[j]] = best_parameter[j];
   }
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "4-multi-modal");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "4-multi-modal");
 
   return problem;
 }

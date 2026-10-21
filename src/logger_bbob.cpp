@@ -57,7 +57,7 @@
  */
 struct logger_bbob_data_t {
   coco_observer_t *observer; /**< @brief Pointer to the observer (might be NULL at the end) */
-  const char *suite_name;    /**< @brief The suite name (owned by the suite) */
+  std::string suite_name;    /**< @brief The suite name */
   int is_initialized;        /**< @brief Whether the logger was already initialized */
   int algorithm_restarted;   /**< @brief Whether the algorithm has restarted (output information to .rdat file). */
 
@@ -88,9 +88,9 @@ struct logger_bbob_data_t {
   size_t number_of_constraints;       /**< @brief Number of constraints */
   int log_discrete_as_int;            /**< @brief Whether to output discrete variables in integer or double format. */
 
-  std::unique_ptr<coco_observer_targets_t> targets;         /**< @brief Triggers based on target values. */
-  std::unique_ptr<coco_observer_evaluations_t> evaluations; /**< @brief Triggers based on the number of evaluations. */
-  std::unique_ptr<coco_observer_targets_t> mdat_targets; /**< @brief Triggers based on target values for recommendations. */
+  coco_observer_targets_t targets;      /**< @brief Triggers based on target values. */
+  coco_observer_evaluations_t evaluations;  /**< @brief Triggers based on the number of evaluations. */
+  coco_observer_targets_t mdat_targets; /**< @brief Triggers based on target values for recommendations. */
 };
 
 static logger_bbob_data_t *logger_bbob_get_data(const coco_problem_t *problem);
@@ -233,7 +233,7 @@ static void logger_bbob_open_data_file(FILE **data_file, const std::string &path
  */
 static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const std::string &folder,
                                        const std::string &function_string, const std::string &data_file_name,
-                                       const char *suite_name, int start_new_line) {
+                                       const std::string &suite_name, int start_new_line) {
   int add_empty_line = 0;
   FILE **info_file;
   FILE *tmp_file;
@@ -269,8 +269,8 @@ static void logger_bbob_open_info_file(logger_bbob_data_t *logger, const std::st
               "suite = '%s', funcId = %lu, DIM = %lu, Precision = %.3e, "
               "algId = '%s', coco_version = '%s', logger = '%s', "
               "data_format = '%s', settings = '%s'\n",
-              suite_name, (unsigned long)logger->function, (unsigned long)logger->number_of_variables, pow(10, -8),
-              observer->algorithm_name.c_str(), coco_version, observer->observer_name.c_str(),
+              suite_name.c_str(), (unsigned long)logger->function, (unsigned long)logger->number_of_variables,
+              pow(10, -8), observer->algorithm_name.c_str(), coco_version, observer->observer_name.c_str(),
               logger_bbob_data_format, observer->settings.c_str());
       fprintf(*info_file, "%% %s\n", observer->algorithm_info.c_str());
       /* data_file_name does not have the extension */
@@ -341,38 +341,51 @@ static void logger_bbob_initialize(logger_bbob_data_t *logger, int is_opt_known)
 }
 
 /**
+ * @brief The bbob logger, which wraps the observed problem.
+ */
+struct logger_bbob_t final : public coco_problem_transformed_t {
+  logger_bbob_data_t data;
+
+  logger_bbob_t(coco_problem_ptr_t inner, std::string_view observer_name)
+      : coco_problem_transformed_t(std::move(inner), observer_name), data() {}
+
+  ~logger_bbob_t() override;
+
+  void evaluate_function(const double *x, double *y) override;
+  void recommend_solution(const double *x) override;
+};
+
+/**
  * @brief Evaluates the function, increases the number of evaluations and outputs information according to
  * observer options.
  */
-static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, double *y) {
+void logger_bbob_t::evaluate_function(const double *x, double *y) {
   size_t i;
   double y_logged, max_value = 0, sum_constraints;
-  logger_bbob_data_t *logger = logger_bbob_get_data(problem);
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, nullptr);
+  const int is_feasible = number_of_constraints <= 0 || coco_is_feasible(inner_problem.get(), x, nullptr);
 
-  if (problem->is_tainted || inner_problem->is_tainted) {
+  if (is_tainted || inner_problem->is_tainted) {
     coco_error("Though shalt not cheat! Trying to evaluate a tainted observed problem. Do _not_ call "
                "coco_problem_best_parameter() on a problem you want to benchmark.");
   }
 
   coco_debug("Started logger_bbob_evaluate()");
 
-  if (!logger->is_initialized) {
-    logger_bbob_initialize(logger, problem->is_opt_known);
+  if (!data.is_initialized) {
+    logger_bbob_initialize(&data, is_opt_known);
   }
-  if ((coco_log_level >= COCO_DEBUG) && logger->num_func_evaluations == 0) {
+  if ((coco_log_level >= COCO_DEBUG) && data.num_func_evaluations == 0) {
     coco_debug("%4lu: ", (unsigned long)inner_problem->suite_dep_index);
-    coco_debug("on problem %s ... ", coco_problem_get_id(inner_problem));
+    coco_debug("on problem %s ... ", coco_problem_get_id(inner_problem.get()));
   }
 
   /* Fulfill contract of a COCO evaluate function */
-  coco_evaluate_function(inner_problem, x, y);
-  logger->num_func_evaluations++;
-  logger->current_value = y[0];
+  coco_evaluate_function(inner_problem.get(), x, y);
+  data.num_func_evaluations++;
+  data.current_value = y[0];
   y_logged = y[0];
   if (inner_problem->is_noisy == 1) {
-    logger->current_value = inner_problem->last_noise_free_values[0];
+    data.current_value = inner_problem->last_noise_free_values[0];
     y_logged = inner_problem->last_noise_free_values[0];
   }
   if (coco_is_nan(y_logged))
@@ -381,20 +394,20 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
     y_logged = INFINITY_FOR_LOGGING;
 
   /* Do sanity check */
-  if ((problem->is_opt_known) && (is_feasible)) {
+  if ((is_opt_known) && (is_feasible)) {
     /* Infeasible solutions can have much better y0 values */
-    assert(y_logged + 1e-13 >= logger->optimal_value);
+    assert(y_logged + 1e-13 >= data.optimal_value);
   }
 
   /* Evaluate the constraints */
-  std::vector<double> constraints(problem->number_of_constraints);
-  if (problem->number_of_constraints > 0)
+  std::vector<double> constraints(number_of_constraints);
+  if (number_of_constraints > 0)
     inner_problem->evaluate_constraint(x, constraints.data(), 0);
-  logger->num_cons_evaluations = problem->evaluations_constraints;
+  data.num_cons_evaluations = evaluations_constraints;
 
   /* Compute the sum of positive constraint values */
   sum_constraints = 0;
-  for (i = 0; i < problem->number_of_constraints; ++i) {
+  for (i = 0; i < number_of_constraints; ++i) {
     if (constraints[i] > 0)
       sum_constraints += constraints[i];
   }
@@ -404,8 +417,8 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
   else if (coco_is_inf(sum_constraints))
     sum_constraints = INFINITY_FOR_LOGGING;
 
-  if (problem->is_opt_known)
-    max_value = coco_double_max(y_logged, logger->optimal_value);
+  if (is_opt_known)
+    max_value = coco_double_max(y_logged, data.optimal_value);
   else {
     /* Problems with unknown optimal values */
     if (sum_constraints > 0) {
@@ -415,34 +428,33 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
   }
 
   /* Update logger state
-   * At logger->number_of_evaluations == 1 the logger->best_found_value is not initialized,
+   * At data.number_of_evaluations == 1 the data.best_found_value is not initialized,
    * also compare to max_value to not potentially be thrown off by weird values in y[0]
    */
-  if (logger->num_func_evaluations == 1 || (max_value + sum_constraints < logger->best_found_value)) {
-    logger->best_found_value = max_value + sum_constraints;
-    for (i = 0; i < problem->number_of_variables; i++)
-      logger->best_found_solution[i] = x[i]; /* May well be infeasible */
+  if (data.num_func_evaluations == 1 || (max_value + sum_constraints < data.best_found_value)) {
+    data.best_found_value = max_value + sum_constraints;
+    for (i = 0; i < number_of_variables; i++)
+      data.best_found_solution[i] = x[i]; /* May well be infeasible */
 
     /* Add a line in the .dat file is the performance target is reached by a feasible solution
      * and always at the first evaluation */
-    if (logger->num_func_evaluations == 1 ||
-        coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value)) {
-      logger_bbob_output(logger->dat_file, logger, x, y_logged, logger->best_found_value, constraints.data());
-      logger->last_logged_eval_dat = logger->num_func_evaluations;
+    if (data.num_func_evaluations == 1 ||
+        coco_observer_targets_trigger(&data.targets, data.best_found_value - data.optimal_value)) {
+      logger_bbob_output(data.dat_file, &data, x, y_logged, data.best_found_value, constraints.data());
+      data.last_logged_eval_dat = data.num_func_evaluations;
     }
   }
 
   /* Add a line in the .tdat file for specific number of evaluations*/
-  if (coco_observer_evaluations_trigger(logger->evaluations.get(),
-                                        logger->num_func_evaluations + logger->num_cons_evaluations)) {
-    logger_bbob_output(logger->tdat_file, logger, x, y_logged, logger->best_found_value, constraints.data());
-    logger->last_logged_eval_tdat = logger->num_func_evaluations;
+  if (coco_observer_evaluations_trigger(&data.evaluations, data.num_func_evaluations + data.num_cons_evaluations)) {
+    logger_bbob_output(data.tdat_file, &data, x, y_logged, data.best_found_value, constraints.data());
+    data.last_logged_eval_tdat = data.num_func_evaluations;
   }
 
   /* Add a line in the .rdat file if the algorithm was restarted */
-  if (logger->algorithm_restarted) {
-    logger_bbob_output(logger->rdat_file, logger, x, y_logged, logger->best_found_value, constraints.data());
-    logger->algorithm_restarted = 0;
+  if (data.algorithm_restarted) {
+    logger_bbob_output(data.rdat_file, &data, x, y_logged, data.best_found_value, constraints.data());
+    data.algorithm_restarted = 0;
   }
 
   coco_debug("Ended   logger_bbob_evaluate()");
@@ -452,19 +464,17 @@ static void logger_bbob_evaluate(coco_problem_t *problem, const double *x, doubl
  * @brief Evaluates the function and outputs information according to observer options to the file with
  * recommendations. The evaluation result is not returned and the evaluation counter is not increased.
  */
-static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
+void logger_bbob_t::recommend_solution(const double *x) {
   double y_logged;
-  logger_bbob_data_t *logger = logger_bbob_get_data(problem);
-  coco_problem_t *inner_problem = coco_problem_transformed_get_inner_problem(problem);
-  const int is_feasible = problem->number_of_constraints <= 0 || coco_is_feasible(inner_problem, x, nullptr);
+  const int is_feasible = number_of_constraints <= 0 || coco_is_feasible(inner_problem.get(), x, nullptr);
 
-  if (!logger->is_initialized) {
-    logger_bbob_initialize(logger, problem->is_opt_known);
+  if (!data.is_initialized) {
+    logger_bbob_initialize(&data, is_opt_known);
   }
 
   /* Fulfill contract of a COCO evaluate function, but do not increase the evaluation counters */
-  std::vector<double> y(problem->number_of_objectives);
-  coco_evaluate_function(inner_problem, x, y.data());
+  std::vector<double> y(number_of_objectives);
+  coco_evaluate_function(inner_problem.get(), x, y.data());
 
   y_logged = y[0];
   if (coco_is_nan(y_logged))
@@ -473,20 +483,20 @@ static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
     y_logged = INFINITY_FOR_LOGGING;
 
   /* Do sanity check */
-  if ((problem->is_opt_known) && (is_feasible)) {
+  if ((is_opt_known) && (is_feasible)) {
     /* Infeasible solutions can have much better y0 values */
-    assert(y_logged + 1e-13 >= logger->optimal_value);
+    assert(y_logged + 1e-13 >= data.optimal_value);
   }
 
   /* Evaluate the constraints */
-  std::vector<double> constraints(problem->number_of_constraints);
-  if (problem->number_of_constraints > 0)
+  std::vector<double> constraints(number_of_constraints);
+  if (number_of_constraints > 0)
     inner_problem->evaluate_constraint(x, constraints.data(), 0);
 
   /* Compute the sum of positive constraint values */
   double sum_constraints;
   sum_constraints = 0.0;
-  for (size_t i = 0; i < problem->number_of_constraints; ++i) {
+  for (size_t i = 0; i < number_of_constraints; ++i) {
     if (constraints[i] > 0)
       sum_constraints += constraints[i];
   }
@@ -497,8 +507,8 @@ static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
     sum_constraints = INFINITY_FOR_LOGGING;
 
   double max_value;
-  if (problem->is_opt_known) 
-    max_value = coco_double_max(y_logged, logger->optimal_value);
+  if (is_opt_known)
+    max_value = coco_double_max(y_logged, data.optimal_value);
   else {
     /* Problems with unknown optimal values */
     if (sum_constraints > 0) {
@@ -508,17 +518,17 @@ static void logger_bbob_recommend(coco_problem_t *problem, const double *x) {
   }
 
   /* Update recommender state
-   * The logger->best_recommended_value is initialized to INFINITY_FOR_LOGGING.
+   * The data.best_recommended_value is initialized to INFINITY_FOR_LOGGING.
    */
-  if (max_value + sum_constraints < logger->best_recommended_value) {
-    for (size_t i = 0; i < problem->number_of_variables; i++)
-      logger->best_recommended_solution[i] = x[i]; /* May well be infeasible */
+  if (max_value + sum_constraints < data.best_recommended_value) {
+    for (size_t i = 0; i < number_of_variables; i++)
+      data.best_recommended_solution[i] = x[i]; /* May well be infeasible */
 
-    logger->best_recommended_value = max_value + sum_constraints;
+    data.best_recommended_value = max_value + sum_constraints;
     /* Add a line in the .mdat file is the performance target is reached by a feasible solution */
-    if (coco_observer_targets_trigger(logger->mdat_targets.get(), logger->best_recommended_value - logger->optimal_value)) {
-      logger_bbob_output(logger->mdat_file, logger, x, y_logged, logger->best_recommended_value, constraints.data());
-      logger->last_logged_eval_mdat = logger->num_func_evaluations;
+    if (coco_observer_targets_trigger(&data.mdat_targets, data.best_recommended_value - data.optimal_value)) {
+      logger_bbob_output(data.mdat_file, &data, x, y_logged, data.best_recommended_value, constraints.data());
+      data.last_logged_eval_mdat = data.num_func_evaluations;
     }
   }
 }
@@ -594,20 +604,7 @@ static void logger_bbob_signal_restart(coco_problem_t *problem) {
     logger->algorithm_restarted = 1;
 }
 
-/**
- * @brief The bbob logger, which wraps the observed problem.
- */
-struct logger_bbob_t final : public coco_problem_transformed_t {
-  logger_bbob_data_t data;
-
-  logger_bbob_t(coco_problem_t *inner_problem, const char *observer_name)
-      : coco_problem_transformed_t(inner_problem, observer_name), data() {}
-
-  ~logger_bbob_t() override { logger_bbob_free(&data); }
-
-  void evaluate_function(const double *x, double *y) override { logger_bbob_evaluate(this, x, y); }
-  void recommend_solution(const double *x) override { logger_bbob_recommend(this, x); }
-};
+logger_bbob_t::~logger_bbob_t() { logger_bbob_free(&data); }
 
 /**
  * @brief Returns the data of the logger.
@@ -624,8 +621,9 @@ static void logger_bbob_detach_observer(coco_problem_t *problem) {
   logger_bbob_get_data(problem)->observer = nullptr;
 }
 
-static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *inner_problem) {
-  logger_bbob_t *problem;
+static coco_problem_ptr_t logger_bbob(coco_observer_t *observer, coco_problem_ptr_t inner) {
+  coco_problem_t *inner_problem = inner.get(); /* Stays valid, the logger takes ownership of it */
+  std::unique_ptr<logger_bbob_t> problem;
   logger_bbob_data_t *logger_data;
   observer_bbob_t *observer_data;
   coco_suite_t *suite;
@@ -636,8 +634,8 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
   assert(inner_problem->suite);
   suite = (coco_suite_t *)inner_problem->suite;
   if (inner_problem->number_of_objectives != 1) {
-    coco_warning("logger_bbob(): The bbob logger shouldn't be used to log a problem with %d objectives",
-                 inner_problem->number_of_objectives);
+    coco_warning("logger_bbob(): The bbob logger shouldn't be used to log a problem with %lu objectives",
+                 (unsigned long)inner_problem->number_of_objectives);
   }
 
   assert(observer != nullptr);
@@ -647,10 +645,10 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
     coco_error("logger_bbob(): The observed problem must be closed before a new problem can be observed");
   }
 
-  problem = new logger_bbob_t(inner_problem, observer->observer_name.c_str());
+  problem = std::make_unique<logger_bbob_t>(std::move(inner), observer->observer_name);
   logger_data = &problem->data;
   logger_data->observer = observer;
-  logger_data->suite_name = coco_problem_get_suite(inner_problem)->suite_name.c_str();
+  logger_data->suite_name = coco_problem_get_suite(inner_problem)->suite_name;
   logger_data->is_initialized = 0;
   logger_data->algorithm_restarted = 0;
 
@@ -682,18 +680,16 @@ static coco_problem_t *logger_bbob(coco_observer_t *observer, coco_problem_t *in
   logger_data->number_of_constraints = inner_problem->number_of_constraints;
 
   /* Initialize triggers performance and evaluation triggers depending on the observer option */
-  logger_data->targets.reset(coco_observer_targets(suite->known_optima, observer->lin_target_precision,
-                                                   observer->number_target_triggers, observer->log_target_precision));
-  logger_data->evaluations.reset(coco_observer_evaluations(observer->number_evaluation_triggers,
-                                                           observer->base_evaluation_triggers.c_str(),
-                                                           inner_problem->number_of_variables));
-  logger_data->mdat_targets.reset(coco_observer_targets(suite->known_optima, observer->lin_target_precision,
-                                                        observer->number_target_triggers,
-                                                        observer->log_target_precision));
+  logger_data->targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
+                                               observer->number_target_triggers, observer->log_target_precision);
+  logger_data->evaluations = coco_observer_evaluations(
+      observer->number_evaluation_triggers, observer->base_evaluation_triggers, inner_problem->number_of_variables);
+  logger_data->mdat_targets = coco_observer_targets(suite->known_optima, observer->lin_target_precision,
+                                                    observer->number_target_triggers,
+                                                    observer->log_target_precision);
 
   coco_debug("Ended   logger_bbob()");
 
-
-  observer_data->observed_problem = problem;
+  observer_data->observed_problem = problem.get();
   return problem;
 }

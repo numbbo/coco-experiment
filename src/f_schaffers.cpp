@@ -73,19 +73,19 @@ struct f_schaffers_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic Schaffer's F7 problem.
  */
-static coco_problem_t *f_schaffers_allocate(const size_t number_of_variables) {
-  return new f_schaffers_t(number_of_variables);
+static coco_problem_ptr_t f_schaffers_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_schaffers_t>(number_of_variables);
 }
 
 /**
  * @brief Creates the BBOB Schaffer's F7 problem.
  */
-static coco_problem_t *f_schaffers_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                         const size_t instance, const long rseed, const void *args,
-                                                         const char *problem_id_template,
-                                                         const char *problem_name_template) {
+static coco_problem_ptr_t f_schaffers_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                            const size_t instance, const long rseed, const void *args,
+                                                            const char *problem_id_template,
+                                                            const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   size_t i, j;
   std::vector<double> M(dimension * dimension);
   std::vector<double> b(dimension);
@@ -116,20 +116,17 @@ static coco_problem_t *f_schaffers_bbob_problem_allocate(const size_t function, 
   }
 
   problem = f_schaffers_allocate(dimension);
-  problem = transform_obj_shift(problem, fopt);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_asymmetric(problem, 0.5);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_asymmetric(std::move(problem), 0.5);
   bbob2009_copy_rotation_matrix(rot1.rows(), M.data(), b.data(), dimension);
-  problem = transform_vars_affine(problem, M.data(), b.data(), dimension);
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_obj_penalize(problem, penalty_scale);
+  problem = transform_vars_affine(std::move(problem), M.data(), b.data(), dimension);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_obj_penalize(std::move(problem), penalty_scale);
 
-
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "4-multi-modal");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "4-multi-modal");
 
   return problem;
 }
@@ -137,13 +134,13 @@ static coco_problem_t *f_schaffers_bbob_problem_allocate(const size_t function, 
 /**
  * @brief Creates the BBOB permuted block-rotated Schaffer's F7 problem.
  */
-static coco_problem_t *f_schaffers_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                       const size_t instance, const long rseed,
-                                                                       const double conditioning,
-                                                                       const char *problem_id_template,
-                                                                       const char *problem_name_template) {
+static coco_problem_ptr_t f_schaffers_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                          const size_t instance, const long rseed,
+                                                                          const double conditioning,
+                                                                          const char *problem_id_template,
+                                                                          const char *problem_name_template) {
   double fopt;
-  coco_problem_t *problem = nullptr;
+  coco_problem_ptr_t problem;
   std::vector<size_t> P11(dimension);
   std::vector<size_t> P21(dimension);
   std::vector<size_t> P12(dimension);
@@ -180,23 +177,23 @@ static coco_problem_t *f_schaffers_permblockdiag_bbob_problem_allocate(const siz
   coco_compute_truncated_uniform_swap_permutation(P22.data(), rseed + 6000000, dimension, nb_swaps, swap_range);
 
   problem = f_schaffers_allocate(dimension);
-  problem = transform_vars_conditioning(problem, conditioning);
-  problem = transform_vars_permutation(problem, P21.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
-  problem = transform_vars_permutation(problem, P11.data(), dimension);
+  problem = transform_vars_conditioning(std::move(problem), conditioning);
+  problem = transform_vars_permutation(std::move(problem), P21.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B2.rows(), dimension, block_sizes2.data(), nb_blocks2);
+  problem = transform_vars_permutation(std::move(problem), P11.data(), dimension);
 
-  problem = transform_vars_asymmetric(problem, 0.5);
-  problem = transform_vars_permutation(problem, P22.data(), dimension);
-  problem = transform_vars_blockrotation(problem, B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
-  problem = transform_vars_permutation(problem, P12.data(), dimension);
+  problem = transform_vars_asymmetric(std::move(problem), 0.5);
+  problem = transform_vars_permutation(std::move(problem), P22.data(), dimension);
+  problem = transform_vars_blockrotation(std::move(problem), B1.rows(), dimension, block_sizes1.data(), nb_blocks1);
+  problem = transform_vars_permutation(std::move(problem), P12.data(), dimension);
 
-  problem = transform_vars_shift(problem, xopt.data(), 0);
-  problem = transform_obj_penalize(problem, penalty_factor);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_vars_shift(std::move(problem), xopt.data(), 0);
+  problem = transform_obj_penalize(std::move(problem), penalty_factor);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance, dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance, dimension);
-  coco_problem_set_type(problem, "4-multi-modal");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "4-multi-modal");
 
   return problem;
 }

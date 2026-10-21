@@ -17,7 +17,7 @@
  */
 struct f_gallagher_shared_data_t {
   size_t number_of_peaks = 0;
-  std::vector<coco_problem_t *> sub_problems; /**< @brief Owned by the large-scale Gallagher problem */
+  std::vector<coco_problem_ptr_t> sub_problems; /**< @brief Owned by the large-scale Gallagher problem */
   std::vector<double> rotated_x;
   std::vector<size_t> block_sizes, block_size_map, first_non_zero_map;
   coco_matrix_t B;
@@ -30,8 +30,8 @@ struct transform_vars_gallagher_blockrotation_t final : public coco_problem_tran
   std::vector<double> x_copy;
   f_gallagher_shared_data_t *const shared; /**< @brief Owned by the Gallagher function */
 
-  transform_vars_gallagher_blockrotation_t(coco_problem_t *inner_problem, f_gallagher_shared_data_t *shared)
-      : coco_problem_transformed_t(inner_problem, "transform_vars_gallagher_blockrotation"),
+  transform_vars_gallagher_blockrotation_t(coco_problem_ptr_t inner, f_gallagher_shared_data_t *shared)
+      : coco_problem_transformed_t(std::move(inner), "transform_vars_gallagher_blockrotation"),
         x_copy(inner_problem->number_of_variables), shared(shared) {}
 
   /**
@@ -49,7 +49,7 @@ struct transform_vars_gallagher_blockrotation_t final : public coco_problem_tran
       x_copy[i] = x[i]; /* to avoid pointer problems*/
     }
     coco_evaluate_function(
-        inner_problem, x_copy.data(),
+        inner_problem.get(), x_copy.data(),
         y); /* does not modify the argument of the call since rotated_x will be used later in the sub_problems*/
     /* this function serves only to compute rotated_x on the problem level, not for each sub-problem
      */
@@ -57,13 +57,13 @@ struct transform_vars_gallagher_blockrotation_t final : public coco_problem_tran
   }
 };
 
-static COCO_UNUSED coco_problem_t *transform_vars_gallagher_blockrotation(coco_problem_t *inner_problem,
-                                                                          f_gallagher_shared_data_t *shared);
-static coco_problem_t *transform_vars_gallagher_blockrotation(coco_problem_t *inner_problem,
-                                                              f_gallagher_shared_data_t *shared) {
-  if (coco_problem_best_parameter_not_zero(inner_problem)) {
+static COCO_UNUSED coco_problem_ptr_t transform_vars_gallagher_blockrotation(coco_problem_ptr_t inner_problem,
+                                                                             f_gallagher_shared_data_t *shared);
+static coco_problem_ptr_t transform_vars_gallagher_blockrotation(coco_problem_ptr_t inner_problem,
+                                                                 f_gallagher_shared_data_t *shared) {
+  if (coco_problem_best_parameter_not_zero(inner_problem.get())) {
     coco_debug("transform_vars_gallagher_blockrotation(): 'best_parameter' not updated, set to NAN");
     coco_vector_set_to_nan(inner_problem->best_parameter.data(), inner_problem->number_of_variables);
   }
-  return new transform_vars_gallagher_blockrotation_t(inner_problem, shared);
+  return std::make_unique<transform_vars_gallagher_blockrotation_t>(std::move(inner_problem), shared);
 }

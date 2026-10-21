@@ -8,10 +8,10 @@
 /**
  * Counts the number of lines in a file.
  */
-int count_lines_in_file(const char *filename) {
-    FILE *file = fopen(filename, "r");
+int count_lines_in_file(const std::string &filename) {
+    FILE *file = fopen(filename.c_str(), "r");
     if (file == NULL) {
-        coco_error("Error opening file %s", filename);
+        coco_error("Error opening file %s", filename.c_str());
         return -1; 
     }
     int lines = 0;
@@ -50,41 +50,41 @@ MU_TEST(test_logger_bbob_triggers) {
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 80.88209408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 1.40209408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 10));
 
   x[0] = 0; x[1] = -0.5;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.97529408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.49529408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 1));
 
   x[0] = 0; x[1] = -1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.56849408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.08849408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 0.1));
 
   x[0] = 0; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.54713408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.06713408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 0.1));
 
   x[0] = 0.2; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.48601408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.00601408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 0.01));
 
   coco_observer_free(observer);
@@ -101,41 +101,41 @@ MU_TEST(test_logger_bbob_triggers) {
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 80.88209408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 1.40209408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 1.403));
 
   x[0] = 0; x[1] = -0.5;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.97529408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.49529408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 0.496));
 
   x[0] = 0; x[1] = -1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.56849408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.08849408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 0.089));
 
   x[0] = 0; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.54713408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.06713408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 0.068));
 
   x[0] = 0.2; x[1] = -1.1;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.48601408));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 0.00601408));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 0.007));
 
   coco_observer_free(observer);
@@ -152,9 +152,9 @@ MU_TEST(test_logger_bbob_triggers) {
   x[0] = 0.252; x[1] = -1.156;
   coco_evaluate_function(problem, x, y);
   mu_check(about_equal_value(y[0], 79.48000128));
-  coco_observer_targets_trigger(logger->targets.get(), logger->best_found_value - logger->optimal_value);
+  coco_observer_targets_trigger(&logger->targets, logger->best_found_value - logger->optimal_value);
   mu_check(about_equal_value(logger->best_found_value - logger->optimal_value, 1.28 * 1e-6));
-  target = coco_observer_targets_get_last_target(logger->targets.get());
+  target = coco_observer_targets_get_last_target(&logger->targets);
   mu_check(about_equal_value(target, 1e-5));
 
   coco_observer_free(observer);
@@ -177,7 +177,7 @@ MU_TEST(test_logger_bbob_last_line) {
   double *y = coco_allocate_vector(1);
 
   int i = 0;
-  char *filename, *folder;
+  std::string folder;
 
   coco_set_log_level("debug");
 
@@ -185,7 +185,7 @@ MU_TEST(test_logger_bbob_last_line) {
   observer = coco_observer("bbob", "number_target_triggers: 100 number_evaluation_triggers: 20 base_evaluation_triggers: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
-  folder = coco_strdup(observer->result_folder.c_str());
+  folder = observer->result_folder;
 
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
@@ -208,26 +208,18 @@ MU_TEST(test_logger_bbob_last_line) {
   coco_observer_free(observer);
   coco_suite_free(suite);
 
-  filename =
-      coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", coco_path_separator, "bbobexp_f1_DIM2.dat");
-  mu_check(count_lines_in_file(filename) == 5);
-  coco_free_memory(filename);
+  mu_check(count_lines_in_file(coco_join_path(folder, "data_f1", "bbobexp_f1_DIM2.dat")) == 5);
 
-  filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
-    coco_path_separator, "bbobexp_f1_DIM2.tdat");
-  mu_check(count_lines_in_file(filename) == 9);
-  coco_free_memory(filename);
+  mu_check(count_lines_in_file(coco_join_path(folder, "data_f1", "bbobexp_f1_DIM2.tdat")) == 9);
 
-  filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
-    coco_path_separator, "bbobexp_f1_DIM2.mdat");
-  mu_check(count_lines_in_file(filename) == 3);
+  mu_check(count_lines_in_file(coco_join_path(folder, "data_f1", "bbobexp_f1_DIM2.mdat")) == 3);
 
   /* Repeat the check with different trigger values */
   suite = coco_suite("bbob", "", "dimensions: 2 function_indices: 1 instance_indices: 1");
   observer = coco_observer("bbob", "number_target_triggers: 20 number_evaluation_triggers: 4 base_evaluation_triggers: 100");
   /* Use the 2-D sphere function */
   problem = coco_suite_get_next_problem(suite, observer);
-  folder = coco_strdup(observer->result_folder.c_str());
+  folder = observer->result_folder;
 
   x[0] = 0; x[1] = 0;
   coco_evaluate_function(problem, x, y);
@@ -250,24 +242,14 @@ MU_TEST(test_logger_bbob_last_line) {
   coco_observer_free(observer);
   coco_suite_free(suite);
 
-  filename =
-      coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", coco_path_separator, "bbobexp_f1_DIM2.dat");
-  mu_check(count_lines_in_file(filename) == 5);
-  coco_free_memory(filename);
+  mu_check(count_lines_in_file(coco_join_path(folder, "data_f1", "bbobexp_f1_DIM2.dat")) == 5);
 
-  filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
-    coco_path_separator, "bbobexp_f1_DIM2.tdat");
-  mu_check(count_lines_in_file(filename) == 5);
-  coco_free_memory(filename);
+  mu_check(count_lines_in_file(coco_join_path(folder, "data_f1", "bbobexp_f1_DIM2.tdat")) == 5);
 
-  filename = coco_strdupf("%s%s%s%s%s", folder, coco_path_separator, "data_f1", 
-    coco_path_separator, "bbobexp_f1_DIM2.mdat");
-  mu_check(count_lines_in_file(filename) == 3);
+  mu_check(count_lines_in_file(coco_join_path(folder, "data_f1", "bbobexp_f1_DIM2.mdat")) == 3);
 
   coco_free_memory(x);
   coco_free_memory(y);
-  coco_free_memory(folder);
-  coco_free_memory(filename);
 }
 
 

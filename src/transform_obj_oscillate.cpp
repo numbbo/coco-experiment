@@ -13,8 +13,8 @@
  * @brief Oscillates the objective value(s) of the inner problem.
  */
 struct transform_obj_oscillate_t final : public coco_problem_transformed_t {
-  explicit transform_obj_oscillate_t(coco_problem_t *inner_problem)
-      : coco_problem_transformed_t(inner_problem, "transform_obj_oscillate") {
+  explicit transform_obj_oscillate_t(coco_problem_ptr_t inner)
+      : coco_problem_transformed_t(std::move(inner), "transform_obj_oscillate") {
     /* Compute best value */
     /* Maybe not the most efficient solution */
     evaluate_function(best_parameter.data(), best_value.data());
@@ -31,7 +31,7 @@ struct transform_obj_oscillate_t final : public coco_problem_transformed_t {
       coco_vector_set_to_nan(y, coco_problem_get_number_of_objectives(this));
       return;
     }
-    coco_evaluate_function(inner_problem, x, y);
+    coco_evaluate_function(inner_problem.get(), x, y);
 
     for (i = 0; i < number_of_objectives; i++) {
       if (y[i] != 0) {
@@ -51,6 +51,6 @@ struct transform_obj_oscillate_t final : public coco_problem_transformed_t {
 /**
  * @brief Creates the transformation.
  */
-static coco_problem_t *transform_obj_oscillate(coco_problem_t *inner_problem) {
-  return new transform_obj_oscillate_t(inner_problem);
+static coco_problem_ptr_t transform_obj_oscillate(coco_problem_ptr_t inner_problem) {
+  return std::make_unique<transform_obj_oscillate_t>(std::move(inner_problem));
 }

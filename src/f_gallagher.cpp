@@ -159,13 +159,13 @@ struct f_gallagher_t final : public coco_problem_s {
  *
  * @note There is no separate basic allocate function.
  */
-static coco_problem_t *f_gallagher_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                         const size_t instance, const long rseed, const void *args,
-                                                         const char *problem_id_template,
-                                                         const char *problem_name_template) {
+static coco_problem_ptr_t f_gallagher_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                            const size_t instance, const long rseed, const void *args,
+                                                            const char *problem_id_template,
+                                                            const char *problem_name_template) {
 
   f_gallagher_data_t *data;
-  coco_problem_t *problem;
+  coco_problem_ptr_t problem;
 
   const size_t peaks_21 = 21;
   const size_t peaks_101 = 101;
@@ -187,8 +187,8 @@ static coco_problem_t *f_gallagher_bbob_problem_allocate(const size_t function, 
 
   size_t number_of_peaks = f_gallagher_args->number_of_peaks;
   double penalty_scale = f_gallagher_args->penalty_scale;
-  problem = new f_gallagher_t(dimension, number_of_peaks, penalty_scale);
-  data = &static_cast<f_gallagher_t *>(problem)->params;
+  problem = std::make_unique<f_gallagher_t>(dimension, number_of_peaks, penalty_scale);
+  data = &static_cast<f_gallagher_t *>(problem.get())->params;
 
   if (data->number_of_peaks == peaks_101) {
     maxcondition1 = sqrt(maxcondition1);
@@ -265,19 +265,14 @@ static coco_problem_t *f_gallagher_bbob_problem_allocate(const size_t function, 
   problem->evaluate_function(problem->best_parameter.data(), problem->best_value.data());
 
   fopt = bbob2009_compute_fopt(function, instance);
-  problem = transform_obj_shift(problem, fopt);
+  problem = transform_obj_shift(std::move(problem), fopt);
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "5-weakly-structured");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "5-weakly-structured");
 
   return problem;
 }
-
-
-
 
 /* TODO: Functions used in/related to the large scale suite are below. Eventually either merge with above after the standard version is updated with the new approach or put what's below in a separate file */
 
@@ -309,8 +304,8 @@ struct f_gallagher_sub_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic gallagher sub problem.
  */
-static coco_problem_t *f_gallagher_sub_problem_allocate(const size_t number_of_variables) {
-  return new f_gallagher_sub_t(number_of_variables);
+static coco_problem_ptr_t f_gallagher_sub_problem_allocate(const size_t number_of_variables) {
+  return std::make_unique<f_gallagher_sub_t>(number_of_variables);
 }
 
 /**
@@ -331,7 +326,7 @@ static double f_gallagher_core(const double *x, size_t number_of_variables,
     for (j = 0; j < number_of_variables; j++) {
       x_local[j] = x[j]; /*shared->rotated_x[j];*/
     }
-    problem_i = shared->sub_problems[i];
+    problem_i = shared->sub_problems[i].get();
     problem_i->evaluate_function(x_local.data(), &y);
     if (i == 0) {
       w_i = 10;
@@ -378,13 +373,6 @@ struct f_gallagher_ls_t final : public coco_problem_s {
      * problem->best_value);*/
   }
 
-  ~f_gallagher_ls_t() override {
-    size_t i;
-    for (i = 0; i < shared.sub_problems.size(); i++) {
-      coco_problem_free(shared.sub_problems[i]);
-    }
-  }
-
   /**
    * @brief Uses the core function to evaluate the COCO problem.
    */
@@ -401,21 +389,23 @@ struct f_gallagher_ls_t final : public coco_problem_s {
 /**
  * @brief Allocates the basic gallagher problem.
  */
-static f_gallagher_ls_t *f_gallagher_problem_allocate(const size_t number_of_variables, size_t number_of_peaks) {
-  return new f_gallagher_ls_t(number_of_variables, number_of_peaks);
+static std::unique_ptr<f_gallagher_ls_t> f_gallagher_problem_allocate(const size_t number_of_variables,
+                                                                      size_t number_of_peaks) {
+  return std::make_unique<f_gallagher_ls_t>(number_of_variables, number_of_peaks);
 }
 
-static coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
-                                                                       const size_t instance, const long rseed,
-                                                                       size_t number_of_peaks,
-                                                                       const char *problem_id_template,
-                                                                       const char *problem_name_template) {
+static coco_problem_ptr_t f_gallagher_permblockdiag_bbob_problem_allocate(const size_t function, const size_t dimension,
+                                                                          const size_t instance, const long rseed,
+                                                                          size_t number_of_peaks,
+                                                                          const char *problem_id_template,
+                                                                          const char *problem_name_template) {
 
   size_t i;
   size_t peak_index;
   double fopt;
   double penalty_factor = 1.0;
-  coco_problem_t *problem = nullptr, **problem_i, *rotation_problem;
+  coco_problem_ptr_t *problem_i;
+  coco_problem_ptr_t rotation_problem;
   f_gallagher_shared_data_t *shared;
   /*size_t *P1, *P2;*/
   size_t nb_blocks;
@@ -460,9 +450,9 @@ static coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const siz
   coco_compute_truncated_uniform_swap_permutation(P2, rseed + 3000000,
   dimension, nb_swaps, swap_range);*/
 
-  f_gallagher_ls_t *raw_problem = f_gallagher_problem_allocate(dimension, number_of_peaks);
-  problem = raw_problem;
-  shared = &raw_problem->shared; /* shortcut */
+  std::unique_ptr<f_gallagher_ls_t> gallagher = f_gallagher_problem_allocate(dimension, number_of_peaks);
+  shared = &gallagher->shared; /* shortcut */
+  coco_problem_ptr_t problem = std::move(gallagher);
   /* set shared fields needed later in transform_vars_gallagher_blockrotation.cpp */
   /* TODO: block-rotation related fields should be set in a separate function, not the definition of the problem*/
   idx_blocksize = 0;
@@ -480,9 +470,9 @@ static coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const siz
       coco_copy_block_matrix(B.rows(), dimension, block_sizes.data(), nb_blocks);
 
   rotation_problem = coco_problem_allocate(dimension, 1, 0);
-  coco_problem_init_from_scalars(rotation_problem, "dummy rotation", -5.0, 5.0, 0.0);
-  rotation_problem = transform_vars_blockrotation(
-      rotation_problem, B.rows(), dimension, block_sizes.data(), nb_blocks);
+  coco_problem_init_from_scalars(rotation_problem.get(), "dummy rotation", -5.0, 5.0, 0.0);
+  rotation_problem =
+      transform_vars_blockrotation(std::move(rotation_problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
 
   std::vector<double> alpha_i_vals(number_of_peaks - 1);
   for (i = 0; i < number_of_peaks - 1; i++) {
@@ -511,7 +501,7 @@ static coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const siz
         best_param_before_rotation[i] = y_i[i];
       }
     }
-    transform_vars_blockrotation_apply(rotation_problem, y_i.data(), y_i.data());
+    transform_vars_blockrotation_apply(rotation_problem.get(), y_i.data(), y_i.data());
     if (peak_index == 0) {
       for (i = 0; i < dimension; i++) {
         best_param_after_rotation[i] = y_i[i];
@@ -533,38 +523,32 @@ static coco_problem_t *f_gallagher_permblockdiag_bbob_problem_allocate(const siz
      * peak_index), dimension);*/
 
     /* apply var transformations to sub problem*/
-    *problem_i = transform_vars_scale(*problem_i, 1. / sqrt(sqrt(sqrt(alpha_i)))); /* sqrt( alpha^1/4) */
-    *problem_i = transform_vars_conditioning(*problem_i, sqrt(alpha_i));
-    /**problem_i = transform_vars_blockrotation(*problem_i, B_const, dimension,
+    *problem_i = transform_vars_scale(std::move(*problem_i), 1. / sqrt(sqrt(sqrt(alpha_i)))); /* sqrt( alpha^1/4) */
+    *problem_i = transform_vars_conditioning(std::move(*problem_i), sqrt(alpha_i));
+    /**problem_i = transform_vars_blockrotation(std::move(*problem_i), B_const, dimension,
      * block_sizes, nb_blocks);*/
-    *problem_i =
-        transform_vars_inverse_permutation(*problem_i, P_Lambda.data(), dimension);
-    *problem_i = transform_vars_shift(*problem_i, y_i.data(), 0);
-
+    *problem_i = transform_vars_inverse_permutation(std::move(*problem_i), P_Lambda.data(), dimension);
+    *problem_i = transform_vars_shift(std::move(*problem_i), y_i.data(), 0);
   }
 
   problem->evaluate_function(best_param_after_rotation.data(), problem->best_value.data());
-  problem = transform_vars_blockrotation(problem, B.rows(), dimension,
-                                         block_sizes.data(), nb_blocks);
+  problem = transform_vars_blockrotation(std::move(problem), B.rows(), dimension, block_sizes.data(), nb_blocks);
   for (i = 0; i < dimension; i++) {
     problem->best_parameter[i] = best_param_before_rotation[i];
   }
 
   /*transform global objective function*/
-  problem = transform_obj_oscillate(problem);
-  problem = transform_obj_power(problem, 2.0);
-  problem = transform_obj_penalize(problem, penalty_factor);
-  problem = transform_obj_shift(problem, fopt);
-  /*problem = transform_vars_gallagher_blockrotation(problem, shared);*//* block-matrix in shared data*/
+  problem = transform_obj_oscillate(std::move(problem));
+  problem = transform_obj_power(std::move(problem), 2.0);
+  problem = transform_obj_penalize(std::move(problem), penalty_factor);
+  problem = transform_obj_shift(std::move(problem), fopt);
+  /*problem = transform_vars_gallagher_blockrotation(std::move(problem), shared);*/ /* block-matrix in shared data*/
 
-  coco_problem_set_id(problem, problem_id_template, function, instance,
-                      dimension);
-  coco_problem_set_name(problem, problem_name_template, function, instance,
-                        dimension);
-  coco_problem_set_type(problem, "5-weakly-structured");
+  coco_problem_set_id(problem.get(), problem_id_template, function, instance, dimension);
+  coco_problem_set_name(problem.get(), problem_name_template, function, instance, dimension);
+  coco_problem_set_type(problem.get(), "5-weakly-structured");
 
   /*coco_free_memory(P1);
   coco_free_memory(P2);*/
-  coco_problem_free(rotation_problem);
   return problem;
 }

@@ -15,7 +15,7 @@ enum observer_biobj_log_nondom_e { LOG_NONDOM_NONE, LOG_NONDOM_FINAL, LOG_NONDOM
 /** @brief Enum for denoting when the decision variables are logged. */
 enum observer_biobj_log_vars_e { LOG_VARS_NEVER, LOG_VARS_LOW_DIM, LOG_VARS_ALWAYS };
 
-static coco_problem_t *logger_biobj(coco_observer_t *observer, coco_problem_t *problem);
+static coco_problem_ptr_t logger_biobj(coco_observer_t *observer, coco_problem_ptr_t problem);
 static void logger_biobj_signal_restart(coco_problem_t *problem);
 static void logger_biobj_detach_observer(coco_problem_t *problem);
 
@@ -49,7 +49,7 @@ static void logger_biobj_detach_observer(coco_problem_t *problem);
  */
 struct observer_biobj_t final : public coco_observer_s {
 
-  observer_biobj_t(const coco_observer_settings_s &observer_settings, const char *options,
+  observer_biobj_t(const coco_observer_settings_s &observer_settings, std::string_view options,
                    coco_option_keys_t &option_keys)
       : coco_observer_s(observer_settings), observed_problem(nullptr), log_nondom_mode(LOG_NONDOM_ALL),
         log_vars_mode(LOG_VARS_LOW_DIM), compute_indicators(1), produce_all_data(0), large_mdat_file_warning(0),
@@ -109,7 +109,7 @@ struct observer_biobj_t final : public coco_observer_s {
     coco_debug("Ended   observer_biobj_t::~observer_biobj_t()");
   }
 
-  coco_problem_t *add_logger(coco_problem_t *problem) override { return logger_biobj(this, problem); }
+  coco_problem_ptr_t add_logger(coco_problem_ptr_t problem) override { return logger_biobj(this, std::move(problem)); }
 
   void signal_restart(coco_problem_t *problem) override { logger_biobj_signal_restart(problem); }
 
