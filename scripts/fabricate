@@ -247,6 +247,8 @@ parser.add_argument("--skip-unit-tests", action="store_true",
               help="Skip fabricating C unit tests.")
 parser.add_argument("--skip-integration-tests", action="store_true",
               help="Skip fabricating integration tests.")
+parser.add_argument("--skip-golden-tests", action="store_true",
+              help="Skip fabricating golden master tests.")
 args = parser.parse_args()
 
 COCO_VERSION = git_version()
@@ -375,3 +377,7 @@ if not args.skip_unit_tests:
 if not args.skip_integration_tests:
     amalgamate(CORE_FILES + ["src/coco_runtime_c.c"], "test/integration-test/coco.c", args.release)
     amalgamate("src/coco.h", "test/integration-test/coco.h", args.release)
+
+if not args.skip_golden_tests:
+    amalgamate(CORE_FILES + ["src/coco_runtime_c.c"], "test/golden-test/coco.c", args.release)
+    amalgamate("src/coco.h", "test/golden-test/coco.h", args.release)

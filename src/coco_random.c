@@ -6,6 +6,8 @@
  * eventually be fixed.
  */
 
+#include "coco_fp_contract.h"
+
 #include <math.h>
 
 #include "coco.h"

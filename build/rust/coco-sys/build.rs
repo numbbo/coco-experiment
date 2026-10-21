@@ -29,5 +29,7 @@ fn main() {
         .file(src_path.join("coco.c"))
         .file("wrapper.c")
         .warnings(false)
+        // Disable floating-point contraction (FMA), see src/coco_fp_contract.h
+        .flag_if_supported("-ffp-contract=off")
         .compile("coco");
 }

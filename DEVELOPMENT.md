@@ -72,6 +72,22 @@ or on Windows
 ctest --test-dir build -C Debug     
 ```
 
+### Golden master tests
+
+The golden master tests check that the results of COCO (function values, constraint values and logger output) stay exactly the same.
+Run them after every change that should not change results.
+
+```sh
+cd test/golden-test
+python ../../scripts/fabricate
+cmake -B build
+cmake --build build
+ctest --test-dir build
+```
+
+References are kept per platform.
+See `test/golden-test/README.md` for how to create them for a new platform.
+
 ### Regression tests
 
 Note that I'm not sure the regression tests are really useful at the moment. But here goes:

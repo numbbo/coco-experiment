@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.19)
 project(coco
   DESCRIPTION "Example COCO experiment"
   LANGUAGES C)
+
+## Disable floating-point contraction (FMA), see src/coco_fp_contract.h
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
+if(COCO_HAVE_FP_CONTRACT_OFF)
+  add_compile_options(-ffp-contract=off)
+endif()
 include(CTest)
 
 find_library(MATH_LIBRARY m)

@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.20)
  
 project(COCO LANGUAGES C)
 
+## Disable floating-point contraction (FMA), see src/coco_fp_contract.h
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-ffp-contract=off COCO_HAVE_FP_CONTRACT_OFF)
+if(COCO_HAVE_FP_CONTRACT_OFF)
+  add_compile_options(-ffp-contract=off)
+endif()
+
 find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 include(UseJava)

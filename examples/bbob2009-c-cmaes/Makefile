@@ -1,4 +1,4 @@
-CFLAGS ?= -std=c99 -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=200809L -O0 -g -march=native
+CFLAGS ?= -std=c99 -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=200809L -O0 -g -march=native -ffp-contract=off
 OBJS := run_bbob.o coco.o cmaes.o
 LIBS := -lm
 

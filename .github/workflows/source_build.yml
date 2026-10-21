@@ -29,6 +29,12 @@ jobs:
           cmake -B build .
           cmake --build build
           ctest --test-dir build
+      - name: Run core golden master tests
+        working-directory: ${{github.workspace}}/test/golden-test/
+        run: |
+          cmake -B build .
+          cmake --build build
+          ctest --test-dir build
       - name: Build coco-experiment Python package
         working-directory: ${{github.workspace}}/build/python
         run: python -m hatchling build -t sdist -d ../../dist/

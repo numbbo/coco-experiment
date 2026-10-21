@@ -4,6 +4,8 @@ project('coco', 'c',
 
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
+# Disable floating-point contraction (FMA), see src/coco_fp_contract.h
+add_project_arguments(cc.get_supported_arguments('-ffp-contract=off'), language: 'c')
 
 coco_lib = static_library('coco', 
   sources: 'coco.c',

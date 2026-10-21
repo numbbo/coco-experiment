@@ -47,6 +47,7 @@ examples/*/coco.[ch]
 src/coco_version.c
 test/**/coco.[ch]
 test/unit-test/build/
+test/golden-test/build/
 test/unit-test/exdata/
 test/example-test/
 test/regression-test/data/
