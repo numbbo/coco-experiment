@@ -600,6 +600,9 @@ class ExperimentRepeater:
     sweeps until some given budget is exhaused, namely, ``budget_multiplier
     * dimension``.
 
+    CAVEAT: this works as desired only when all instances of the same problem
+    are run in the same batch, as it is the case with `BatchScheduler`.
+
     Example code snippet::
 
         [...]
@@ -934,6 +937,9 @@ class ExperimentRepeater:
 class BatchScheduler:
     """Facilitate to run a benchmarking experiment in independent batches.
 
+    All instances of the same ``(function, dimension)`` belong to the same
+    batch, in order to allow for uniform instance repetitions.
+
     The batch scheduler crucially assumes that in each batch the same
     problems are given *in the same order* when calling `is_in_batch`.
 
@@ -953,10 +959,13 @@ class BatchScheduler:
     ``batch_to_execute in (0,1,2,3)`` to generate the full experimental
     data.
 
-    Details: to get a more even time distribution over all batches, it
-    seems advisable that the number of functions is not divisible by the
-    number of batches. That is, 4 (or 6 or 8 or 12) batches is not likely
-    to be ideal on the `'bbob'` testbed of 24 functions.
+    Details: while making the number of functions not divisible by the number of
+    batches may sometimes achieve a more even time distribution over all
+    batches, in practice, it is advisable to keep each function in a single or a
+    few batches as it is enforced by the `BatchScheduler`. Hence, for the 24
+    functions of the `'bbob'` testbed, having 48 or 24 or 12 or 8 or 6 or 4
+    batches is advisable. Additionally, it can be useful to run the largest
+    dimension in a separate launch (with at most 24 batches in this case).
     """
     def __init__(self, number_of_batches, batch_to_execute):
         """distribute over `number_of_batches` batches and execute
