@@ -83,6 +83,7 @@ cdef extern from "coco.h":
     void bbob_problem_best_parameter_print(const coco_problem_t *problem)
     void bbob_biobj_problem_best_parameter_print(const coco_problem_t *problem)
 
+cdef extern double coco_problem_get_best_value(coco_problem_t *p)  # copied from bare_problem.pyx
 
 cdef bytes _bstring(s):
     if type(s) is bytes:
@@ -783,6 +784,12 @@ cdef class Problem:
         """
         assert(self.problem)
         return bool(coco_problem_final_target_hit(self.problem))
+    @property
+    def _best_value(self):
+        """return best f-value
+        """
+        assert(self.problem)
+        return coco_problem_get_best_value(self.problem)
     #@property
     #def final_target_fvalue1(self):
     #    assert(self.problem)
