@@ -49,7 +49,7 @@ while not repeater.done():  # while budget is left and successes are few
         if repeater.done(problem):
             continue
         problem.observe_with(observer)  # generate data for cocopp
-        problem(problem.initial_solution)  # for better comparability
+        # problem(problem.initial_solution) if 'obj' in suite_name[4:] else None
 
         ### input: the next three lines need to be adapted to the specific fmin
         xopt = fmin(problem, repeater.initial_solution_proposal(problem),
