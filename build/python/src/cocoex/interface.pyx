@@ -556,7 +556,7 @@ cdef class Problem:
             raise RuntimeError("Problem already initialized")
         if problem == NULL:
             raise ValueError("in Problem._initialize(problem,...): problem is NULL")
-        self.problem = problem
+        self.problem = problem  # should probably be private ._problem?
         self._problem_index = coco_problem_get_suite_dep_index(self.problem)
         self._do_free = free
         self._list_of_observers = []
