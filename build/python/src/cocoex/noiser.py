@@ -24,7 +24,7 @@ def randn(x, i=0):
 def randc(x, i=0):
     """return a Cauchy random value seeded with ``x[:2]`` and `i`.
 
-    We observe that median |Z| = 1 and p(pi x Z / 2 > a) = 1/a.
+    We observe that ``median(|Z|) == 1`` and ``p(pi x Z / 2 > a) == 1/a``.
     """
     return _cauchy(1, _seed(x, i))[0]
 
